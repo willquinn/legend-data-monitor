@@ -37,7 +37,7 @@ repos:
   rev: "v2.37.3"
   hooks:
   - id: pyupgrade
-    args: ["--py36-plus"]
+    args: ["--py38-plus"]
 
 - repo: https://github.com/psf/black
   rev: "22.6.0"
@@ -68,6 +68,7 @@ repos:
       pep8-naming
     ]
     args: ["--docstring-convention", "numpy"]  # or google, change me
+    stages: [manual]
 
 - repo: https://github.com/kynan/nbstripout
   rev: "0.6.0"
