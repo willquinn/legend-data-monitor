@@ -1,0 +1,474 @@
+{
+       "par_to_plot": {
+                "baseline": {
+                       "tier"    : 1,
+                       "label"   : "FPGA baseline",
+                       "units"   : "ADC",
+                       "facecol" : [0.98,0.91,0.71],
+                       "limit"   : {
+                             "spms" : ["null", "null"],
+                             "geds" : ["null", "null"]
+                       }
+                },
+                "card": {
+                       "tier"    : 1,
+                       "label"   : "card",
+                       "units"   : "null",
+                       "facecol" : [0.98,0.91,0.71],
+                       "limit"   : {
+                             "spms" : ["null", "null"],
+                             "geds" : ["null", "null"]
+                       }
+                },
+                "ch_orca": {
+                       "tier"    : 1,
+                       "label"   : "ch_orca",
+                       "units"   : "null",
+                       "facecol" : [0.98,0.91,0.71],
+                       "limit"   : {
+                             "spms" : ["null", "null"],
+                             "geds" : ["null", "null"]
+                       }
+                },
+                "channel": {
+                       "tier"    : 1,
+                       "label"   : "channel",
+                       "units"   : "null",
+                       "facecol" : [0.98,0.91,0.71],
+                       "limit"   : {
+                             "spms" : ["null", "null"],
+                             "geds" : ["null", "null"]
+                       }
+                },
+                "crate": {
+                       "tier"    : 1,
+                       "label"   : "crate",
+                       "units"   : "null",
+                       "facecol" : [0.98,0.91,0.71],
+                       "limit"   : {
+                             "spms" : ["null", "null"],
+                             "geds" : ["null", "null"]
+                       }
+                },
+                "daqenergy": {
+                       "tier"    : 1,
+                       "label"   : "daqenergy",
+                       "units"   : "null",
+                       "facecol" : [0.98,0.91,0.71],
+                       "limit"   : {
+                             "spms" : ["null", "null"],
+                             "geds" : ["null", "null"]
+                       }
+                },
+                "numtraces": {
+                       "tier"    : 1,
+                       "label"   : "numtraces",
+                       "units"   : "null",
+                       "facecol" : [0.98,0.91,0.71],
+                       "limit"   : {
+                             "spms" : ["null", "null"],
+                             "geds" : ["null", "null"]
+                       }
+                },
+                "eventnumber": {
+                       "tier"    : 1,
+                       "label"   : "eventnumber",
+                       "units"   : "null",
+                       "facecol" : [0.98,0.91,0.71],
+                       "limit"   : {
+                             "spms" : ["null", "null"],
+                             "geds" : ["null", "null"]
+                       }
+                },
+                "bl_intercept": {
+                       "tier"    : 2,
+                       "label"   : "Baseline Intercept",
+                       "units"   : "ADC",
+                       "facecol" : [0.61,0.87,1.0],
+                       "limit"   : {
+                             "spms" : ["null", "null"],
+                             "geds" : ["null", "null"]
+                       }
+                },
+		"bl_mean": {
+                       "tier"    : 2,
+                       "label"   : "Mean Baseline",
+                       "units"   : "ADC",
+                       "facecol" : [0.61,0.87,1.0],
+                       "limit"   : {
+                             "spms" : ["null", "null"],
+                             "geds" : ["null", "null"]
+                       }
+                },
+		"bl_slope": {
+                       "tier"    : 2,
+                       "label"   : "Baseline Slope",
+                       "units"   : "ADC/time",
+                       "facecol" : [0.61,0.87,1.0],
+                       "limit"   : {
+                             "spms" : ["null", "null"],
+                             "geds" : ["null", "null"]
+                       }
+                },
+                "bl_std": {
+                       "tier"    : 2,
+                       "label"   : "Baseline Standard Deviation",
+                       "units"   : "ADC",
+                       "facecol" : [0.61,0.87,1.0],
+                       "limit"   : {
+                             "spms" : ["null", "null"],
+                             "geds" : ["null", "null"]
+                       }
+                },
+                "A_max": {
+                       "tier"    : 2,
+                       "label"   : "Max. Current Pulse",
+                       "units"   : "a.u.",
+                       "facecol" : [0.96,0.73,1.0],
+                       "limit"   : {
+                             "spms" : ["null", "null"],
+                             "geds" : ["null", "null"]
+                       }
+                },
+		"QDrift": {
+                       "tier"    : 2,
+                       "label"   : "QDrift",
+                       "units"   : "a.u.",
+                       "facecol" : [0.56,0.74,0.56],
+                       "limit"   : {
+                             "spms" : ["null", "null"],
+                             "geds" : ["null", "null"]
+                       }
+                },
+                "cuspEftp": {
+                       "tier"    : 2,
+                       "label"   : "cuspEftp",
+                       "units"   : "a.u.",
+                       "facecol" : [0.86,0.86,0.86],
+                       "limit"   : {
+                             "spms" : ["null", "null"],
+                             "geds" : ["null", "null"]
+                       }
+                },
+		"cuspEmax": {
+                       "tier"    : 2,
+                       "label"   : "cuspEmax",
+                       "units"   : "a.u.",
+                       "facecol" : [0.86,0.86,0.86],
+                       "limit"   : {
+                             "spms" : ["null", "null"],
+                             "geds" : ["null", "null"]
+                       }
+                },
+                "dt_eff": {
+                       "tier"    : 2,
+                       "label"   : "dt_eff",
+                       "units"   : "a.u.",
+                       "facecol" : "peachpuff",
+                       "limit"   : {
+                             "spms" : ["null", "null"],
+                             "geds" : ["null", "null"]
+                       }
+                },
+		"pz_mean": {
+                       "tier"    : 2,
+                       "label"   : "pz_mean",
+                       "units"   : "a.u.",
+                       "facecol" : "paleturquoise",
+                       "limit"   : {
+                             "spms" : ["null", "null"],
+                             "geds" : ["null", "null"]
+                       }
+                },
+		"pz_slope": {
+                       "tier"    : 2,
+                       "label"   : "pz_slope",
+                       "units"   : "a.u.",
+                       "facecol" : "paleturquoise",
+                       "limit"   : {
+                             "spms" : ["null", "null"],
+                             "geds" : ["null", "null"]
+                       }
+                },
+                "pz_std": {
+                       "tier"    : 2,
+                       "label"   : "pz_std",
+                       "units"   : "a.u.",
+                       "facecol" : "paleturquoise",
+                       "limit"   : {
+                             "spms" : ["null", "null"],
+                             "geds" : ["null", "null"]
+                       }
+                },
+                "tp_01": {
+                       "tier"    : 2,
+                       "label"   : "tp_01",
+                       "units"   : "us",
+                       "facecol" : "aliceblue",
+                       "limit"   : {
+                             "spms" : ["null", "null"],
+                             "geds" : ["null", "null"]
+                       }
+                },
+                "tp_0_est": {
+                       "tier"    : 2,
+                       "label"   : "tp_0_est",
+                       "units"   : "us",
+                       "facecol" : "aliceblue",
+                       "limit"   : {
+                             "spms" : ["null", "null"],
+                             "geds" : ["null", "null"]
+                       }
+                },
+                "tp_10": {
+                       "tier"    : 2,
+                       "label"   : "tp_10",
+                       "units"   : "us",
+                       "facecol" : "aliceblue",
+                       "limit"   : {
+                             "spms" : ["null", "null"],
+                             "geds" : ["null", "null"]
+                       }
+                },
+                "tp_100": {
+                       "tier"    : 2,
+                       "label"   : "tp_100",
+                       "units"   : "us",
+                       "facecol" : "aliceblue",
+                       "limit"   : {
+                             "spms" : ["null", "null"],
+                             "geds" : ["null", "null"]
+                       }
+                },
+                "tp_20": {
+                       "tier"    : 2,
+                       "label"   : "tp_20",
+                       "units"   : "us",
+                       "facecol" : "aliceblue",
+                       "limit"   : {
+                             "spms" : ["null", "null"],
+                             "geds" : ["null", "null"]
+                       }
+                },
+                "tp_50": {
+                       "tier"    : 2,
+                       "label"   : "tp_50",
+                       "units"   : "us",
+                       "facecol" : "aliceblue",
+                       "limit"   : {
+                             "spms" : ["null", "null"],
+                             "geds" : ["null", "null"]
+                       }
+                },
+                "tp_80": {
+                       "tier"    : 2,
+                       "label"   : "tp_80",
+                       "units"   : "us",
+                       "facecol" : "aliceblue",
+                       "limit"   : {
+                             "spms" : ["null", "null"],
+                             "geds" : ["null", "null"]
+                       }
+                },
+                "tp_90": {
+                       "tier"    : 2,
+                       "label"   : "tp_90",
+                       "units"   : "us",
+                       "facecol" : "aliceblue",
+                       "limit"   : {
+                             "spms" : ["null", "null"],
+                             "geds" : ["null", "null"]
+                       }
+                },
+                "tp_95": {
+                       "tier"    : 2,
+                       "label"   : "tp_95",
+                       "units"   : "us",
+                       "facecol" : "aliceblue",
+                       "limit"   : {
+                             "spms" : ["null", "null"],
+                             "geds" : ["null", "null"]
+                       }
+                },
+                "tp_99": {
+                       "tier"    : 2,
+                       "label"   : "tp_99",
+                       "units"   : "us",
+                       "facecol" : "aliceblue",
+                       "limit"   : {
+                             "spms" : ["null", "null"],
+                             "geds" : ["null", "null"]
+                       }
+                },
+                "tp_aoe_max": {
+                       "tier"    : 2,
+                       "label"   : "tp_aoe_max",
+                       "units"   : "a.u.",
+                       "facecol" : "plum",
+                       "limit"   : {
+                             "spms" : ["null", "null"],
+                             "geds" : ["null", "null"]
+                       }
+                },
+                "tp_aoe_samp": {
+                       "tier"    : 2,
+                       "label"   : "tp_aoe_samp",
+                       "units"   : "a.u.",
+                       "facecol" : "plum",
+                       "limit"   : {
+                             "spms" : ["null", "null"],
+                             "geds" : ["null", "null"]
+                       }
+                },
+		"tp_max": {
+                       "tier"    : 2,
+                       "label"   : "tp_max",
+                       "units"   : "a.u.",
+                       "facecol" : "palegreen",
+                       "limit"   : {
+                             "spms" : ["null", "null"],
+                             "geds" : ["null", "null"]
+                       }
+                },
+		"tp_min": {
+                       "tier"    : 2,
+                       "label"   : "tp_max",
+                       "units"   : "a.u.",
+                       "facecol" : "palegreen",
+                       "limit"   : {
+                             "spms" : ["null", "null"],
+                             "geds" : ["null", "null"]
+                       }
+                },
+		"trapEftp": {
+                       "tier"    : 2,
+                       "label"   : "trapEftp",
+                       "units"   : "a.u.",
+                       "facecol" : "palegoldenrod",
+                       "limit"   : {
+                             "spms" : ["null", "null"],
+                             "geds" : ["null", "null"]
+                       }
+                },
+		"trapEmax": {
+                       "tier"    : 2,
+                       "label"   : "trapEmax",
+                       "units"   : "a.u.",
+                       "facecol" : "palegoldenrod",
+                       "limit"   : {
+                             "spms" : ["null", "null"],
+                             "geds" : ["null", "null"]
+                       }
+                },
+		"trapTmax": {
+                       "tier"    : 2,
+                       "label"   : "trapTmax",
+                       "units"   : "a.u.",
+                       "facecol" : "palegoldenrod",
+                       "limit"   : {
+                             "spms" : ["null", "null"],
+                             "geds" : ["null", "null"]
+                       }
+                },
+		"wf_max": {
+                       "tier"    : 2,
+                       "label"   : "wf_max",
+                       "units"   : "a.u.",
+                       "facecol" : "pink",
+                       "limit"   : {
+                             "spms" : ["null", "null"],
+                             "geds" : ["null", "null"]
+                       }
+                },
+		"wf_min": {
+                       "tier"    : 2,
+                       "label"   : "wf_min",
+                       "units"   : "a.u.",
+                       "facecol" : "pink",
+                       "limit"   : {
+                             "spms" : ["null", "null"],
+                             "geds" : ["null", "null"]
+                       }
+                },
+		"zacEftp": {
+                       "tier"    : 2,
+                       "label"   : "zacEftp",
+                       "units"   : "a.u.",
+                       "facecol" : "aquamarine",
+                       "limit"   : {
+                             "spms" : ["null", "null"],
+                             "geds" : ["null", "null"]
+                       }
+                },
+		"zacEmax": {
+                       "tier"    : 2,
+                       "label"   : "zacEmax",
+                       "units"   : "a.u.",
+                       "facecol" : "aquamarine",
+                       "limit"   : {
+                             "spms" : ["null", "null"],
+                             "geds" : ["null", "null"]
+                       }
+                },
+                "event_rate": {
+                       "tier"    : "null",
+                       "label"   : "Event Rate",
+                       "units"   : "null",
+                       "facecol" : [0.82,0.94,0.75],
+                       "limit"   : {
+                             "spms" : ["null", "null"],
+                             "geds" : ["null", "null"]
+                       }
+                },
+                "bl_RMS": {
+                       "tier"    : "null",
+                       "label"   : "Baseline RMS",
+                       "units"   : "null",
+                       "facecol" : [0.86,0.82,1.0],
+                       "limit"   : {
+                             "spms" : ["null", 1.05],
+                             "geds" : ["null", 1.05]
+                       }
+                },
+                "LC": {
+                       "tier"    : "null",
+                       "label"   : "LC",
+                       "units"   : "?",
+                       "facecol" : [0.94,0.87,0.9],
+                       "limit"   : {
+                             "spms" : ["null", "null"],
+                             "geds" : ["null", "null"]
+                       }
+                },
+                "uncal_puls": {
+                       "tier"    : "null",
+                       "label"   : "Delta pos",
+                       "units"   : "?",
+                       "facecol" : [0.94,0.87,0.9],
+                       "limit"   : {
+                             "spms" : ["null", "null"],
+                             "geds" : ["null", "null"]
+                       }
+                },
+                "gain": {
+                       "tier"    : "null",
+                       "label"   : "Uncalibrated Gain",
+                       "units"   : "a.u.",
+                       "facecol" : [0.68,0.87,0.68],
+                       "limit"   : {
+                             "spms" : ["null", "null"],
+                             "geds" : ["null", "null"]
+                       }
+               },
+                "uncal_puls": {
+                       "tier"    : "null",
+                       "label"   : "Uncalibrated pulser",
+                       "units"   : "ADC",
+                       "facecol" : [0.27,0.47,0.9],
+                       "limit"   : {
+                             "spms" : ["null", "null"],
+                             "geds" : [-9 ,9]
+                       }
+               }
+        }
+}
