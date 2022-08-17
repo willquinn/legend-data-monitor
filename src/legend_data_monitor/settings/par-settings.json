@@ -440,16 +440,6 @@
                              "geds" : ["null", "null"]
                        }
                 },
-                "uncal_puls": {
-                       "tier"    : "null",
-                       "label"   : "Delta pos",
-                       "units"   : "?",
-                       "facecol" : [0.94,0.87,0.9],
-                       "limit"   : {
-                             "spms" : ["null", "null"],
-                             "geds" : ["null", "null"]
-                       }
-                },
                 "gain": {
                        "tier"    : "null",
                        "label"   : "Uncalibrated Gain",

@@ -23,8 +23,8 @@ datatype    = j_config[3]
 
 
 def plot_parameters(ax, par_array, utime_array, detector, det_type, parameter):
-    """
-    Description
+    """Description
+
     -----------
     Plots the parameter VS time and check if parameters are 
     below/above soome given thresholds.
@@ -42,7 +42,6 @@ def plot_parameters(ax, par_array, utime_array, detector, det_type, parameter):
     parameter   : string
                   Parameter to plot
     """
-
     # evaluate (x,y) points
     time_slice = j_config[4][det_type]
     if parameter != 'event_rate' : times_average, par_average = analysis.par_time_average(utime_array, par_array, time_slice)
@@ -77,8 +76,8 @@ def plot_parameters(ax, par_array, utime_array, detector, det_type, parameter):
 
 
 def plot_par_vs_time(raw_files, det_list, parameter, time_cut, det_type, string_number, det_dict, pdf=None):
-    """
-    Parameters
+    """ Parameters
+
     ----------
     raw_files     : list
                     Strings of lh5 raw files
@@ -93,7 +92,6 @@ def plot_par_vs_time(raw_files, det_list, parameter, time_cut, det_type, string_
     det_dict      : dictionary
                     Contains info (crate, card, ch_orca) for geds/spms/other
     """
-    
     fig, ax = plt.subplots(1,1)
     plt.figure().patch.set_facecolor(j_par[0][parameter]['facecol'])
     start_times = []
@@ -218,8 +216,7 @@ def plot_par_vs_time(raw_files, det_list, parameter, time_cut, det_type, string_
 
 
 def plot_par_vs_time_2d(raw_files, det_list, time_cut, det_type, string_number, det_dict, pdf=None):
-    """
-    Description:
+    """Description:
     No map is provided as an output.
 
     Parameters
@@ -237,7 +234,6 @@ def plot_par_vs_time_2d(raw_files, det_list, time_cut, det_type, string_number, 
     det_dict      : dictionary
                     Contains info (crate, card, ch_orca) for geds/spms/other
     """
-
     parameter = 'gain'
     handle_list = []
     plt.rcParams['font.size'] = 6

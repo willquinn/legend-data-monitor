@@ -24,6 +24,7 @@ time_window = j_config[7]
 last_hours  = j_config[8]
 verbose     = j_config[11]
 
+
 # for multiple detectors
 def dump_all_plots_together(raw_files, time_cut, path, map_path):
     """
@@ -38,7 +39,6 @@ def dump_all_plots_together(raw_files, time_cut, path, map_path):
     map_path  : string
                 Path where to save output heatmaps
     """
-    
     if isinstance(raw_files, str): raw_files = [raw_files]
 
     geds_dict, spms_dict, other_dict = analysis.load_channels(raw_files)

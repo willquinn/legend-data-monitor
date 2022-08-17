@@ -16,27 +16,26 @@ S1 = ['ch024', 'ch025', 'ch026', 'ch036', '']
 S2 = ['ch027', 'ch028', 'ch029', 'ch030', 'ch031'] 
 S3 = ['ch032', 'ch033', 'ch034', 'ch035', '']
 S4 = ['ch037', 'ch038', 'ch039', 'ch040', ''] 
-"""
-Comment: strings need to be of the same length; if no detectors
-         are present, then '' is sufficient (but must be put!)
-"""
+
+# Comment: strings need to be of the same length; if no detectors
+#          are present, then '' is sufficient (but must be put!)
 
 # spms (need an automatic loading of detectors)
-spms_S1 = ['0', '10', '20']
-spms_S2 = ['1', '11', '21']
-spms_S3 = ['2', '12', '22']
-spms_S4 = ['3', '13', '23']
-spms_S5 = ['4', '14', '24']
-spms_S6 = ['5', '15', '25']
-spms_S7 = ['6', '16', '26']
-spms_S8 = ['7', '17', '27']
-spms_S9 = ['8', '18', '28']
-spms_S10 = ['9', '19', '29']
+spms_s1 = ['0', '10', '20']
+spms_s2 = ['1', '11', '21']
+spms_s3 = ['2', '12', '22']
+spms_s4 = ['3', '13', '23']
+spms_s5 = ['4', '14', '24']
+spms_s6 = ['5', '15', '25']
+spms_s7 = ['6', '16', '26']
+spms_s8 = ['7', '17', '27']
+spms_s9 = ['8', '18', '28']
+spms_s10 = ['9', '19', '29']
 
 
 def check_det(cmap_dict, det_type):
-    """
-    Description
+    """Description
+
     -----------
     It creates a heatmap for germanium detectors.
     
@@ -47,7 +46,6 @@ def check_det(cmap_dict, det_type):
     det_type  : string
                 Type of detector (geds or spms)
     """    
-         
     # to check if all detectors are inside it, otherwise put =white 
     # (future: load channels from maps)
     if det_type == 'spms': all_det = [str(i) for i in range(0, 30, 1)]
@@ -62,8 +60,8 @@ def check_det(cmap_dict, det_type):
 
 
 def geds_map(cmap_dict, map_path, pdf):
-    """
-    Description
+    """Description
+
     -----------
     It creates a heatmap for germanium detectors.
     
@@ -74,7 +72,6 @@ def geds_map(cmap_dict, map_path, pdf):
     map_path  : string
                 Path where to save ouput heatmaps
     """    
-
     cmap_dict = check_det(cmap_dict, 'geds')
     cmap_dict[''] = 4
 
@@ -86,7 +83,8 @@ def geds_map(cmap_dict, map_path, pdf):
     x_axis_labels = ["String 1", "String 2", "String 3", "String 4"]
     y_axis_labels = ["", "", "", "", ""] 
 
-    fig = plt.figure(num=None, figsize=(14, 10), dpi=80, facecolor='w', edgecolor='k')
+    #fig = plt.figure(num=None, figsize=(14, 10), dpi=80, facecolor='w', edgecolor='k')
+    plt.figure(num=None, figsize=(14, 10), dpi=80, facecolor='w', edgecolor='k')
     sns.set(font_scale = 1.5)
 
     custom_cmap = ['#318CE7', '#CC0000', '#F7AB60', '#D0D0D0', '#FFFFFF']
@@ -116,8 +114,8 @@ def geds_map(cmap_dict, map_path, pdf):
 
 
 def spms_map(cmap_dict, map_path, pdf):
-    """
-    Description
+    """Description
+
     -----------
     It creates a heatmap for spms detectors.
     
@@ -128,7 +126,6 @@ def spms_map(cmap_dict, map_path, pdf):
     map_path  : string
                 Path where to save ouput heatmaps
     """  
-
     cmap_dict = check_det(cmap_dict, 'spms')
 
     df = pd.DataFrame(data=list(zip(spms_S1, spms_S2, spms_S3, spms_S4, spms_S5, spms_S6, spms_S7, spms_S8, spms_S9, spms_S10)))
@@ -139,7 +136,8 @@ def spms_map(cmap_dict, map_path, pdf):
     x_axis_labels = ["", "", "", "", "", "", "", "", "", ""]
     y_axis_labels = ["", "", ""]
 
-    fig = plt.figure(num=None, figsize=(14, 10), dpi=80, facecolor='w', edgecolor='k')
+    #fig = plt.figure(num=None, figsize=(14, 10), dpi=80, facecolor='w', edgecolor='k')
+    plt.figure(num=None, figsize=(14, 10), dpi=80, facecolor='w', edgecolor='k')
     sns.set(font_scale = 1.5)
 
     #                blue        red        grey       white

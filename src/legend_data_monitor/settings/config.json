@@ -17,9 +17,9 @@
 
 		"Available-par": {
                         "Tier-1-par" : "baseline, card, ch_orca, channel, crate, daqenergy, numtraces, eventnumber",
-                        "Tier-2-par" : "A_max, QDrift, bl_intercept, bl_mean, bl_slope, bl_std, cuspEftp, cuspEmax, dt_eff, pz_mean, pz_slope", 
-			"Tier-2-par" : "pz_std, tp_01, tp_0_est, tp_10, tp_100, tp_20, tp_50, tp_80, tp_90, tp_95, tp_99, tp_aoe_max, tp_aoe_samp", 
-			"Tier-2-par" : "tp_max, tp_min, trapEftp, trapEmax, trapTmax, wf_max, wf_min, zacEftp, zacEmax",
+                        "Tier-2-par1" : "A_max, QDrift, bl_intercept, bl_mean, bl_slope, bl_std, cuspEftp, cuspEmax, dt_eff, pz_mean, pz_slope", 
+			"Tier-2-par2" : "pz_std, tp_01, tp_0_est, tp_10, tp_100, tp_20, tp_50, tp_80, tp_90, tp_95, tp_99, tp_aoe_max, tp_aoe_samp", 
+			"Tier-2-par3" : "tp_max, tp_min, trapEftp, trapEmax, trapTmax, wf_max, wf_min, zacEftp, zacEmax",
                         "Other-par"  : {
                                 "event_rate" : {
 					"README": "Event rate. Change 'dt' and 'units' if needed.",
