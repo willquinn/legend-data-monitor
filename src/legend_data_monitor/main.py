@@ -6,11 +6,12 @@ import analysis
 import matplotlib as mpl
 import plot
 
-# import pygama.lh5 as lh5
-
 # modules
 import timecut
 from matplotlib.backends.backend_pdf import PdfPages
+
+# import pygama.lh5 as lh5
+
 
 # config JSON info
 j_config, j_par, _ = analysis.read_json_files()
