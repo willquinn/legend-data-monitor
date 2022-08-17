@@ -68,7 +68,6 @@ repos:
       pep8-naming
     ]
     args: ["--docstring-convention", "numpy"]  # or google, change me
-    stages: [manual]
 
 - repo: https://github.com/kynan/nbstripout
   rev: "0.6.0"
