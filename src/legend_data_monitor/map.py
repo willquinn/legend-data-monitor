@@ -10,9 +10,9 @@ geds_name_dict = j_plot[1]
 # geds (need an automatic loading of detectors)
 <<<<<<< HEAD
 S1 = ['ch024', 'ch025', 'ch026', 'ch036', '']
-S2 = ['ch027', 'ch028', 'ch029', 'ch030', 'ch031'] 
+S2 = ['ch027', 'ch028', 'ch029', 'ch030', 'ch031']
 S3 = ['ch032', 'ch033', 'ch034', 'ch035', '']
-S4 = ['ch037', 'ch038', 'ch039', 'ch040', ''] 
+S4 = ['ch037', 'ch038', 'ch039', 'ch040', '']
 
 # Comment: strings need to be of the same length; if no detectors
 #          are present, then '' is sufficient (but must be put!)
@@ -65,8 +65,8 @@ def check_det(cmap_dict, det_type):
     det_type  : string
                 Type of detector (geds or spms)
 <<<<<<< HEAD
-    """    
-    # to check if all detectors are inside it, otherwise put =white 
+    """
+    # to check if all detectors are inside it, otherwise put =white
 =======
     """
 
@@ -98,7 +98,7 @@ def geds_map(cmap_dict, map_path, pdf):
     map_path  : string
                 Path where to save ouput heatmaps
 <<<<<<< HEAD
-    """    
+    """
     cmap_dict = check_det(cmap_dict, 'geds')
     cmap_dict[''] = 4
 =======
@@ -115,7 +115,7 @@ def geds_map(cmap_dict, map_path, pdf):
 
     x_axis_labels = ["String 1", "String 2", "String 3", "String 4"]
 <<<<<<< HEAD
-    y_axis_labels = ["", "", "", "", ""] 
+    y_axis_labels = ["", "", "", "", ""]
 
     #fig = plt.figure(num=None, figsize=(14, 10), dpi=80, facecolor='w', edgecolor='k')
     plt.figure(num=None, figsize=(14, 10), dpi=80, facecolor='w', edgecolor='k')
@@ -191,7 +191,7 @@ def spms_map(cmap_dict, map_path, pdf):
     map_path  : string
                 Path where to save ouput heatmaps
 <<<<<<< HEAD
-    """  
+    """
     cmap_dict = check_det(cmap_dict, 'spms')
 =======
     """
