@@ -47,25 +47,25 @@ def dump_all_plots_together(raw_files, time_cut, path, map_path):
 
     geds_dict, spms_dict, other_dict = analysis.load_channels(raw_files)
 
-    det_status_dict = {}
+    # det_status_dict = {}
 
     with PdfPages(path) as pdf:
         with PdfPages(map_path) as pdf_map:
-            if det_type["geds"] == False and det_type["spms"] == False:
-                print(
+            if det_type["geds"] is False and det_type["spms"] is False:
+                logging.info(
                     "NO detectors have been selected! Enable geds and/or spms in settings/config.json"
                 )
                 return
 
             # Geds plots
-            if det_type["geds"] == True:
+            if det_type["geds"] is True:
                 # list of geds
                 string_geds, string_geds_name = analysis.read_geds(geds_dict)
                 geds_par = par_to_plot["geds"]
                 if len(geds_par) == 0:
-                    print("Geds: NO parameters have been enabled!")
+                    logging.info("Geds: NO parameters have been enabled!")
                 else:
-                    print("Geds will be plotted...")
+                    logging.info("Geds will be plotted...")
                     for par in geds_par:
                         for (det_list, string) in zip(string_geds, string_geds_name):
                             if len(det_list) == 0:
@@ -84,21 +84,21 @@ def dump_all_plots_together(raw_files, time_cut, path, map_path):
                             )
                             # for det, status in map_dict.items(): det_status_dict[det] = status
 
-                            if verbose == True:
-                                print(
+                            if verbose is True:
+                                logging.info(
                                     f"\t...{par} for geds (string #{string}) has been plotted!"
                                 )
                         # map.geds_map(det_status_dict, map_path, pdf_map)
 
             # Spms plots
-            if det_type["spms"] == True:
+            if det_type["spms"] is True:
                 # list of spms
                 string_spms, string_spms_name = analysis.read_spms(spms_dict)
                 spms_par = par_to_plot["spms"]
                 if len(spms_par) == 0:
-                    print("Spms: NO parameters have been enabled!")
+                    logging.info("Spms: NO parameters have been enabled!")
                 else:
-                    print("Spms will be plotted...")
+                    logging.info("Spms will be plotted...")
                     for par in spms_par:
                         for (det_list, string) in zip(string_spms, string_spms_name):
                             if len(det_list) == 0:
@@ -129,15 +129,15 @@ def dump_all_plots_together(raw_files, time_cut, path, map_path):
                                     )
                                 # for det, status in map_dict.items(): det_status_dict[det] = status
 
-                            if verbose == True:
-                                print(
+                            if verbose is True:
+                                logging.info(
                                     f"\t...{par} for spms ({string}) has been plotted!"
                                 )
                     # map.spms_map(det_status_dict, map_path, pdf_map)
 
-    if verbose == True:
-        print(f"Plots are in {path}")
-        print(f"Heatmaps are in {map_path}")
+    if verbose is True:
+        logging.info(f"Plots are in {path}")
+        logging.info(f"Heatmaps are in {map_path}")
 
     return
 
@@ -167,12 +167,12 @@ def select_and_plot_run(path, plot_path, map_path):
 
     if datatype == "cal":
         runs = [file for file in lh5_files if "cal" in file]
-        if verbose == True:
-            print("Calib runs have been loaded")
+        if verbose is True:
+            logging.info("Calib runs have been loaded")
     if datatype == "phy":
         runs = [file for file in lh5_files if "phy" in file]
-        if verbose == True:
-            print("Phys runs have been loaded")
+        if verbose is True:
+            logging.info("Phys runs have been loaded")
 
     mpl.use("pdf")
 
@@ -230,8 +230,6 @@ def main():
         format="%(levelname)s: %(message)s",
     )
 
-    if verbose == True:
-        print(f'Started compiling at {(datetime.now()).strftime("%d/%m/%Y %H:%M:%S")}')
     logging.info(
         f'Started compiling at {(datetime.now()).strftime("%d/%m/%Y %H:%M:%S")}'
     )
@@ -239,8 +237,6 @@ def main():
     logging.info(
         f'Finished compiling at {(datetime.now()).strftime("%d/%m/%Y %H:%M:%S")}'
     )
-    if verbose == True:
-        print(f'Finished compiling at {(datetime.now()).strftime("%d/%m/%Y %H:%M:%S")}')
 
 
 if __name__ == "__main__":

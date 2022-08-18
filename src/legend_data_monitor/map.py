@@ -8,35 +8,14 @@ spms_name_dict = j_plot[0]
 geds_name_dict = j_plot[1]
 
 # geds (need an automatic loading of detectors)
-<<<<<<< HEAD
-S1 = ['ch024', 'ch025', 'ch026', 'ch036', '']
-S2 = ['ch027', 'ch028', 'ch029', 'ch030', 'ch031']
-S3 = ['ch032', 'ch033', 'ch034', 'ch035', '']
-S4 = ['ch037', 'ch038', 'ch039', 'ch040', '']
-
-# Comment: strings need to be of the same length; if no detectors
-#          are present, then '' is sufficient (but must be put!)
-
-# spms (need an automatic loading of detectors)
-spms_s1 = ['0', '10', '20']
-spms_s2 = ['1', '11', '21']
-spms_s3 = ['2', '12', '22']
-spms_s4 = ['3', '13', '23']
-spms_s5 = ['4', '14', '24']
-spms_s6 = ['5', '15', '25']
-spms_s7 = ['6', '16', '26']
-spms_s8 = ['7', '17', '27']
-spms_s9 = ['8', '18', '28']
-spms_s10 = ['9', '19', '29']
-=======
 S1 = ["ch024", "ch025", "ch026", "ch036", ""]
 S2 = ["ch027", "ch028", "ch029", "ch030", "ch031"]
 S3 = ["ch032", "ch033", "ch034", "ch035", ""]
 S4 = ["ch037", "ch038", "ch039", "ch040", ""]
-"""
-Comment: strings need to be of the same length; if no detectors
-         are present, then '' is sufficient (but must be put!)
-"""
+
+# Comment: strings need to be of the same length; if no detectors
+#          are present, then '' is sufficient (but must be put!)
+
 
 # spms (need an automatic loading of detectors)
 spms_S1 = ["0", "10", "20"]
@@ -49,7 +28,6 @@ spms_S7 = ["6", "16", "26"]
 spms_S8 = ["7", "17", "27"]
 spms_S9 = ["8", "18", "28"]
 spms_S10 = ["9", "19", "29"]
->>>>>>> 4833ed8ff0d260decfe18bf245c8ed74836adef3
 
 
 def check_det(cmap_dict, det_type):
@@ -64,14 +42,9 @@ def check_det(cmap_dict, det_type):
                 Dictionary with info for building the heatmap
     det_type  : string
                 Type of detector (geds or spms)
-<<<<<<< HEAD
-    """
-    # to check if all detectors are inside it, otherwise put =white
-=======
     """
 
     # to check if all detectors are inside it, otherwise put =white
->>>>>>> 4833ed8ff0d260decfe18bf245c8ed74836adef3
     # (future: load channels from maps)
     if det_type == "spms":
         all_det = [str(i) for i in range(0, 30, 1)]
@@ -97,16 +70,10 @@ def geds_map(cmap_dict, map_path, pdf):
                 Dictionary with info for building the heatmap
     map_path  : string
                 Path where to save ouput heatmaps
-<<<<<<< HEAD
-    """
-    cmap_dict = check_det(cmap_dict, 'geds')
-    cmap_dict[''] = 4
-=======
     """
 
     cmap_dict = check_det(cmap_dict, "geds")
     cmap_dict[""] = 4
->>>>>>> 4833ed8ff0d260decfe18bf245c8ed74836adef3
 
     df = pd.DataFrame(data=list(zip(S1, S2, S3, S4)))
 
@@ -114,18 +81,6 @@ def geds_map(cmap_dict, map_path, pdf):
     dataframe = df.replace(cmap_dict)
 
     x_axis_labels = ["String 1", "String 2", "String 3", "String 4"]
-<<<<<<< HEAD
-    y_axis_labels = ["", "", "", "", ""]
-
-    #fig = plt.figure(num=None, figsize=(14, 10), dpi=80, facecolor='w', edgecolor='k')
-    plt.figure(num=None, figsize=(14, 10), dpi=80, facecolor='w', edgecolor='k')
-    sns.set(font_scale = 1.5)
-
-    custom_cmap = ['#318CE7', '#CC0000', '#F7AB60', '#D0D0D0', '#FFFFFF']
-    status_map = sns.heatmap(data=dataframe, annot=labels, vmin=0, vmax=len(custom_cmap), yticklabels=y_axis_labels,
-                             xticklabels=x_axis_labels, fmt='s', cmap = custom_cmap, cbar=True,
-                             linewidths=1, linecolor='white', square=True, rasterized=True)
-=======
     y_axis_labels = ["", "", "", "", ""]
 
     fig = plt.figure(num=None, figsize=(14, 10), dpi=80, facecolor="w", edgecolor="k")
@@ -147,7 +102,6 @@ def geds_map(cmap_dict, map_path, pdf):
         square=True,
         rasterized=True,
     )
->>>>>>> 4833ed8ff0d260decfe18bf245c8ed74836adef3
 
     """
     status_map.add_patch(Rectangle((0,0), 1, 1, fill=False, edgecolor='#3F5AC9', lw=3, clip_on=False))
@@ -190,12 +144,7 @@ def spms_map(cmap_dict, map_path, pdf):
                 Dictionary with info for building the heatmap
     map_path  : string
                 Path where to save ouput heatmaps
-<<<<<<< HEAD
     """
-    cmap_dict = check_det(cmap_dict, 'spms')
-=======
-    """
->>>>>>> 4833ed8ff0d260decfe18bf245c8ed74836adef3
 
     cmap_dict = check_det(cmap_dict, "spms")
 
@@ -222,14 +171,9 @@ def spms_map(cmap_dict, map_path, pdf):
     x_axis_labels = ["", "", "", "", "", "", "", "", "", ""]
     y_axis_labels = ["", "", ""]
 
-<<<<<<< HEAD
     #fig = plt.figure(num=None, figsize=(14, 10), dpi=80, facecolor='w', edgecolor='k')
     plt.figure(num=None, figsize=(14, 10), dpi=80, facecolor='w', edgecolor='k')
     sns.set(font_scale = 1.5)
-=======
-    fig = plt.figure(num=None, figsize=(14, 10), dpi=80, facecolor="w", edgecolor="k")
-    sns.set(font_scale=1.5)
->>>>>>> 4833ed8ff0d260decfe18bf245c8ed74836adef3
 
     #                blue        red        grey       white
     custom_cmap = ["#318CE7", "#CC0000", "#A9A9A9"]
