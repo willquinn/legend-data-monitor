@@ -171,9 +171,9 @@ def spms_map(cmap_dict, map_path, pdf):
     x_axis_labels = ["", "", "", "", "", "", "", "", "", ""]
     y_axis_labels = ["", "", ""]
 
-    #fig = plt.figure(num=None, figsize=(14, 10), dpi=80, facecolor='w', edgecolor='k')
-    plt.figure(num=None, figsize=(14, 10), dpi=80, facecolor='w', edgecolor='k')
-    sns.set(font_scale = 1.5)
+    # fig = plt.figure(num=None, figsize=(14, 10), dpi=80, facecolor='w', edgecolor='k')
+    plt.figure(num=None, figsize=(14, 10), dpi=80, facecolor="w", edgecolor="k")
+    sns.set(font_scale=1.5)
 
     #                blue        red        grey       white
     custom_cmap = ["#318CE7", "#CC0000", "#A9A9A9"]
