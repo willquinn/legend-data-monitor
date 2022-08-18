@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 import logging
 import os
 from datetime import datetime
