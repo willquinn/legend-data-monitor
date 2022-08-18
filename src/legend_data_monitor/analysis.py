@@ -8,13 +8,7 @@ import timecut
 
 
 def read_json_files():
-    """
-    Descritpion
-    -----------
-    Reads json files of 'settings/' folder.
-    Returns three lists.
-    """
-
+    """Read json files of 'settings/' folder and return three lists."""
     with open("settings/config.json") as f:
         data_config = json.load(f)
     with open("settings/par-settings.json") as g:
@@ -54,9 +48,11 @@ j_config, j_par, j_plot = read_json_files()
 
 def load_channels(raw_files):
     """
-    Descritpion
+    Load channel map.
+
+    Description
     -----------
-    Returns 3 dictionaries for geds/spms/other (pulser, aux)
+    Return 3 dictionaries for geds/spms/other (pulser, aux)
     containing info about the crate, card, and orca channel.
 
     Parameters
@@ -64,7 +60,6 @@ def load_channels(raw_files):
     raw_files : list
                 Strings of lh5 raw files
     """
-
     det_list = lh5.ls(raw_files[0], "")
     geds_dict = {}
     spms_dict = {}
@@ -88,8 +83,6 @@ def load_channels(raw_files):
 
 def read_geds(geds_dict):
     """
-    Descritpion
-    -----------
     Build an array of germanium strings.
 
     Parameters
@@ -97,7 +90,6 @@ def read_geds(geds_dict):
     geds_dict: dictionary
                Contains info (crate, card, ch_orca) for geds
     """
-
     # NOTE: if a channel map was available, one creates strings linking that info with the one contained in geds_dict.
     # For the moment, a random filling of strings is performed by "equally" dividing the full list with all channels.
 
@@ -117,8 +109,6 @@ def read_geds(geds_dict):
 
 def read_spms(spms_dict):
     """
-    Descritpion
-    -----------
     Build two lists for IN and OUT spms.
 
     Parameters
@@ -126,12 +116,11 @@ def read_spms(spms_dict):
     spms_dict: dictionary
                Contains info (crate, card, ch_orca) for spms
     """
-
     spms_map = json.load(open("settings/spms_map.json"))
-    top_OB = []
-    bot_OB = []
-    top_IB = []
-    bot_IB = []
+    top_ob = []
+    bot_ob = []
+    top_ib = []
+    bot_ib = []
 
     # loop over spms channels (i.e. channels w/ crate=2)
     for ch in list(spms_dict.keys()):
@@ -151,15 +140,15 @@ def read_spms(spms_dict):
         spms_type = spms_map[idx]["type"]
         spms_pos = spms_map[idx]["pos"]
         if spms_type == "OB" and spms_pos == "top":
-            top_OB.append(ch)
+            top_ob.append(ch)
         if spms_type == "OB" and spms_pos == "bot":
-            bot_OB.append(ch)
+            bot_ob.append(ch)
         if spms_type == "IB" and spms_pos == "top":
-            top_IB.append(ch)
+            top_ib.append(ch)
         if spms_type == "IB" and spms_pos == "bot":
-            bot_IB.append(ch)
+            bot_ib.append(ch)
 
-    string_tot = [top_OB, bot_OB, top_IB, bot_IB]
+    string_tot = [top_ob, bot_ob, top_ib, bot_ib]
     string_name = ["top_OB", "bot_OB", "top_IB", "bot_IB"]
 
     """
@@ -177,6 +166,8 @@ def read_spms(spms_dict):
 
 def check_par_values(times_average, par_average, parameter, detector, det_type):
     """
+    Check parameter values.
+
     Description
     -----------
     Check if a given parameter is above or below a given threshold. If this
@@ -197,7 +188,6 @@ def check_par_values(times_average, par_average, parameter, detector, det_type):
     det_type     : string
                    Type of detector (geds or spms)
     """
-
     low_lim = j_par[0][parameter]["limit"][det_type][0]
     upp_lim = j_par[0][parameter]["limit"][det_type][1]
     units = j_par[0][parameter]["units"]
@@ -260,9 +250,7 @@ def check_par_values(times_average, par_average, parameter, detector, det_type):
 
 def build_utime_array(raw_files, detector, det_type):
     """
-    Descritpion
-    -----------
-    Returns an array with shifted time arrays for geds detectors
+    Return an array with shifted time arrays for geds detectors.
 
     Parameters
     ----------
@@ -273,7 +261,6 @@ def build_utime_array(raw_files, detector, det_type):
     det_type  : string
                 Type of detector (geds or spms)
     """
-
     if det_type == "spms":
         utime_array = load_shifted_times(raw_files, "spms", detector)
     if det_type == "geds":
@@ -284,9 +271,7 @@ def build_utime_array(raw_files, detector, det_type):
 
 def load_shifted_times(raw_files, det_type, detector):
     """
-    Description
-    ----------
-    Returns an array with shifted time arrays for spms detectors
+    Return an array with shifted time arrays for spms detectors.
 
     Parameters
     ----------
@@ -297,7 +282,6 @@ def load_shifted_times(raw_files, det_type, detector):
     detector     : string
                    Name of the detector
     """
-
     utime_array = np.empty((0, 0))
     tmp_array = np.empty((0, 0))
 
@@ -320,10 +304,7 @@ def load_shifted_times(raw_files, det_type, detector):
 
 def add_offset_to_timestamp(tmp_array, raw_file):
     """
-    Description
-    ----------
-    Adds to the filename a time shift given by
-    the time shown in 'runtime'.
+    Add a time shift to the filename given by the time shown in 'runtime'.
 
     Parameters
     ----------
@@ -332,7 +313,6 @@ def add_offset_to_timestamp(tmp_array, raw_file):
     raw_file  : string
                 String of lh5 raw file
     """
-
     date_time = (((raw_file.split("/")[-1]).split("-")[4]).split("Z")[0]).split("T")
     date = date_time[0]
     time = date_time[1]
@@ -344,10 +324,7 @@ def add_offset_to_timestamp(tmp_array, raw_file):
 
 def build_par_array(raw_files, dsp_files, parameter, detector, det_type):
     """
-    Description
-    -----------
-    Build an array with parameter values
-
+    Build an array with parameter values.
 
     Parameters
     ----------
@@ -362,7 +339,6 @@ def build_par_array(raw_files, dsp_files, parameter, detector, det_type):
     det_type    : string
                   Type of detector (geds or spms)
     """
-
     utime_array = build_utime_array(raw_files, detector, det_type)
     if j_par[0][parameter]["tier"] == 1:
         par_array = lh5.load_nda(raw_files, [parameter], detector + "/raw/")[parameter]
@@ -376,10 +352,7 @@ def build_par_array(raw_files, dsp_files, parameter, detector, det_type):
 
 def time_analysis(utime_array, par_array, time_cut):
     """
-    Description
-    -----------
-    Returns the timestamp & parameter lists after the time cuts.
-
+    Return the timestamp & parameter lists after the time cuts.
 
     Parameters
     ----------
@@ -390,7 +363,6 @@ def time_analysis(utime_array, par_array, time_cut):
     time_cut    : list
                   List with info about time cuts
     """
-
     # time window analysis
     if len(time_cut) == 4:
         start_index, end_index = timecut.min_max_timestamp_thr(
@@ -420,6 +392,8 @@ def time_analysis(utime_array, par_array, time_cut):
 
 def par_time_average(utime_array, par_array, time_slice):
     """
+    Compute time average using time slice.
+
     Description
     -----------
     Redifines the time/parameter arrays by selecting only
@@ -434,7 +408,6 @@ def par_time_average(utime_array, par_array, time_slice):
     time_slice  : int
                   Step value to separate parameter values in plot
     """
-
     bins = np.arange(
         (np.amin(utime_array) // time_slice) * time_slice,
         ((np.amax(utime_array) // time_slice) + 2) * time_slice,
@@ -457,6 +430,8 @@ def par_time_average(utime_array, par_array, time_slice):
 
 def puls_analysis(raw_file, detector, det_type):
     """
+    Select pulser events.
+
     Description
     -----------
     Returns an array with pulser only entries, an array with detector and
@@ -472,7 +447,6 @@ def puls_analysis(raw_file, detector, det_type):
     det_type : string
                Type of detector (geds or spms)
     """
-
     wfs = lh5.load_nda(raw_file, ["values"], "ch000/raw/waveform")["values"]
     det_and_puls_ievt = lh5.load_nda(raw_file, ["eventnumber"], detector + "/raw")[
         "eventnumber"
@@ -503,6 +477,8 @@ def puls_analysis(raw_file, detector, det_type):
 
 def remove_nan_values(par_array, time_array):
     """
+    Remove NaN values from arrays.
+
     Description
     -----------
     Removes the 'nan' values that appear in

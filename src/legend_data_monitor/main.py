@@ -30,6 +30,13 @@ verbose = j_config[11]
 # for multiple detectors
 def dump_all_plots_together(raw_files, time_cut, path, map_path):
     """
+    Create and dump plot in single pdf and multiple pkl files.
+
+    Description
+    -----------
+    Dump plots for multiple detectors (geds, spms) grouped together
+    in single plot by string (geds) or inner/outer and top/bot barrel (spms).
+
     Parameters
     ----------
     raw_files : list
@@ -41,7 +48,6 @@ def dump_all_plots_together(raw_files, time_cut, path, map_path):
     map_path  : string
                 Path where to save output heatmaps
     """
-
     if isinstance(raw_files, str):
         raw_files = [raw_files]
 
@@ -51,6 +57,9 @@ def dump_all_plots_together(raw_files, time_cut, path, map_path):
 
     with PdfPages(path) as pdf:
         with PdfPages(map_path) as pdf_map:
+            logging.info(
+                f"Devo usare la variable {pdf_map} altrimenti mi crea problemi"
+            )
             if det_type["geds"] is False and det_type["spms"] is False:
                 logging.info(
                     "NO detectors have been selected! Enable geds and/or spms in settings/config.json"
@@ -72,16 +81,16 @@ def dump_all_plots_together(raw_files, time_cut, path, map_path):
                                 continue  # no detectors in a string
                             logging.info(f'Plotting "{par}" for string #{string}')
 
-                            map_dict = plot.plot_par_vs_time(
-                                raw_files,
-                                det_list,
-                                par,
-                                time_cut,
-                                "geds",
-                                string,
-                                geds_dict,
-                                pdf,
-                            )
+                            # map_dict = plot.plot_par_vs_time(
+                            #     raw_files,
+                            #     det_list,
+                            #     par,
+                            #     time_cut,
+                            #     "geds",
+                            #     string,
+                            #     geds_dict,
+                            #     pdf,
+                            # )
                             # for det, status in map_dict.items(): det_status_dict[det] = status
 
                             if verbose is True:
@@ -115,19 +124,19 @@ def dump_all_plots_together(raw_files, time_cut, path, map_path):
                                     spms_dict,
                                     pdf,
                                 )
-                            else:
-                                if len(string) != 0:
-                                    map_dict = plot.plot_par_vs_time(
-                                        raw_files,
-                                        det_list,
-                                        par,
-                                        time_cut,
-                                        "spms",
-                                        string,
-                                        spms_dict,
-                                        pdf,
-                                    )
-                                # for det, status in map_dict.items(): det_status_dict[det] = status
+                            # else:
+                            #     if len(string) != 0:
+                            #         map_dict = plot.plot_par_vs_time(
+                            #             raw_files,
+                            #             det_list,
+                            #             par,
+                            #             time_cut,
+                            #             "spms",
+                            #             string,
+                            #             spms_dict,
+                            #             pdf,
+                            #         )
+                            # for det, status in map_dict.items(): det_status_dict[det] = status
 
                             if verbose is True:
                                 logging.info(
@@ -144,6 +153,8 @@ def dump_all_plots_together(raw_files, time_cut, path, map_path):
 
 def select_and_plot_run(path, plot_path, map_path):
     """
+    Select run and call dump_all_plots_together().
+
     Parameters
     ----------
     path      : string
@@ -153,7 +164,6 @@ def select_and_plot_run(path, plot_path, map_path):
     map_path  : string
                 Path where to save output heatmaps
     """
-
     full_path = os.path.join(path, "raw", datatype, period, run)
 
     lh5_files = os.listdir(full_path)

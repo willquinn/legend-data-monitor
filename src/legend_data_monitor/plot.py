@@ -24,11 +24,8 @@ datatype = j_config[3]
 
 
 def plot_parameters(ax, par_array, utime_array, detector, det_type, parameter):
-    """Description
-
-    -----------
-    Plots the parameter VS time and check if parameters are
-    below/above soome given thresholds.
+    """
+    Plot the parameter VS time and check if parameters are below/above some given thresholds.
 
     Parameters
     ----------
@@ -61,7 +58,7 @@ def plot_parameters(ax, par_array, utime_array, detector, det_type, parameter):
 
     status_flag = j_config[9][det_type]
 
-    if status_flag == True:
+    if status_flag is True:
         if status == 1:
             if det_type == "spms":
                 ax.plot(times, par_average, color=j_plot[2][str(detector)], linewidth=1)
@@ -93,12 +90,14 @@ def plot_par_vs_time(
     pdf=None,
 ):
     """
+    Plot time evolution of gicen parameter.
+
     Parameters
     ----------
     raw_files     : list
                     Strings of lh5 raw files
     parameter     : string
-                    Paramter to plot
+                    Parameter to plot
     time_cut      : list
                     List with info about time cuts
     det_type      : string
@@ -108,7 +107,6 @@ def plot_par_vs_time(
     det_dict      : dictionary
                     Contains info (crate, card, ch_orca) for geds/spms/other
     """
-
     fig, ax = plt.subplots(1, 1)
     plt.figure().patch.set_facecolor(j_par[0][parameter]["facecol"])
     start_times = []
@@ -340,7 +338,6 @@ def plot_par_vs_time_2d(
     raw_files, det_list, time_cut, det_type, string_number, det_dict, pdf=None
 ):
     """
-    Description:
     No map is provided as an output.
 
     Parameters
@@ -358,7 +355,6 @@ def plot_par_vs_time_2d(
     det_dict      : dictionary
                     Contains info (crate, card, ch_orca) for geds/spms/other
     """
-
     parameter = "gain"
     handle_list = []
     plt.rcParams["font.size"] = 6
@@ -428,7 +424,7 @@ def plot_par_vs_time_2d(
         # select the channel
         utime_array = analysis.build_utime_array(
             raw_files, detector, "spms"
-        )  # shifted timestamps (puls events are not removed)
+        )  # shifted timestamps (pulser events are not removed)
         utime_array, wf_array = analysis.time_analysis(utime_array, wf_array, time_cut)
 
         # calculate the gain
@@ -450,7 +446,7 @@ def plot_par_vs_time_2d(
         labels = [dates.num2date(loc, tz=local_timezone).strftime(xlab) for loc in locs]
 
         # 2D-plot
-        H, xedges, yedges = np.histogram2d(
+        h, xedges, yedges = np.histogram2d(
             utime_array,
             par_array,
             bins=[200, 200],
@@ -466,7 +462,7 @@ def plot_par_vs_time_2d(
             ylab = ylab + " [" + j_par[0][parameter]["units"] + "]"
 
         ax_list[ax_idx].pcolor(
-            xedges_datetime, yedges, H.T, norm=mpl.colors.LogNorm(), cmap="magma"
+            xedges_datetime, yedges, h.T, norm=mpl.colors.LogNorm(), cmap="magma"
         )
         if "OB" in string_number:
             ax_list[ax_idx].set_title(

@@ -7,7 +7,7 @@
   "run": "r006",
   "datatype": "phy",
   "det_type": {
-    "spms": false,
+    "spms": true,
     "geds": true
   },
   "par_to_plot": {

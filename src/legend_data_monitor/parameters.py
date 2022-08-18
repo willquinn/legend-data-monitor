@@ -9,6 +9,8 @@ j_config, j_par, _ = analysis.read_json_files()
 
 def load_parameter(parameter, raw_file, dsp_file, detector, det_type, time_cut):
     """
+    Load parameters from files.
+
     Description
     -----------
     Creates numpy arrays filled with the calculated parameter and shifted timestamps
@@ -29,7 +31,6 @@ def load_parameter(parameter, raw_file, dsp_file, detector, det_type, time_cut):
     time_cut  : list
                 List with info about time cuts
     """
-
     par_array = np.array([])
     utime_array = analysis.build_utime_array(raw_file, detector, det_type)
 
@@ -47,15 +48,15 @@ def load_parameter(parameter, raw_file, dsp_file, detector, det_type, time_cut):
         else:
             utime_array = utime_array[det_only_index]
 
-    # cutting the array according to time selecton
+    # cutting the array according to time selection
     utime_array_cut, par_array_cut = analysis.time_analysis(utime_array, [], time_cut)
 
     # to handle particular cases where the timestamp array is outside the time window:
     if len(utime_array_cut) == 0 and len(par_array_cut) == 0:
         return [], []
 
-    if parameter == "bl_RMS":
-        par_array = bl_RMS(raw_file, detector, det_type, puls_only_index)
+    if parameter == "bl_rms":
+        par_array = bl_rms(raw_file, detector, det_type, puls_only_index)
     elif parameter == "LC":
         par_array = leakage_current(raw_file, dsp_file, detector, det_type)
     elif parameter == "event_rate":
@@ -88,11 +89,9 @@ def load_parameter(parameter, raw_file, dsp_file, detector, det_type, time_cut):
     return par_array, utime_array_cut
 
 
-def bl_RMS(raw_file, detector, det_type, puls_only_index):
+def bl_rms(raw_file, detector, det_type, puls_only_index):
     """
-    Description
-    -----------
-    Returns the normalized baseline RMS.
+    Return the RMS of the normalized baseline.
 
     Parameters
     ----------
@@ -105,7 +104,6 @@ def bl_RMS(raw_file, detector, det_type, puls_only_index):
     puls_only_index : array
                       Index for pulser only entries
     """
-
     if det_type == "spms":
         wf_det = lh5.load_nda(
             raw_file, ["values"], detector + "/raw/waveform/", verbose=False
@@ -127,9 +125,7 @@ def bl_RMS(raw_file, detector, det_type, puls_only_index):
 
 def leakage_current(raw_file, dsp_file, detector, det_type):
     """
-    Description
-    -----------
-    Returns the leakage current.
+    Return the leakage current.
 
     Parameters
     ----------
@@ -142,7 +138,6 @@ def leakage_current(raw_file, dsp_file, detector, det_type):
     det_type : string
                Type of detector (geds or spms)
     """
-
     bl_det = lh5.load_nda(raw_file, ["baseline"], detector + "/raw", verbose=False)[
         "baseline"
     ]
@@ -159,9 +154,7 @@ def leakage_current(raw_file, dsp_file, detector, det_type):
 
 def event_rate(dsp_run, timestamp, det_type):
     """
-    Description
-    -----------
-    Returns the event rate (as cts/dt).
+    Return the event rate (as cts/dt).
 
     Parameters
     ----------
@@ -172,7 +165,6 @@ def event_rate(dsp_run, timestamp, det_type):
     det_type  : string
                 Type of detector (geds or spms)
     """
-
     rate = []
     times = []
 
@@ -207,9 +199,7 @@ def event_rate(dsp_run, timestamp, det_type):
 
 def uncal_pulser(dsp_file, detector, puls_only_index):
     """
-    Description
-    -----------
-    Returns the uncalibrated pulser value.
+    Return the uncalibrated pulser value.
 
     Parameters
     ----------
@@ -220,7 +210,6 @@ def uncal_pulser(dsp_file, detector, puls_only_index):
     puls_only_index : array
                       Index for pulser only entries
     """
-
     puls_energy = lh5.load_nda(
         dsp_file, ["trapEmax"], detector + "/data", verbose=False
     )["trapEmax"]
@@ -237,16 +226,13 @@ def uncal_pulser(dsp_file, detector, puls_only_index):
 
 def spms_gain(wf_array):
     """
-    Description
-    -----------
-    Returns the spms gain.
+    Return the spms gain.
 
     Parameters
     ----------
     wf_array : array
                Array of arrays, i.e. waveforms
     """
-
     bl_mean = np.array([np.mean(wf[:100]) for wf in wf_array])
     bl_removed_wf = [wf - bl for (wf, bl) in zip(wf_array, bl_mean)]
     gain = np.array([np.max(wf) for wf in bl_removed_wf])
