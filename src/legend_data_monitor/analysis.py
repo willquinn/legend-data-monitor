@@ -1,7 +1,7 @@
+import importlib.resources
 import json
 import logging
 from datetime import datetime
-import importlib.resources
 
 import numpy as np
 import pygama.lgdo.lh5_store as lh5
