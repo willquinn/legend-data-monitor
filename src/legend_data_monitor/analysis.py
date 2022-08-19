@@ -4,7 +4,8 @@ from datetime import datetime
 
 import numpy as np
 import pygama.lgdo.lh5_store as lh5
-import timecut
+
+from . import timecut
 
 
 def read_json_files():

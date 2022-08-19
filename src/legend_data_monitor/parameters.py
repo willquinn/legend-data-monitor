@@ -1,8 +1,9 @@
 from datetime import datetime
 
-import analysis
 import numpy as np
 import pygama.lgdo.lh5_store as lh5
+
+from . import analysis
 
 j_config, j_par, _ = analysis.read_json_files()
 

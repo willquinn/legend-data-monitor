@@ -1,21 +1,12 @@
-#!/usr/bin/python
-
-from __future__ import annotations
-
 import logging
 import os
 from datetime import datetime
 
-import analysis
 import matplotlib as mpl
-import plot
-
-# modules
-import timecut
 from matplotlib.backends.backend_pdf import PdfPages
 
-# import pygama.lh5 as lh5
-
+# modules
+from . import analysis, plot, timecut
 
 # config JSON info
 j_config, j_par, _ = analysis.read_json_files()
@@ -251,7 +242,3 @@ def main():
     logging.info(
         f'Finished compiling at {(datetime.now()).strftime("%d/%m/%Y %H:%M:%S")}'
     )
-
-
-if __name__ == "__main__":
-    main()

@@ -1,7 +1,8 @@
-import analysis
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
+
+from . import analysis
 
 j_config, j_par, j_plot = analysis.read_json_files()
 spms_name_dict = j_plot[0]

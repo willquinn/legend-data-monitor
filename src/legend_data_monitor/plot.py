@@ -3,15 +3,14 @@ import pickle as pkl
 from copy import copy
 from datetime import datetime, timezone
 
-import analysis
 import matplotlib as mpl
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import numpy as np
-import parameters
 import pygama.lgdo.lh5_store as lh5
-import timecut
 from matplotlib import dates
+
+from . import analysis, parameters, timecut
 
 # plt.rcParams['figure.figsize'] = (12, 8)
 plt.rcParams["figure.figsize"] = (10, 5)
