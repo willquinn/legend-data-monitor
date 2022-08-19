@@ -6,7 +6,7 @@ from pathlib import Path
 from pkg_resources import get_distribution
 
 # sys.path.insert(0, Path(__file__).parents[2].resolve().as_posix())
-sys.path.insert(0, Path("../../src").resolve().as_posix())
+sys.path.insert(0, Path(__file__).resolve().as_posix())
 
 project = "legend-data-monitor"
 copyright = "Copyright Holder"
