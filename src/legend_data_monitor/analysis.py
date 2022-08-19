@@ -1,6 +1,7 @@
 import json
 import logging
 from datetime import datetime
+import importlib.resources
 
 import numpy as np
 import pygama.lgdo.lh5_store as lh5
@@ -9,12 +10,14 @@ from . import timecut
 
 
 def read_json_files():
+    pkg = importlib.resources.files("legend_data_monitor")
+
     """Read json files of 'settings/' folder and return three lists."""
-    with open("settings/config.json") as f:
+    with open(pkg / "settings" / "config.json") as f:
         data_config = json.load(f)
-    with open("settings/par-settings.json") as g:
+    with open(pkg / "settings" / "par-settings.json") as g:
         data_par = json.load(g)
-    with open("settings/plot-settings.json") as h:
+    with open(pkg / "settings" / "plot-settings.json") as h:
         data_plot = json.load(h)
 
     j_config = []
