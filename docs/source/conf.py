@@ -5,7 +5,8 @@ from pathlib import Path
 
 from pkg_resources import get_distribution
 
-sys.path.insert(0, Path(__file__).parents[2].resolve().as_posix())
+# sys.path.insert(0, Path(__file__).parents[2].resolve().as_posix())
+sys.path.insert(0, Path(__file__).resolve().as_posix())
 
 project = "legend-data-monitor"
 copyright = "Copyright Holder"
@@ -40,15 +41,8 @@ html_title = f"{project} {version}"
 # list here legend-optics dependencies that are not required for building docs and
 # could be unmet at build time
 autodoc_mock_imports = [
-    "pandas",
-    # 'numpy',
-    "matplotlib",
-    "mplhep",
-    "scipy",
-    "scimath",
-    "pytest",
-    "pint",
-]  # add new packages here
+    # add new packages here
+]
 autodoc_default_options = {"ignore-module-all": True}
 
 # sphinx-napoleon
