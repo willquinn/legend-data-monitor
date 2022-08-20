@@ -1,13 +1,14 @@
 import logging
 import os, sys
 from datetime import datetime
-log = logging.getLogger(__name__)
 
 import matplotlib as mpl
 from matplotlib.backends.backend_pdf import PdfPages
 
 # modules
 from . import analysis, plot, timecut
+
+log = logging.getLogger(__name__)
 
 # config JSON info
 j_config, j_par, _ = analysis.read_json_files()
@@ -49,7 +50,7 @@ def dump_all_plots_together(raw_files, time_cut, path, map_path):
 
     geds_dict, spms_dict, other_dict = analysis.load_channels(raw_files)
 
-    # det_status_dict = {}
+    det_status_dict = {}
 
     with PdfPages(path) as pdf:
         with PdfPages(map_path) as pdf_map:
@@ -87,7 +88,7 @@ def dump_all_plots_together(raw_files, time_cut, path, map_path):
                                 geds_dict,
                                 pdf,
                             )
-                            #for det, status in map_dict.items(): det_status_dict[det] = status
+                            for det, status in map_dict.items(): det_status_dict[det] = status
 
                             if verbose is True:
                                 logging.info(
@@ -132,13 +133,13 @@ def dump_all_plots_together(raw_files, time_cut, path, map_path):
                                         spms_dict,
                                         pdf,
                                     )
-                            # for det, status in map_dict.items(): det_status_dict[det] = status
+                            for det, status in map_dict.items(): det_status_dict[det] = status
 
                             if verbose is True:
                                 logging.info(
                                     f"\t...{par} for spms ({string}) has been plotted!"
                                 )
-                    # map.spms_map(det_status_dict, map_path, pdf_map)
+                    map.spms_map(det_status_dict, map_path, pdf_map)
 
     if verbose is True:
         logging.info(f"Plots are in {path}")
@@ -213,7 +214,6 @@ def main():
     cwd_path = os.path.join(os.getcwd(), 'out/')
     pdf_path = os.path.join(cwd_path, "pdf-files")
     log_path = os.path.join(cwd_path, "log-files")
-    pkl_path = os.path.join(cwd_path, "pkl-files")
 
     for out_dir in ["log-files", "pdf-files", "pkl-files"]:
         if out_dir not in os.listdir(cwd_path):
@@ -223,6 +223,8 @@ def main():
            for out_subdir in ["par-vs-time", "heatmaps"]:
                if os.path.isdir(f'{cwd_path}{out_dir}/{out_subdir}')==False:
                   os.mkdir(f'{cwd_path}{out_dir}/{out_subdir}')
+               else:
+                  continue
 
     plot_path = pdf_path + '/par-vs-time'
     map_path = pdf_path + '/heatmaps'

@@ -12,9 +12,7 @@ pkg = importlib.resources.files("legend_data_monitor")
 
 
 def read_json_files():
-    
     """Read json files of 'settings/' folder and return three lists."""
-    
     with open("config.json") as f:
         data_config = json.load(f)
     with open(pkg / "settings" / "par-settings.json") as g:
@@ -462,15 +460,16 @@ def puls_analysis(raw_file, detector, det_type):
     pulser_entry = []
     not_pulser_entry = []
 
-    for idx, wf in enumerate(wfs):
+    """
+    for idx,_wf in enumerate(wfs):
         # if len([*filter(lambda x: x >= 17000, wf)]):
         # if any(y > 17000 for y in wf):
-        """
         if sum(wf) / len(wf) > 15000:
             pulser_entry.append(idx)
         else:
             not_pulser_entry.append(idx)
-        """
+    """
+    for idx in range(0,len(wfs)):
         not_pulser_entry.append(idx)
 
     # pulser entries
