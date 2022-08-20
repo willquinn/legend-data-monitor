@@ -132,9 +132,9 @@ def plot_par_vs_time(
                   continue
 
             # add entries for the legend
-            card = det_dict[detector]['daq']["card"]
-            ch_orca = det_dict[detector]['daq']["ch_orca"]
-            crate = det_dict[detector]['daq']["crate"]
+            card = det_dict[detector]["daq"]["card"]
+            ch_orca = det_dict[detector]["daq"]["ch_orca"]
+            crate = det_dict[detector]["daq"]["crate"]
             if raw_file == raw_files[0]:
                 if det_type == "spms":
                     handle_list.append(
@@ -407,9 +407,9 @@ def plot_par_vs_time_2d(
         )["values"]
 
         # add entries for the legend
-        card = det_dict[detector]['daq']["card"]
-        ch_orca = det_dict[detector]['daq']["ch_orca"]
-        crate = det_dict[detector]['daq']["crate"]
+        card = det_dict[detector]["daq"]["card"]
+        ch_orca = det_dict[detector]["daq"]["ch_orca"]
+        crate = det_dict[detector]["daq"]["crate"]
         if det_type == "spms":
             handle_list.append(
                 mpatches.Patch(

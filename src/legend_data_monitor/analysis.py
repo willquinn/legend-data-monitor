@@ -1,7 +1,7 @@
 import importlib.resources
-import os
 import json
 import logging
+import os
 from datetime import datetime
 
 import numpy as np
@@ -66,44 +66,57 @@ def load_channels(raw_files):
     raw_files : list
                 Strings of lh5 raw files
     """
-    channels = lh5.ls(raw_files[0], '')
+    channels = lh5.ls(raw_files[0], "")
     filename = os.path.basename(raw_files[0])
     fn_split = filename.split("-")
-    orca_name = f'{fn_split[0]}-{fn_split[1]}-{fn_split[2]}-{fn_split[3]}-{fn_split[4]}.orca'
+    orca_name = (
+        f"{fn_split[0]}-{fn_split[1]}-{fn_split[2]}-{fn_split[3]}-{fn_split[4]}.orca"
+    )
     data_type = fn_split[3]
-    orca_path = j_config[0]['path']['orca-files']
+    orca_path = j_config[0]["path"]["orca-files"]
     period = j_config[1]
     run = j_config[2]
-    orca_file = f'{orca_path}{data_type}/{period}/{run}/{orca_name}'
-    orstr = orca_streamer.OrcaStreamer();
+    orca_file = f"{orca_path}{data_type}/{period}/{run}/{orca_name}"
+    orstr = orca_streamer.OrcaStreamer()
     orstr.open_stream(orca_file)
     channel_map = json.loads(orstr.header["ObjectInfo"]["ORL200Model"]["DetectorMap"])
     store = LH5Store()
 
-    geds_dict  = {}
-    spms_dict  = {}
+    geds_dict = {}
+    spms_dict = {}
     other_dict = {}
 
     for ch in channels:
-        crate   = store.read_object(f'{ch}/raw/crate', raw_files[0])[0].nda[0]
-        card    = store.read_object(f'{ch}/raw/card', raw_files[0])[0].nda[0]
-        ch_orca = store.read_object(f'{ch}/raw/ch_orca', raw_files[0])[0].nda[0]
+        crate = store.read_object(f"{ch}/raw/crate", raw_files[0])[0].nda[0]
+        card = store.read_object(f"{ch}/raw/card", raw_files[0])[0].nda[0]
+        ch_orca = store.read_object(f"{ch}/raw/ch_orca", raw_files[0])[0].nda[0]
         daq_dict = {}
-        daq_dict['crate']   = crate
-        daq_dict['card']    = card
-        daq_dict['ch_orca'] = ch_orca
+        daq_dict["crate"] = crate
+        daq_dict["card"] = card
+        daq_dict["ch_orca"] = ch_orca
 
-        if crate==0:
+        if crate == 0:
             for det, entry in channel_map.items():
-                if entry['daq']['crate']==f'{crate}' and entry['daq']['board_slot']==f'{card}' and entry['daq']['board_ch']==f'{ch_orca}':
+                if (
+                    entry["daq"]["crate"] == f"{crate}"
+                    and entry["daq"]["board_slot"] == f"{card}"
+                    and entry["daq"]["board_ch"] == f"{ch_orca}"
+                ):
                     string_dict = {}
-                    string_dict['number']   = entry['string']['number']
-                    string_dict['position'] = entry['string']['position']
+                    string_dict["number"] = entry["string"]["number"]
+                    string_dict["position"] = entry["string"]["position"]
 
-                    geds_dict[ch] = { "system": "ged", "det": det, "string": string_dict, "daq": daq_dict }
+                    geds_dict[ch] = {
+                        "system": "ged",
+                        "det": det,
+                        "string": string_dict,
+                        "daq": daq_dict,
+                    }
 
-        if crate==1: other_dict[ch] = { "system": "--" , "daq": daq_dict }
-        if crate==2: spms_dict[ch]  = { "system": "spm", "daq": daq_dict }
+        if crate == 1:
+            other_dict[ch] = {"system": "--", "daq": daq_dict}
+        if crate == 2:
+            spms_dict[ch] = {"system": "spm", "daq": daq_dict}
 
     return geds_dict, spms_dict, other_dict
 
@@ -121,14 +134,18 @@ def read_geds(geds_dict):
     string_name = []
 
     # no of strings
-    str_no = [v['string']['number'] for k,v in geds_dict.items() if v['string']['number']!='--']
+    str_no = [
+        v["string"]["number"]
+        for k, v in geds_dict.items()
+        if v["string"]["number"] != "--"
+    ]
     min_str = int(min(str_no))
     max_str = int(max(str_no))
     idx = min_str
 
     # fill lists with strings of channels ('while' loop over no of string)
-    while idx<=max_str:
-        string = [k for k,v in geds_dict.items() if v['string']['number'] == str(idx)]
+    while idx <= max_str:
+        string = [k for k, v in geds_dict.items() if v["string"]["number"] == str(idx)]
         pos = []
         for v1 in geds_dict.values():
           for k2,v2 in v1.items():
@@ -140,11 +157,11 @@ def read_geds(geds_dict):
         if len(string)==0:
            idx += 1
         else:
-           # order channels within a string
-           pos, string = (list(t) for t in zip(*sorted(zip(pos, string))))
-           string_tot.append(string)
-           string_name.append(f'{idx}')
-           idx += 1
+            # order channels within a string
+            pos, string = (list(t) for t in zip(*sorted(zip(pos, string))))
+            string_tot.append(string)
+            string_name.append(f"{idx}")
+            idx += 1
 
     return string_tot, string_name
 
@@ -166,12 +183,15 @@ def read_spms(spms_dict):
 
     # loop over spms channels (i.e. channels w/ crate=2)
     for ch in list(spms_dict.keys()):
-        card    = spms_dict[ch]['daq']['card']
-        ch_orca = spms_dict[ch]['daq']['ch_orca']
-    
-        idx = '0'
+        card = spms_dict[ch]["daq"]["card"]
+        ch_orca = spms_dict[ch]["daq"]["ch_orca"]
+
+        idx = "0"
         for serial in list(spms_map.keys()):
-            if spms_map[serial]['card']==card and spms_map[serial]['ch_orca']==ch_orca: 
+            if (
+                spms_map[serial]["card"] == card
+                and spms_map[serial]["ch_orca"] == ch_orca
+            ):
                 idx = str(serial)
         if idx=='0': continue
 

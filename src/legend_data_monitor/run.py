@@ -13,7 +13,7 @@ log = logging.getLogger(__name__)
 # config JSON info
 j_config, j_par, _ = analysis.read_json_files()
 exp = j_config[0]["exp"]
-files_path = j_config[0]["path"]['lh5-files']
+files_path = j_config[0]["path"]["lh5-files"]
 period = j_config[1]
 run = j_config[2]
 datatype = j_config[3]
@@ -55,7 +55,7 @@ def dump_all_plots_together(raw_files, time_cut, path, map_path):
     with PdfPages(path) as pdf:
         with PdfPages(map_path) as pdf_map:
             logging.info(
-                f"Devo usare la variable {pdf_map} altrimenti mi crea problemi" # TOGLIERE QUESTO PEZZO DOPO AVER IMPLEMENTATO map.py
+                f"Devo usare la variable {pdf_map} altrimenti mi crea problemi"  # TOGLIERE QUESTO PEZZO DOPO AVER IMPLEMENTATO map.py
             )
             if det_type["geds"] is False and det_type["spms"] is False:
                 logging.info(
@@ -100,53 +100,60 @@ def dump_all_plots_together(raw_files, time_cut, path, map_path):
 
             # Spms plots
             if det_type["spms"] is True:
-              if datatype=='cal':
-                  logging.info("No SiPMs for calibration data!")
-              else:
-                # list of spms
-                spms_merged, spms_name_merged, string_spms, string_spms_name = analysis.read_spms(spms_dict)
-                spms_par = par_to_plot["spms"]
-                if len(spms_par) == 0:
-                    logging.info("Spms: NO parameters have been enabled!")
+                if datatype == "cal":
+                    logging.info("No SiPMs for calibration data!")
                 else:
-                    logging.info("Spms will be plotted...")
-                    for par in spms_par:
-                        for (det_list, string) in zip(string_spms, string_spms_name):
-                            if len(det_list) == 0:
-                                continue  # no detectors in a string
-                            logging.info(f'Plotting "{par}" for {string} SiPMS')
+                    # list of spms
+                    (
+                        spms_merged,
+                        spms_name_merged,
+                        string_spms,
+                        string_spms_name,
+                    ) = analysis.read_spms(spms_dict)
+                    spms_par = par_to_plot["spms"]
+                    if len(spms_par) == 0:
+                        logging.info("Spms: NO parameters have been enabled!")
+                    else:
+                        logging.info("Spms will be plotted...")
+                        for par in spms_par:
+                            for (det_list, string) in zip(
+                                string_spms, string_spms_name
+                            ):
+                                if len(det_list) == 0:
+                                    continue  # no detectors in a string
+                                logging.info(f'Plotting "{par}" for {string} SiPMS')
 
-                            if par == "gain":
-                                plot.plot_par_vs_time_2d(
-                                    raw_files,
-                                    det_list,
-                                    time_cut,
-                                    "spms",
-                                    string,
-                                    spms_dict,
-                                    pdf,
-                                )
-                            else:
-                                if len(string) != 0:
-                                    map_dict = plot.plot_par_vs_time(
+                                if par == "gain":
+                                    plot.plot_par_vs_time_2d(
                                         raw_files,
                                         det_list,
-                                        par,
                                         time_cut,
                                         "spms",
                                         string,
                                         spms_dict,
                                         pdf,
                                     )
-                            if map_dict is not None:
-                               for det, status in map_dict.items():
-                                   det_status_dict[det] = status
+                                else:
+                                    if len(string) != 0:
+                                        map_dict = plot.plot_par_vs_time(
+                                            raw_files,
+                                            det_list,
+                                            par,
+                                            time_cut,
+                                            "spms",
+                                            string,
+                                            spms_dict,
+                                            pdf,
+                                        )
+                                if map_dict is not None:
+                                    for det, status in map_dict.items():
+                                        det_status_dict[det] = status
 
-                            if verbose is True:
-                                logging.info(
-                                    f"\t...{par} for spms ({string}) has been plotted!"
-                                )
-                    #map.spms_map(spms_dict, spms_merged, spms_name_merged, det_status_dict, map_path, pdf_map)
+                                if verbose is True:
+                                    logging.info(
+                                        f"\t...{par} for spms ({string}) has been plotted!"
+                                    )
+                        # map.spms_map(spms_dict, spms_merged, spms_name_merged, det_status_dict, map_path, pdf_map)
 
     if verbose is True:
         logging.info(f"Plots are in {path}")
@@ -220,7 +227,7 @@ def main():
     path = files_path
     cwd_path = os.path.join(os.getcwd(), "out/")
     if os.path.isdir(cwd_path) is False:
-       os.mkdir(cwd_path)
+        os.mkdir(cwd_path)
     pdf_path = os.path.join(cwd_path, "pdf-files")
     log_path = os.path.join(cwd_path, "log-files")
 
