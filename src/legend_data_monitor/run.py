@@ -221,10 +221,8 @@ def main():
         dirs = ["pdf-files", "pkl-files"]
         if out_dir in dirs:
            for out_subdir in ["par-vs-time", "heatmaps"]:
-               if os.path.isdir(f'{cwd_path}{out_dir}/{out_subdir}')==False:
+               if os.path.isdir(f'{cwd_path}{out_dir}/{out_subdir}') is False:
                   os.mkdir(f'{cwd_path}{out_dir}/{out_subdir}')
-               else:
-                  continue
 
     plot_path = pdf_path + "/par-vs-time"
     map_path = pdf_path + "/heatmaps"
