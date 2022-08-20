@@ -1,5 +1,5 @@
 import logging
-import os, sys
+import os
 from datetime import datetime
 
 import matplotlib as mpl
@@ -211,13 +211,13 @@ def select_and_plot_run(path, plot_path, map_path):
 
 def main():
     path = files_path
-    cwd_path = os.path.join(os.getcwd(), 'out/')
+    cwd_path = os.path.join(os.getcwd(), "out/")
     pdf_path = os.path.join(cwd_path, "pdf-files")
     log_path = os.path.join(cwd_path, "log-files")
 
     for out_dir in ["log-files", "pdf-files", "pkl-files"]:
         if out_dir not in os.listdir(cwd_path):
-            os.mkdir(cwd_path+out_dir)
+            os.mkdir(cwd_path + out_dir)
         dirs = ["pdf-files", "pkl-files"]
         if out_dir in dirs:
            for out_subdir in ["par-vs-time", "heatmaps"]:
@@ -226,8 +226,8 @@ def main():
                else:
                   continue
 
-    plot_path = pdf_path + '/par-vs-time'
-    map_path = pdf_path + '/heatmaps'
+    plot_path = pdf_path + "/par-vs-time"
+    map_path = pdf_path + "/heatmaps"
 
     time_cut = timecut.build_timecut_list(time_window, last_hours)
     if len(time_cut) != 0:
