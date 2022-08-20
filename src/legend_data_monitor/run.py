@@ -89,8 +89,8 @@ def dump_all_plots_together(raw_files, time_cut, path, map_path):
                                 pdf,
                             )
                             if map_dict is not None:
-                               for det, status in map_dict.items():
-                                   det_status_dict[det] = status
+                                for det, status in map_dict.items():
+                                    det_status_dict[det] = status
 
                             if verbose is True:
                                 logging.info(
