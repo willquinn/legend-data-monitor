@@ -324,7 +324,7 @@ def plot_par_vs_time(
                 + ".pkl"
             )
 
-    pkl.dump(ax, open(f"pkl-files/par-vs-time/{pkl_name}", "wb"))
+    pkl.dump(ax, open(f"out/pkl-files/par-vs-time/{pkl_name}", "wb"))
     pdf.savefig(bbox_inches="tight")
     plt.close()
 
@@ -566,7 +566,7 @@ def plot_par_vs_time_2d(
                 + ".pkl"
             )
 
-    pkl.dump(ax_list, open(f"pkl-files/par-vs-time/{pkl_name}", "wb"))
+    pkl.dump(ax_list, open(f"out/pkl-files/par-vs-time/{pkl_name}", "wb"))
     pdf.savefig(bbox_inches="tight")
     plt.close()
 
