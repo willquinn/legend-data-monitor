@@ -1,4 +1,5 @@
 import logging
+import os
 import pickle as pkl
 from copy import copy
 from datetime import datetime, timezone
@@ -115,8 +116,8 @@ def plot_par_vs_time(
 
     for raw_file in raw_files:
         dsp_file = raw_file.replace("raw", "dsp")
-        # if os.path.exists(dsp_file) == False:          # too verbose (but could be useful..add it in the log file maybe?)
-        #    print(f'File {dsp_file} does not exist')
+        if os.path.exists(dsp_file) is False:
+           logging.warning(f'File {dsp_file} does not exist')
 
         for detector in det_list:
             if det_dict[detector]['system'] == '--': continue
@@ -136,20 +137,14 @@ def plot_par_vs_time(
             ch_orca = det_dict[detector]["daq"]["ch_orca"]
             crate = det_dict[detector]["daq"]["crate"]
             if raw_file == raw_files[0]:
-                if det_type == "spms":
-                    handle_list.append(
+                if det_type == "spms": col = j_plot[2][str(detector)]
+                if det_type == "geds": col = j_plot[3][detector]
+                handle_list.append(
                         mpatches.Patch(
-                            color=j_plot[2][str(detector)],
+                            color=col,
                             label=f"{detector} - FC: {card},{ch_orca} ({crate})",
                         )
-                    )
-                if det_type == "geds":
-                    handle_list.append(
-                        mpatches.Patch(
-                            color=j_plot[3][detector],
-                            label=f"{detector} - FC: {card},{ch_orca} ({crate})",
-                        )
-                    )
+                )
 
             # plot detectors of the same string
             par_np_array, utime_array = parameters.load_parameter(
