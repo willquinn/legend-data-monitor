@@ -1,14 +1,17 @@
 {
   "run_info": {
     "exp": "l60",
-    "path": "/data1/shared/l60/l60-prodven-v1/prod-ref/v02.00/generated/tier/"
+    "path": {
+      "lh5-files": "/data1/shared/l60/l60-prodven-v1/prod-ref/v02.00/generated/tier/",
+      "orca-files": "/data1/shared/l60/l60-daq/daq-v01/"
+    }
   },
   "period": "p01",
   "run": "r006",
   "datatype": "phy",
   "det_type": {
     "spms": true,
-    "geds": true
+    "geds": false
   },
   "par_to_plot": {
     "README": "Select here the parameters you want to plot for spms and geds (see 'Available-par' for parameters that are available to study).",
@@ -51,7 +54,7 @@
     }
   },
   "time_slice": {
-    "spms": 800,
+    "spms": 30,
     "geds": 800
   },
   "time_window": {

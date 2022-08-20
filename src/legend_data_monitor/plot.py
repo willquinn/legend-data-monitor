@@ -40,7 +40,7 @@ def plot_parameters(ax, par_array, utime_array, detector, det_type, parameter):
                   Parameter to plot
     """
     # evaluate (x,y) points
-    time_slice = j_config[4][det_type]
+    time_slice = j_config[6][det_type]
     if parameter != "event_rate":
         times_average, par_average = analysis.par_time_average(
             utime_array, par_array, time_slice
@@ -119,19 +119,26 @@ def plot_par_vs_time(
         #    print(f'File {dsp_file} does not exist')
 
         for detector in det_list:
-            if det_type == "geds":
-                if detector not in lh5.ls(raw_file, ""):
-                    logging.warning(f'No "{detector}" branch in file {raw_file}')
-                    continue
-            if det_type == "spms":
-                if detector not in lh5.ls(raw_file, ""):
-                    logging.warning(f'No "{detector}" branch in file {raw_file}')
+            if det_dict[detector]["system"] == "--":
+                continue
+
+            if detector not in lh5.ls(raw_file, ""):
+                logging.warning(f'No "{detector}" branch in file {raw_file}')
+                continue
+
+            # just for parameters that are related to dsp files
+            if (
+                parameter in ["bl_RMS", "LC", "uncal_puls"]
+                or j_par[0][parameter]["tier"] == 2
+            ):
+                if detector not in lh5.ls(dsp_file, ""):
+                    logging.warning(f'No "{detector}" branch in file {dsp_file}')
                     continue
 
             # add entries for the legend
-            card = det_dict[detector]["card"]
-            ch_orca = det_dict[detector]["ch_orca"]
-            crate = det_dict[detector]["crate"]
+            card = det_dict[detector]["daq"]["card"]
+            ch_orca = det_dict[detector]["daq"]["ch_orca"]
+            crate = det_dict[detector]["daq"]["crate"]
             if raw_file == raw_files[0]:
                 if det_type == "spms":
                     handle_list.append(
@@ -397,14 +404,17 @@ def plot_par_vs_time_2d(
     fig.suptitle(f"spms - {string_number}", fontsize=8)
 
     for detector in det_list:
+        if det_dict[detector]["system"] == "--":
+            continue
+
         wf_array = lh5.load_nda(
             raw_files, ["values"], detector + "/raw/waveform", verbose=False
         )["values"]
 
         # add entries for the legend
-        card = det_dict[detector]["card"]
-        ch_orca = det_dict[detector]["ch_orca"]
-        crate = det_dict[detector]["crate"]
+        card = det_dict[detector]["daq"]["card"]
+        ch_orca = det_dict[detector]["daq"]["ch_orca"]
+        crate = det_dict[detector]["daq"]["crate"]
         if det_type == "spms":
             handle_list.append(
                 mpatches.Patch(
