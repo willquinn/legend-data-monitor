@@ -469,7 +469,7 @@ def puls_analysis(raw_file, detector, det_type):
         else:
             not_pulser_entry.append(idx)
     """
-    for idx in range(0,len(wfs)):
+    for idx in range(0, len(wfs)):
         not_pulser_entry.append(idx)
 
     # pulser entries

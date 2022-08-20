@@ -88,7 +88,8 @@ def dump_all_plots_together(raw_files, time_cut, path, map_path):
                                 geds_dict,
                                 pdf,
                             )
-                            for det, status in map_dict.items(): det_status_dict[det] = status
+                            for det, status in map_dict.items():
+                                det_status_dict[det] = status
 
                             if verbose is True:
                                 logging.info(
@@ -133,7 +134,8 @@ def dump_all_plots_together(raw_files, time_cut, path, map_path):
                                         spms_dict,
                                         pdf,
                                     )
-                            for det, status in map_dict.items(): det_status_dict[det] = status
+                            for det, status in map_dict.items():
+                                det_status_dict[det] = status
 
                             if verbose is True:
                                 logging.info(
@@ -220,11 +222,11 @@ def main():
             os.mkdir(cwd_path + out_dir)
         dirs = ["pdf-files", "pkl-files"]
         if out_dir in dirs:
-           for out_subdir in ["par-vs-time", "heatmaps"]:
-               if os.path.isdir(f'{cwd_path}{out_dir}/{out_subdir}')==False:
-                  os.mkdir(f'{cwd_path}{out_dir}/{out_subdir}')
-               else:
-                  continue
+            for out_subdir in ["par-vs-time", "heatmaps"]:
+                if os.path.isdir(f"{cwd_path}{out_dir}/{out_subdir}") == False:
+                    os.mkdir(f"{cwd_path}{out_dir}/{out_subdir}")
+                else:
+                    continue
 
     plot_path = pdf_path + "/par-vs-time"
     map_path = pdf_path + "/heatmaps"
