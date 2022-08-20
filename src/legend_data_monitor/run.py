@@ -214,6 +214,8 @@ def select_and_plot_run(path, plot_path, map_path):
 def main():
     path = files_path
     cwd_path = os.path.join(os.getcwd(), "out/")
+    if os.path.isdir(cwd_path) is False:
+       os.mkdir(cwd_path)
     pdf_path = os.path.join(cwd_path, "pdf-files")
     log_path = os.path.join(cwd_path, "log-files")
 
