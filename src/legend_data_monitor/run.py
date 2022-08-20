@@ -88,7 +88,8 @@ def dump_all_plots_together(raw_files, time_cut, path, map_path):
                                 geds_dict,
                                 pdf,
                             )
-                            for det, status in map_dict.items(): det_status_dict[det] = status
+                            for det, status in map_dict.items():
+                                det_status_dict[det] = status
 
                             if verbose is True:
                                 logging.info(
@@ -133,7 +134,8 @@ def dump_all_plots_together(raw_files, time_cut, path, map_path):
                                         spms_dict,
                                         pdf,
                                     )
-                            for det, status in map_dict.items(): det_status_dict[det] = status
+                            for det, status in map_dict.items():
+                                det_status_dict[det] = status
 
                             if verbose is True:
                                 logging.info(
