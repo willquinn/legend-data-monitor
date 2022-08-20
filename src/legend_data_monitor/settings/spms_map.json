@@ -1,350 +1,349 @@
 {
-  "00": {
-    "card": 2,
-    "ch_orca": 2,
-    "type": "IB",
-    "pos": "top"
-  },
-  "01": {
-    "card": 2,
-    "ch_orca": 3,
-    "type": "IB",
-    "pos": "bot"
-  },
-  "02": {
-    "card": 2,
-    "ch_orca": 4,
-    "type": "IB",
-    "pos": "top"
-  },
-  "03": {
-    "card": 2,
-    "ch_orca": 5,
-    "type": "IB",
-    "pos": "bot"
-  },
-  "04": {
-    "card": 3,
-    "ch_orca": 2,
-    "type": "IB",
-    "pos": "top"
-  },
-  "05": {
-    "card": 3,
-    "ch_orca": 3,
-    "type": "IB",
-    "pos": "bot"
-  },
-  "06": {
-    "card": 4,
-    "ch_orca": 0,
-    "type": "IB",
-    "pos": "top"
-  },
-  "07": {
-    "card": 4,
-    "ch_orca": 1,
-    "type": "IB",
-    "pos": "bot"
-  },
-  "08": {
-    "card": 4,
-    "ch_orca": 4,
-    "type": "IB",
-    "pos": "top"
-  },
-  "09": {
-    "card": 4,
-    "ch_orca": 5,
-    "type": "IB",
-    "pos": "bot"
-  },
-  "10": {
-    "card": 5,
-    "ch_orca": 0,
-    "type": "IB",
-    "pos": "top"
-  },
-  "11": {
-    "card": 5,
-    "ch_orca": 1,
-    "type": "IB",
-    "pos": "bot"
-  },
-  "12": {
-    "card": 6,
-    "ch_orca": 0,
-    "type": "IB",
-    "pos": "top"
-  },
-  "13": {
-    "card": 6,
-    "ch_orca": 1,
-    "type": "IB",
-    "pos": "bot"
-  },
-  "14": {
-    "card": 6,
-    "ch_orca": 2,
-    "type": "IB",
-    "pos": "top"
-  },
-  "15": {
-    "card": 6,
-    "ch_orca": 3,
-    "type": "IB",
-    "pos": "bot"
-  },
-  "16": {
-    "card": 1,
-    "ch_orca": 2,
-    "type": "IB",
-    "pos": "top"
-  },
-  "17": {
-    "card": 1,
-    "ch_orca": 3,
-    "type": "IB",
-    "pos": "bot"
-  },
-  "18": {
-    "card": 3,
-    "ch_orca": 0,
-    "type": "OB",
-    "pos": "top"
-  },
-  "19": {
-    "card": 3,
-    "ch_orca": 1,
-    "type": "OB",
-    "pos": "bot"
-  },
-  "20": {
-    "card": 3,
-    "ch_orca": 4,
-    "type": "OB",
-    "pos": "top"
-  },
-  "21": {
-    "card": 3,
-    "ch_orca": 5,
-    "type": "OB",
-    "pos": "bot"
-  },
-  "22": {
-    "card": 6,
-    "ch_orca": 4,
-    "type": "OB",
-    "pos": "top"
-  },
-  "23": {
-    "card": 6,
-    "ch_orca": 5,
-    "type": "OB",
-    "pos": "bot"
-  },
-  "24": {
-    "card": 7,
-    "ch_orca": 0,
-    "type": "OB",
-    "pos": "top"
-  },
-  "25": {
-    "card": 7,
-    "ch_orca": 1,
-    "type": "OB",
-    "pos": "bot"
-  },
-  "26": {
-    "card": 8,
-    "ch_orca": 0,
-    "type": "OB",
-    "pos": "top"
-  },
-  "27": {
-    "card": 8,
-    "ch_orca": 1,
-    "type": "OB",
-    "pos": "bot"
-  },
-  "28": {
-    "card": 8,
-    "ch_orca": 2,
-    "type": "OB",
-    "pos": "top"
-  },
-  "29": {
-    "card": 8,
-    "ch_orca": 3,
-    "type": "OB",
-    "pos": "bot"
-  },
-  "30": {
-    "card": 8,
-    "ch_orca": 4,
-    "type": "OB",
-    "pos": "top"
-  },
-  "31": {
-    "card": 8,
-    "ch_orca": 5,
-    "type": "OB",
-    "pos": "bot"
-  },
-  "32": {
-    "card": 9,
-    "ch_orca": 2,
-    "type": "OB",
-    "pos": "top"
-  },
-  "33": {
-    "card": 9,
-    "ch_orca": 3,
-    "type": "OB",
-    "pos": "bot"
-  },
-  "34": {
-    "card": 9,
-    "ch_orca": 4,
-    "type": "OB",
-    "pos": "top"
-  },
-  "35": {
-    "card": 9,
-    "ch_orca": 5,
-    "type": "OB",
-    "pos": "bot"
-  },
-  "36": {
-    "card": 10,
-    "ch_orca": 0,
-    "type": "OB",
-    "pos": "top"
-  },
-  "37": {
-    "card": 10,
-    "ch_orca": 1,
-    "type": "OB",
-    "pos": "bot"
-  },
-  "38": {
-    "card": 10,
-    "ch_orca": 2,
-    "type": "OB",
-    "pos": "top"
-  },
-  "39": {
-    "card": 10,
-    "ch_orca": 3,
-    "type": "OB",
-    "pos": "bot"
-  },
-  "40": {
-    "card": 10,
-    "ch_orca": 4,
-    "type": "OB",
-    "pos": "top"
-  },
-  "41": {
-    "card": 10,
-    "ch_orca": 5,
-    "type": "OB",
-    "pos": "bot"
-  },
-  "42": {
-    "card": 1,
-    "ch_orca": 4,
-    "type": "OB",
-    "pos": "top"
-  },
-  "43": {
-    "card": 1,
-    "ch_orca": 5,
-    "type": "OB",
-    "pos": "bot"
-  },
-  "44": {
-    "card": 2,
-    "ch_orca": 0,
-    "type": "OB",
-    "pos": "top"
-  },
-  "45": {
-    "card": 2,
-    "ch_orca": 1,
-    "type": "OB",
-    "pos": "bot"
-  },
-  "46": {
-    "card": 4,
-    "ch_orca": 2,
-    "type": "OB",
-    "pos": "top"
-  },
-  "47": {
-    "card": 4,
-    "ch_orca": 3,
-    "type": "OB",
-    "pos": "bot"
-  },
-  "48": {
-    "card": 5,
-    "ch_orca": 2,
-    "type": "OB",
-    "pos": "top"
-  },
-  "49": {
-    "card": 5,
-    "ch_orca": 3,
-    "type": "OB",
-    "pos": "bot"
-  },
-  "50": {
-    "card": 9,
-    "ch_orca": 1,
-    "type": "OB",
-    "pos": "top"
-  },
-  "51": {
-    "card": 9,
-    "ch_orca": 0,
-    "type": "OB",
-    "pos": "bot"
-  },
-  "52": {
-    "card": 7,
-    "ch_orca": 5,
-    "type": "OB",
-    "pos": "top"
-  },
-  "53": {
-    "card": 7,
-    "ch_orca": 4,
-    "type": "OB",
-    "pos": "bot"
-  },
-  "54": {
-    "card": 7,
-    "ch_orca": 3,
-    "type": "OB",
-    "pos": "top"
-  },
-  "55": {
-    "card": 7,
-    "ch_orca": 2,
-    "type": "OB",
-    "pos": "bot"
-  },
-  "56": {
-    "card": 5,
-    "ch_orca": 5,
-    "type": "OB",
-    "pos": "top"
-  },
-  "57": {
-    "card": 5,
-    "ch_orca": 4,
-    "type": "OB",
-    "pos": "bot"
-  }
+	"00": { 
+		"card": 2,
+		"ch_orca": 2,
+		"type": "IB",
+		"pos": "top" 
+	},
+	"01": { 
+		"card": 2,
+		"ch_orca": 3,
+		"type": "IB",
+		"pos": "bot" 
+	},
+	"02": { 
+		"card": 2,
+		"ch_orca": 4,
+		"type": "IB",
+		"pos": "top" 
+	},
+	"03": { 
+		"card": 2,
+		"ch_orca": 5,
+		"type": "IB",
+		"pos": "bot" 
+	},
+	"04": { 
+		"card": 3,
+		"ch_orca": 2,
+		"type": "IB",
+		"pos": "top" 
+	},
+	"05": { 
+		"card": 3,
+		"ch_orca": 3,
+		"type": "IB",
+		"pos": "bot" 
+	},
+	"06": { 
+		"card": 4,
+		"ch_orca": 0,
+		"type": "IB",
+		"pos": "top" 
+	},
+	"07": { 
+		"card": 4,
+		"ch_orca": 1,
+		"type": "IB",
+		"pos": "bot" 
+	},
+	"08": { 
+		"card": 4,
+		"ch_orca": 4,
+		"type": "IB",
+		"pos": "top" 
+	},
+	"09": { 
+		"card": 4,
+		"ch_orca": 5,
+		"type": "IB",
+		"pos": "bot" 
+	},
+	"10": { 
+		"card": 5,
+		"ch_orca": 0,
+		"type": "IB",
+		"pos": "top" 
+	},
+	"11": { 
+		"card": 5,
+		"ch_orca": 1,
+		"type": "IB",
+		"pos": "bot" 
+	},
+	"12": { 
+		"card": 6,
+		"ch_orca": 0,
+		"type": "IB",
+		"pos": "top" 
+	},
+	"13": { 
+		"card": 6,
+		"ch_orca": 1,
+		"type": "IB",
+		"pos": "bot" 
+	},
+	"14": { 
+		"card": 6,
+		"ch_orca": 2,
+		"type": "IB",
+		"pos": "top" 
+	},
+	"15": { 
+		"card": 6,
+		"ch_orca": 3,
+		"type": "IB",
+		"pos": "bot" 
+	},
+	"16": { 
+		"card": 1,
+		"ch_orca": 2,
+		"type": "IB",
+		"pos": "top" 
+	},
+	"17": { 
+		"card": 1,
+		"ch_orca": 3,
+		"type": "IB",
+		"pos": "bot" 
+	},
+	"18": { 
+		"card": 3,
+		"ch_orca": 0,
+		"type": "OB",
+		"pos": "top" 
+	},
+	"19": { 
+		"card": 3,
+		"ch_orca": 1,
+		"type": "OB",
+		"pos": "bot" 
+	},
+	"20": { 
+		"card": 3,
+		"ch_orca": 4,
+		"type": "OB",
+		"pos": "top" 
+	},
+	"21": { 
+		"card": 3,
+		"ch_orca": 5,
+		"type": "OB",
+		"pos": "bot" 
+	},
+	"22": { 
+		"card": 6,
+		"ch_orca": 4,
+		"type": "OB",
+		"pos": "top" 
+	},
+	"23": { 
+		"card": 6,
+		"ch_orca": 5,
+		"type": "OB",
+		"pos": "bot" 
+	},
+	"24": { 
+		"card": 7,
+		"ch_orca": 0,
+		"type": "OB",
+		"pos": "top" 
+	},
+	"25": { 
+		"card": 7,
+		"ch_orca": 1,
+		"type": "OB",
+		"pos": "bot" 
+	},
+	"26": { 
+		"card": 8,
+		"ch_orca": 0,
+		"type": "OB",
+		"pos": "top" 
+	},
+	"27": { 
+		"card": 8,
+		"ch_orca": 1,
+		"type": "OB",
+		"pos": "bot" 
+	},
+	"28": { 
+		"card": 8,
+		"ch_orca": 2,
+		"type": "OB",
+		"pos": "top" 
+	},
+	"29": { 
+		"card": 8,
+		"ch_orca": 3,
+		"type": "OB",
+		"pos": "bot" 
+	},
+	"30": { 
+		"card": 8,
+		"ch_orca": 4,
+		"type": "OB",
+		"pos": "top" 
+	},
+	"31": { 
+		"card": 8,
+		"ch_orca": 5,
+		"type": "OB",
+		"pos": "bot" 
+	},
+	"32": { 
+		"card": 9,
+		"ch_orca": 2,
+		"type": "OB",
+		"pos": "top" 
+	},
+	"33": { 
+		"card": 9,
+		"ch_orca": 3,
+		"type": "OB",
+		"pos": "bot" 
+	},
+	"34": { 
+		"card": 9,
+		"ch_orca": 4,
+		"type": "OB",
+		"pos": "top" 
+	},
+	"35": { 
+		"card": 9,
+		"ch_orca": 5,
+		"type": "OB",
+		"pos": "bot" 
+	},
+	"36": { 
+		"card": 10,
+		"ch_orca": 0,
+		"type": "OB",
+		"pos": "top" 
+	},
+	"37": { 
+		"card": 10,
+		"ch_orca": 1,
+		"type": "OB",
+		"pos": "bot" 
+	},
+	"38": { 
+		"card": 10,
+		"ch_orca": 2,
+		"type": "OB",
+		"pos": "top" 
+	},
+	"39": { 
+		"card": 10,
+		"ch_orca": 3,
+		"type": "OB",
+		"pos": "bot" 
+	},
+	"40": { 
+		"card": 10,
+		"ch_orca": 4,
+		"type": "OB",
+		"pos": "top" 
+	},
+	"41": { 
+		"card": 10,
+		"ch_orca": 5,
+		"type": "OB",
+		"pos": "bot" 
+	},
+	"42": { 
+		"card": 1,
+		"ch_orca": 4,
+		"type": "OB",
+		"pos": "top" 
+	},
+	"43": { 
+		"card": 1,
+		"ch_orca": 5,
+		"type": "OB",
+		"pos": "bot" 
+	},
+	"44": { 
+		"card": 2,
+		"ch_orca": 0,
+		"type": "OB",
+		"pos": "top" 
+	},
+	"45": { 
+		"card": 2,
+		"ch_orca": 1,
+		"type": "OB",
+		"pos": "bot" 
+	},
+	"46": { 
+		"card": 4,
+		"ch_orca": 2,
+		"type": "OB",
+		"pos": "top" 
+	},
+	"47": { 
+		"card": 4,
+		"ch_orca": 3,
+		"type": "OB",
+		"pos": "bot" 
+	},
+	"48": { 
+		"card": 5,
+		"ch_orca": 2,
+		"type": "OB",
+		"pos": "top" 
+	},
+	"49": { 
+		"card": 5,
+		"ch_orca": 3,
+		"type": "OB",
+		"pos": "bot" 
+	},
+	"50": { 
+		"card": 9,
+		"ch_orca": 1,
+		"type": "OB",
+		"pos": "top" 
+	},
+	"51": { 
+		"card": 9,
+		"ch_orca": 0,
+		"type": "OB",
+		"pos": "bot" 
+	},
+	"52": { 
+		"card": 7,
+		"ch_orca": 5,
+		"type": "OB",
+		"pos": "top" 
+	},
+	"53": { 
+		"card": 7,
+		"ch_orca": 4,
+		"type": "OB",
+		"pos": "bot" 
+	},
+	"54": { 
+		"card": 7,
+		"ch_orca": 3,
+		"type": "OB",
+		"pos": "top" 
+	},
+	"55": { 
+		"card": 7,
+		"ch_orca": 2,
+		"type": "OB",
+		"pos": "bot" 
+	},
+	"56": { 
+		"card": 5,
+		"ch_orca": 5,
+		"type": "OB",
+		"pos": "top" 
+	},
+	"57": { 
+		"card": 5,
+		"ch_orca": 4,
+		"type": "OB",
+		"pos": "bot"  }
 }

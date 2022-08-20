@@ -13,7 +13,7 @@ log = logging.getLogger(__name__)
 # config JSON info
 j_config, j_par, _ = analysis.read_json_files()
 exp = j_config[0]["exp"]
-files_path = j_config[0]["path"]
+files_path = j_config[0]["path"]['lh5-files']
 period = j_config[1]
 run = j_config[2]
 datatype = j_config[3]
@@ -55,7 +55,7 @@ def dump_all_plots_together(raw_files, time_cut, path, map_path):
     with PdfPages(path) as pdf:
         with PdfPages(map_path) as pdf_map:
             logging.info(
-                f"Devo usare la variable {pdf_map} altrimenti mi crea problemi"
+                f"Devo usare la variable {pdf_map} altrimenti mi crea problemi" # TOGLIERE QUESTO PEZZO DOPO AVER IMPLEMENTATO map.py
             )
             if det_type["geds"] is False and det_type["spms"] is False:
                 logging.info(
@@ -88,19 +88,23 @@ def dump_all_plots_together(raw_files, time_cut, path, map_path):
                                 geds_dict,
                                 pdf,
                             )
-                            for det, status in map_dict.items():
-                                det_status_dict[det] = status
+                            if map_dict!=None:
+                               for det, status in map_dict.items():
+                                   det_status_dict[det] = status
 
                             if verbose is True:
                                 logging.info(
                                     f"\t...{par} for geds (string #{string}) has been plotted!"
                                 )
-                        # map.geds_map(det_status_dict, map_path, pdf_map)
+                        # map.geds_map(geds_dict, string_geds, string_geds_name, det_status_dict, map_path, pdf_map)
 
             # Spms plots
             if det_type["spms"] is True:
+              if datatype=='cal':
+                  logging.info("No SiPMs for calibration data!")
+              else:
                 # list of spms
-                string_spms, string_spms_name = analysis.read_spms(spms_dict)
+                spms_merged, spms_name_merged, string_spms, string_spms_name = analysis.read_spms(spms_dict)
                 spms_par = par_to_plot["spms"]
                 if len(spms_par) == 0:
                     logging.info("Spms: NO parameters have been enabled!")
@@ -134,14 +138,15 @@ def dump_all_plots_together(raw_files, time_cut, path, map_path):
                                         spms_dict,
                                         pdf,
                                     )
-                            for det, status in map_dict.items():
-                                det_status_dict[det] = status
+                            if map_dict!=None:
+                               for det, status in map_dict.items():
+                                   det_status_dict[det] = status
 
                             if verbose is True:
                                 logging.info(
                                     f"\t...{par} for spms ({string}) has been plotted!"
                                 )
-                    map.spms_map(det_status_dict, map_path, pdf_map)
+                    #map.spms_map(spms_dict, spms_merged, spms_name_merged, det_status_dict, map_path, pdf_map)
 
     if verbose is True:
         logging.info(f"Plots are in {path}")

@@ -40,7 +40,7 @@ def plot_parameters(ax, par_array, utime_array, detector, det_type, parameter):
                   Parameter to plot
     """
     # evaluate (x,y) points
-    time_slice = j_config[4][det_type]
+    time_slice = j_config[6][det_type]
     if parameter != "event_rate":
         times_average, par_average = analysis.par_time_average(
             utime_array, par_array, time_slice
@@ -129,9 +129,9 @@ def plot_par_vs_time(
                     continue
 
             # add entries for the legend
-            card = det_dict[detector]["card"]
-            ch_orca = det_dict[detector]["ch_orca"]
-            crate = det_dict[detector]["crate"]
+            card = det_dict[detector]['daq']["card"]
+            ch_orca = det_dict[detector]['daq']["ch_orca"]
+            crate = det_dict[detector]['daq']["crate"]
             if raw_file == raw_files[0]:
                 if det_type == "spms":
                     handle_list.append(
@@ -402,9 +402,9 @@ def plot_par_vs_time_2d(
         )["values"]
 
         # add entries for the legend
-        card = det_dict[detector]["card"]
-        ch_orca = det_dict[detector]["ch_orca"]
-        crate = det_dict[detector]["crate"]
+        card = det_dict[detector]['daq']["card"]
+        ch_orca = det_dict[detector]['daq']["ch_orca"]
+        crate = det_dict[detector]['daq']["crate"]
         if det_type == "spms":
             handle_list.append(
                 mpatches.Patch(

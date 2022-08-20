@@ -1,10 +1,13 @@
 import importlib.resources
+import os
 import json
 import logging
 from datetime import datetime
 
 import numpy as np
 import pygama.lgdo.lh5_store as lh5
+from pygama.lgdo import LH5Store
+from pygama.raw.orca import orca_streamer
 
 from . import timecut
 
@@ -63,23 +66,45 @@ def load_channels(raw_files):
     raw_files : list
                 Strings of lh5 raw files
     """
-    det_list = lh5.ls(raw_files[0], "")
-    geds_dict = {}
-    spms_dict = {}
+    channels = lh5.ls(raw_files[0], '')
+    filename = os.path.basename(raw_files[0])
+    fn_split = filename.split("-")
+    orca_name = f'{fn_split[0]}-{fn_split[1]}-{fn_split[2]}-{fn_split[3]}-{fn_split[4]}.orca'
+    data_type = fn_split[3]
+    orca_path = j_config[0]['path']['orca-files']
+    period = j_config[1]
+    run = j_config[2]
+    orca_file = f'{orca_path}{data_type}/{period}/{run}/{orca_name}'
+    orstr = orca_streamer.OrcaStreamer();
+    orstr.open_stream(orca_file)
+    channel_map = json.loads(orstr.header["ObjectInfo"]["ORL200Model"]["DetectorMap"])
+    store = LH5Store()
+
+    geds_dict  = {}
+    spms_dict  = {}
     other_dict = {}
+    ch_dict = {}
 
-    for det in det_list:
-        info = lh5.load_nda(raw_files[0], ["crate", "card", "ch_orca"], det + "/raw")
-        crate = info["crate"][0]
-        card = info["card"][0]
-        ch_orca = info["ch_orca"][0]
+    for ch in channels:
+        crate   = store.read_object(f'{ch}/raw/crate', raw_files[0])[0].nda[0]
+        card    = store.read_object(f'{ch}/raw/card', raw_files[0])[0].nda[0]
+        ch_orca = store.read_object(f'{ch}/raw/ch_orca', raw_files[0])[0].nda[0]
+        daq_dict = {}
+        daq_dict['crate']   = crate
+        daq_dict['card']    = card
+        daq_dict['ch_orca'] = ch_orca
 
-        if crate == 0:
-            geds_dict[det] = {"crate": crate, "card": card, "ch_orca": ch_orca}
-        if crate == 1:
-            other_dict[det] = {"crate": crate, "card": card, "ch_orca": ch_orca}
-        if crate == 2:
-            spms_dict[det] = {"crate": crate, "card": card, "ch_orca": ch_orca}
+        if crate==0:
+            for det, entry in channel_map.items():
+                if entry['daq']['crate']==f'{crate}' and entry['daq']['board_slot']==f'{card}' and entry['daq']['board_ch']==f'{ch_orca}':
+                    string_dict = {}
+                    string_dict['number']   = entry['string']['number']
+                    string_dict['position'] = entry['string']['position']
+
+                    geds_dict[ch] = { "system": "ged", "det": det, "string": string_dict, "daq": daq_dict }
+
+        if crate==1: other_dict[ch] = { "system": "--" , "daq": daq_dict }
+        if crate==2: spms_dict[ch]  = { "system": "spm", "daq": daq_dict }
 
     return geds_dict, spms_dict, other_dict
 
@@ -93,19 +118,35 @@ def read_geds(geds_dict):
     geds_dict: dictionary
                Contains info (crate, card, ch_orca) for geds
     """
-    # NOTE: if a channel map was available, one creates strings linking that info with the one contained in geds_dict.
-    # For the moment, a random filling of strings is performed by "equally" dividing the full list with all channels.
-
     geds_list = list(geds_dict.keys())
-    n = 7
-    k, m = divmod(len(geds_list), n)
-    string_tot = list(
-        geds_list[i * k + min(i, m) : (i + 1) * k + min(i + 1, m)] for i in range(n)
-    )
-
+    string_tot  = []
     string_name = []
-    for idx in range(0, len(string_tot), 1):
-        string_name.append(f"{idx+1}")
+
+    # no of strings
+    str_no = [v['string']['number'] for k,v in geds_dict.items() if v['string']['number']!='--']
+    min_str = int(min(str_no))
+    max_str = int(max(str_no))
+    idx = min_str
+
+    # fill lists with strings of channels ('while' loop over no of string)
+    while idx<=max_str:
+        string = [k for k,v in geds_dict.items() if v['string']['number'] == str(idx)]
+        pos = []
+        for k1,v1 in geds_dict.items():
+          for k2,v2 in v1.items():
+            if k2=='string':
+              for k3,v3 in v2.items():
+                  if k3=='position' and v1['string']['number'] == str(idx):
+                     pos.append(v3)
+
+        if len(string)==0:
+           idx += 1
+        else:
+           # order channels within a string
+           pos, string = (list(t) for t in zip(*sorted(zip(pos, string))))
+           string_tot.append(string)
+           string_name.append(f'{idx}')
+           idx += 1
 
     return string_tot, string_name
 
@@ -120,51 +161,43 @@ def read_spms(spms_dict):
                Contains info (crate, card, ch_orca) for spms
     """
     spms_map = json.load(open(pkg / "settings" / "spms_map.json"))
-    top_ob = []
-    bot_ob = []
-    top_ib = []
-    bot_ib = []
+    top_OB = []
+    bot_OB = []
+    top_IB = []
+    bot_IB = []
 
     # loop over spms channels (i.e. channels w/ crate=2)
     for ch in list(spms_dict.keys()):
-        card = spms_dict[ch]["card"]
-        ch_orca = spms_dict[ch]["ch_orca"]
-
-        idx = "0"
+        card    = spms_dict[ch]['daq']['card']
+        ch_orca = spms_dict[ch]['daq']['ch_orca']
+    
+        idx = '0'
         for serial in list(spms_map.keys()):
-            if (
-                spms_map[serial]["card"] == card
-                and spms_map[serial]["ch_orca"] == ch_orca
-            ):
+            if spms_map[serial]['card']==card and spms_map[serial]['ch_orca']==ch_orca: 
                 idx = str(serial)
-        if idx == "0":
-            continue
+        if idx=='0': continue
 
-        spms_type = spms_map[idx]["type"]
-        spms_pos = spms_map[idx]["pos"]
-        if spms_type == "OB" and spms_pos == "top":
-            top_ob.append(ch)
-        if spms_type == "OB" and spms_pos == "bot":
-            bot_ob.append(ch)
-        if spms_type == "IB" and spms_pos == "top":
-            top_ib.append(ch)
-        if spms_type == "IB" and spms_pos == "bot":
-            bot_ib.append(ch)
+        spms_type = spms_map[idx]['type']
+        spms_pos  = spms_map[idx]['pos']
+        if spms_type=='OB' and spms_pos=='top': top_OB.append(ch)
+        if spms_type=='OB' and spms_pos=='bot': bot_OB.append(ch)
+        if spms_type=='IB' and spms_pos=='top': top_IB.append(ch)
+        if spms_type=='IB' and spms_pos=='bot': bot_IB.append(ch)
 
-    string_tot = [top_ob, bot_ob, top_ib, bot_ib]
+    
+    half_len_topOB = int(len(top_OB)/2)
+    half_len_botOB = int(len(bot_OB)/2)
+    top_OB_1 = top_OB[half_len_topOB:]
+    top_OB_2 = top_OB[:half_len_topOB]
+    bot_OB_1 = bot_OB[half_len_botOB:]
+    bot_OB_2 = bot_OB[:half_len_botOB]
+    string_tot_div = [top_OB_1, top_OB_2, bot_OB_1, bot_OB_2, top_IB, bot_IB]
+    string_name_div = ["top_OB (1)", "top_OB (2)", "bot_OB (1)", "bot_OB (2)", "top_IB", "bot_IB"]
+    
+    string_tot = [top_OB, bot_OB, top_IB, bot_IB]
     string_name = ["top_OB", "bot_OB", "top_IB", "bot_IB"]
 
-    """
-    n = 4
-    k, m = divmod(len(spms_list), n)
-    string_tot = list(spms_list[i*k+min(i, m):(i+1)*k+min(i+1, m)] for i in range(n))
-
-    string_name = []
-    #for idx in range(0, len(string_tot), 1):
-    #    string_name.append(f'{idx+1}')
-    """
-
-    return string_tot, string_name
+    return string_tot, string_name, string_tot_div, string_name_div
 
 
 def check_par_values(times_average, par_average, parameter, detector, det_type):
