@@ -115,7 +115,7 @@ def plot_par_vs_time(
 
     for raw_file in raw_files:
         dsp_file = raw_file.replace("raw", "dsp")
-        # if os.path.exists(dsp_file) == False:          # too verbose (but could be useful..add it in the log file maybe?)
+        #if os.path.exists(dsp_file) == False:          # too verbose (but could be useful..add it in the log file maybe?)
         #    print(f'File {dsp_file} does not exist')
 
         for detector in det_list:
@@ -324,7 +324,7 @@ def plot_par_vs_time(
                 + ".pkl"
             )
 
-    pkl.dump(ax, open(f"pkl-files/par-vs-time/{pkl_name}", "wb"))
+    pkl.dump(ax, open(f"out/pkl-files/par-vs-time/{pkl_name}", "wb"))
     pdf.savefig(bbox_inches="tight")
     plt.close()
 
@@ -566,7 +566,7 @@ def plot_par_vs_time_2d(
                 + ".pkl"
             )
 
-    pkl.dump(ax_list, open(f"pkl-files/par-vs-time/{pkl_name}", "wb"))
+    pkl.dump(ax_list, open(f"out/pkl-files/par-vs-time/{pkl_name}", "wb"))
     pdf.savefig(bbox_inches="tight")
     plt.close()
 

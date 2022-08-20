@@ -1,0 +1,82 @@
+{
+  "run_info": {
+    "exp": "l60",
+    "path": "/data1/shared/l60/l60-prodven-v1/prod-ref/v02.00/generated/tier/"
+  },
+  "period": "p01",
+  "run": "r006",
+  "datatype": "phy",
+  "det_type": {
+    "spms": true,
+    "geds": true
+  },
+  "par_to_plot": {
+    "README": "Select here the parameters you want to plot for spms and geds (see 'Available-par' for parameters that are available to study).",
+    "spms": ["daqenergy"],
+    "geds": ["baseline"],
+
+    "Available-par": {
+      "Tier-1-par": "baseline, card, ch_orca, channel, crate, daqenergy, numtraces, eventnumber",
+      "Tier-2-par1": "A_max, QDrift, bl_intercept, bl_mean, bl_slope, bl_std, cuspEftp, cuspEmax, dt_eff, pz_mean, pz_slope",
+      "Tier-2-par2": "pz_std, tp_01, tp_0_est, tp_10, tp_100, tp_20, tp_50, tp_80, tp_90, tp_95, tp_99, tp_aoe_max, tp_aoe_samp",
+      "Tier-2-par3": "tp_max, tp_min, trapEftp, trapEmax, trapTmax, wf_max, wf_min, zacEftp, zacEmax",
+      "Other-par": {
+        "event_rate": {
+          "README": "Event rate. Change 'dt' and 'units' if needed.",
+          "dt": {
+            "README": "Time interval (in [s]) in which rate is evaluated: rate=cts/dt.",
+            "spms": 1,
+            "geds": 1
+          },
+          "units": {
+            "README": "Select the units you prefer between: mHz, Hz, kHz.",
+            "spms": "Hz",
+            "geds": "Hz"
+          }
+        },
+        "bl_RMS": {
+          "README": "Baseline root mean square (available only for data with pulser)"
+        },
+        "LC": {
+          "README": "Leakage current (available only for data with pulser)"
+        },
+        "uncal_puls": {
+          "README": "Uncalibrated pulser (available only for data with pulser; dsp files are needed)"
+        },
+        "gain": {
+          "README": "(uncalibrated) gain (available only for SiPMs)"
+        }
+      },
+      "Still-not-available": "uncal_puls"
+    }
+  },
+  "time_slice": {
+    "spms": 800,
+    "geds": 800
+  },
+  "time_window": {
+    "enabled": true,
+    "start_date": "01/07/2022",
+    "start_hour": "15:00:00",
+    "end_date": "01/07/2022",
+    "end_hour": "18:00:00"
+  },
+  "last_hours": {
+    "enabled": false,
+    "prod_time": {
+      "days": 37,
+      "hours": 20,
+      "minutes": 0
+    }
+  },
+  "status": {
+    "README": "If 'true', detectors' status (OK, OFF, AC, ...) is checked and selected parameters are plotted if a detector is problematic.",
+    "spms": false,
+    "geds": false
+  },
+  "time-format": {
+    "README": "Choose the time format of your plots: day/month-time, day/month, time",
+    "frmt": "time"
+  },
+  "verbose": true
+}

@@ -1,5 +1,5 @@
 import importlib.resources
-import json
+import json, sys, os
 import logging
 from datetime import datetime
 
@@ -8,18 +8,19 @@ import pygama.lgdo.lh5_store as lh5
 
 from . import timecut
 
+pkg = importlib.resources.files("legend_data_monitor")
+
 
 def read_json_files():
-    pkg = importlib.resources.files("legend_data_monitor")
-
+    
     """Read json files of 'settings/' folder and return three lists."""
-    with open(pkg / "settings" / "config.json") as f:
+    
+    with open("config.json") as f:
         data_config = json.load(f)
     with open(pkg / "settings" / "par-settings.json") as g:
         data_par = json.load(g)
     with open(pkg / "settings" / "plot-settings.json") as h:
         data_plot = json.load(h)
-
     j_config = []
     j_par = []
     j_plot = []
@@ -120,7 +121,7 @@ def read_spms(spms_dict):
     spms_dict: dictionary
                Contains info (crate, card, ch_orca) for spms
     """
-    spms_map = json.load(open("settings/spms_map.json"))
+    spms_map = json.load(open(pkg / "settings" / "spms_map.json"))
     top_ob = []
     bot_ob = []
     top_ib = []
@@ -464,10 +465,13 @@ def puls_analysis(raw_file, detector, det_type):
     for idx, wf in enumerate(wfs):
         # if len([*filter(lambda x: x >= 17000, wf)]):
         # if any(y > 17000 for y in wf):
+        """
         if sum(wf) / len(wf) > 15000:
             pulser_entry.append(idx)
         else:
             not_pulser_entry.append(idx)
+        """
+        not_pulser_entry.append(idx)
 
     # pulser entries
     puls_only_ievt = puls_ievt[np.isin(puls_ievt, pulser_entry)]
