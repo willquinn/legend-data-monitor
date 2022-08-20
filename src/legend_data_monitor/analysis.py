@@ -1,5 +1,5 @@
 import importlib.resources
-import json, sys, os
+import json
 import logging
 from datetime import datetime
 
@@ -12,9 +12,9 @@ pkg = importlib.resources.files("legend_data_monitor")
 
 
 def read_json_files():
-    
+
     """Read json files of 'settings/' folder and return three lists."""
-    
+
     with open("config.json") as f:
         data_config = json.load(f)
     with open(pkg / "settings" / "par-settings.json") as g:
