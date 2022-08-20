@@ -6,7 +6,7 @@ import matplotlib as mpl
 from matplotlib.backends.backend_pdf import PdfPages
 
 # modules
-from . import analysis, plot, timecut, map
+from . import analysis, map, plot, timecut
 
 log = logging.getLogger(__name__)
 
@@ -96,7 +96,14 @@ def dump_all_plots_together(raw_files, time_cut, path, map_path):
                                 logging.info(
                                     f"\t...{par} for geds (string #{string}) has been plotted!"
                                 )
-                    map.geds_map(geds_dict, string_geds, string_geds_name, det_status_dict, map_path, pdf_map)
+                    map.geds_map(
+                        geds_dict,
+                        string_geds,
+                        string_geds_name,
+                        det_status_dict,
+                        map_path,
+                        pdf_map,
+                    )
 
             # Spms plots
             if det_type["spms"] is True:
@@ -153,7 +160,14 @@ def dump_all_plots_together(raw_files, time_cut, path, map_path):
                                     logging.info(
                                         f"\t...{par} for spms ({string}) has been plotted!"
                                     )
-                        map.spms_map(spms_dict, spms_merged, spms_name_merged, det_status_dict, map_path, pdf_map)
+                        map.spms_map(
+                            spms_dict,
+                            spms_merged,
+                            spms_name_merged,
+                            det_status_dict,
+                            map_path,
+                            pdf_map,
+                        )
 
     if verbose is True:
         logging.info(f"Plots are in {path}")

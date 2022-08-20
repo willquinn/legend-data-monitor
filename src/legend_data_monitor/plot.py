@@ -117,7 +117,7 @@ def plot_par_vs_time(
     for raw_file in raw_files:
         dsp_file = raw_file.replace("raw", "dsp")
         if os.path.exists(dsp_file) is False:
-           logging.warning(f'File {dsp_file} does not exist')
+            logging.warning(f"File {dsp_file} does not exist")
 
         for detector in det_list:
             if det_dict[detector]["system"] == "--":
@@ -141,13 +141,15 @@ def plot_par_vs_time(
             ch_orca = det_dict[detector]["daq"]["ch_orca"]
             crate = det_dict[detector]["daq"]["crate"]
             if raw_file == raw_files[0]:
-                if det_type == "spms": col = j_plot[2][str(detector)]
-                if det_type == "geds": col = j_plot[3][detector]
+                if det_type == "spms":
+                    col = j_plot[2][str(detector)]
+                if det_type == "geds":
+                    col = j_plot[3][detector]
                 handle_list.append(
-                        mpatches.Patch(
-                            color=col,
-                            label=f"{detector} - FC: {card},{ch_orca} ({crate})",
-                        )
+                    mpatches.Patch(
+                        color=col,
+                        label=f"{detector} - FC: {card},{ch_orca} ({crate})",
+                    )
                 )
 
             # plot detectors of the same string
