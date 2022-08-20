@@ -88,7 +88,7 @@ def dump_all_plots_together(raw_files, time_cut, path, map_path):
                                 geds_dict,
                                 pdf,
                             )
-                            if map_dict!=None:
+                            if map_dict is not None:
                                for det, status in map_dict.items():
                                    det_status_dict[det] = status
 
@@ -138,7 +138,7 @@ def dump_all_plots_together(raw_files, time_cut, path, map_path):
                                         spms_dict,
                                         pdf,
                                     )
-                            if map_dict!=None:
+                            if map_dict is not None:
                                for det, status in map_dict.items():
                                    det_status_dict[det] = status
 

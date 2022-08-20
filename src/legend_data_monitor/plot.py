@@ -119,14 +119,17 @@ def plot_par_vs_time(
         #    print(f'File {dsp_file} does not exist')
 
         for detector in det_list:
-            if det_type == "geds":
-                if detector not in lh5.ls(raw_file, ""):
-                    logging.warning(f'No "{detector}" branch in file {raw_file}')
-                    continue
-            if det_type == "spms":
-                if detector not in lh5.ls(raw_file, ""):
-                    logging.warning(f'No "{detector}" branch in file {raw_file}')
-                    continue
+            if det_dict[detector]['system'] == '--': continue
+            
+            if detector not in lh5.ls(raw_file, ''):
+               logging.warning(f'No "{detector}" branch in file {raw_file}')
+               continue
+
+            # just for parameters that are related to dsp files
+            if parameter in ['bl_RMS','LC','uncal_puls'] or j_par[0][parameter]['tier']==2:
+               if detector not in lh5.ls(dsp_file, ''):
+                  logging.warning(f'No "{detector}" branch in file {dsp_file}')
+                  continue
 
             # add entries for the legend
             card = det_dict[detector]['daq']["card"]
@@ -397,6 +400,8 @@ def plot_par_vs_time_2d(
     fig.suptitle(f"spms - {string_number}", fontsize=8)
 
     for detector in det_list:
+        if det_dict[detector]['system'] == '--': continue
+        
         wf_array = lh5.load_nda(
             raw_files, ["values"], detector + "/raw/waveform", verbose=False
         )["values"]

@@ -83,7 +83,6 @@ def load_channels(raw_files):
     geds_dict  = {}
     spms_dict  = {}
     other_dict = {}
-    ch_dict = {}
 
     for ch in channels:
         crate   = store.read_object(f'{ch}/raw/crate', raw_files[0])[0].nda[0]
@@ -118,7 +117,6 @@ def read_geds(geds_dict):
     geds_dict: dictionary
                Contains info (crate, card, ch_orca) for geds
     """
-    geds_list = list(geds_dict.keys())
     string_tot  = []
     string_name = []
 
@@ -132,7 +130,7 @@ def read_geds(geds_dict):
     while idx<=max_str:
         string = [k for k,v in geds_dict.items() if v['string']['number'] == str(idx)]
         pos = []
-        for k1,v1 in geds_dict.items():
+        for v1 in geds_dict.values():
           for k2,v2 in v1.items():
             if k2=='string':
               for k3,v3 in v2.items():
@@ -161,10 +159,10 @@ def read_spms(spms_dict):
                Contains info (crate, card, ch_orca) for spms
     """
     spms_map = json.load(open(pkg / "settings" / "spms_map.json"))
-    top_OB = []
-    bot_OB = []
-    top_IB = []
-    bot_IB = []
+    top_ob = []
+    bot_ob = []
+    top_ib = []
+    bot_ib = []
 
     # loop over spms channels (i.e. channels w/ crate=2)
     for ch in list(spms_dict.keys()):
@@ -179,22 +177,22 @@ def read_spms(spms_dict):
 
         spms_type = spms_map[idx]['type']
         spms_pos  = spms_map[idx]['pos']
-        if spms_type=='OB' and spms_pos=='top': top_OB.append(ch)
-        if spms_type=='OB' and spms_pos=='bot': bot_OB.append(ch)
-        if spms_type=='IB' and spms_pos=='top': top_IB.append(ch)
-        if spms_type=='IB' and spms_pos=='bot': bot_IB.append(ch)
+        if spms_type=='OB' and spms_pos=='top': top_ob.append(ch)
+        if spms_type=='OB' and spms_pos=='bot': bot_ob.append(ch)
+        if spms_type=='IB' and spms_pos=='top': top_ib.append(ch)
+        if spms_type=='IB' and spms_pos=='bot': bot_ib.append(ch)
 
     
-    half_len_topOB = int(len(top_OB)/2)
-    half_len_botOB = int(len(bot_OB)/2)
-    top_OB_1 = top_OB[half_len_topOB:]
-    top_OB_2 = top_OB[:half_len_topOB]
-    bot_OB_1 = bot_OB[half_len_botOB:]
-    bot_OB_2 = bot_OB[:half_len_botOB]
-    string_tot_div = [top_OB_1, top_OB_2, bot_OB_1, bot_OB_2, top_IB, bot_IB]
+    half_len_top_ob = int(len(top_ob)/2)
+    half_len_bot_ob = int(len(bot_ob)/2)
+    top_ob_1 = top_ob[half_len_top_ob:]
+    top_ob_2 = top_ob[:half_len_top_ob]
+    bot_ob_1 = bot_ob[half_len_bot_ob:]
+    bot_ob_2 = bot_ob[:half_len_bot_ob]
+    string_tot_div = [top_ob_1, top_ob_2, bot_ob_1, bot_ob_2, top_ob, bot_ob]
     string_name_div = ["top_OB (1)", "top_OB (2)", "bot_OB (1)", "bot_OB (2)", "top_IB", "bot_IB"]
     
-    string_tot = [top_OB, bot_OB, top_IB, bot_IB]
+    string_tot = [top_ob, bot_ob, top_ob, bot_ob]
     string_name = ["top_OB", "bot_OB", "top_IB", "bot_IB"]
 
     return string_tot, string_name, string_tot_div, string_name_div
