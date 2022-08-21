@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 import numpy as np
 
 
-def build_timecut_list(time_window, last_hours):
+def build_timecut_list(time_window: list, last_hours: list):
     """
     Build list with time cut values.
 
@@ -16,9 +16,9 @@ def build_timecut_list(time_window, last_hours):
 
     Parameters
     ----------
-    time_window : list
+    time_window 
                   List with info about the 'time_window' cut
-    last_hours  : list
+    last_hours  
                   List with info about the 'last_hours' cut
     """
     time_cut = []
@@ -42,13 +42,13 @@ def build_timecut_list(time_window, last_hours):
     return time_cut
 
 
-def time_dates(time_cut):
+def time_dates(time_cut: list):
     """
     Return start/end time of cuts in UTC+00:00 format.
 
     Parameters
     ----------
-    time_cut : list
+    time_cut 
                List with info about time cuts
     """
     if len(time_cut) == 4:
@@ -86,15 +86,15 @@ def time_dates(time_cut):
     return start, end
 
 
-def min_timestamp_thr(timestamp, prod_time):
+def min_timestamp_thr(timestamp: list, prod_time: list):
     """
     Return the first timestamp within the selected time window after the time cut.
 
     Parameters
     ----------
-    timestamp : list
+    timestamp 
                 Timestamps evaluated in seconds
-    prod_time : list
+    prod_time 
                 List with info about time cuts
     """
     thr_timestamp = (
@@ -111,15 +111,15 @@ def min_timestamp_thr(timestamp, prod_time):
     return timestamp.index(start_t)
 
 
-def cut_array_below_min(val_array, start_index):
+def cut_array_below_min(val_array: np.ndarray, start_index: int):
     """
     Cut an array above a given index.
 
     Parameters
     ----------
-    val_array  : array
+    val_array  
                  Array filled with values of a given parameter
-    start_index: int
+    start_index
                  Starting index
     """
     val_list = val_array.tolist()
@@ -139,17 +139,16 @@ def hour_string_formatting(hour):
     return hour
 
 
-def cut_min_max_filelist(runs, time_cut):
+def cut_min_max_filelist(runs: list[str], time_cut: list[str]):
     """
     Select files for analysis in a specified time interval using file name.
 
     Parameters
     ----------
-    runs      : list
+    runs      
                 list of all files for a given run
-    time_cut  : list
-                list with day and hour for timecut
-                as strings
+    time_cut  
+                list with day and hour for timecut as strings
     """
     day = np.array([((run.split("-")[4]).split("Z")[0]).split("T")[0] for run in runs])
     hour = np.array([((run.split("-")[4]).split("Z")[0]).split("T")[1] for run in runs])
@@ -176,15 +175,15 @@ def cut_min_max_filelist(runs, time_cut):
     return runs[files_index]
 
 
-def cut_below_threshold_filelist(runs, time_cut):
+def cut_below_threshold_filelist(runs: list[str], time_cut: list[str]):
     """
     Select files for analysis below time threshold using file name.
 
     Parameters
     ----------
-    runs      : list
+    runs      
                 list of all files for a given run
-    time_cut  : list
+    time_cut  
                 list with day and hour for timecut as strings
     """
     day = np.array([((run.split("-")[4]).split("Z")[0]).split("T")[0] for run in runs])
@@ -217,17 +216,17 @@ def cut_below_threshold_filelist(runs, time_cut):
     return runs[files_index]
 
 
-def min_max_timestamp_thr(timestamp, start_time, end_time):
+def min_max_timestamp_thr(timestamp: list, start_time: str, end_time: str):
     """
     Return the first and last timestamps within the selected time window after the time cut.
 
     Parameters
     ----------
-    timestamp : list
+    timestamp 
                 Timestamps evaluated in seconds
-    start_time: string
+    start_time
                 Start time to include events (in %d/%m/%Y %H:%M:%S format)
-    end_time  : string
+    end_time  
                 End time to include events (in %d/%m/%Y %H:%M:%S format)
     """
     start_timestamp = (datetime.strptime(start_time, "%d/%m/%Y %H:%M:%S")).timestamp()
@@ -259,17 +258,17 @@ def min_max_timestamp_thr(timestamp, start_time, end_time):
     return start_index, end_index
 
 
-def cut_array_in_min_max(val_array, start_index, end_index):
+def cut_array_in_min_max(val_array: np.ndarray, start_index: int, end_index: int) -> np.ndarray:
     """
     Cut an array within two indices.
 
     Parameters
     ----------
-    val_array  : array
+    val_array  
                  Array filled with values of a given parameter
-    start_index: int
+    start_index
                  Starting index
-    end_index  : int
+    end_index
                  Ending index
     """
     val_list = val_array.tolist()

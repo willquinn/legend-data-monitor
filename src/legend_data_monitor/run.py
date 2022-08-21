@@ -97,16 +97,17 @@ def dump_all_plots_together(
                                 logging.info(
                                     f"\t...{par} for geds (string #{string}) has been plotted!"
                                 )
-                        map.geds_map(
-                            par,
-                            geds_dict,
-                            string_geds,
-                            string_geds_name,
-                            det_status_dict,
-                            time_cut,
-                            map_path,
-                            pdf_map,
-                        )
+                        if det_status_dict != []:
+                           map.geds_map(
+                             par,
+                             geds_dict,
+                             string_geds,
+                             string_geds_name,
+                             det_status_dict,
+                             time_cut,
+                             map_path,
+                             pdf_map,
+                           )
 
             # Spms plots
             if det_type["spms"] is True:
@@ -164,16 +165,17 @@ def dump_all_plots_together(
                                     logging.info(
                                         f"\t...{par} for spms ({string}) has been plotted!"
                                     )
-                            map.spms_map(
-                                par,
-                                spms_dict,
-                                spms_merged,
-                                spms_name_merged,
-                                det_status_dict,
-                                time_cut,
-                                map_path,
-                                pdf_map,
-                            )
+                            if det_status_dict!=[]:
+                               map.spms_map(
+                                 par,
+                                 spms_dict,
+                                 spms_merged,
+                                 spms_name_merged,
+                                 det_status_dict,
+                                 time_cut,
+                                 map_path,
+                                 pdf_map,
+                               )
 
     if verbose is True:
         logging.info(f"Plots are in {path}")

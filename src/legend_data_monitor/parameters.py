@@ -8,7 +8,7 @@ from . import analysis
 j_config, j_par, _ = analysis.read_json_files()
 
 
-def load_parameter(parameter, raw_file, dsp_file, detector, det_type, time_cut):
+def load_parameter(parameter: str, raw_file: str, dsp_file: str, detector: str, det_type: str, time_cut: list[str]):
     """
     Load parameters from files.
 
@@ -19,17 +19,17 @@ def load_parameter(parameter, raw_file, dsp_file, detector, det_type, time_cut):
 
     Parameters
     ----------
-    parameter : string
+    parameter 
                 Parameter to plot
-    raw_file  : string
+    raw_file  
                 Single lh5 raw file
-    dsp_file  : string
+    dsp_file  
                 Single lh5 dsp file
-    detector  : string
+    detector  
                 Name of the detector
-    det_type  : string
+    det_type  
                 Type of detector (geds or spms)
-    time_cut  : list
+    time_cut  
                 List with info about time cuts
     """
     par_array = np.array([])
@@ -90,19 +90,19 @@ def load_parameter(parameter, raw_file, dsp_file, detector, det_type, time_cut):
     return par_array, utime_array_cut
 
 
-def bl_rms(raw_file, detector, det_type, puls_only_index):
+def bl_rms(raw_file: str, detector: str, det_type: str, puls_only_index: np.ndarray):
     """
     Return the RMS of the normalized baseline.
 
     Parameters
     ----------
-    raw_file        : string
+    raw_file    
                       String of lh5 raw file
-    detector        : string
+    detector    
                       Channel of the detector
-    det_type        : string
+    det_type    
                       Type of detector (geds or spms)
-    puls_only_index : array
+    puls_only_index 
                       Index for pulser only entries
     """
     if det_type == "spms":
@@ -124,19 +124,19 @@ def bl_rms(raw_file, detector, det_type, puls_only_index):
     return np.array(bl_norm)
 
 
-def leakage_current(raw_file, dsp_file, detector, det_type):
+def leakage_current(raw_file: str, dsp_file: str, detector: str, det_type: str):
     """
     Return the leakage current.
 
     Parameters
     ----------
-    raw_file : string
+    raw_file 
                String of lh5 raw file
-    dsp_file : string
+    dsp_file                
                String of lh5 dsp file
-    detector : string
+    detector 
                Channel of the detector
-    det_type : string
+    det_type 
                Type of detector (geds or spms)
     """
     bl_det = lh5.load_nda(raw_file, ["baseline"], detector + "/raw", verbose=False)[
@@ -153,17 +153,17 @@ def leakage_current(raw_file, dsp_file, detector, det_type):
     )  # using old GERDA (baseline -> lc) conversion factor
 
 
-def event_rate(dsp_run, timestamp, det_type):
+def event_rate(dsp_run: str, timestamp: list, det_type: str):
     """
     Return the event rate (as cts/dt).
 
     Parameters
     ----------
-    timestamp : list
-                List of shifted UTC timestamps
-    dsp_file  : string
+    dsp_run
                 String of lh5 dsp file
-    det_type  : string
+    timestamp 
+                List of shifted UTC timestamps
+    det_type  
                 Type of detector (geds or spms)
     """
     rate = []
@@ -198,17 +198,17 @@ def event_rate(dsp_run, timestamp, det_type):
     return np.array(rate) * fact, np.array(times)  # np.array(rate)/dt?
 
 
-def uncal_pulser(dsp_file, detector, puls_only_index):
+def uncal_pulser(dsp_file: str, detector: str, puls_only_index: np.ndarray):
     """
     Return the uncalibrated pulser value.
 
     Parameters
     ----------
-    dsp_file        : string
+    dsp_file        
                       String of lh5 dsp file
-    detector        : string
+    detector        
                       Channel of the detector
-    puls_only_index : array
+    puls_only_index 
                       Index for pulser only entries
     """
     puls_energy = lh5.load_nda(
@@ -225,13 +225,13 @@ def uncal_pulser(dsp_file, detector, puls_only_index):
     return puls_energy_sub
 
 
-def spms_gain(wf_array):
+def spms_gain(wf_array: np.ndarray):
     """
     Return the spms gain.
 
     Parameters
     ----------
-    wf_array : array
+    wf_array 
                Array of arrays, i.e. waveforms
     """
     bl_mean = np.array([np.mean(wf[:100]) for wf in wf_array])

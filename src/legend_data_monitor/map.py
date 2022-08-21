@@ -14,16 +14,16 @@ run = j_config[2]
 datatype = j_config[3]
 
 
-def pkl_name(time_cut, parameter):
+def pkl_name(time_cut: list[str], parameter: str):
     """
     Define the name of output pkl file.
 
     Parameters
     ----------
-    parameter      : string
-                     Parameter to plot
-    time_cut       : list
+    time_cut
                      List with info about time cuts
+    parameter      
+                     Parameter to plot
     """
     if len(time_cut) != 0:
         start, end = timecut.time_dates(time_cut)
@@ -48,15 +48,15 @@ def pkl_name(time_cut, parameter):
     return pkl_filename
 
 
-def place_dets(det_dict, string_entries):
+def place_dets(det_dict: dict, string_entries: list[str]):
     """
     Fill strings keeping in mind the real position of detectors.
 
     Parameters
     ----------
-    det_dict       : dictionary
+    det_dict       
                      Contains info (crate, card, ch_orca) for geds/spms/other
-    string_entries : list
+    string_entries 
                      List of strings
     """
     new_string_entries = []
@@ -94,15 +94,15 @@ def place_dets(det_dict, string_entries):
     return new_string_entries
 
 
-def check_det(cmap_dict, det_dict):
+def check_det(cmap_dict: dict, det_dict: dict):
     """
     Check if all detectors of det_dict are present in cmap_dict. If not, they are added with status=OFF.
 
     Parameters
     ----------
-    det_dict  : dictionary
+    det_dict  
                 Contains info (crate, card, ch_orca) for geds/spms/other
-    cmap_dict : dictionary
+    cmap_dict 
                 Dictionary with info for building the heatmap
     """
     for k1 in det_dict.keys():
@@ -113,26 +113,33 @@ def check_det(cmap_dict, det_dict):
 
 
 def geds_map(
-    parameter, det_dict, string_entries, string_name, cmap_dict, time_cut, map_path, pdf
+        parameter: str, 
+        det_dict: dict, 
+        string_entries: list, 
+        string_name: list[str], 
+        cmap_dict: dict, 
+        time_cut: list[str], 
+        map_path: str, 
+        pdf
 ):
     """
     Create a heatmap for germanium detectors.
 
     Parameters
     ----------
-    parameter      : string
+    parameter      
                      Parameter to plot
-    det_dict       : dictionary
+    det_dict       
                      Contains info (crate, card, ch_orca) for geds/spms/other
-    string_entries : list
+    string_entries 
                      List of strings
-    string_name    : list
+    string_name    
                      List of name of strings
-    cmap_dict      : dictionary
+    cmap_dict      
                      Dictionary with info for building the heatmap
-    time_cut       : list
+    time_cut       
                      List with info about time cuts
-    map_path       : string
+    map_path       
                      Path where to save output heatmaps
     """
     string_entries = place_dets(det_dict, string_entries)
@@ -212,26 +219,33 @@ def geds_map(
 
 
 def spms_map(
-    parameter, det_dict, string_entries, string_name, cmap_dict, time_cut, map_path, pdf
+        parameter: str, 
+        det_dict: dict, 
+        string_entries: list, 
+        string_name: list[str], 
+        cmap_dict: dict, 
+        time_cut: list[str], 
+        map_path: str, 
+        pdf
 ):
     """
     Create a heatmap for spms detectors.
 
     Parameters
     ----------
-    parameter      : string
+    parameter      
                      Parameter to plot
-    det_dict       : dictionary
+    det_dict       
                      Contains info (crate, card, ch_orca) for geds/spms/other
-    string_entries : list
+    string_entries 
                      List of strings
-    string_name    : list
+    string_name    
                      List of name of strings
-    cmap_dict      : dictionary
+    cmap_dict      
                      Dictionary with info for building the heatmap
-    time_cut       : list
+    time_cut       
                      List with info about time cuts
-    map_path       : string
+    map_path    
                      Path where to save output heatmaps
     """
     cmap_dict = check_det(cmap_dict, det_dict)

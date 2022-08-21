@@ -22,22 +22,26 @@ run = j_config[2]
 datatype = j_config[3]
 
 
-def plot_parameters(ax, par_array, utime_array, detector, det_type, parameter):
+def plot_parameters(ax, par_array: np.ndarray, utime_array: np.ndarray, detector: str, det_type: str, parameter: str):
     """
     Plot the parameter VS time and check if parameters are below/above some given thresholds.
 
     Parameters
     ----------
-    par_array   : array
+    ax
+                  PLot to be saved in pkl file
+    par_array   
                   Array with parameter values
-    utime_array : array
+    utime_array 
                   Array with (shifted+cut) time values
-    detector    : string
+    detector    
                   Name of the detector
-    det_type    : string
+    det_type    
                   Type of detector (geds or spms)
-    parameter   : string
+    parameter   
                   Parameter to plot
+
+    :rtype: (datetime.datetime, datetime.datetime, int, matplotlib.axes._subplots.AxesSubplot)
     """
     # evaluate (x,y) points
     time_slice = j_config[6][det_type]
@@ -79,29 +83,31 @@ def plot_parameters(ax, par_array, utime_array, detector, det_type, parameter):
 
 
 def plot_par_vs_time(
-    raw_files,
-    det_list,
-    parameter,
-    time_cut,
-    det_type,
-    string_number,
-    det_dict,
+    raw_files: list[str],
+    det_list: list[str],
+    parameter: str,
+    time_cut: list[str],
+    det_type: str,
+    string_number: str,
+    det_dict: dict,
     pdf=None,
-):
+) -> dict:
     """
     Plot time evolution of gicen parameter.
 
     Parameters
     ----------
-    raw_files     : list
+    raw_files     
                     Strings of lh5 raw files
-    parameter     : string
+    det_list
+                    List of detectors present in a string
+    parameter     
                     Parameter to plot
-    time_cut      : list
+    time_cut      
                     List with info about time cuts
-    det_type      : string
+    det_type    
                     Type of detector (geds or spms)
-    string_number : string
+    string_number 
                     Number of the string under study
     det_dict      : dictionary
                     Contains info (crate, card, ch_orca) for geds/spms/other
@@ -337,24 +343,32 @@ def plot_par_vs_time(
 
 
 def plot_par_vs_time_2d(
-    raw_files, det_list, time_cut, det_type, string_number, det_dict, pdf=None
-):
+    raw_files: list[str],
+    det_list: list[str],
+    time_cut: list[str],
+    det_type: str,
+    string_number: str,
+    det_dict: dict,
+    pdf=None,
+) -> None:
     """
     No map is provided as an output.
 
     Parameters
     ----------
-    raw_files     : list
+    raw_files     
                     Strings of lh5 raw files
-    det_list      : list
+    det_list
+                    List of detectors present in a string
+    det_list      
                     Detector channel numbers
-    time_cut      : list
+    time_cut      
                     List with info about time cuts
-    string_number : string
+    string_number 
                     Number of the string under study
-    det_type      : string
+    det_type      
                     Type of detector (geds or spms)
-    det_dict      : dictionary
+    det_dict      
                     Contains info (crate, card, ch_orca) for geds/spms/other
     """
     parameter = "gain"
