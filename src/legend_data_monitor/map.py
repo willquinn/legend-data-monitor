@@ -22,7 +22,7 @@ def pkl_name(time_cut: list[str], parameter: str):
     ----------
     time_cut
                      List with info about time cuts
-    parameter      
+    parameter
                      Parameter to plot
     """
     if len(time_cut) != 0:
@@ -54,9 +54,9 @@ def place_dets(det_dict: dict, string_entries: list[str]):
 
     Parameters
     ----------
-    det_dict       
+    det_dict
                      Contains info (crate, card, ch_orca) for geds/spms/other
-    string_entries 
+    string_entries
                      List of strings
     """
     new_string_entries = []
@@ -100,9 +100,9 @@ def check_det(cmap_dict: dict, det_dict: dict):
 
     Parameters
     ----------
-    det_dict  
+    det_dict
                 Contains info (crate, card, ch_orca) for geds/spms/other
-    cmap_dict 
+    cmap_dict
                 Dictionary with info for building the heatmap
     """
     for k1 in det_dict.keys():
@@ -113,33 +113,33 @@ def check_det(cmap_dict: dict, det_dict: dict):
 
 
 def geds_map(
-        parameter: str, 
-        det_dict: dict, 
-        string_entries: list, 
-        string_name: list[str], 
-        cmap_dict: dict, 
-        time_cut: list[str], 
-        map_path: str, 
-        pdf
+    parameter: str,
+    det_dict: dict,
+    string_entries: list,
+    string_name: list[str],
+    cmap_dict: dict,
+    time_cut: list[str],
+    map_path: str,
+    pdf,
 ):
     """
     Create a heatmap for germanium detectors.
 
     Parameters
     ----------
-    parameter      
+    parameter
                      Parameter to plot
-    det_dict       
+    det_dict
                      Contains info (crate, card, ch_orca) for geds/spms/other
-    string_entries 
+    string_entries
                      List of strings
-    string_name    
+    string_name
                      List of name of strings
-    cmap_dict      
+    cmap_dict
                      Dictionary with info for building the heatmap
-    time_cut       
+    time_cut
                      List with info about time cuts
-    map_path       
+    map_path
                      Path where to save output heatmaps
     """
     string_entries = place_dets(det_dict, string_entries)
@@ -219,33 +219,33 @@ def geds_map(
 
 
 def spms_map(
-        parameter: str, 
-        det_dict: dict, 
-        string_entries: list, 
-        string_name: list[str], 
-        cmap_dict: dict, 
-        time_cut: list[str], 
-        map_path: str, 
-        pdf
+    parameter: str,
+    det_dict: dict,
+    string_entries: list,
+    string_name: list[str],
+    cmap_dict: dict,
+    time_cut: list[str],
+    map_path: str,
+    pdf,
 ):
     """
     Create a heatmap for spms detectors.
 
     Parameters
     ----------
-    parameter      
+    parameter
                      Parameter to plot
-    det_dict       
+    det_dict
                      Contains info (crate, card, ch_orca) for geds/spms/other
-    string_entries 
+    string_entries
                      List of strings
-    string_name    
+    string_name
                      List of name of strings
-    cmap_dict      
+    cmap_dict
                      Dictionary with info for building the heatmap
-    time_cut       
+    time_cut
                      List with info about time cuts
-    map_path    
+    map_path
                      Path where to save output heatmaps
     """
     cmap_dict = check_det(cmap_dict, det_dict)

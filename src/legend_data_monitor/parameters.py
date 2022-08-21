@@ -8,7 +8,14 @@ from . import analysis
 j_config, j_par, _ = analysis.read_json_files()
 
 
-def load_parameter(parameter: str, raw_file: str, dsp_file: str, detector: str, det_type: str, time_cut: list[str]):
+def load_parameter(
+    parameter: str,
+    raw_file: str,
+    dsp_file: str,
+    detector: str,
+    det_type: str,
+    time_cut: list[str],
+):
     """
     Load parameters from files.
 
@@ -19,17 +26,17 @@ def load_parameter(parameter: str, raw_file: str, dsp_file: str, detector: str, 
 
     Parameters
     ----------
-    parameter 
+    parameter
                 Parameter to plot
-    raw_file  
+    raw_file
                 Single lh5 raw file
-    dsp_file  
+    dsp_file
                 Single lh5 dsp file
-    detector  
+    detector
                 Name of the detector
-    det_type  
+    det_type
                 Type of detector (geds or spms)
-    time_cut  
+    time_cut
                 List with info about time cuts
     """
     par_array = np.array([])
@@ -96,13 +103,13 @@ def bl_rms(raw_file: str, detector: str, det_type: str, puls_only_index: np.ndar
 
     Parameters
     ----------
-    raw_file    
+    raw_file
                       String of lh5 raw file
-    detector    
+    detector
                       Channel of the detector
-    det_type    
+    det_type
                       Type of detector (geds or spms)
-    puls_only_index 
+    puls_only_index
                       Index for pulser only entries
     """
     if det_type == "spms":
@@ -130,13 +137,13 @@ def leakage_current(raw_file: str, dsp_file: str, detector: str, det_type: str):
 
     Parameters
     ----------
-    raw_file 
+    raw_file
                String of lh5 raw file
-    dsp_file                
+    dsp_file
                String of lh5 dsp file
-    detector 
+    detector
                Channel of the detector
-    det_type 
+    det_type
                Type of detector (geds or spms)
     """
     bl_det = lh5.load_nda(raw_file, ["baseline"], detector + "/raw", verbose=False)[
@@ -161,9 +168,9 @@ def event_rate(dsp_run: str, timestamp: list, det_type: str):
     ----------
     dsp_run
                 String of lh5 dsp file
-    timestamp 
+    timestamp
                 List of shifted UTC timestamps
-    det_type  
+    det_type
                 Type of detector (geds or spms)
     """
     rate = []
@@ -204,11 +211,11 @@ def uncal_pulser(dsp_file: str, detector: str, puls_only_index: np.ndarray):
 
     Parameters
     ----------
-    dsp_file        
+    dsp_file
                       String of lh5 dsp file
-    detector        
+    detector
                       Channel of the detector
-    puls_only_index 
+    puls_only_index
                       Index for pulser only entries
     """
     puls_energy = lh5.load_nda(
@@ -231,7 +238,7 @@ def spms_gain(wf_array: np.ndarray):
 
     Parameters
     ----------
-    wf_array 
+    wf_array
                Array of arrays, i.e. waveforms
     """
     bl_mean = np.array([np.mean(wf[:100]) for wf in wf_array])

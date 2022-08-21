@@ -22,7 +22,14 @@ run = j_config[2]
 datatype = j_config[3]
 
 
-def plot_parameters(ax, par_array: np.ndarray, utime_array: np.ndarray, detector: str, det_type: str, parameter: str):
+def plot_parameters(
+    ax,
+    par_array: np.ndarray,
+    utime_array: np.ndarray,
+    detector: str,
+    det_type: str,
+    parameter: str,
+):
     """
     Plot the parameter VS time and check if parameters are below/above some given thresholds.
 
@@ -30,15 +37,15 @@ def plot_parameters(ax, par_array: np.ndarray, utime_array: np.ndarray, detector
     ----------
     ax
                   PLot to be saved in pkl file
-    par_array   
+    par_array
                   Array with parameter values
-    utime_array 
+    utime_array
                   Array with (shifted+cut) time values
-    detector    
+    detector
                   Name of the detector
-    det_type    
+    det_type
                   Type of detector (geds or spms)
-    parameter   
+    parameter
                   Parameter to plot
 
     :rtype: (datetime.datetime, datetime.datetime, int, matplotlib.axes._subplots.AxesSubplot)
@@ -97,17 +104,17 @@ def plot_par_vs_time(
 
     Parameters
     ----------
-    raw_files     
+    raw_files
                     Strings of lh5 raw files
     det_list
                     List of detectors present in a string
-    parameter     
+    parameter
                     Parameter to plot
-    time_cut      
+    time_cut
                     List with info about time cuts
-    det_type    
+    det_type
                     Type of detector (geds or spms)
-    string_number 
+    string_number
                     Number of the string under study
     det_dict      : dictionary
                     Contains info (crate, card, ch_orca) for geds/spms/other
@@ -356,19 +363,19 @@ def plot_par_vs_time_2d(
 
     Parameters
     ----------
-    raw_files     
+    raw_files
                     Strings of lh5 raw files
     det_list
                     List of detectors present in a string
-    det_list      
+    det_list
                     Detector channel numbers
-    time_cut      
+    time_cut
                     List with info about time cuts
-    string_number 
+    string_number
                     Number of the string under study
-    det_type      
+    det_type
                     Type of detector (geds or spms)
-    det_dict      
+    det_dict
                     Contains info (crate, card, ch_orca) for geds/spms/other
     """
     parameter = "gain"
