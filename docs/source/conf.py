@@ -67,5 +67,5 @@ autodoc_typehints_description_target = "documented_params"
 autodoc_typehints_format = "short"
 
 autodoc_mock_imports = [
-    '__main__',
+    "__main__",
 ]
