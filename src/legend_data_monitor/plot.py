@@ -49,8 +49,6 @@ def plot_parameters(
                   Type of detector (geds or spms)
     parameter
                   Parameter to plot
-
-    :rtype: (datetime.datetime, datetime.datetime, int, matplotlib.axes._subplots.AxesSubplot)
     """
     # evaluate (x,y) points
     time_slice = j_config[6][det_type]
