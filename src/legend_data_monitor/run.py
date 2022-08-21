@@ -50,8 +50,6 @@ def dump_all_plots_together(raw_files, time_cut, path, map_path):
 
     geds_dict, spms_dict, other_dict = analysis.load_channels(raw_files)
 
-    det_status_dict = {}
-
     with PdfPages(path) as pdf:
         with PdfPages(map_path) as pdf_map:
             logging.info(
@@ -73,6 +71,7 @@ def dump_all_plots_together(raw_files, time_cut, path, map_path):
                 else:
                     logging.info("Geds will be plotted...")
                     for par in geds_par:
+                        det_status_dict = {}
                         for (det_list, string) in zip(string_geds, string_geds_name):
                             if len(det_list) == 0:
                                 continue  # no detectors in a string
@@ -96,14 +95,16 @@ def dump_all_plots_together(raw_files, time_cut, path, map_path):
                                 logging.info(
                                     f"\t...{par} for geds (string #{string}) has been plotted!"
                                 )
-                    map.geds_map(
-                        geds_dict,
-                        string_geds,
-                        string_geds_name,
-                        det_status_dict,
-                        map_path,
-                        pdf_map,
-                    )
+                        map.geds_map(
+                            par,
+                            geds_dict,
+                            string_geds,
+                            string_geds_name,
+                            det_status_dict,
+                            time_cut,
+                            map_path,
+                            pdf_map,
+                        )
 
             # Spms plots
             if det_type["spms"] is True:
@@ -123,6 +124,7 @@ def dump_all_plots_together(raw_files, time_cut, path, map_path):
                     else:
                         logging.info("Spms will be plotted...")
                         for par in spms_par:
+                            det_status_dict = {}
                             for (det_list, string) in zip(
                                 string_spms, string_spms_name
                             ):
@@ -160,14 +162,16 @@ def dump_all_plots_together(raw_files, time_cut, path, map_path):
                                     logging.info(
                                         f"\t...{par} for spms ({string}) has been plotted!"
                                     )
-                        map.spms_map(
-                            spms_dict,
-                            spms_merged,
-                            spms_name_merged,
-                            det_status_dict,
-                            map_path,
-                            pdf_map,
-                        )
+                            map.spms_map(
+                                par,
+                                spms_dict,
+                                spms_merged,
+                                spms_name_merged,
+                                det_status_dict,
+                                time_cut,
+                                map_path,
+                                pdf_map,
+                            )
 
     if verbose is True:
         logging.info(f"Plots are in {path}")
