@@ -18,7 +18,7 @@ pkg = importlib.resources.files("legend_data_monitor")
 
 def read_json_files():
     """Read json files of 'settings/' folder and return three lists."""
-    with open("config.json") as f:
+    with open(pkg / ".." / ".." / "config.json") as f:
         data_config = json.load(f)
     with open(pkg / "settings" / "par-settings.json") as g:
         data_par = json.load(g)
