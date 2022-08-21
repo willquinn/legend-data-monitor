@@ -1,9 +1,7 @@
-
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
-
 
 
 def place_dets(det_dict, string_entries):
@@ -30,22 +28,22 @@ def place_dets(det_dict, string_entries):
                             max_length = int(v3)
 
     # let's order detectors (and add gaps)
-    for entry in range(0,len(string_entries)):
+    for entry in range(0, len(string_entries)):
         string = []
         idx = 1
         j = 0
         while idx <= max_length and j < len(string_entries[entry]):
             det = string_entries[entry][j]
-            pos = det_dict[string_entries[entry][j]]['string']['position']
-            if str(idx)==pos:
-               string.append(det)
-               j += 1
+            pos = det_dict[string_entries[entry][j]]["string"]["position"]
+            if str(idx) == pos:
+                string.append(det)
+                j += 1
             else:
-               string.append('')
+                string.append("")
             idx += 1
 
-        while len(string)<max_length:
-            string.append('')
+        while len(string) < max_length:
+            string.append("")
 
         new_string_entries.append(string)
 
