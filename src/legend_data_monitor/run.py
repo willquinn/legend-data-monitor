@@ -25,7 +25,7 @@ verbose = j_config[11]
 
 
 # for multiple detectors
-def dump_all_plots_together(raw_files, time_cut, path, map_path):
+def dump_all_plots_together(raw_files: list[str], time_cut: list[str], path: str, map_path: str) -> None:
     """
     Create and dump plot in single pdf and multiple pkl files.
 
@@ -36,13 +36,13 @@ def dump_all_plots_together(raw_files, time_cut, path, map_path):
 
     Parameters
     ----------
-    raw_files : list
+    raw_files 
                 Strings of lh5 raw files
-    time_cut  : list
+    time_cut
                 List with info about time cuts
-    path      : string
+    path      
                 Path where to save output files
-    map_path  : string
+    map_path  
                 Path where to save output heatmaps
     """
     if isinstance(raw_files, str):
@@ -177,20 +177,18 @@ def dump_all_plots_together(raw_files, time_cut, path, map_path):
         logging.info(f"Plots are in {path}")
         logging.info(f"Heatmaps are in {map_path}")
 
-    return
 
-
-def select_and_plot_run(path, plot_path, map_path):
+def select_and_plot_run(path: str, plot_path: str, map_path: str) -> None:
     """
     Select run and call dump_all_plots_together().
 
     Parameters
     ----------
-    path      : string
+    path
                 Path to pgt folder
-    plot_path : string
+    plot_path
                 Path where to save output plots
-    map_path  : string
+    map_path  
                 Path where to save output heatmaps
     """
     full_path = os.path.join(path, "raw", datatype, period, run)
