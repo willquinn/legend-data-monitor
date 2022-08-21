@@ -13,7 +13,6 @@ from matplotlib import dates
 
 from . import analysis, parameters, timecut
 
-# plt.rcParams['figure.figsize'] = (12, 8)
 plt.rcParams["figure.figsize"] = (10, 5)
 plt.rcParams["font.size"] = 12
 j_config, j_par, j_plot = analysis.read_json_files()

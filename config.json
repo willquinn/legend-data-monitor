@@ -10,12 +10,12 @@
   "run": "r006",
   "datatype": "phy",
   "det_type": {
-    "spms": true,
-    "geds": false
+    "spms": false,
+    "geds": true
   },
   "par_to_plot": {
     "README": "Select here the parameters you want to plot for spms and geds (see 'Available-par' for parameters that are available to study).",
-    "spms": ["daqenergy"],
+    "spms": ["baseline", "daqenergy"],
     "geds": ["baseline"],
 
     "Available-par": {
@@ -55,7 +55,7 @@
   },
   "time_slice": {
     "spms": 30,
-    "geds": 800
+    "geds": 30
   },
   "time_window": {
     "enabled": true,

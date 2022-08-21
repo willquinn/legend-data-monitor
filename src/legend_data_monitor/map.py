@@ -9,7 +9,7 @@ from . import analysis
 
 def place_dets(det_dict, string_entries):
     """
-    It fills strings keeping in mind the real position of detectors
+    It fills strings keeping in mind the real position of detectors.
 
     Parameters
     ----------
@@ -18,7 +18,6 @@ def place_dets(det_dict, string_entries):
     string_entries : list
                      List of strings
     """
-
     new_string_entries = []
 
     # get the meaximum length of the whole system
@@ -32,31 +31,30 @@ def place_dets(det_dict, string_entries):
 
     # let's order detectors (and add gaps)
     for entry in range(0,len(string_entries)):
-        S = []
+        string = []
         idx = 1
         j = 0
         while idx<=max_length and j<len(string_entries[entry]):
             det = string_entries[entry][j]
             pos = det_dict[string_entries[entry][j]]['string']['position']
             if str(idx)==pos:
-               S.append(det)
+               string.append(det)
                j += 1
             else:
-               S.append('')
+               string.append('')
             idx += 1
 
-        while len(S)<max_length:
-            S.append('')
+        while len(string)<max_length:
+            string.append('')
 
-        new_string_entries.append(S)
+        new_string_entries.append(string)
 
     return new_string_entries
 
 
 def check_det(cmap_dict, det_dict):
     """
-    It checks if all detectors of det_dict are present
-    in cmap_dict. If not, they are added with status=OFF
+    It checks if all detectors of det_dict are present in cmap_dict. If not, they are added with status=OFF.
 
     Parameters
     ----------
@@ -65,7 +63,6 @@ def check_det(cmap_dict, det_dict):
     cmap_dict : dictionary
                 Dictionary with info for building the heatmap
     """
-
     for k1 in det_dict.keys():
         if k1 not in cmap_dict:
             cmap_dict[k1] = 3
@@ -89,9 +86,8 @@ def geds_map(det_dict, string_entries, string_name, cmap_dict, map_path, pdf):
     cmap_dict      : dictionary
                      Dictionary with info for building the heatmap
     map_path       : string
-                     Path where to save ouput heatmaps
+                     Path where to save output heatmaps
     """
-
     string_entries = place_dets(det_dict, string_entries)
     df = pd.DataFrame(data=list(string_entries))
     df = df.T
@@ -125,7 +121,7 @@ def geds_map(det_dict, string_entries, string_name, cmap_dict, map_path, pdf):
     x_axis_labels = [f'String {no}' for no in string_name]
     y_axis_labels = ['' for idx in range(0, len(df))]
 
-    fig = plt.figure(num=None, figsize=(20, 20), dpi=80, facecolor='w', edgecolor='k')
+    plt.figure(num=None, figsize=(17, 15), dpi=80, facecolor='w', edgecolor='k')
     sns.set(font_scale = 1.5)
 
     custom_cmap = ['#318CE7', '#CC0000', '#F7AB60', '#D0D0D0', '#FFFFFF']
@@ -138,7 +134,7 @@ def geds_map(det_dict, string_entries, string_name, cmap_dict, map_path, pdf):
     colorbar.set_ticklabels(['OK', 'X', 'AC', 'OFF', ''])
 
     plt.tick_params(axis='both', which='major', labelsize=20, labelbottom = False, bottom=False, top = False, labeltop=True)
-    plt.title("geds")
+    plt.title('geds')
     pdf.savefig(bbox_inches='tight')
     plt.close()
 
@@ -160,9 +156,8 @@ def spms_map(det_dict, string_entries, string_name, cmap_dict, map_path, pdf):
     cmap_dict      : dictionary
                      Dictionary with info for building the heatmap
     map_path       : string
-                     Path where to save ouput heatmaps
+                     Path where to save output heatmaps
     """
-
     cmap_dict = check_det(cmap_dict, det_dict)
 
     df_ob = pd.DataFrame(data=list(string_entries[:2]))
@@ -205,7 +200,7 @@ def spms_map(det_dict, string_entries, string_name, cmap_dict, map_path, pdf):
     y_lab = ['top', 'bottom']
 
     # outer barrel
-    fig = plt.figure(num=None, figsize=(40, 10), dpi=80, facecolor='w', edgecolor='k')
+    plt.figure(num=None, figsize=(40, 10), dpi=80, facecolor='w', edgecolor='k')
     sns.set(font_scale = 1.5)
 
     #                blue        red        grey       white
@@ -219,11 +214,11 @@ def spms_map(det_dict, string_entries, string_name, cmap_dict, map_path, pdf):
     colorbar.set_ticklabels(['OK', 'X', 'OFF'])
 
     plt.tick_params(axis='both', which='major', labelsize=20, labelbottom = False, bottom=False, top = False, labeltop=True)
-    plt.title("spms - outer barrel")
+    plt.title('spms - outer barrel')
     pdf.savefig(bbox_inches='tight')
 
     # inner barrel
-    fig = plt.figure(num=None, figsize=(40, 10), dpi=80, facecolor='w', edgecolor='k')
+    plt.figure(num=None, figsize=(40, 10), dpi=80, facecolor='w', edgecolor='k')
     sns.set(font_scale = 1.5)
 
     #                blue        red        grey       white
