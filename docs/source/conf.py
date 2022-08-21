@@ -1,7 +1,7 @@
 # Configuration file for the Sphinx documentation builder.
 
 import sys
-
+from pathlib import Path
 from pkg_resources import get_distribution
 
 sys.path.insert(0, Path("../../src").resolve().as_posix())
