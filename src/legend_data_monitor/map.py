@@ -8,7 +8,7 @@ import seaborn as sns
 
 def place_dets(det_dict, string_entries):
     """
-    It fills strings keeping in mind the real position of detectors.
+    Fill strings keeping in mind the real position of detectors.
 
     Parameters
     ----------
@@ -54,7 +54,7 @@ def place_dets(det_dict, string_entries):
 
 def check_det(cmap_dict, det_dict):
     """
-    It checks if all detectors of det_dict are present in cmap_dict. If not, they are added with status=OFF.
+    Check if all detectors of det_dict are present in cmap_dict. If not, they are added with status=OFF.
 
     Parameters
     ----------
@@ -72,7 +72,7 @@ def check_det(cmap_dict, det_dict):
 
 def geds_map(det_dict, string_entries, string_name, cmap_dict, map_path, pdf):
     """
-    It creates a heatmap for germanium detectors.
+    Create a heatmap for germanium detectors.
 
     Parameters
     ----------
@@ -162,7 +162,7 @@ def geds_map(det_dict, string_entries, string_name, cmap_dict, map_path, pdf):
 
 def spms_map(det_dict, string_entries, string_name, cmap_dict, map_path, pdf):
     """
-    It creates a heatmap for spms detectors.
+    Create a heatmap for spms detectors.
 
     Parameters
     ----------
@@ -260,7 +260,7 @@ def spms_map(det_dict, string_entries, string_name, cmap_dict, map_path, pdf):
     pdf.savefig(bbox_inches="tight")
 
     # inner barrel
-    fig = plt.figure(num=None, figsize=(40, 10), dpi=80, facecolor="w", edgecolor="k")
+    plt.figure(num=None, figsize=(40, 10), dpi=80, facecolor="w", edgecolor="k")
     sns.set(font_scale=1.5)
 
     #                blue        red        grey       white
