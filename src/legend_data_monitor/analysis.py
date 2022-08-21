@@ -215,8 +215,15 @@ def read_spms(spms_dict):
     bot_ob_2 = bot_ob[:half_len_bot_ob]
 
     string_tot_div = [top_ob_1, top_ob_2, bot_ob_1, bot_ob_2, top_ib, bot_ib]
-    string_name_div = ["top_OB-1", "top_OB-2", "bot_OB-1", "bot_OB-2", "top_IB", "bot_IB"]
-    
+    string_name_div = [
+        "top_OB-1",
+        "top_OB-2",
+        "bot_OB-1",
+        "bot_OB-2",
+        "top_IB",
+        "bot_IB",
+    ]
+
     string_tot = [top_ob, bot_ob, top_ib, bot_ib]
     string_name = ["top_OB", "bot_OB", "top_IB", "bot_IB"]
 
