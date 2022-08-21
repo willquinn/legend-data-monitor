@@ -65,7 +65,7 @@ def load_channels(raw_files: list[str]):
 
     Parameters
     ----------
-    raw_files 
+    raw_files
                 Strings of lh5 raw files
     """
     channels = lh5.ls(raw_files[0], "")
@@ -232,7 +232,13 @@ def read_spms(spms_dict: dict):
     return string_tot, string_name, string_tot_div, string_name_div
 
 
-def check_par_values(times_average: np.ndarray, par_average: np.ndarray, parameter: str, detector: str, det_type: str):
+def check_par_values(
+    times_average: np.ndarray,
+    par_average: np.ndarray,
+    parameter: str,
+    detector: str,
+    det_type: str,
+):
     """
     Check parameter values.
 
@@ -247,13 +253,13 @@ def check_par_values(times_average: np.ndarray, par_average: np.ndarray, paramet
     ----------
     times_average
                    Array with x-axis time average values
-    par_average  
+    par_average
                    Array with y-axis parameter average values
-    parameter    
+    parameter
                    Name of the parameter to plot
-    detector     
+    detector
                    Channel of the detector
-    det_type     
+    det_type
                    Type of detector (geds or spms)
     """
     low_lim = j_par[0][parameter]["limit"][det_type][0]
@@ -322,11 +328,11 @@ def build_utime_array(raw_files: list[str], detector: str, det_type: str):
 
     Parameters
     ----------
-    raw_files 
+    raw_files
                 Strings of lh5 raw files
-    detector  
+    detector
                 Channel of the detector
-    det_type  
+    det_type
                 Type of detector (geds or spms)
     """
     if det_type == "spms":
@@ -343,11 +349,11 @@ def load_shifted_times(raw_files: list[str], det_type: str, detector: str):
 
     Parameters
     ----------
-    raw_files    
+    raw_files
                    Strings of lh5 raw files
-    det_type    
+    det_type
                    Type of detector (geds or spms)
-    detector     
+    detector
                    Name of the detector
     """
     utime_array = np.empty((0, 0))
@@ -376,9 +382,9 @@ def add_offset_to_timestamp(tmp_array: np.ndarray, raw_file: list[str]):
 
     Parameters
     ----------
-    tmp_array 
+    tmp_array
                 Time since beginning of file
-    raw_file  
+    raw_file
                 String of lh5 raw file
     """
     date_time = (((raw_file.split("/")[-1]).split("-")[4]).split("Z")[0]).split("T")
@@ -390,7 +396,13 @@ def add_offset_to_timestamp(tmp_array: np.ndarray, raw_file: list[str]):
     return utime_array
 
 
-def build_par_array(raw_files: list[str], dsp_files: list[str], parameter: str, detector: str, det_type: str):
+def build_par_array(
+    raw_files: list[str],
+    dsp_files: list[str],
+    parameter: str,
+    detector: str,
+    det_type: str,
+):
     """
     Build an array with parameter values.
 
@@ -398,13 +410,13 @@ def build_par_array(raw_files: list[str], dsp_files: list[str], parameter: str, 
     ----------
     raw_files
                   Strings of lh5 raw files
-    dsp_files   
+    dsp_files
                   Strings of lh5 dsp files
-    parameter   
+    parameter
                   Name of the parameter
-    detector    
+    detector
                   Channel of the detector
-    det_type    
+    det_type
                   Type of detector (geds or spms)
     """
     utime_array = build_utime_array(raw_files, detector, det_type)
@@ -424,11 +436,11 @@ def time_analysis(utime_array: np.ndarray, par_array: np.ndarray, time_cut: list
 
     Parameters
     ----------
-    utime_array 
+    utime_array
                   Array of (already shifted) timestamps
-    par_array   
+    par_array
                   Array with parameter values
-    time_cut    
+    time_cut
                   List with info about time cuts
     """
     # time window analysis
@@ -469,11 +481,11 @@ def par_time_average(utime_array: np.ndarray, par_array: np.ndarray, time_slice:
 
     Parameters
     ----------
-    utime_array 
+    utime_array
                   Array of (already shifted) timestamps
-    par_array   
+    par_array
                   Array with parameter values
-    time_slice  
+    time_slice
                   Step value to separate parameter values in plot
     """
     bins = np.arange(
@@ -508,11 +520,11 @@ def puls_analysis(raw_file: str, detector: str, det_type: str):
 
     Parameters
     ----------
-    raw_file 
+    raw_file
                lh5 raw file
-    detector 
+    detector
                Channel of the detector
-    det_type 
+    det_type
                Type of detector (geds or spms)
     """
     wfs = lh5.load_nda(raw_file, ["values"], "ch000/raw/waveform")["values"]
@@ -560,9 +572,9 @@ def remove_nan_values(par_array: np.ndarray, time_array: np.ndarray):
 
     Parameters
     ----------
-    par_array  
+    par_array
                  Array with parameter values
-    time_array 
+    time_array
                  Array with time values
     """
     par_array_no_nan = []
