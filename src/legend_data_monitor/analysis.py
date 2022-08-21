@@ -58,11 +58,6 @@ def load_channels(raw_files: list[str]):
     """
     Load channel map.
 
-    Description
-    -----------
-    Return 3 dictionaries for geds/spms/other (pulser, aux)
-    containing info about the crate, card, and orca channel.
-
     Parameters
     ----------
     raw_files
@@ -241,13 +236,6 @@ def check_par_values(
 ):
     """
     Check parameter values.
-
-    Description
-    -----------
-    Check if a given parameter is above or below a given threshold. If this
-    happens, the corresponding UTC interval time at which this happens is recorded
-    in the .log file as a WARNING together with the parameter and detector names.
-
 
     Parameters
     ----------
@@ -474,11 +462,6 @@ def par_time_average(utime_array: np.ndarray, par_array: np.ndarray, time_slice:
     """
     Compute time average using time slice.
 
-    Description
-    -----------
-    Redifines the time/parameter arrays by selecting only
-    values that differ by a quantity equal to 'time_slice'.
-
     Parameters
     ----------
     utime_array
@@ -511,12 +494,6 @@ def par_time_average(utime_array: np.ndarray, par_array: np.ndarray, time_slice:
 def puls_analysis(raw_file: str, detector: str, det_type: str):
     """
     Select pulser events.
-
-    Description
-    -----------
-    Returns an array with pulser only entries, an array with detector and
-    pulser entries, an array with detector only entries.
-
 
     Parameters
     ----------
@@ -562,13 +539,6 @@ def puls_analysis(raw_file: str, detector: str, det_type: str):
 def remove_nan_values(par_array: np.ndarray, time_array: np.ndarray):
     """
     Remove NaN values from arrays.
-
-    Description
-    -----------
-    Removes the 'nan' values that appear in
-    the array with the parameters values (and,
-    consequently, the corresponding entries in the
-    time array).
 
     Parameters
     ----------

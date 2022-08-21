@@ -33,11 +33,6 @@ def dump_all_plots_together(
     """
     Create and dump plot in single pdf and multiple pkl files.
 
-    Description
-    -----------
-    Dump plots for multiple detectors (geds, spms) grouped together
-    in single plot by string (geds) or inner/outer and top/bot barrel (spms).
-
     Parameters
     ----------
     raw_files

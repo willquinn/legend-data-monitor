@@ -21,11 +21,6 @@ def load_parameter(
     """
     Load parameters from files.
 
-    Description
-    -----------
-    Creates numpy arrays filled with the calculated parameter and shifted timestamps
-    (for timestamps that lie within the chosen time window).
-
     Parameters
     ----------
     parameter
