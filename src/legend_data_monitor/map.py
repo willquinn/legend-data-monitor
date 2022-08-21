@@ -1,7 +1,51 @@
+import pickle as pkl
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+
+from . import analysis, timecut
+
+j_config, j_par, j_plot = analysis.read_json_files()
+exp = j_config[0]["exp"]
+period = j_config[1]
+run = j_config[2]
+datatype = j_config[3]
+
+
+def pkl_name(time_cut, parameter):
+    """
+    Define the name of output pkl file.
+
+    Parameters
+    ----------
+    parameter      : string
+                     Parameter to plot
+    time_cut       : list
+                     List with info about time cuts
+    """
+    if len(time_cut) != 0:
+        start, end = timecut.time_dates(time_cut)
+        pkl_filename = (
+            exp
+            + "-"
+            + period
+            + "-"
+            + run
+            + "-"
+            + datatype
+            + "-"
+            + start
+            + "_"
+            + end
+            + "-"
+            + parameter
+        )
+    else:
+        pkl_filename = exp + "-" + period + "-" + run + "-" + datatype + "-" + parameter
+
+    return pkl_filename
 
 
 def place_dets(det_dict, string_entries):
@@ -68,12 +112,16 @@ def check_det(cmap_dict, det_dict):
     return cmap_dict
 
 
-def geds_map(det_dict, string_entries, string_name, cmap_dict, map_path, pdf):
+def geds_map(
+    parameter, det_dict, string_entries, string_name, cmap_dict, time_cut, map_path, pdf
+):
     """
     Create a heatmap for germanium detectors.
 
     Parameters
     ----------
+    parameter      : string
+                     Parameter to plot
     det_dict       : dictionary
                      Contains info (crate, card, ch_orca) for geds/spms/other
     string_entries : list
@@ -82,6 +130,8 @@ def geds_map(det_dict, string_entries, string_name, cmap_dict, map_path, pdf):
                      List of name of strings
     cmap_dict      : dictionary
                      Dictionary with info for building the heatmap
+    time_cut       : list
+                     List with info about time cuts
     map_path       : string
                      Path where to save output heatmaps
     """
@@ -118,8 +168,8 @@ def geds_map(det_dict, string_entries, string_name, cmap_dict, map_path, pdf):
     x_axis_labels = [f"String {no}" for no in string_name]
     y_axis_labels = ["" for idx in range(0, len(df))]
 
-    plt.figure(num=None, figsize=(17, 15), dpi=80, facecolor="w", edgecolor="k")
-    sns.set(font_scale=1.5)
+    fig = plt.figure(num=None, figsize=(8, 12), dpi=80, facecolor="w", edgecolor="k")
+    sns.set(font_scale=1.2)
 
     custom_cmap = ["#318CE7", "#CC0000", "#F7AB60", "#D0D0D0", "#FFFFFF"]
     status_map = sns.heatmap(
@@ -152,18 +202,25 @@ def geds_map(det_dict, string_entries, string_name, cmap_dict, map_path, pdf):
         labeltop=True,
     )
     plt.title("geds")
+
+    pkl_file = pkl_name(time_cut, parameter)
+    pkl.dump(fig, open(f"out/pkl-files/heatmaps/{pkl_file}.pkl", "wb"))
     pdf.savefig(bbox_inches="tight")
     plt.close()
 
     return
 
 
-def spms_map(det_dict, string_entries, string_name, cmap_dict, map_path, pdf):
+def spms_map(
+    parameter, det_dict, string_entries, string_name, cmap_dict, time_cut, map_path, pdf
+):
     """
     Create a heatmap for spms detectors.
 
     Parameters
     ----------
+    parameter      : string
+                     Parameter to plot
     det_dict       : dictionary
                      Contains info (crate, card, ch_orca) for geds/spms/other
     string_entries : list
@@ -172,6 +229,8 @@ def spms_map(det_dict, string_entries, string_name, cmap_dict, map_path, pdf):
                      List of name of strings
     cmap_dict      : dictionary
                      Dictionary with info for building the heatmap
+    time_cut       : list
+                     List with info about time cuts
     map_path       : string
                      Path where to save output heatmaps
     """
@@ -221,8 +280,8 @@ def spms_map(det_dict, string_entries, string_name, cmap_dict, map_path, pdf):
     y_lab = ["top", "bottom"]
 
     # outer barrel
-    plt.figure(num=None, figsize=(40, 10), dpi=80, facecolor="w", edgecolor="k")
-    sns.set(font_scale=1.5)
+    fig_ob = plt.figure(num=None, figsize=(20, 5), dpi=80, facecolor="w", edgecolor="k")
+    sns.set(font_scale=1.2)
 
     #                blue        red        grey       white
     custom_cmap = ["#318CE7", "#CC0000", "#A9A9A9"]
@@ -255,11 +314,14 @@ def spms_map(det_dict, string_entries, string_name, cmap_dict, map_path, pdf):
         labeltop=True,
     )
     plt.title("spms - outer barrel")
+
+    pkl_file = pkl_name(time_cut, parameter)
+    pkl.dump(fig_ob, open(f"out/pkl-files/heatmaps/{pkl_file}-OB.pkl", "wb"))
     pdf.savefig(bbox_inches="tight")
 
     # inner barrel
-    plt.figure(num=None, figsize=(40, 10), dpi=80, facecolor="w", edgecolor="k")
-    sns.set(font_scale=1.5)
+    fig_ib = plt.figure(num=None, figsize=(18, 5), dpi=80, facecolor="w", edgecolor="k")
+    sns.set(font_scale=1.2)
 
     #                blue        red        grey       white
     custom_cmap = ["#318CE7", "#CC0000", "#A9A9A9"]
@@ -292,6 +354,7 @@ def spms_map(det_dict, string_entries, string_name, cmap_dict, map_path, pdf):
         labeltop=True,
     )
     plt.title("spms - inner barrel")
+    pkl.dump(fig_ib, open(f"out/pkl-files/heatmaps/{pkl_file}-IB.pkl", "wb"))
     pdf.savefig(bbox_inches="tight")
 
     plt.close()
