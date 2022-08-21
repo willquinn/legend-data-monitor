@@ -42,14 +42,7 @@ html_title = f"{project} {version}"
 autodoc_mock_imports = [
     # add new packages here
 ]
-#autodoc_default_options = {"ignore-module-all": True}
-autodoc_default_options = {
-    'members': True,
-    'member-order': 'bysource',
-    'special-members': '__init__',
-    'undoc-members': True,
-    'exclude-members': '__main__'
-}
+autodoc_default_options = {"ignore-module-all": True}
 
 # sphinx-napoleon
 # enforce consistent usage of NumPy-style docstrings
@@ -72,3 +65,7 @@ autoclass_content = "both"
 autodoc_typehints = "both"
 autodoc_typehints_description_target = "documented_params"
 autodoc_typehints_format = "short"
+
+autodoc_mock_imports = [
+    '__main__',
+]
