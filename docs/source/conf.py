@@ -2,13 +2,14 @@
 
 import os
 import sys
-from pathlib import Path
 
 from pkg_resources import get_distribution
 
 # sys.path.insert(0, Path(__file__).parents[2].resolve().as_posix())
 # sys.path.insert(0, Path(__file__).resolve().as_posix())
-sys.path.insert(0, os.path.abspath(os.path.join('..', '..', 'src', 'legend-data-monitor')))
+sys.path.insert(
+    0, os.path.abspath(os.path.join("..", "..", "src", "legend-data-monitor"))
+)
 
 project = "legend-data-monitor"
 copyright = "Copyright Holder"
