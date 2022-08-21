@@ -11,11 +11,6 @@ def build_timecut_list(time_window: list, last_hours: list):
     """
     Build list with time cut values.
 
-    Description
-    -----------
-    If a time cut is enabled, the function returns
-    a list with info (dates/times) about the time cut.
-
     Parameters
     ----------
     time_window
