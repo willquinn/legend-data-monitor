@@ -63,9 +63,9 @@ def load_parameter(
     if parameter == "bl_rms":
         par_array = bl_rms(raw_file, detector, det_type, puls_only_index)
     elif parameter == "LC":
-        par_array = leakage_current(raw_file, dsp_file, detector, det_type)
+        par_array = leakage_current(raw_file, detector, det_type)
     elif parameter == "event_rate":
-        par_array, utime_array_cut = event_rate(dsp_file, utime_array_cut, det_type)
+        par_array, utime_array_cut = event_rate(raw_file, utime_array_cut, det_type)
     elif parameter == "uncal_puls":
         par_array = uncal_pulser(dsp_file, detector, puls_only_index)
     else:
@@ -111,11 +111,11 @@ def bl_rms(raw_file: str, detector: str, det_type: str, puls_only_index: np.ndar
     """
     if det_type == "spms":
         wf_det = lh5.load_nda(
-            raw_file, ["values"], detector + "/raw/waveform/", verbose=False
+            raw_file, ["values"], detector + "/raw/waveform/"
         )["values"]
     if det_type == "geds":
         wf_det = lh5.load_nda(
-            raw_file, ["values"], detector + "/raw/waveform/", verbose=False
+            raw_file, ["values"], detector + "/raw/waveform/"
         )["values"]
 
     wf_puls = wf_det[puls_only_index][:100]
@@ -128,7 +128,7 @@ def bl_rms(raw_file: str, detector: str, det_type: str, puls_only_index: np.ndar
     return np.array(bl_norm)
 
 
-def leakage_current(raw_file: str, dsp_file: str, detector: str, det_type: str):
+def leakage_current(raw_file: str, detector: str, det_type: str):
     """
     Return the leakage current.
 
@@ -136,17 +136,15 @@ def leakage_current(raw_file: str, dsp_file: str, detector: str, det_type: str):
     ----------
     raw_file
                String of lh5 raw file
-    dsp_file
-               String of lh5 dsp file
     detector
                Channel of the detector
     det_type
                Type of detector (geds or spms)
     """
-    bl_det = lh5.load_nda(raw_file, ["baseline"], detector + "/raw", verbose=False)[
+    bl_det = lh5.load_nda(raw_file, ["baseline"], detector + "/raw")[
         "baseline"
     ]
-    bl_puls = lh5.load_nda(raw_file, ["baseline"], "ch000/raw", verbose=False)[
+    bl_puls = lh5.load_nda(raw_file, ["baseline"], "ch000/raw")[
         "baseline"
     ][:100]
     bl_puls_mean = np.mean(bl_puls)
@@ -157,14 +155,14 @@ def leakage_current(raw_file: str, dsp_file: str, detector: str, det_type: str):
     )  # using old GERDA (baseline -> lc) conversion factor
 
 
-def event_rate(dsp_run: str, timestamp: list, det_type: str):
+def event_rate(raw_run: str, timestamp: list, det_type: str):
     """
     Return the event rate (as cts/dt).
 
     Parameters
     ----------
-    dsp_run
-                String of lh5 dsp file
+    raw_run
+                String of lh5 raw file
     timestamp
                 List of shifted UTC timestamps
     det_type
@@ -173,7 +171,7 @@ def event_rate(dsp_run: str, timestamp: list, det_type: str):
     rate = []
     times = []
 
-    date_time = (((dsp_run.split("/")[-1]).split("-")[4]).split("Z")[0]).split("T")
+    date_time = (((raw_run.split("/")[-1]).split("-")[4]).split("Z")[0]).split("T")
     run_start = datetime.strptime(date_time[0] + date_time[1], "%Y%m%d%H%M%S")
     run_start = datetime.timestamp(run_start)
 
@@ -199,7 +197,7 @@ def event_rate(dsp_run: str, timestamp: list, det_type: str):
     if units == "kHz":
         fact = 0.001
 
-    return np.array(rate) * fact, np.array(times)  # np.array(rate)/dt?
+    return np.array(rate) * fact, np.array(times)  
 
 
 def uncal_pulser(dsp_file: str, detector: str, puls_only_index: np.ndarray):
@@ -215,8 +213,10 @@ def uncal_pulser(dsp_file: str, detector: str, puls_only_index: np.ndarray):
     puls_only_index
                       Index for pulser only entries
     """
+    if "trapEmax" not in lh5.ls(dsp_file, f'{detector}/dsp/'):
+        return []
     puls_energy = lh5.load_nda(
-        dsp_file, ["trapEmax"], detector + "/data", verbose=False
+        dsp_file, ["trapEmax"], detector + "/data"
     )["trapEmax"]
 
     if len(puls_energy) == 2 * len(puls_only_index):

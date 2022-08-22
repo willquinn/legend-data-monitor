@@ -15,8 +15,15 @@ from matplotlib import dates
 
 from . import analysis, parameters, timecut
 
+plt.rcParams.update({'figure.max_open_warning': 0})
 plt.rcParams["figure.figsize"] = (10, 5)
 plt.rcParams["font.size"] = 12
+plt.rcParams["figure.facecolor"] = "w"
+plt.rcParams["grid.color"] = "b0b0b0"  
+plt.rcParams["axes.facecolor"] = "w"
+plt.rcParams["axes.grid"] = True
+plt.rcParams["axes.grid.axis"] = "both"
+plt.rcParams["axes.grid.which"] = "major"
 j_config, j_par, j_plot = analysis.read_json_files()
 exp = j_config[0]["exp"]
 period = j_config[1]
@@ -120,6 +127,9 @@ def plot_par_vs_time(
                     Contains info (crate, card, ch_orca) for geds/spms/other
     """
     fig, ax = plt.subplots(1, 1)
+    ax.set_facecolor("w")
+    ax.grid(axis="both", which="major")
+    plt.grid(axis="both", which="major")
     plt.figure().patch.set_facecolor(j_par[0][parameter]["facecol"])
     start_times = []
     end_times = []
@@ -128,20 +138,34 @@ def plot_par_vs_time(
 
     for raw_file in raw_files:
         dsp_file = raw_file.replace("raw", "dsp")
+
+        # skip the file if it does not exist the dsp one (just for dsp-related parameters)
         if os.path.exists(dsp_file) is False:
             logging.warning(f"File {dsp_file} does not exist")
+            if (
+                parameter in ["uncal_puls"]
+                or j_par[0][parameter]["tier"] == 2
+            ):
+                continue
 
         for detector in det_list:
+            # skip detectors that are not geds/spms
             if det_dict[detector]["system"] == "--":
                 continue
 
+            # skip the file if dsp-parameter is not present in the dsp file
+            if j_par[0][parameter]["tier"] == 2:
+                if parameter not in lh5.ls(dsp_file, f'{detector}/dsp/'):
+                    continue
+
+            # skip the detector if not in raw file
             if detector not in lh5.ls(raw_file, ""):
                 logging.warning(f'No "{detector}" branch in file {raw_file}')
                 continue
 
-            # just for parameters that are related to dsp files
+            # skip the detector if not in dsp file (just for dsp-related parameters)
             if (
-                parameter in ["bl_RMS", "LC", "uncal_puls"]
+                parameter in ["uncal_puls"]
                 or j_par[0][parameter]["tier"] == 2
             ):
                 if detector not in lh5.ls(dsp_file, ""):
@@ -222,7 +246,6 @@ def plot_par_vs_time(
         framealpha=0,
         handles=handle_list,
     )
-    ax.grid(axis="both")
     plt.legend(
         loc=(1.04, 0.0),
         ncol=1,
@@ -232,7 +255,6 @@ def plot_par_vs_time(
         handles=handle_list,
     )
     plt.xticks(rotation=45, ha="center")
-    plt.grid(axis="both")
     ylab = j_par[0][parameter]["label"]
     if j_par[0][parameter]["units"] != "null":
         ylab = ylab + " [" + j_par[0][parameter]["units"] + "]"
@@ -425,7 +447,7 @@ def plot_par_vs_time_2d(
             continue
 
         wf_array = lh5.load_nda(
-            raw_files, ["values"], detector + "/raw/waveform", verbose=False
+            raw_files, ["values"], detector + "/raw/waveform"
         )["values"]
 
         # add entries for the legend
@@ -598,3 +620,4 @@ def plot_par_vs_time_2d(
     plt.close()
 
     return
+    

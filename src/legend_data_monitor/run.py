@@ -124,15 +124,10 @@ def dump_all_plots_together(
                     else:
                         logging.info("Spms will be plotted...")
                         for par in spms_par:
-                            det_status_dict = {}
-                            for (det_list, string) in zip(
-                                string_spms, string_spms_name
+                            if par == "gain":
+                                for (det_list, string) in zip(
+                                spms_merged, spms_name_merged
                             ):
-                                if len(det_list) == 0:
-                                    continue  # no detectors in a string
-                                logging.info(f'Plotting "{par}" for {string} SiPMS')
-
-                                if par == "gain":
                                     plot.plot_par_vs_time_2d(
                                         raw_files,
                                         det_list,
@@ -142,7 +137,18 @@ def dump_all_plots_together(
                                         spms_dict,
                                         pdf,
                                     )
-                                else:
+                                    if verbose is True:
+                                        logging.info(
+                                            f"\t...{par} for spms ({string}) has been plotted!"
+                                        )
+                            else:
+                                det_status_dict = {}
+                                for (det_list, string) in zip(
+                                    string_spms, string_spms_name
+                                ):
+                                    if len(det_list) == 0:
+                                        continue  # no detectors in a string
+                                    logging.info(f'Plotting "{par}" for {string} SiPMS')
                                     if len(string) != 0:
                                         map_dict = plot.plot_par_vs_time(
                                             raw_files,
@@ -154,25 +160,25 @@ def dump_all_plots_together(
                                             spms_dict,
                                             pdf,
                                         )
-                                if map_dict is not None:
-                                    for det, status in map_dict.items():
-                                        det_status_dict[det] = status
-
-                                if verbose is True:
-                                    logging.info(
-                                        f"\t...{par} for spms ({string}) has been plotted!"
+                                    if map_dict is not None:
+                                        for det, status in map_dict.items():
+                                            det_status_dict[det] = status
+    
+                                    if verbose is True:
+                                        logging.info(
+                                            f"\t...{par} for spms ({string}) has been plotted!"
+                                        )
+                                if det_status_dict != []:
+                                    map.spms_map(
+                                        par,
+                                        spms_dict,
+                                        spms_merged,
+                                        spms_name_merged,
+                                        det_status_dict,
+                                        time_cut,
+                                        map_path,
+                                        pdf_map,
                                     )
-                            if det_status_dict != []:
-                                map.spms_map(
-                                    par,
-                                    spms_dict,
-                                    spms_merged,
-                                    spms_name_merged,
-                                    det_status_dict,
-                                    time_cut,
-                                    map_path,
-                                    pdf_map,
-                                )
 
     if verbose is True:
         logging.info(f"Plots are in {path}")
