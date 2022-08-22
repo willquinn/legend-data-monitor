@@ -210,7 +210,7 @@ def geds_map(
         top=False,
         labeltop=True,
     )
-    plt.title(f'geds ({parameter})')
+    plt.title(f"geds ({parameter})")
 
     pkl_file = pkl_name(time_cut, parameter)
     pkl.dump(fig, open(f"out/pkl-files/heatmaps/{pkl_file}.pkl", "wb"))
@@ -329,7 +329,7 @@ def spms_map(
         top=False,
         labeltop=True,
     )
-    plt.title(f'spms - outer barrel ({parameter})')
+    plt.title(f"spms - outer barrel ({parameter})")
 
     pkl_file = pkl_name(time_cut, parameter)
     pkl.dump(fig_ob, open(f"out/pkl-files/heatmaps/{pkl_file}-OB.pkl", "wb"))
@@ -369,7 +369,7 @@ def spms_map(
         top=False,
         labeltop=True,
     )
-    plt.title(f'spms - inner barrel ({parameter})')
+    plt.title(f"spms - inner barrel ({parameter})")
     pkl.dump(fig_ib, open(f"out/pkl-files/heatmaps/{pkl_file}-IB.pkl", "wb"))
     pdf.savefig(bbox_inches="tight")
 

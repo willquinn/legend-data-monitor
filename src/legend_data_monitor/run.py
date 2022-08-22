@@ -126,8 +126,8 @@ def dump_all_plots_together(
                         for par in spms_par:
                             if par == "gain":
                                 for (det_list, string) in zip(
-                                spms_merged, spms_name_merged
-                            ):
+                                    spms_merged, spms_name_merged
+                                ):
                                     plot.plot_par_vs_time_2d(
                                         raw_files,
                                         det_list,
@@ -163,7 +163,7 @@ def dump_all_plots_together(
                                     if map_dict is not None:
                                         for det, status in map_dict.items():
                                             det_status_dict[det] = status
-    
+
                                     if verbose is True:
                                         logging.info(
                                             f"\t...{par} for spms ({string}) has been plotted!"

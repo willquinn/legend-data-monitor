@@ -15,11 +15,11 @@ from matplotlib import dates
 
 from . import analysis, parameters, timecut
 
-plt.rcParams.update({'figure.max_open_warning': 0})
+plt.rcParams.update({"figure.max_open_warning": 0})
 plt.rcParams["figure.figsize"] = (10, 5)
 plt.rcParams["font.size"] = 12
 plt.rcParams["figure.facecolor"] = "w"
-plt.rcParams["grid.color"] = "b0b0b0"  
+plt.rcParams["grid.color"] = "b0b0b0"
 plt.rcParams["axes.facecolor"] = "w"
 plt.rcParams["axes.grid"] = True
 plt.rcParams["axes.grid.axis"] = "both"
@@ -142,10 +142,7 @@ def plot_par_vs_time(
         # skip the file if it does not exist the dsp one (just for dsp-related parameters)
         if os.path.exists(dsp_file) is False:
             logging.warning(f"File {dsp_file} does not exist")
-            if (
-                parameter in ["uncal_puls"]
-                or j_par[0][parameter]["tier"] == 2
-            ):
+            if parameter in ["uncal_puls"] or j_par[0][parameter]["tier"] == 2:
                 continue
 
         for detector in det_list:
@@ -155,7 +152,7 @@ def plot_par_vs_time(
 
             # skip the file if dsp-parameter is not present in the dsp file
             if j_par[0][parameter]["tier"] == 2:
-                if parameter not in lh5.ls(dsp_file, f'{detector}/dsp/'):
+                if parameter not in lh5.ls(dsp_file, f"{detector}/dsp/"):
                     continue
 
             # skip the detector if not in raw file
@@ -164,10 +161,7 @@ def plot_par_vs_time(
                 continue
 
             # skip the detector if not in dsp file (just for dsp-related parameters)
-            if (
-                parameter in ["uncal_puls"]
-                or j_par[0][parameter]["tier"] == 2
-            ):
+            if parameter in ["uncal_puls"] or j_par[0][parameter]["tier"] == 2:
                 if detector not in lh5.ls(dsp_file, ""):
                     logging.warning(f'No "{detector}" branch in file {dsp_file}')
                     continue
@@ -446,9 +440,9 @@ def plot_par_vs_time_2d(
         if det_dict[detector]["system"] == "--":
             continue
 
-        wf_array = lh5.load_nda(
-            raw_files, ["values"], detector + "/raw/waveform"
-        )["values"]
+        wf_array = lh5.load_nda(raw_files, ["values"], detector + "/raw/waveform")[
+            "values"
+        ]
 
         # add entries for the legend
         card = det_dict[detector]["daq"]["card"]
@@ -620,4 +614,3 @@ def plot_par_vs_time_2d(
     plt.close()
 
     return
-    

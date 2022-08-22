@@ -110,13 +110,13 @@ def bl_rms(raw_file: str, detector: str, det_type: str, puls_only_index: np.ndar
                       Index for pulser only entries
     """
     if det_type == "spms":
-        wf_det = lh5.load_nda(
-            raw_file, ["values"], detector + "/raw/waveform/"
-        )["values"]
+        wf_det = lh5.load_nda(raw_file, ["values"], detector + "/raw/waveform/")[
+            "values"
+        ]
     if det_type == "geds":
-        wf_det = lh5.load_nda(
-            raw_file, ["values"], detector + "/raw/waveform/"
-        )["values"]
+        wf_det = lh5.load_nda(raw_file, ["values"], detector + "/raw/waveform/")[
+            "values"
+        ]
 
     wf_puls = wf_det[puls_only_index][:100]
     wf_samples = 1000
@@ -141,12 +141,8 @@ def leakage_current(raw_file: str, detector: str, det_type: str):
     det_type
                Type of detector (geds or spms)
     """
-    bl_det = lh5.load_nda(raw_file, ["baseline"], detector + "/raw")[
-        "baseline"
-    ]
-    bl_puls = lh5.load_nda(raw_file, ["baseline"], "ch000/raw")[
-        "baseline"
-    ][:100]
+    bl_det = lh5.load_nda(raw_file, ["baseline"], detector + "/raw")["baseline"]
+    bl_puls = lh5.load_nda(raw_file, ["baseline"], "ch000/raw")["baseline"][:100]
     bl_puls_mean = np.mean(bl_puls)
     lc = bl_det - bl_puls_mean
 
@@ -197,7 +193,7 @@ def event_rate(raw_run: str, timestamp: list, det_type: str):
     if units == "kHz":
         fact = 0.001
 
-    return np.array(rate) * fact, np.array(times)  
+    return np.array(rate) * fact, np.array(times)
 
 
 def uncal_pulser(dsp_file: str, detector: str, puls_only_index: np.ndarray):
@@ -213,11 +209,9 @@ def uncal_pulser(dsp_file: str, detector: str, puls_only_index: np.ndarray):
     puls_only_index
                       Index for pulser only entries
     """
-    if "trapEmax" not in lh5.ls(dsp_file, f'{detector}/dsp/'):
+    if "trapEmax" not in lh5.ls(dsp_file, f"{detector}/dsp/"):
         return []
-    puls_energy = lh5.load_nda(
-        dsp_file, ["trapEmax"], detector + "/data"
-    )["trapEmax"]
+    puls_energy = lh5.load_nda(dsp_file, ["trapEmax"], detector + "/data")["trapEmax"]
 
     if len(puls_energy) == 2 * len(puls_only_index):
         puls_energy = puls_energy[: len(puls_only_index)]
