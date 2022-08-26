@@ -425,7 +425,7 @@ def plot_par_vs_time_ch000(
 
         # skip the file if dsp-parameter is not present in the dsp file
         if j_par[0][parameter]["tier"] == 2:
-            if "ch000/dsp/"+parameter not in lh5.ls(dsp_file, f"ch000/dsp/"):
+            if "ch000/dsp/" + parameter not in lh5.ls(dsp_file, f"ch000/dsp/"):
                 continue
 
         # skip the detector if not in raw file
