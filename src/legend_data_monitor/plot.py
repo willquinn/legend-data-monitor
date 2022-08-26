@@ -524,6 +524,7 @@ def plot_par_vs_time_ch000(
         framealpha=0,
         handles=handle_list,
     )
+    xlab = j_config[10]["frmt"]
     ylab = j_par[0][parameter]["label"]
     if j_par[0][parameter]["units"] != "null":
         ylab = ylab + " [" + j_par[0][parameter]["units"] + "]"
@@ -533,9 +534,9 @@ def plot_par_vs_time_ch000(
         ]
         ylab = ylab + " [" + units + "]"
     ax.set_ylabel(ylab)
-    ax.set_xlabel(f'{j_config[10]["frmt"]} (UTC)')
+    ax.set_xlabel(f"{xlab} (UTC)")
     plt.ylabel(ylab)
-    plt.xlabel(f'{j_config[10]["frmt"]} (UTC)')
+    plt.xlabel(f"{xlab} (UTC)")
 
     # set title
     ax.set_title(f"pulser - ch000")
@@ -733,6 +734,7 @@ def plot_par_vs_time_2d(
         ax_list[ax_idx].pcolor(
             xedges_datetime, yedges, h.T, norm=mpl.colors.LogNorm(), cmap="magma"
         )
+        x_lab = j_config[10]["frmt"]
         if "OB" in string_number:
             ax_list[ax_idx].set_title(
                 f"{detector} - {card},{ch_orca}", fontsize=7, y=0.93
@@ -746,7 +748,7 @@ def plot_par_vs_time_2d(
                 or ax_idx == 18
                 or ax_idx == 19
             ):
-                ax_list[ax_idx].set(xlabel=f'{j_config[10]["frmt"]} (UTC)')
+                ax_list[ax_idx].set(xlabel=f"{x_lab} (UTC)")
         if "IB" in string_number:
             ax_list[ax_idx].set_title(
                 f"{detector} - {card},{ch_orca}", fontsize=7, y=0.95
@@ -754,7 +756,7 @@ def plot_par_vs_time_2d(
             if ax_idx == 0 or ax_idx == 3 or ax_idx == 6:
                 ax_list[ax_idx].set(ylabel="Gain [ADC]")
             if ax_idx == 6 or ax_idx == 7 or ax_idx == 8:
-                ax_list[ax_idx].set(xlabel=f'{j_config[10]["frmt"]} (UTC)')
+                ax_list[ax_idx].set(xlabel=f"{x_lab} (UTC)")
         ax_list[ax_idx].set_xticks(locs)
         ax_list[ax_idx].set_xticklabels(labels)
         plt.setp(ax_list[ax_idx].get_xticklabels(), rotation=0, ha="center")
