@@ -58,7 +58,7 @@ def plot_parameters(
                   Parameter to plot
     """
     # evaluate (x,y) points
-    #time_slice = j_config[6][det_type]
+    # time_slice = j_config[6][det_type]
     """
     if parameter != "event_rate" and parameter != "wf_max":   # <<<---- check it because for wf_max for all ievts gave problems!!!
         times_average, par_average = analysis.par_time_average(
@@ -87,12 +87,8 @@ def plot_parameters(
 
     # if we want to plot detectors that are only problematic
     if status_flag is True and status == 1:
-        ax.plot(
-            times, par_average, color=col, linewidth=0, marker=".", markersize=0.5
-        )
-        plt.plot(
-            times, par_average, color=col, linewidth=0, marker=".", markersize=0.5
-        )
+        ax.plot(times, par_average, color=col, linewidth=0, marker=".", markersize=0.5)
+        plt.plot(times, par_average, color=col, linewidth=0, marker=".", markersize=0.5)
     # plot everything independently of the detector's status
     else:
         ax.plot(times, par_average, color=col, linewidth=0, marker=".", markersize=0.5)
@@ -128,7 +124,7 @@ def plot_par_vs_time(
                     Type of detector (geds or spms)
     string_number
                     Number of the string under study
-    det_dict    
+    det_dict
                     Contains info (crate, card, ch_orca) for geds/spms/other
     """
     fig, ax = plt.subplots(1, 1)
