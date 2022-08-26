@@ -152,9 +152,9 @@ def delta_bl_std(
 ):
     """Return the difference with respect to the average value evaluated over the whole time window."""
     # mean over the whole time window
-    #dsp_files = [raw.replace('raw','dsp') for raw in raw_files]
-    #bl_std_all = lh5.load_nda(dsp_files, ['bl_std'], detector+'/dsp')['bl_std']
-    #bl_std_mean = np.mean(bl_std_all)
+    # dsp_files = [raw.replace('raw','dsp') for raw in raw_files]
+    # bl_std_all = lh5.load_nda(dsp_files, ['bl_std'], detector+'/dsp')['bl_std']
+    # bl_std_mean = np.mean(bl_std_all)
 
     # dsp values for a given file
     dsp_file = raw_file.replace("raw", "dsp")
@@ -193,9 +193,9 @@ def leakage_current(raw_file: str, detector: str, det_type: str, raw_files: list
 def delta_bl_mean(raw_file: str, detector: str, det_type: str, raw_files: list[str]):
     """Return the difference with respect to the average value evaluated over the whole time window."""
     # mean over the whole time window
-    #dsp_files = [raw.replace('raw','dsp') for raw in raw_files]
-    #bl_mean_all = lh5.load_nda(dsp_files, ['bl_mean'], detector+'/dsp')['bl_mean']
-    #bl_puls_mean = np.mean(bl_mean_all)
+    # dsp_files = [raw.replace('raw','dsp') for raw in raw_files]
+    # bl_mean_all = lh5.load_nda(dsp_files, ['bl_mean'], detector+'/dsp')['bl_mean']
+    # bl_puls_mean = np.mean(bl_mean_all)
 
     # dsp values for a given file
     dsp_file = raw_file.replace("raw", "dsp")
