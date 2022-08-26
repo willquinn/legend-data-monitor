@@ -17,6 +17,9 @@ def load_parameter(
     detector: str,
     det_type: str,
     time_cut: list[str],
+    raw_files: list,
+    puls_only_ievt: np.ndarray,
+    not_puls_ievt: np.ndarray,
 ):
     """
     Load parameters from files.
@@ -35,56 +38,60 @@ def load_parameter(
                 Type of detector (geds or spms)
     time_cut
                 List with info about time cuts
+    puls_only_ievt
+                Array containing info about pulser event numbers
     """
     par_array = np.array([])
     utime_array = analysis.build_utime_array(raw_file, detector, det_type)
 
-    # grouping events into pulser only, geds only and geds_and_uplser events based on their ievt
-    puls_only_ievt, det_and_puls_ievt, det_only_ievt = analysis.puls_analysis(
-        raw_file, detector, det_type
-    )
-
+    det_and_puls_ievt = lh5.load_nda(raw_file, ['eventnumber'], f'{detector}/raw')['eventnumber']
+    det_only_index = np.isin(det_and_puls_ievt, not_puls_ievt)
     puls_only_index = np.isin(det_and_puls_ievt, puls_only_ievt)
-    det_only_index = np.isin(det_and_puls_ievt, det_only_ievt)
 
-    if det_type == "geds":
-        if parameter == "uncal_puls":
+    keep_puls = j_config[5]["pulser"]["keep-pulser"]
+    if parameter != "uncal_puls":
+        if keep_puls is True:
             utime_array = utime_array[puls_only_index]
-        else:
+        if keep_puls is False:
             utime_array = utime_array[det_only_index]
 
-    # cutting the array according to time selection
-    utime_array_cut, par_array_cut = analysis.time_analysis(utime_array, [], time_cut)
+    # cutting time array according to time selection
+    utime_array_cut, _ = analysis.time_analysis(utime_array, [], time_cut)
 
     # to handle particular cases where the timestamp array is outside the time window:
-    if len(utime_array_cut) == 0 and len(par_array_cut) == 0:
+    if len(utime_array_cut) == 0:
         return [], []
 
     if parameter == "bl_rms":
-        par_array = bl_rms(raw_file, detector, det_type, puls_only_index)
-    elif parameter == "LC":
-        par_array = leakage_current(raw_file, detector, det_type)
+        par_array = bl_rms(raw_file, detector, det_type, puls_only_index, raw_files)
+    elif parameter == "delta_bl_std":
+        par_array = delta_bl_std(raw_file, detector, det_type, puls_only_index, raw_files)
+    elif parameter == "lc":
+        par_array = leakage_current(raw_file, detector, det_type, raw_files)
+    elif parameter == "delta_bl_mean":
+        par_array = delta_bl_mean(raw_file, detector, det_type, raw_files)
     elif parameter == "event_rate":
         par_array, utime_array_cut = event_rate(raw_file, utime_array_cut, det_type)
     elif parameter == "uncal_puls":
         par_array = uncal_pulser(dsp_file, detector, puls_only_index)
     else:
         par_array = analysis.build_par_array(
-            raw_file, dsp_file, parameter, detector, det_type
+            raw_file, dsp_file, parameter, detector, det_type, raw_files
         )
 
-    # problem with dsp data in PGT (they had double size of raw data)
-    if len(par_array) == 2 * len(det_and_puls_ievt):
-        par_array = par_array[: len(det_and_puls_ievt)]
+    if parameter != "uncal_puls" and parameter != "event_rate":
+        if keep_puls is True:
+            par_array = par_array[puls_only_index]
+        if keep_puls is False:
+            par_array = par_array[det_only_index]
 
-    if parameter != "event_rate":
-        if det_type == "geds":
-            if parameter != "uncal_puls":
-                par_array = par_array[det_only_index]
+        # cutting time array according to time selection
+        # (we do it here otherwise would arise conflicts with 
+        # in the above few lines because of cut done with 'puls_only_index')
         _, par_array = analysis.time_analysis(
             utime_array, par_array, time_cut
-        )  # PGT: this gives problems for spms
-
+        )
+   
     # check if there are 'nan' values in par_array (only for dsp parameters)
     if j_par[0][parameter]["tier"] == 2:
         par_array, utime_array_cut = analysis.remove_nan_values(
@@ -94,7 +101,7 @@ def load_parameter(
     return par_array, utime_array_cut
 
 
-def bl_rms(raw_file: str, detector: str, det_type: str, puls_only_index: np.ndarray):
+def bl_rms(raw_file: str, detector: str, det_type: str, puls_only_index: np.ndarray, raw_files: list[str]):
     """
     Return the RMS of the normalized baseline.
 
@@ -124,11 +131,30 @@ def bl_rms(raw_file: str, detector: str, det_type: str, puls_only_index: np.ndar
     pulser_rms = [np.sqrt(np.mean(waveform[:wf_samples] ** 2)) for waveform in wf_puls]
     puls_mean = np.mean(pulser_rms)
     bl_norm = [ged_rms / puls_mean for ged_rms in array_rms]
-
     return np.array(bl_norm)
 
 
-def leakage_current(raw_file: str, detector: str, det_type: str):
+def delta_bl_std(raw_file: str, detector: str, det_type: str, puls_only_index: np.ndarray, raw_files: list[str]):
+    """
+    Returns the difference with respect to the average value evaluated over the whole time window.
+    """
+    # mean over the whole time window
+    dsp_files = [raw.replace('raw','dsp') for raw in raw_files]
+    bl_std_all = lh5.load_nda(dsp_files, ['bl_std'], detector+'/dsp')['bl_std']
+    #bl_std_mean = np.mean(bl_std_all)
+
+    # dsp values for a given file
+    dsp_file = raw_file.replace('raw','dsp')
+    bl_std = lh5.load_nda(dsp_file, ['bl_std'], detector+'/dsp')['bl_std']
+    bl_std_mean = np.mean(bl_std)
+
+    # baseline difference
+    diff = bl_std - bl_std_mean
+
+    return np.array(diff)
+
+
+def leakage_current(raw_file: str, detector: str, det_type: str, raw_files: list[str]):
     """
     Return the leakage current.
 
@@ -149,6 +175,27 @@ def leakage_current(raw_file: str, detector: str, det_type: str):
     return (
         lc * 2.5 / 500 / 3 / (2**16)
     )  # using old GERDA (baseline -> lc) conversion factor
+
+
+def delta_bl_mean(raw_file: str, detector: str, det_type: str, raw_files: list[str]):
+    """
+    Return the difference with respect to the average value evaluated over the whole time window.
+    """
+    # mean over the whole time window
+    dsp_files = [raw.replace('raw','dsp') for raw in raw_files]
+    bl_mean_all = lh5.load_nda(dsp_files, ['bl_mean'], detector+'/dsp')['bl_mean']
+    #bl_puls_mean = np.mean(bl_mean_all)
+
+    # dsp values for a given file
+    dsp_file = raw_file.replace('raw','dsp')
+    bl_mean = lh5.load_nda(dsp_file, ['bl_mean'], detector+'/dsp')['bl_mean']
+    bl_puls_mean = np.mean(bl_mean)
+
+    # baseline difference
+    diff = bl_mean - bl_puls_mean
+
+    return diff
+
 
 
 def event_rate(raw_run: str, timestamp: list, det_type: str):

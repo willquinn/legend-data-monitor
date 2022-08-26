@@ -31,7 +31,7 @@ def build_timecut_list(time_window: list, last_hours: list):
             time_cut.append(last_hours["prod_time"]["minutes"])  # minutes
 
     if time_window["enabled"] is True and last_hours["enabled"] is True:
-        logging.info(
+        logging.error(
             'Both "time_window" and "last_hours" are enabled. You must enable just one of the two analysis!'
         )
         sys.exit(1)
@@ -163,7 +163,7 @@ def cut_min_max_filelist(runs: list[str], time_cut: list[str]):
     highcut_list = np.where(day < timecut_high)[0]
 
     if len(lowcut_list) == 0 or len(highcut_list) == 0:
-        logging.info("No entries in the selected time window, retry!")
+        logging.error("No entries in the selected time window, retry!")
         sys.exit(1)
 
     files_index = np.arange(lowcut_list[0], highcut_list[-1] + 1, 1)
@@ -204,7 +204,7 @@ def cut_below_threshold_filelist(runs: list[str], time_cut: list[str]):
     highcut_list = np.where(day < threshold_highcut)[0]
 
     if len(lowcut_list) == 0:
-        logging.info("No entries in the selected time window, retry!")
+        logging.error("No entries in the selected time window, retry!")
         sys.exit(1)
 
     files_index = np.arange(lowcut_list[0] - 1, highcut_list[-1], 1)
