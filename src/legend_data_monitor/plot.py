@@ -425,7 +425,7 @@ def plot_par_vs_time_ch000(
 
         # skip the file if dsp-parameter is not present in the dsp file
         if j_par[0][parameter]["tier"] == 2:
-            if f"ch000/dsp/{parameter}" not in lh5.ls(dsp_file, f"ch000/dsp/"):
+            if "ch000/dsp/"+parameter not in lh5.ls(dsp_file, f"ch000/dsp/"):
                 continue
 
         # skip the detector if not in raw file
@@ -535,8 +535,8 @@ def plot_par_vs_time_ch000(
     plt.xlabel(f"{xlab} (UTC)")
 
     # set title
-    ax.set_title(f"pulser - ch000")
-    plt.title(f"pulser - ch000")
+    ax.set_title("pulser - ch000")
+    plt.title("pulser - ch000")
 
     # set y-label
     low_lim = j_par[0][parameter]["limit"][det_type][0]
