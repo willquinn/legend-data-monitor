@@ -50,165 +50,165 @@ def dump_all_plots_together(
     geds_dict, spms_dict, other_dict = analysis.load_channels(raw_files)
 
     with PdfPages(path) as pdf:
-        #with PdfPages(map_path) as pdf_map:
-            if (
-                det_type["geds"] is False
-                and det_type["spms"] is False
-                and det_type["ch000"] is False
-            ):
-                logging.error(
-                    "NO detectors have been selected! Enable geds and/or spms and/or ch000 in config.json"
-                )
-                return
+        # with PdfPages(map_path) as pdf_map:
+        if (
+            det_type["geds"] is False
+            and det_type["spms"] is False
+            and det_type["ch000"] is False
+        ):
+            logging.error(
+                "NO detectors have been selected! Enable geds and/or spms and/or ch000 in config.json"
+            )
+            return
 
-            # Geds plots
-            if det_type["geds"] is True:
-                # list of geds
-                string_geds, string_geds_name = analysis.read_geds(geds_dict)
-                geds_par = par_to_plot["geds"]
-                if len(geds_par) == 0:
-                    logging.error("Geds: NO parameters have been enabled!")
-                else:
-                    logging.error("Geds will be plotted...")
-                    for par in geds_par:
-                        det_status_dict = {}
-                        for (det_list, string) in zip(string_geds, string_geds_name):
-                            if len(det_list) == 0:
-                                continue  # no detectors in a string
+        # Geds plots
+        if det_type["geds"] is True:
+            # list of geds
+            string_geds, string_geds_name = analysis.read_geds(geds_dict)
+            geds_par = par_to_plot["geds"]
+            if len(geds_par) == 0:
+                logging.error("Geds: NO parameters have been enabled!")
+            else:
+                logging.error("Geds will be plotted...")
+                for par in geds_par:
+                    det_status_dict = {}
+                    for (det_list, string) in zip(string_geds, string_geds_name):
+                        if len(det_list) == 0:
+                            continue  # no detectors in a string
 
-                            map_dict = plot.plot_par_vs_time(
-                                raw_files,
-                                det_list,
-                                par,
-                                time_cut,
-                                "geds",
-                                string,
-                                geds_dict,
-                                pdf,
-                            )
+                        map_dict = plot.plot_par_vs_time(
+                            raw_files,
+                            det_list,
+                            par,
+                            time_cut,
+                            "geds",
+                            string,
+                            geds_dict,
+                            pdf,
+                        )
+                        if map_dict is not None:
+                            for det, status in map_dict.items():
+                                det_status_dict[det] = status
+
+                        if verbose is True:
                             if map_dict is not None:
-                                for det, status in map_dict.items():
-                                    det_status_dict[det] = status
+                                logging.error(
+                                    f"\t...{par} for geds (string #{string}) has been plotted!"
+                                )
+                            else:
+                                logging.error(
+                                    f"\t...no {par} plots for geds - string #{string}!"
+                                )
+                    # if det_status_dict != []:
+                    #    map.geds_map(
+                    #        par,
+                    #        geds_dict,
+                    #        string_geds,
+                    #        string_geds_name,
+                    #        det_status_dict,
+                    #        time_cut,
+                    #        map_path,
+                    #        pdf_map,
+                    #    )
 
-                            if verbose is True:
-                                if map_dict is not None:
-                                    logging.error(
-                                        f"\t...{par} for geds (string #{string}) has been plotted!"
-                                    )
-                                else:
-                                    logging.error(
-                                        f"\t...no {par} plots for geds - string #{string}!"
-                                    )
-                        # if det_status_dict != []:
-                        #    map.geds_map(
-                        #        par,
-                        #        geds_dict,
-                        #        string_geds,
-                        #        string_geds_name,
-                        #        det_status_dict,
-                        #        time_cut,
-                        #        map_path,
-                        #        pdf_map,
-                        #    )
-
-            # Spms plots
-            if det_type["spms"] is True:
-                if datatype == "cal":
-                    logging.error("No SiPMs for calibration data!")
+        # Spms plots
+        if det_type["spms"] is True:
+            if datatype == "cal":
+                logging.error("No SiPMs for calibration data!")
+            else:
+                # list of spms
+                (
+                    spms_merged,
+                    spms_name_merged,
+                    string_spms,
+                    string_spms_name,
+                ) = analysis.read_spms(spms_dict)
+                spms_par = par_to_plot["spms"]
+                if len(spms_par) == 0:
+                    logging.error("Spms: NO parameters have been enabled!")
                 else:
-                    # list of spms
-                    (
-                        spms_merged,
-                        spms_name_merged,
-                        string_spms,
-                        string_spms_name,
-                    ) = analysis.read_spms(spms_dict)
-                    spms_par = par_to_plot["spms"]
-                    if len(spms_par) == 0:
-                        logging.error("Spms: NO parameters have been enabled!")
-                    else:
-                        logging.error("Spms will be plotted...")
-                        for par in spms_par:
-                            if par == "gain":
-                                for (det_list, string) in zip(
-                                    spms_merged, spms_name_merged
-                                ):
-                                    plot.plot_par_vs_time_2d(
+                    logging.error("Spms will be plotted...")
+                    for par in spms_par:
+                        if par == "gain":
+                            for (det_list, string) in zip(
+                                spms_merged, spms_name_merged
+                            ):
+                                plot.plot_par_vs_time_2d(
+                                    raw_files,
+                                    det_list,
+                                    time_cut,
+                                    "spms",
+                                    string,
+                                    spms_dict,
+                                    pdf,
+                                )
+                                if verbose is True:
+                                    logging.error(
+                                        f"\t...{par} for spms ({string}) has been plotted!"
+                                    )
+                        else:
+                            det_status_dict = {}
+                            for (det_list, string) in zip(
+                                string_spms, string_spms_name
+                            ):
+                                if len(det_list) == 0:
+                                    continue  # no detectors in a string
+                                if len(string) != 0:
+                                    map_dict = plot.plot_par_vs_time(
                                         raw_files,
                                         det_list,
+                                        par,
                                         time_cut,
                                         "spms",
                                         string,
                                         spms_dict,
                                         pdf,
                                     )
-                                    if verbose is True:
+                                if map_dict is not None:
+                                    for det, status in map_dict.items():
+                                        det_status_dict[det] = status
+
+                                if verbose is True:
+                                    if map_dict is not None:
                                         logging.error(
                                             f"\t...{par} for spms ({string}) has been plotted!"
                                         )
-                            else:
-                                det_status_dict = {}
-                                for (det_list, string) in zip(
-                                    string_spms, string_spms_name
-                                ):
-                                    if len(det_list) == 0:
-                                        continue  # no detectors in a string
-                                    if len(string) != 0:
-                                        map_dict = plot.plot_par_vs_time(
-                                            raw_files,
-                                            det_list,
-                                            par,
-                                            time_cut,
-                                            "spms",
-                                            string,
-                                            spms_dict,
-                                            pdf,
+                                    else:
+                                        logging.error(
+                                            f"\t...no {par} plots for spms - {string}!"
                                         )
-                                    if map_dict is not None:
-                                        for det, status in map_dict.items():
-                                            det_status_dict[det] = status
+                            # if det_status_dict != []:
+                            #    map.spms_map(
+                            #        par,
+                            #        spms_dict,
+                            #        spms_merged,
+                            #        spms_name_merged,
+                            #        det_status_dict,
+                            #        time_cut,
+                            #        map_path,
+                            #        pdf_map,
+                            #    )
 
-                                    if verbose is True:
-                                        if map_dict is not None:
-                                            logging.error(
-                                                f"\t...{par} for spms ({string}) has been plotted!"
-                                            )
-                                        else:
-                                            logging.error(
-                                                f"\t...no {par} plots for spms - {string}!"
-                                            )
-                                # if det_status_dict != []:
-                                #    map.spms_map(
-                                #        par,
-                                #        spms_dict,
-                                #        spms_merged,
-                                #        spms_name_merged,
-                                #        det_status_dict,
-                                #        time_cut,
-                                #        map_path,
-                                #        pdf_map,
-                                #    )
-
-            # ch000 (pulser) plots
-            if det_type["ch000"] is True:
-                ch000_par = par_to_plot["ch000"]
-                if len(ch000_par) == 0:
-                    logging.error("ch000: NO parameters have been enabled!")
-                else:
-                    logging.error("ch000 will be plotted...")
-                    for par in ch000_par:
-                        map_dict = plot.plot_par_vs_time_ch000(
-                            raw_files,
-                            par,
-                            time_cut,
-                            "ch000",
-                            pdf,
-                        )
-                        if verbose is True:
-                            if map_dict is not None:
-                                logging.error(f"\t...{par} for ch000 has been plotted!")
-                            else:
-                                logging.error(f"\t...no {par} plots for ch000!")
+        # ch000 (pulser) plots
+        if det_type["ch000"] is True:
+            ch000_par = par_to_plot["ch000"]
+            if len(ch000_par) == 0:
+                logging.error("ch000: NO parameters have been enabled!")
+            else:
+                logging.error("ch000 will be plotted...")
+                for par in ch000_par:
+                    map_dict = plot.plot_par_vs_time_ch000(
+                        raw_files,
+                        par,
+                        time_cut,
+                        "ch000",
+                        pdf,
+                    )
+                    if verbose is True:
+                        if map_dict is not None:
+                            logging.error(f"\t...{par} for ch000 has been plotted!")
+                        else:
+                            logging.error(f"\t...no {par} plots for ch000!")
 
     if verbose is True:
         logging.error(f"Plots are in {path}")

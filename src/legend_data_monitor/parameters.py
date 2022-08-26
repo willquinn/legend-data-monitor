@@ -143,7 +143,13 @@ def bl_rms(
     return np.array(bl_norm)
 
 
-def delta_bl_std(raw_file: str, detector: str, det_type: str, puls_only_index: np.ndarray, raw_files: list[str]):
+def delta_bl_std(
+    raw_file: str,
+    detector: str,
+    det_type: str,
+    puls_only_index: np.ndarray,
+    raw_files: list[str],
+):
     """Return the difference with respect to the average value evaluated over the whole time window."""
     # mean over the whole time window
     #dsp_files = [raw.replace('raw','dsp') for raw in raw_files]
