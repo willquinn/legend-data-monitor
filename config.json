@@ -21,8 +21,13 @@
     "geds": ["baseline", "delta_bl_std", "delta_bl_mean"],
     "ch000": [],
     "pulser": {
+<<<<<<< HEAD
     	"README": "Set the following flag to 'true' if you want to plot pulser events; set it to 'false' if you want to plot real events. Set it to 'null' if you want to keep everything",
         "keep-pulser": "null"
+=======
+      "README": "Set the following flag to 'true' if you want to plot pulser events; set it to 'false' if you want to plot real events. Set it to 'null' if you want to keep everythin",
+      "keep-pulser": "null"
+>>>>>>> b39d49b62d461461aa898b45942aad84d6dabf27
     },
 
     "Available-par": {
@@ -31,7 +36,7 @@
       "Tier-2-par2": "pz_std, tp_01, tp_0_est, tp_10, tp_100, tp_20, tp_50, tp_80, tp_90, tp_95, tp_99, tp_aoe_max, tp_aoe_samp",
       "Tier-2-par3": "tp_max, tp_min, trapEftp, trapEmax, trapTmax, wf_max, wf_min, zacEftp, zacEmax",
       "Other-par": {
-	"variations": "delta_bl_std, delta_bl_mean",
+        "variations": "delta_bl_std, delta_bl_mean",
         "event_rate": {
           "README": "Event rate. Change 'dt' and 'units' if needed.",
           "dt": {
