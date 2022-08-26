@@ -58,7 +58,7 @@ def plot_parameters(
                   Parameter to plot
     """
     # evaluate (x,y) points
-    time_slice = j_config[6][det_type]
+    #time_slice = j_config[6][det_type]
     """
     if parameter != "event_rate" and parameter != "wf_max":   # <<<---- check it because for wf_max for all ievts gave problems!!!
         times_average, par_average = analysis.par_time_average(
@@ -93,7 +93,7 @@ def plot_parameters(
         plt.plot(
             times, par_average, color=col, linewidth=0, marker=".", markersize=0.5
         )
-    # plot everythin indipendently of the detector's status
+    # plot everything independently of the detector's status
     else:
         ax.plot(
             times, par_average, color=col, linewidth=0, marker=".", markersize=0.5
@@ -106,7 +106,7 @@ def plot_parameters(
 
 
 def plot_par_vs_time(
-    dsp_files: list[str],
+    raw_files: list[str],
     det_list: list[str],
     parameter: str,
     time_cut: list[str],
@@ -120,7 +120,7 @@ def plot_par_vs_time(
 
     Parameters
     ----------
-    dsp_files
+    raw_files
                     Strings of lh5 dsp files
     det_list
                     List of detectors present in a string
@@ -132,7 +132,7 @@ def plot_par_vs_time(
                     Type of detector (geds or spms)
     string_number
                     Number of the string under study
-    det_dict      : dictionary
+    det_dict    
                     Contains info (crate, card, ch_orca) for geds/spms/other
     """
     fig, ax = plt.subplots(1, 1)
@@ -171,13 +171,13 @@ def plot_par_vs_time(
 
             # skip the detector if not in raw file
             if detector not in lh5.ls(raw_file, ""):
-                logging.warning(f'No {detector} branch in file {raw_file}')
+                logging.warning(f"No {detector} branch in file {raw_file}")
                 continue
 
             # skip the detector if not in dsp file (just for dsp-related parameters)
             if parameter in ["uncal_puls"] or j_par[0][parameter]["tier"] == 2:
                 if detector not in lh5.ls(dsp_file, ""):
-                    logging.warning(f'No {detector} branch in file {dsp_file}')
+                    logging.warning(f"No {detector} branch in file {dsp_file}")
                     continue
 
             # add entries for the legend

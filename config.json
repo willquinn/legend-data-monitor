@@ -21,13 +21,8 @@
     "geds": ["baseline", "delta_bl_std", "delta_bl_mean"],
     "ch000": [],
     "pulser": {
-<<<<<<< HEAD
     	"README": "Set the following flag to 'true' if you want to plot pulser events; set it to 'false' if you want to plot real events. Set it to 'null' if you want to keep everything",
         "keep-pulser": "null"
-=======
-      "README": "Set the following flag to 'true' if you want to plot pulser events; set it to 'false' if you want to plot real events. Set it to 'null' if you want to keep everythin",
-      "keep-pulser": "null"
->>>>>>> b39d49b62d461461aa898b45942aad84d6dabf27
     },
 
     "Available-par": {
