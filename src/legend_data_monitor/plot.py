@@ -87,20 +87,12 @@ def plot_parameters(
 
     # if we want to plot detectors that are only problematic
     if status_flag is True and status == 1:
-        ax.plot(
-            times, par_average, color=col, linewidth=0, marker=".", markersize=0.5
-        )
-        plt.plot(
-            times, par_average, color=col, linewidth=0, marker=".", markersize=0.5
-        )
+        ax.plot(times, par_average, color=col, linewidth=0, marker=".", markersize=0.5)
+        plt.plot(times, par_average, color=col, linewidth=0, marker=".", markersize=0.5)
     # plot everythin indipendently of the detector's status
     else:
-        ax.plot(
-            times, par_average, color=col, linewidth=0, marker=".", markersize=0.5
-        )
-        plt.plot(
-            times, par_average, color=col, linewidth=0, marker=".", markersize=0.5
-        )
+        ax.plot(times, par_average, color=col, linewidth=0, marker=".", markersize=0.5)
+        plt.plot(times, par_average, color=col, linewidth=0, marker=".", markersize=0.5)
 
     return times[0], times[-1], status, ax
 
@@ -171,19 +163,19 @@ def plot_par_vs_time(
 
             # skip the detector if not in raw file
             if detector not in lh5.ls(raw_file, ""):
-                logging.warning(f'No {detector} branch in file {raw_file}')
+                logging.warning(f"No {detector} branch in file {raw_file}")
                 continue
 
             # skip the detector if not in dsp file (just for dsp-related parameters)
             if parameter in ["uncal_puls"] or j_par[0][parameter]["tier"] == 2:
                 if detector not in lh5.ls(dsp_file, ""):
-                    logging.warning(f'No {detector} branch in file {dsp_file}')
+                    logging.warning(f"No {detector} branch in file {dsp_file}")
                     continue
 
             # add entries for the legend
             card = det_dict[detector]["daq"]["card"]
             ch_orca = det_dict[detector]["daq"]["ch_orca"]
-            if det_type=="geds": 
+            if det_type == "geds":
                 name = det_dict[detector]["det"]
                 lab = f"{name} - {detector} - {card},{ch_orca}"
             if det_type == "spms":
@@ -383,7 +375,7 @@ def plot_par_vs_time(
     pdf.savefig(bbox_inches="tight")
     plt.close()
 
-    logging.info(f'{parameter} is plotted from {start_times[0]} to {end_times[-1]}')
+    logging.info(f"{parameter} is plotted from {start_times[0]} to {end_times[-1]}")
 
     return map_dict
 
@@ -592,7 +584,7 @@ def plot_par_vs_time_ch000(
     pdf.savefig(bbox_inches="tight")
     plt.close()
 
-    logging.info(f'{parameter} is plotted from {start_times[0]} to {end_times[-1]}')
+    logging.info(f"{parameter} is plotted from {start_times[0]} to {end_times[-1]}")
 
     return map_dict
 
