@@ -50,7 +50,7 @@ def dump_all_plots_together(
     geds_dict, spms_dict, other_dict = analysis.load_channels(raw_files)
 
     with PdfPages(path) as pdf:
-        with PdfPages(map_path) as pdf_map:
+        #with PdfPages(map_path) as pdf_map:
             if det_type["geds"] is False and det_type["spms"] is False and det_type["ch000"] is False:
                 logging.error(
                     "NO detectors have been selected! Enable geds and/or spms and/or ch000 in config.json"

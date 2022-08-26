@@ -398,9 +398,9 @@ def build_par_array(
         #par_array_mean = np.mean(par_array_first_events) # mean over first files
         #par_array_mean = np.mean(par_array) # mean over the whole time window
     if j_par[0][parameter]["tier"] == 2:
-        dsp_files = [raw_file.replace('raw','dsp') for raw_file in raw_files]
         par_array = lh5.load_nda(dsp_file, [parameter], detector + "/dsp/")[parameter]
         base = lh5.load_nda(raw_file, ['baseline'], detector + "/raw/")['baseline']
+        #dsp_files = [raw_file.replace('raw','dsp') for raw_file in raw_files]
         #par_array_first_events = lh5.load_nda(dsp_files[:5], [parameter], detector + "/dsp/")[parameter]
         #par_array_mean = np.mean(par_array_first_events) # mean over first files
         #par_array_mean = np.mean(par_array) # mean over the whole time window

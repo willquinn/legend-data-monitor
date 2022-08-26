@@ -90,7 +90,7 @@ def plot_parameters(
         else:
             ax.plot(times, par_average, color=col, linewidth=0, marker=".", markersize=0.5)
             plt.plot(times, par_average, color=col, linewidth=0, marker=".", markersize=0.5)
-    # plot everythin indipendently of the detector's status
+    # plot everything independently of the detector's status
     else: 
         if det_type == "ch000":
             ax.plot(times, par_average, color=col, linewidth=0, marker=".", markersize=0.5)
@@ -141,7 +141,6 @@ def plot_par_vs_time(
     end_times = []
     handle_list = []
     map_dict = {}
-    sys.exit(1)
 
     for raw_file in raw_files:
         dsp_file = raw_file.replace("raw", "dsp")
@@ -167,19 +166,18 @@ def plot_par_vs_time(
 
             # skip the detector if not in raw file
             if detector not in lh5.ls(raw_file, ""):
-                logging.warning(f'No "{detector}" branch in file {raw_file}')
+                logging.warning(f'No {detector} branch in file {raw_file}')
                 continue
 
             # skip the detector if not in dsp file (just for dsp-related parameters)
             if parameter in ["uncal_puls"] or j_par[0][parameter]["tier"] == 2:
                 if detector not in lh5.ls(dsp_file, ""):
-                    logging.warning(f'No "{detector}" branch in file {dsp_file}')
+                    logging.warning(f'No {detector} branch in file {dsp_file}')
                     continue
 
             # add entries for the legend
             card = det_dict[detector]["daq"]["card"]
             ch_orca = det_dict[detector]["daq"]["ch_orca"]
-            crate = det_dict[detector]["daq"]["crate"]
             if det_type=="geds": 
                 name = det_dict[detector]["det"]
                 lab=f"{name} - {detector} - {card},{ch_orca}"
@@ -372,7 +370,7 @@ def plot_par_vs_time(
     pdf.savefig(bbox_inches="tight")
     plt.close()
 
-    logging.info(f'"{parameter}" is plotted from {start_times[0]} to {end_times[-1]}')
+    logging.info(f'{parameter} is plotted from {start_times[0]} to {end_times[-1]}')
 
     return map_dict
 
@@ -574,7 +572,7 @@ def plot_par_vs_time_ch000(
     pdf.savefig(bbox_inches="tight")
     plt.close()
 
-    logging.info(f'"{parameter}" is plotted from {start_times[0]} to {end_times[-1]}')
+    logging.info(f'{parameter} is plotted from {start_times[0]} to {end_times[-1]}')
 
     return map_dict
 
@@ -661,7 +659,6 @@ def plot_par_vs_time_2d(
         # add entries for the legend
         card = det_dict[detector]["daq"]["card"]
         ch_orca = det_dict[detector]["daq"]["ch_orca"]
-        crate = det_dict[detector]["daq"]["crate"]
         if det_type == "spms":
             handle_list.append(
                 mpatches.Patch(

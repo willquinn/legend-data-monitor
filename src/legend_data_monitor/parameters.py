@@ -131,16 +131,15 @@ def bl_rms(raw_file: str, detector: str, det_type: str, puls_only_index: np.ndar
     pulser_rms = [np.sqrt(np.mean(waveform[:wf_samples] ** 2)) for waveform in wf_puls]
     puls_mean = np.mean(pulser_rms)
     bl_norm = [ged_rms / puls_mean for ged_rms in array_rms]
+
     return np.array(bl_norm)
 
 
 def delta_bl_std(raw_file: str, detector: str, det_type: str, puls_only_index: np.ndarray, raw_files: list[str]):
-    """
-    Returns the difference with respect to the average value evaluated over the whole time window.
-    """
+    """Return the difference with respect to the average value evaluated over the whole time window."""
     # mean over the whole time window
     dsp_files = [raw.replace('raw','dsp') for raw in raw_files]
-    bl_std_all = lh5.load_nda(dsp_files, ['bl_std'], detector+'/dsp')['bl_std']
+    #bl_std_all = lh5.load_nda(dsp_files, ['bl_std'], detector+'/dsp')['bl_std']
     #bl_std_mean = np.mean(bl_std_all)
 
     # dsp values for a given file
@@ -178,12 +177,10 @@ def leakage_current(raw_file: str, detector: str, det_type: str, raw_files: list
 
 
 def delta_bl_mean(raw_file: str, detector: str, det_type: str, raw_files: list[str]):
-    """
-    Return the difference with respect to the average value evaluated over the whole time window.
-    """
+    """Return the difference with respect to the average value evaluated over the whole time window."""
     # mean over the whole time window
     dsp_files = [raw.replace('raw','dsp') for raw in raw_files]
-    bl_mean_all = lh5.load_nda(dsp_files, ['bl_mean'], detector+'/dsp')['bl_mean']
+    #bl_mean_all = lh5.load_nda(dsp_files, ['bl_mean'], detector+'/dsp')['bl_mean']
     #bl_puls_mean = np.mean(bl_mean_all)
 
     # dsp values for a given file
