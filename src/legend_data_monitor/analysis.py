@@ -310,7 +310,6 @@ def check_par_values(
     return thr_flag
 
 
-
 def build_utime_array(raw_files: list[str], detector: str, det_type: str):
     """
     Return an array with shifted time arrays for spms detectors.
@@ -393,21 +392,21 @@ def build_par_array(
     utime_array = build_utime_array(raw_file, detector, det_type)
     if j_par[0][parameter]["tier"] == 1:
         par_array = lh5.load_nda(raw_file, [parameter], detector + "/raw/")[parameter]
-        base = lh5.load_nda(raw_file, ['baseline'], detector + "/raw/")['baseline']
-        #par_array_first_events = lh5.load_nda(raw_files[:5], [parameter], detector + "/raw/")[parameter]
-        #par_array_mean = np.mean(par_array_first_events) # mean over first files
-        #par_array_mean = np.mean(par_array) # mean over the whole time window
+        base = lh5.load_nda(raw_file, ["baseline"], detector + "/raw/")["baseline"]
+        # par_array_first_events = lh5.load_nda(raw_files[:5], [parameter], detector + "/raw/")[parameter]
+        # par_array_mean = np.mean(par_array_first_events) # mean over first files
+        # par_array_mean = np.mean(par_array) # mean over the whole time window
     if j_par[0][parameter]["tier"] == 2:
-        dsp_files = [raw_file.replace('raw','dsp') for raw_file in raw_files]
+        dsp_files = [raw_file.replace("raw", "dsp") for raw_file in raw_files]
         par_array = lh5.load_nda(dsp_file, [parameter], detector + "/dsp/")[parameter]
-        base = lh5.load_nda(raw_file, ['baseline'], detector + "/raw/")['baseline']
-        #par_array_first_events = lh5.load_nda(dsp_files[:5], [parameter], detector + "/dsp/")[parameter]
-        #par_array_mean = np.mean(par_array_first_events) # mean over first files
-        #par_array_mean = np.mean(par_array) # mean over the whole time window
+        base = lh5.load_nda(raw_file, ["baseline"], detector + "/raw/")["baseline"]
+        # par_array_first_events = lh5.load_nda(dsp_files[:5], [parameter], detector + "/dsp/")[parameter]
+        # par_array_mean = np.mean(par_array_first_events) # mean over first files
+        # par_array_mean = np.mean(par_array) # mean over the whole time window
         if len(par_array) == 2 * len(utime_array):
             par_array = par_array[: len(utime_array)]
 
-    return np.subtract(par_array, base)#-par_array_mean
+    return np.subtract(par_array, base)  # -par_array_mean
 
 
 def time_analysis(utime_array: np.ndarray, par_array: np.ndarray, time_cut: list[str]):
@@ -494,24 +493,25 @@ def get_puls_ievt(raw_file: str, dsp_file: str):
     dsp_file
                lh5 dsp file
     """
-    wf_max = lh5.load_nda(dsp_file, ['wf_max'], 'ch000/dsp/')['wf_max']
-    puls_ievt = lh5.load_nda(raw_file, ['eventnumber'], 'ch000/raw/')['eventnumber'] # pulser events
+    wf_max = lh5.load_nda(dsp_file, ["wf_max"], "ch000/dsp/")["wf_max"]
+    puls_ievt = lh5.load_nda(raw_file, ["eventnumber"], "ch000/raw/")[
+        "eventnumber"
+    ]  # pulser events
     pulser_entry = []
     not_pulser_entry = []
 
     for idx in puls_ievt:
-        if wf_max[idx]>24000: 
+        if wf_max[idx] > 24000:
             pulser_entry.append(idx)
-        if wf_max[idx]<=24000: 
+        if wf_max[idx] <= 24000:
             not_pulser_entry.append(idx)
 
     # pulser entries
     puls_only_ievt = puls_ievt[np.isin(puls_ievt, pulser_entry)]
     # not pulser entries
-    not_puls_ievt  = puls_ievt[np.isin(puls_ievt, not_pulser_entry)]
+    not_puls_ievt = puls_ievt[np.isin(puls_ievt, not_pulser_entry)]
 
     return puls_only_ievt, not_puls_ievt
-
 
 
 def remove_nan_values(par_array: np.ndarray, time_array: np.ndarray):

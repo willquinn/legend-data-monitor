@@ -8,7 +8,7 @@ import matplotlib as mpl
 from matplotlib.backends.backend_pdf import PdfPages
 
 # modules
-from . import analysis, map, plot, timecut
+from . import analysis, plot, timecut
 
 log = logging.getLogger(__name__)
 
@@ -51,7 +51,11 @@ def dump_all_plots_together(
 
     with PdfPages(path) as pdf:
         with PdfPages(map_path) as pdf_map:
-            if det_type["geds"] is False and det_type["spms"] is False and det_type["ch000"] is False:
+            if (
+                det_type["geds"] is False
+                and det_type["spms"] is False
+                and det_type["ch000"] is False
+            ):
                 logging.error(
                     "NO detectors have been selected! Enable geds and/or spms and/or ch000 in config.json"
                 )
@@ -95,7 +99,7 @@ def dump_all_plots_together(
                                     logging.error(
                                         f"\t...no {par} plots for geds - string #{string}!"
                                     )
-                        #if det_status_dict != []:
+                        # if det_status_dict != []:
                         #    map.geds_map(
                         #        par,
                         #        geds_dict,
@@ -173,7 +177,7 @@ def dump_all_plots_together(
                                             logging.error(
                                                 f"\t...no {par} plots for spms - {string}!"
                                             )
-                                #if det_status_dict != []:
+                                # if det_status_dict != []:
                                 #    map.spms_map(
                                 #        par,
                                 #        spms_dict,
@@ -193,22 +197,18 @@ def dump_all_plots_together(
                 else:
                     logging.error("ch000 will be plotted...")
                     for par in ch000_par:
-                        map_dict = plot.plot_par_vs_time_ch000( 
-                                raw_files,
-                                par,
-                                time_cut,
-                                "ch000",
-                                pdf,
-                            )
+                        map_dict = plot.plot_par_vs_time_ch000(
+                            raw_files,
+                            par,
+                            time_cut,
+                            "ch000",
+                            pdf,
+                        )
                         if verbose is True:
                             if map_dict is not None:
-                                logging.error(
-                                    f"\t...{par} for ch000 has been plotted!"
-                                )
+                                logging.error(f"\t...{par} for ch000 has been plotted!")
                             else:
-                                logging.error(
-                                    f"\t...no {par} plots for ch000!"
-                                )
+                                logging.error(f"\t...no {par} plots for ch000!")
 
     if verbose is True:
         logging.error(f"Plots are in {path}")
@@ -313,7 +313,7 @@ def main():
     # set up logging to console
     console = logging.StreamHandler()
     console.setLevel(logging.ERROR)
-    formatter = logging.Formatter('%(asctime)s:  %(message)s')
+    formatter = logging.Formatter("%(asctime)s:  %(message)s")
     console.setFormatter(formatter)
     logging.getLogger("").addHandler(console)
 

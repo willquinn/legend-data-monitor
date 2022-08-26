@@ -78,26 +78,45 @@ def plot_parameters(
     times = [datetime.fromtimestamp(t) for t in times_average]
 
     status_flag = j_config[9][det_type]
-    if det_type == "spms": col = j_plot[2][str(detector)]
-    if det_type == "geds": col = j_plot[3][detector]
-    if det_type == "ch000": col = "k"
+    if det_type == "spms":
+        col = j_plot[2][str(detector)]
+    if det_type == "geds":
+        col = j_plot[3][detector]
+    if det_type == "ch000":
+        col = "k"
 
     # if we want to plot detectors that are only problematic
-    if status_flag is True and status == 1: 
+    if status_flag is True and status == 1:
         if det_type == "ch000":
-            ax.plot(times, par_average, color=col, linewidth=0, marker=".", markersize=0.5)
-            plt.plot(times, par_average, color=col, linewidth=0, marker=".", markersize=0.5)
+            ax.plot(
+                times, par_average, color=col, linewidth=0, marker=".", markersize=0.5
+            )
+            plt.plot(
+                times, par_average, color=col, linewidth=0, marker=".", markersize=0.5
+            )
         else:
-            ax.plot(times, par_average, color=col, linewidth=0, marker=".", markersize=0.5)
-            plt.plot(times, par_average, color=col, linewidth=0, marker=".", markersize=0.5)
+            ax.plot(
+                times, par_average, color=col, linewidth=0, marker=".", markersize=0.5
+            )
+            plt.plot(
+                times, par_average, color=col, linewidth=0, marker=".", markersize=0.5
+            )
     # plot everythin indipendently of the detector's status
-    else: 
+    else:
         if det_type == "ch000":
-            ax.plot(times, par_average, color=col, linewidth=0, marker=".", markersize=0.5)
-            plt.plot(times, par_average, color=col, linewidth=0, marker=".", markersize=0.5)
+            ax.plot(
+                times, par_average, color=col, linewidth=0, marker=".", markersize=0.5
+            )
+            plt.plot(
+                times, par_average, color=col, linewidth=0, marker=".", markersize=0.5
+            )
         else:
-            ax.plot(times, par_average, color=col, linewidth=0, marker=".", markersize=0.5)
-            plt.plot(times, par_average, color=col, linewidth=0, marker=".", markersize=0.5)
+            ax.plot(
+                times, par_average, color=col, linewidth=0, marker=".", markersize=0.5
+            )
+            plt.plot(
+                times, par_average, color=col, linewidth=0, marker=".", markersize=0.5
+            )
 
     return times[0], times[-1], status, ax
 
@@ -162,7 +181,9 @@ def plot_par_vs_time(
 
             # skip the file if dsp-parameter is not present in the dsp file
             if j_par[0][parameter]["tier"] == 2:
-                if f'{detector}/dsp/{parameter}' not in lh5.ls(dsp_file, f"{detector}/dsp/"):
+                if f"{detector}/dsp/{parameter}" not in lh5.ls(
+                    dsp_file, f"{detector}/dsp/"
+                ):
                     continue
 
             # skip the detector if not in raw file
@@ -180,11 +201,11 @@ def plot_par_vs_time(
             card = det_dict[detector]["daq"]["card"]
             ch_orca = det_dict[detector]["daq"]["ch_orca"]
             crate = det_dict[detector]["daq"]["crate"]
-            if det_type=="geds": 
+            if det_type == "geds":
                 name = det_dict[detector]["det"]
-                lab=f"{name} - {detector} - {card},{ch_orca}"
-            if det_type=="spms":
-                lab=f"{detector} - {card},{ch_orca}"
+                lab = f"{name} - {detector} - {card},{ch_orca}"
+            if det_type == "spms":
+                lab = f"{detector} - {card},{ch_orca}"
             if raw_file == raw_files[0]:
                 if det_type == "spms":
                     col = j_plot[2][str(detector)]
@@ -199,7 +220,15 @@ def plot_par_vs_time(
 
             # det parameter and time arrays for a given detector
             par_np_array, utime_array = parameters.load_parameter(
-                parameter, raw_file, dsp_file, detector, det_type, time_cut, raw_files, puls_only_ievt, not_puls_ievt
+                parameter,
+                raw_file,
+                dsp_file,
+                detector,
+                det_type,
+                time_cut,
+                raw_files,
+                puls_only_ievt,
+                not_puls_ievt,
             )
 
             # to handle particular cases where the timestamp array is outside the time window:
@@ -377,7 +406,6 @@ def plot_par_vs_time(
     return map_dict
 
 
-
 def plot_par_vs_time_ch000(
     raw_files: list[str],
     parameter: str,
@@ -423,7 +451,7 @@ def plot_par_vs_time_ch000(
 
         # skip the file if dsp-parameter is not present in the dsp file
         if j_par[0][parameter]["tier"] == 2:
-            if f'ch000/dsp/{parameter}' not in lh5.ls(dsp_file, f"ch000/dsp/"):
+            if f"ch000/dsp/{parameter}" not in lh5.ls(dsp_file, f"ch000/dsp/"):
                 continue
 
         # skip the detector if not in raw file
@@ -442,13 +470,21 @@ def plot_par_vs_time_ch000(
             handle_list.append(
                 mpatches.Patch(
                     color="k",
-                    label="ch000 - 0,0", # channel - card, ch_orca (FC)
+                    label="ch000 - 0,0",  # channel - card, ch_orca (FC)
                 )
             )
 
         # det parameter and time arrays for a given detector
         par_np_array, utime_array = parameters.load_parameter(
-            parameter, raw_file, dsp_file, "ch000", det_type, time_cut, raw_files, puls_only_ievt, not_puls_ievt 
+            parameter,
+            raw_file,
+            dsp_file,
+            "ch000",
+            det_type,
+            time_cut,
+            raw_files,
+            puls_only_ievt,
+            not_puls_ievt,
         )
 
         # to handle particular cases where the timestamp array is outside the time window:
@@ -457,7 +493,7 @@ def plot_par_vs_time_ch000(
 
         # plot detector and get its status
         start_time, end_time, status, ax = plot_parameters(
-            ax, par_np_array, utime_array, "ch000", det_type, parameter 
+            ax, par_np_array, utime_array, "ch000", det_type, parameter
         )
 
         # fill the map with status flags
@@ -541,33 +577,33 @@ def plot_par_vs_time_ch000(
     if len(time_cut) != 0:
         start, end = timecut.time_dates(time_cut)
         pkl_name = (
-                exp
-                + "-"
-                + period
-                + "-"
-                + run
-                + "-"
-                + datatype
-                + "-"
-                + start
-                + "_"
-                + end
-                + "-"
-                + parameter
-                + "-pulser.pkl"
+            exp
+            + "-"
+            + period
+            + "-"
+            + run
+            + "-"
+            + datatype
+            + "-"
+            + start
+            + "_"
+            + end
+            + "-"
+            + parameter
+            + "-pulser.pkl"
         )
     else:
         pkl_name = (
-                exp
-                + "-"
-                + period
-                + "-"
-                + run
-                + "-"
-                + datatype
-                + "-"
-                + parameter
-                + "-pulser.pkl"
+            exp
+            + "-"
+            + period
+            + "-"
+            + run
+            + "-"
+            + datatype
+            + "-"
+            + parameter
+            + "-pulser.pkl"
         )
 
     pkl.dump(ax, open(f"out/pkl-files/par-vs-time/{pkl_name}", "wb"))
