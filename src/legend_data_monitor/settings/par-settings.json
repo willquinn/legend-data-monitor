@@ -2,12 +2,13 @@
   "par_to_plot": {
     "baseline": {
       "tier": 1,
-      "label": "FPGA baseline",
+      "label": "FPGA_bl - avg(FPGA_bl)",
       "units": "ADC",
       "facecol": [0.98, 0.91, 0.71],
       "limit": {
         "spms": ["null", "null"],
-        "geds": ["null", "null"]
+        "geds": ["null", "null"],
+        "ch000": ["null", "null"]
       }
     },
     "card": {
@@ -17,7 +18,8 @@
       "facecol": [0.98, 0.91, 0.71],
       "limit": {
         "spms": ["null", "null"],
-        "geds": ["null", "null"]
+        "geds": ["null", "null"],
+        "ch000": ["null", "null"]
       }
     },
     "ch_orca": {
@@ -27,7 +29,8 @@
       "facecol": [0.98, 0.91, 0.71],
       "limit": {
         "spms": ["null", "null"],
-        "geds": ["null", "null"]
+        "geds": ["null", "null"],
+        "ch000": ["null", "null"]
       }
     },
     "channel": {
@@ -37,7 +40,8 @@
       "facecol": [0.98, 0.91, 0.71],
       "limit": {
         "spms": ["null", "null"],
-        "geds": ["null", "null"]
+        "geds": ["null", "null"],
+        "ch000": ["null", "null"]
       }
     },
     "crate": {
@@ -47,7 +51,8 @@
       "facecol": [0.98, 0.91, 0.71],
       "limit": {
         "spms": ["null", "null"],
-        "geds": ["null", "null"]
+        "geds": ["null", "null"],
+        "ch000": ["null", "null"]
       }
     },
     "daqenergy": {
@@ -57,7 +62,8 @@
       "facecol": [0.98, 0.91, 0.71],
       "limit": {
         "spms": ["null", "null"],
-        "geds": ["null", "null"]
+        "geds": ["null", "null"],
+        "ch000": ["null", "null"]
       }
     },
     "numtraces": {
@@ -67,7 +73,8 @@
       "facecol": [0.98, 0.91, 0.71],
       "limit": {
         "spms": ["null", "null"],
-        "geds": ["null", "null"]
+        "geds": ["null", "null"],
+        "ch000": ["null", "null"]
       }
     },
     "eventnumber": {
@@ -77,7 +84,8 @@
       "facecol": [0.98, 0.91, 0.71],
       "limit": {
         "spms": ["null", "null"],
-        "geds": ["null", "null"]
+        "geds": ["null", "null"],
+        "ch000": ["null", "null"]
       }
     },
     "bl_intercept": {
@@ -87,7 +95,8 @@
       "facecol": [0.61, 0.87, 1.0],
       "limit": {
         "spms": ["null", "null"],
-        "geds": ["null", "null"]
+        "geds": ["null", "null"],
+        "ch000": ["null", "null"]
       }
     },
     "bl_mean": {
@@ -97,7 +106,8 @@
       "facecol": [0.61, 0.87, 1.0],
       "limit": {
         "spms": ["null", "null"],
-        "geds": ["null", "null"]
+        "geds": ["null", "null"],
+        "ch000": ["null", "null"]
       }
     },
     "bl_slope": {
@@ -107,7 +117,8 @@
       "facecol": [0.61, 0.87, 1.0],
       "limit": {
         "spms": ["null", "null"],
-        "geds": ["null", "null"]
+        "geds": ["null", "null"],
+        "ch000": ["null", "null"]
       }
     },
     "bl_std": {
@@ -117,7 +128,8 @@
       "facecol": [0.61, 0.87, 1.0],
       "limit": {
         "spms": ["null", "null"],
-        "geds": ["null", "null"]
+        "geds": ["null", "null"],
+        "ch000": ["null", "null"]
       }
     },
     "A_max": {
@@ -127,7 +139,8 @@
       "facecol": [0.96, 0.73, 1.0],
       "limit": {
         "spms": ["null", "null"],
-        "geds": ["null", "null"]
+        "geds": ["null", "null"],
+        "ch000": ["null", "null"]
       }
     },
     "QDrift": {
@@ -137,7 +150,8 @@
       "facecol": [0.56, 0.74, 0.56],
       "limit": {
         "spms": ["null", "null"],
-        "geds": ["null", "null"]
+        "geds": ["null", "null"],
+        "ch000": ["null", "null"]
       }
     },
     "cuspEftp": {
@@ -147,7 +161,8 @@
       "facecol": [0.86, 0.86, 0.86],
       "limit": {
         "spms": ["null", "null"],
-        "geds": ["null", "null"]
+        "geds": ["null", "null"],
+        "ch000": ["null", "null"]
       }
     },
     "cuspEmax": {
@@ -157,7 +172,8 @@
       "facecol": [0.86, 0.86, 0.86],
       "limit": {
         "spms": ["null", "null"],
-        "geds": ["null", "null"]
+        "geds": ["null", "null"],
+        "ch000": ["null", "null"]
       }
     },
     "dt_eff": {
@@ -167,7 +183,8 @@
       "facecol": "peachpuff",
       "limit": {
         "spms": ["null", "null"],
-        "geds": ["null", "null"]
+        "geds": ["null", "null"],
+        "ch000": ["null", "null"]
       }
     },
     "pz_mean": {
@@ -177,7 +194,8 @@
       "facecol": "paleturquoise",
       "limit": {
         "spms": ["null", "null"],
-        "geds": ["null", "null"]
+        "geds": ["null", "null"],
+        "ch000": ["null", "null"]
       }
     },
     "pz_slope": {
@@ -187,7 +205,8 @@
       "facecol": "paleturquoise",
       "limit": {
         "spms": ["null", "null"],
-        "geds": ["null", "null"]
+        "geds": ["null", "null"],
+        "ch000": ["null", "null"]
       }
     },
     "pz_std": {
@@ -197,7 +216,8 @@
       "facecol": "paleturquoise",
       "limit": {
         "spms": ["null", "null"],
-        "geds": ["null", "null"]
+        "geds": ["null", "null"],
+        "ch000": ["null", "null"]
       }
     },
     "tp_01": {
@@ -207,7 +227,8 @@
       "facecol": "aliceblue",
       "limit": {
         "spms": ["null", "null"],
-        "geds": ["null", "null"]
+        "geds": ["null", "null"],
+        "ch000": ["null", "null"]
       }
     },
     "tp_0_est": {
@@ -217,7 +238,8 @@
       "facecol": "aliceblue",
       "limit": {
         "spms": ["null", "null"],
-        "geds": ["null", "null"]
+        "geds": ["null", "null"],
+        "ch000": ["null", "null"]
       }
     },
     "tp_10": {
@@ -227,7 +249,8 @@
       "facecol": "aliceblue",
       "limit": {
         "spms": ["null", "null"],
-        "geds": ["null", "null"]
+        "geds": ["null", "null"],
+        "ch000": ["null", "null"]
       }
     },
     "tp_100": {
@@ -237,7 +260,8 @@
       "facecol": "aliceblue",
       "limit": {
         "spms": ["null", "null"],
-        "geds": ["null", "null"]
+        "geds": ["null", "null"],
+        "ch000": ["null", "null"]
       }
     },
     "tp_20": {
@@ -247,7 +271,8 @@
       "facecol": "aliceblue",
       "limit": {
         "spms": ["null", "null"],
-        "geds": ["null", "null"]
+        "geds": ["null", "null"],
+        "ch000": ["null", "null"]
       }
     },
     "tp_50": {
@@ -257,7 +282,8 @@
       "facecol": "aliceblue",
       "limit": {
         "spms": ["null", "null"],
-        "geds": ["null", "null"]
+        "geds": ["null", "null"],
+        "ch000": ["null", "null"]
       }
     },
     "tp_80": {
@@ -267,7 +293,8 @@
       "facecol": "aliceblue",
       "limit": {
         "spms": ["null", "null"],
-        "geds": ["null", "null"]
+        "geds": ["null", "null"],
+        "ch000": ["null", "null"]
       }
     },
     "tp_90": {
@@ -277,7 +304,8 @@
       "facecol": "aliceblue",
       "limit": {
         "spms": ["null", "null"],
-        "geds": ["null", "null"]
+        "geds": ["null", "null"],
+        "ch000": ["null", "null"]
       }
     },
     "tp_95": {
@@ -287,7 +315,8 @@
       "facecol": "aliceblue",
       "limit": {
         "spms": ["null", "null"],
-        "geds": ["null", "null"]
+        "geds": ["null", "null"],
+        "ch000": ["null", "null"]
       }
     },
     "tp_99": {
@@ -297,7 +326,8 @@
       "facecol": "aliceblue",
       "limit": {
         "spms": ["null", "null"],
-        "geds": ["null", "null"]
+        "geds": ["null", "null"],
+        "ch000": ["null", "null"]
       }
     },
     "tp_aoe_max": {
@@ -307,7 +337,8 @@
       "facecol": "plum",
       "limit": {
         "spms": ["null", "null"],
-        "geds": ["null", "null"]
+        "geds": ["null", "null"],
+        "ch000": ["null", "null"]
       }
     },
     "tp_aoe_samp": {
@@ -317,7 +348,8 @@
       "facecol": "plum",
       "limit": {
         "spms": ["null", "null"],
-        "geds": ["null", "null"]
+        "geds": ["null", "null"],
+        "ch000": ["null", "null"]
       }
     },
     "tp_max": {
@@ -327,7 +359,8 @@
       "facecol": "palegreen",
       "limit": {
         "spms": ["null", "null"],
-        "geds": ["null", "null"]
+        "geds": ["null", "null"],
+        "ch000": ["null", "null"]
       }
     },
     "tp_min": {
@@ -337,7 +370,8 @@
       "facecol": "palegreen",
       "limit": {
         "spms": ["null", "null"],
-        "geds": ["null", "null"]
+        "geds": ["null", "null"],
+        "ch000": ["null", "null"]
       }
     },
     "trapEftp": {
@@ -347,7 +381,8 @@
       "facecol": "palegoldenrod",
       "limit": {
         "spms": ["null", "null"],
-        "geds": ["null", "null"]
+        "geds": ["null", "null"],
+        "ch000": ["null", "null"]
       }
     },
     "trapEmax": {
@@ -357,7 +392,8 @@
       "facecol": "palegoldenrod",
       "limit": {
         "spms": ["null", "null"],
-        "geds": ["null", "null"]
+        "geds": ["null", "null"],
+        "ch000": ["null", "null"]
       }
     },
     "trapTmax": {
@@ -367,7 +403,8 @@
       "facecol": "palegoldenrod",
       "limit": {
         "spms": ["null", "null"],
-        "geds": ["null", "null"]
+        "geds": ["null", "null"],
+        "ch000": ["null", "null"]
       }
     },
     "wf_max": {
@@ -377,7 +414,8 @@
       "facecol": "pink",
       "limit": {
         "spms": ["null", "null"],
-        "geds": ["null", "null"]
+        "geds": ["null", "null"],
+        "ch000": ["null", 24000]
       }
     },
     "wf_min": {
@@ -387,7 +425,8 @@
       "facecol": "pink",
       "limit": {
         "spms": ["null", "null"],
-        "geds": ["null", "null"]
+        "geds": ["null", "null"],
+        "ch000": ["null", "null"]
       }
     },
     "zacEftp": {
@@ -397,7 +436,8 @@
       "facecol": "aquamarine",
       "limit": {
         "spms": ["null", "null"],
-        "geds": ["null", "null"]
+        "geds": ["null", "null"],
+        "ch000": ["null", "null"]
       }
     },
     "zacEmax": {
@@ -407,7 +447,8 @@
       "facecol": "aquamarine",
       "limit": {
         "spms": ["null", "null"],
-        "geds": ["null", "null"]
+        "geds": ["null", "null"],
+        "ch000": ["null", "null"]
       }
     },
     "event_rate": {
@@ -417,27 +458,52 @@
       "facecol": [0.82, 0.94, 0.75],
       "limit": {
         "spms": ["null", "null"],
-        "geds": ["null", "null"]
+        "geds": ["null", "null"],
+        "ch000": ["null", "null"]
       }
     },
-    "bl_RMS": {
+    "bl_rms": {
       "tier": "null",
       "label": "Baseline RMS",
       "units": "null",
       "facecol": [0.86, 0.82, 1.0],
       "limit": {
-        "spms": ["null", 1.05],
-        "geds": ["null", 1.05]
+        "spms": ["null", 0.0],
+        "geds": ["null", 0.0],
+        "ch000": ["null", "null"]
       }
     },
-    "LC": {
+    "delta_bl_std": {
+      "tier": "null",
+      "label": "bl_std - avg(bl_std)",
+      "units": "ADC",
+      "facecol": [0.86, 0.82, 1.0],
+      "limit": {
+        "spms": ["null", 0.0],
+        "geds": ["null", 0.0],
+        "ch000": ["null", "null"]
+      }
+    },
+    "lc": {
       "tier": "null",
       "label": "LC",
       "units": "?",
       "facecol": [0.94, 0.87, 0.9],
       "limit": {
-        "spms": ["null", "null"],
-        "geds": ["null", "null"]
+        "spms": ["null", 0.0],
+        "geds": ["null", 0.0],
+        "ch000": ["null", "null"]
+      }
+    },
+    "delta_bl_mean": {
+      "tier": "null",
+      "label": "bl_mean - avg(bl_mean)",
+      "units": "ADC",
+      "facecol": [0.94, 0.87, 0.9],
+      "limit": {
+        "spms": ["null", 0.0],
+        "geds": ["null", 0.0],
+        "ch000": ["null", "null"]
       }
     },
     "gain": {
@@ -447,7 +513,8 @@
       "facecol": [0.68, 0.87, 0.68],
       "limit": {
         "spms": ["null", "null"],
-        "geds": ["null", "null"]
+        "geds": ["null", "null"],
+        "ch000": ["null", "null"]
       }
     },
     "uncal_puls": {
@@ -457,7 +524,8 @@
       "facecol": [0.27, 0.47, 0.9],
       "limit": {
         "spms": ["null", "null"],
-        "geds": [-9, 9]
+        "geds": [-9, 9],
+        "ch000": ["null", "null"]
       }
     }
   }

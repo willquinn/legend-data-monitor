@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import importlib.resources
 import json
 import logging
@@ -16,7 +18,7 @@ pkg = importlib.resources.files("legend_data_monitor")
 
 def read_json_files():
     """Read json files of 'settings/' folder and return three lists."""
-    with open("config.json") as f:
+    with open(pkg / ".." / ".." / "config.json") as f:
         data_config = json.load(f)
     with open(pkg / "settings" / "par-settings.json") as g:
         data_par = json.load(g)
@@ -52,18 +54,13 @@ def read_json_files():
 j_config, j_par, j_plot = read_json_files()
 
 
-def load_channels(raw_files):
+def load_channels(raw_files: list[str]):
     """
     Load channel map.
 
-    Description
-    -----------
-    Return 3 dictionaries for geds/spms/other (pulser, aux)
-    containing info about the crate, card, and orca channel.
-
     Parameters
     ----------
-    raw_files : list
+    raw_files
                 Strings of lh5 raw files
     """
     channels = lh5.ls(raw_files[0], "")
@@ -121,13 +118,13 @@ def load_channels(raw_files):
     return geds_dict, spms_dict, other_dict
 
 
-def read_geds(geds_dict):
+def read_geds(geds_dict: dict):
     """
     Build an array of germanium strings.
 
     Parameters
     ----------
-    geds_dict: dictionary
+    geds_dict
                Contains info (crate, card, ch_orca) for geds
     """
     string_tot = []
@@ -166,13 +163,13 @@ def read_geds(geds_dict):
     return string_tot, string_name
 
 
-def read_spms(spms_dict):
+def read_spms(spms_dict: dict):
     """
     Build two lists for IN and OUT spms.
 
     Parameters
     ----------
-    spms_dict: dictionary
+    spms_dict
                Contains info (crate, card, ch_orca) for spms
     """
     spms_map = json.load(open(pkg / "settings" / "spms_map.json"))
@@ -230,28 +227,27 @@ def read_spms(spms_dict):
     return string_tot, string_name, string_tot_div, string_name_div
 
 
-def check_par_values(times_average, par_average, parameter, detector, det_type):
+def check_par_values(
+    times_average: np.ndarray,
+    par_average: np.ndarray,
+    parameter: str,
+    detector: str,
+    det_type: str,
+):
     """
     Check parameter values.
 
-    Description
-    -----------
-    Check if a given parameter is above or below a given threshold. If this
-    happens, the corresponding UTC interval time at which this happens is recorded
-    in the .log file as a WARNING together with the parameter and detector names.
-
-
     Parameters
     ----------
-    times_average: array
+    times_average
                    Array with x-axis time average values
-    par_average  : array
+    par_average
                    Array with y-axis parameter average values
-    parameter    : string
+    parameter
                    Name of the parameter to plot
-    detector     : string
+    detector
                    Channel of the detector
-    det_type     : string
+    det_type
                    Type of detector (geds or spms)
     """
     low_lim = j_par[0][parameter]["limit"][det_type][0]
@@ -276,11 +272,11 @@ def check_par_values(times_average, par_average, parameter, detector, det_type):
                     "%d/%m %H:%M:%S"
                 )
                 if time1 == time2:
-                    logging.warning(
+                    logging.debug(
                         f' "{parameter}"<{low_lim} {units} (at {time1}) for ch={detector}'
                     )
                 else:
-                    logging.warning(
+                    logging.debug(
                         f' "{parameter}"<{low_lim} {units} ({time1} -> {time2}) for ch={detector}'
                     )
             idx = idx + 1
@@ -299,11 +295,11 @@ def check_par_values(times_average, par_average, parameter, detector, det_type):
                     "%d/%m %H:%M:%S"
                 )
                 if time1 == time2:
-                    logging.warning(
+                    logging.debug(
                         f' "{parameter}">{upp_lim} {units} (at {time1}) for ch={detector}'
                     )
                 else:
-                    logging.warning(
+                    logging.debug(
                         f' "{parameter}">{upp_lim} {units} ({time1} -> {time2}) for ch={detector}'
                     )
             idx = idx + 1
@@ -314,39 +310,18 @@ def check_par_values(times_average, par_average, parameter, detector, det_type):
     return thr_flag
 
 
-def build_utime_array(raw_files, detector, det_type):
-    """
-    Return an array with shifted time arrays for geds detectors.
-
-    Parameters
-    ----------
-    raw_files : list
-                Strings of lh5 raw files
-    detector  : string
-                Channel of the detector
-    det_type  : string
-                Type of detector (geds or spms)
-    """
-    if det_type == "spms":
-        utime_array = load_shifted_times(raw_files, "spms", detector)
-    if det_type == "geds":
-        utime_array = load_shifted_times(raw_files, "geds", detector)
-
-    return utime_array
-
-
-def load_shifted_times(raw_files, det_type, detector):
+def build_utime_array(raw_files: list[str], detector: str, det_type: str):
     """
     Return an array with shifted time arrays for spms detectors.
 
     Parameters
     ----------
-    raw_files    : list/string
+    raw_files
                    Strings of lh5 raw files
-    det_type      : string
-                   Type of detector (geds or spms)
-    detector     : string
+    detector
                    Name of the detector
+    det_type
+                   Type of detector (geds/spms/pulser)
     """
     utime_array = np.empty((0, 0))
     tmp_array = np.empty((0, 0))
@@ -368,15 +343,15 @@ def load_shifted_times(raw_files, det_type, detector):
     return utime_array
 
 
-def add_offset_to_timestamp(tmp_array, raw_file):
+def add_offset_to_timestamp(tmp_array: np.ndarray, raw_file: list[str]):
     """
     Add a time shift to the filename given by the time shown in 'runtime'.
 
     Parameters
     ----------
-    tmp_array : array
+    tmp_array
                 Time since beginning of file
-    raw_file  : string
+    raw_file
                 String of lh5 raw file
     """
     date_time = (((raw_file.split("/")[-1]).split("-")[4]).split("Z")[0]).split("T")
@@ -388,45 +363,63 @@ def add_offset_to_timestamp(tmp_array, raw_file):
     return utime_array
 
 
-def build_par_array(raw_files, dsp_files, parameter, detector, det_type):
+def build_par_array(
+    raw_file: str,
+    dsp_file: str,
+    parameter: str,
+    detector: str,
+    det_type: str,
+    raw_files: list[str],
+):
     """
-    Build an array with parameter values.
+    Build an array with parameter values. The difference with respect to the average over the whole time window is evaluated.
 
     Parameters
     ----------
-    raw_files   : list
-                  Strings of lh5 raw files
-    dsp_files   : list
-                  Strings of lh5 dsp files
-    parameter   : string
+    raw_file
+                  lh5 raw file path name
+    dsp_file
+                  lh5 dsp file path name
+    parameter
                   Name of the parameter
-    detector    : string
+    detector
                   Channel of the detector
-    det_type    : string
+    det_type
                   Type of detector (geds or spms)
+    raw_files
+                  List with lh5 raw file path names
     """
-    utime_array = build_utime_array(raw_files, detector, det_type)
+    utime_array = build_utime_array(raw_file, detector, det_type)
     if j_par[0][parameter]["tier"] == 1:
-        par_array = lh5.load_nda(raw_files, [parameter], detector + "/raw/")[parameter]
-    else:
-        par_array = lh5.load_nda(dsp_files, [parameter], detector + "/dsp/")[parameter]
+        par_array = lh5.load_nda(raw_file, [parameter], detector + "/raw/")[parameter]
+        base = lh5.load_nda(raw_file, ["baseline"], detector + "/raw/")["baseline"]
+        # par_array_first_events = lh5.load_nda(raw_files[:5], [parameter], detector + "/raw/")[parameter]
+        # par_array_mean = np.mean(par_array_first_events) # mean over first files
+        # par_array_mean = np.mean(par_array) # mean over the whole time window
+    if j_par[0][parameter]["tier"] == 2:
+        par_array = lh5.load_nda(dsp_file, [parameter], detector + "/dsp/")[parameter]
+        base = lh5.load_nda(raw_file, ["baseline"], detector + "/raw/")["baseline"]
+        # dsp_files = [raw_file.replace('raw','dsp') for raw_file in raw_files]
+        # par_array_first_events = lh5.load_nda(dsp_files[:5], [parameter], detector + "/dsp/")[parameter]
+        # par_array_mean = np.mean(par_array_first_events) # mean over first files
+        # par_array_mean = np.mean(par_array) # mean over the whole time window
         if len(par_array) == 2 * len(utime_array):
             par_array = par_array[: len(utime_array)]
 
-    return par_array
+    return np.subtract(par_array, base)  # -par_array_mean
 
 
-def time_analysis(utime_array, par_array, time_cut):
+def time_analysis(utime_array: np.ndarray, par_array: np.ndarray, time_cut: list[str]):
     """
     Return the timestamp & parameter lists after the time cuts.
 
     Parameters
     ----------
-    utime_array : array
+    utime_array
                   Array of (already shifted) timestamps
-    par_array   : array
+    par_array
                   Array with parameter values
-    time_cut    : list
+    time_cut
                   List with info about time cuts
     """
     # time window analysis
@@ -456,22 +449,17 @@ def time_analysis(utime_array, par_array, time_cut):
     return utime_array, par_array
 
 
-def par_time_average(utime_array, par_array, time_slice):
+def par_time_average(utime_array: np.ndarray, par_array: np.ndarray, time_slice: int):
     """
     Compute time average using time slice.
 
-    Description
-    -----------
-    Redifines the time/parameter arrays by selecting only
-    values that differ by a quantity equal to 'time_slice'.
-
     Parameters
     ----------
-    utime_array : array
+    utime_array
                   Array of (already shifted) timestamps
-    par_array   : array
+    par_array
                   Array with parameter values
-    time_slice  : int
+    time_slice
                   Step value to separate parameter values in plot
     """
     bins = np.arange(
@@ -494,73 +482,47 @@ def par_time_average(utime_array, par_array, time_slice):
     return times_average, par_average
 
 
-def puls_analysis(raw_file, detector, det_type):
+def get_puls_ievt(raw_file: str, dsp_file: str):
     """
     Select pulser events.
 
-    Description
-    -----------
-    Returns an array with pulser only entries, an array with detector and
-    pulser entries, an array with detector only entries.
-
-
     Parameters
     ----------
-    raw_file : string
+    raw_file
                lh5 raw file
-    detector : string
-               Channel of the detector
-    det_type : string
-               Type of detector (geds or spms)
+    dsp_file
+               lh5 dsp file
     """
-    wfs = lh5.load_nda(raw_file, ["values"], "ch000/raw/waveform")["values"]
-    det_and_puls_ievt = lh5.load_nda(raw_file, ["eventnumber"], detector + "/raw")[
+    wf_max = lh5.load_nda(dsp_file, ["wf_max"], "ch000/dsp/")["wf_max"]
+    puls_ievt = lh5.load_nda(raw_file, ["eventnumber"], "ch000/raw/")[
         "eventnumber"
-    ]  # detector+pulser events
-    puls_ievt = lh5.load_nda(raw_file, ["eventnumber"], "ch000/raw")[
-        "eventnumber"
-    ]  # not all events are pulser events
+    ]  # pulser events
     pulser_entry = []
     not_pulser_entry = []
 
-    """
-    for idx,_wf in enumerate(wfs):
-        # if len([*filter(lambda x: x >= 17000, wf)]):
-        # if any(y > 17000 for y in wf):
-        if sum(wf) / len(wf) > 15000:
+    for idx in puls_ievt:
+        if wf_max[idx] > 24000:
             pulser_entry.append(idx)
-        else:
+        if wf_max[idx] <= 24000:
             not_pulser_entry.append(idx)
-    """
-    for idx in range(0, len(wfs)):
-        not_pulser_entry.append(idx)
 
     # pulser entries
     puls_only_ievt = puls_ievt[np.isin(puls_ievt, pulser_entry)]
     # not pulser entries
     not_puls_ievt = puls_ievt[np.isin(puls_ievt, not_pulser_entry)]
-    # detector entries
-    det_only_ievt = det_and_puls_ievt[np.isin(det_and_puls_ievt, not_puls_ievt)]
 
-    return puls_only_ievt, det_and_puls_ievt, det_only_ievt
+    return puls_only_ievt, not_puls_ievt
 
 
-def remove_nan_values(par_array, time_array):
+def remove_nan_values(par_array: np.ndarray, time_array: np.ndarray):
     """
     Remove NaN values from arrays.
 
-    Description
-    -----------
-    Removes the 'nan' values that appear in
-    the array with the parameters values (and,
-    consequently, the corresponding entries in the
-    time array).
-
     Parameters
     ----------
-    par_array  : array
+    par_array
                  Array with parameter values
-    time_array : array
+    time_array
                  Array with time values
     """
     par_array_no_nan = []
