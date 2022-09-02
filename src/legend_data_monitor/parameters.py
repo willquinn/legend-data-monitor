@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from datetime import datetime
 
-import sys
 import numpy as np
 import pygama.lgdo.lh5_store as lh5
 
@@ -43,7 +42,7 @@ def load_parameter(
     par_array = np.array([])
     utime_array = analysis.build_utime_array(dsp_files, detector, det_type)
 
-    if all_ievt!=[] and puls_only_ievt!=[] and not_puls_ievt!=[]:
+    if all_ievt != [] and puls_only_ievt != [] and not_puls_ievt != []:
         det_only_index = np.isin(all_ievt, not_puls_ievt)
         puls_only_index = np.isin(all_ievt, puls_only_ievt)
 
@@ -59,26 +58,20 @@ def load_parameter(
     if len(utime_array_cut) == 0:
         return [], []
 
-    #if parameter == "bl_rms": # <- abbandonata 
+    # if parameter == "bl_rms": # <- abbandonata
     #    par_array = bl_rms(
     #        dsp_files, detector, det_type, puls_only_index
     #    )
     if parameter == "lc":
-        par_array = leakage_current(
-            dsp_files, detector, det_type
-        )
+        par_array = leakage_current(dsp_files, detector, det_type)
     elif parameter == "event_rate":
-        par_array, utime_array_cut = event_rate(
-            dsp_files, utime_array_cut, det_type
-        )
+        par_array, utime_array_cut = event_rate(dsp_files, utime_array_cut, det_type)
     elif parameter == "uncal_puls":
-        par_array = uncal_pulser(
-            dsp_files, detector, puls_only_index
-        )
+        par_array = uncal_pulser(dsp_files, detector, puls_only_index)
     else:
         par_array = lh5.load_nda(dsp_files, [parameter], detector + "/dsp/")[parameter]
 
-    if all_ievt!=[] and puls_only_ievt!=[] and not_puls_ievt!=[]:
+    if all_ievt != [] and puls_only_ievt != [] and not_puls_ievt != []:
         if keep_puls is True:
             par_array = par_array[puls_only_index]
         if keep_puls is False:
@@ -90,16 +83,15 @@ def load_parameter(
     _, par_array = analysis.time_analysis(utime_array, par_array, time_cut)
 
     # Enable following lines to get the delta of a parameter
-    #base = lh5.load_nda(dsp_files, ["baseline"], detector + "/dsp/")["baseline"]
-    par_array_mean = np.mean(par_array[:1000]) # mean over first X data
+    # base = lh5.load_nda(dsp_files, ["baseline"], detector + "/dsp/")["baseline"]
+    par_array_mean = np.mean(par_array[:1000])  # mean over first X data
     par_array = np.subtract(par_array, par_array_mean)
 
     # check if there are 'nan' values in par_array
-    par_array, utime_array_cut = analysis.remove_nan_values(
-        par_array, utime_array_cut
-    )
+    par_array, utime_array_cut = analysis.remove_nan_values(par_array, utime_array_cut)
 
     return par_array, utime_array_cut
+
 
 """
 def bl_rms(
@@ -127,6 +119,7 @@ def bl_rms(
 
     return np.array(bl_norm)
 """
+
 
 def leakage_current(dsp_files: list[str], detector: str, det_type: str):
     """

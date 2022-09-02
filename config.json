@@ -36,7 +36,7 @@
             "README": "Time interval (in [s]) in which rate is evaluated: rate=cts/dt.",
             "spms": 10,
             "geds": 10,
-	    "ch000": 10
+            "ch000": 10
           },
           "units": {
             "README": "Select the units you prefer between: mHz, Hz, kHz.",
