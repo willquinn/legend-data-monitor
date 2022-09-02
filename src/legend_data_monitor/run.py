@@ -16,6 +16,7 @@ log = logging.getLogger(__name__)
 j_config, j_par, _ = analysis.read_json_files()
 exp = j_config[0]["exp"]
 files_path = j_config[0]["path"]["lh5-files"]
+version = j_config[0]["path"]["version"]
 period = j_config[1]
 run = j_config[2]
 datatype = j_config[3]
@@ -28,15 +29,15 @@ verbose = j_config[11]
 
 # for multiple detectors
 def dump_all_plots_together(
-    raw_files: list[str], time_cut: list[str], path: str, map_path: str
+    dsp_files: list[str], time_cut: list[str], path: str, map_path: str
 ) -> None:
     """
     Create and dump plot in single pdf and multiple pkl files.
 
     Parameters
     ----------
-    raw_files
-                Strings of lh5 raw files
+    dsp_files
+                Strings of lh5 dsp files
     time_cut
                 List with info about time cuts
     path
@@ -44,9 +45,13 @@ def dump_all_plots_together(
     map_path
                 Path where to save output heatmaps
     """
-    if isinstance(raw_files, str):
-        raw_files = [raw_files]
+    if isinstance(dsp_files, str):
+        dsp_files = [dsp_files]
 
+    # dsp_files = dsp_files[17:] # remove data prior to 20220817T124844Z in run22
+    dsp_files = dsp_files[:5]  # keep only first data (to perform tests in a quick way)
+
+    raw_files = [dsp_file.replace("dsp", "raw") for dsp_file in dsp_files]
     geds_dict, spms_dict, other_dict = analysis.load_channels(raw_files)
 
     with PdfPages(path) as pdf:
@@ -73,11 +78,15 @@ def dump_all_plots_together(
                 for par in geds_par:
                     det_status_dict = {}
                     for (det_list, string) in zip(string_geds, string_geds_name):
+
+                        # if det_list==string_geds[3]: # keep 1 string (per far prima)
+
                         if len(det_list) == 0:
                             continue  # no detectors in a string
 
                         map_dict = plot.plot_par_vs_time(
-                            raw_files,
+                            # map_dict = plot.plot_ch_par_vs_time( # <-- funzione di prova
+                            dsp_files,
                             det_list,
                             par,
                             time_cut,
@@ -99,6 +108,7 @@ def dump_all_plots_together(
                                 logging.error(
                                     f"\t...no {par} plots for geds - string #{string}!"
                                 )
+                    # maps are disabled!
                     # if det_status_dict != []:
                     #    map.geds_map(
                     #        par,
@@ -134,7 +144,7 @@ def dump_all_plots_together(
                                 spms_merged, spms_name_merged
                             ):
                                 plot.plot_par_vs_time_2d(
-                                    raw_files,
+                                    dsp_files,
                                     det_list,
                                     time_cut,
                                     "spms",
@@ -155,7 +165,7 @@ def dump_all_plots_together(
                                     continue  # no detectors in a string
                                 if len(string) != 0:
                                     map_dict = plot.plot_par_vs_time(
-                                        raw_files,
+                                        dsp_files,
                                         det_list,
                                         par,
                                         time_cut,
@@ -177,6 +187,7 @@ def dump_all_plots_together(
                                         logging.error(
                                             f"\t...no {par} plots for spms - {string}!"
                                         )
+                            # maps are disabled!
                             # if det_status_dict != []:
                             #    map.spms_map(
                             #        par,
@@ -189,7 +200,7 @@ def dump_all_plots_together(
                             #        pdf_map,
                             #    )
 
-        # ch000 (pulser) plots
+        # ch000 plots
         if det_type["ch000"] is True:
             ch000_par = par_to_plot["ch000"]
             if len(ch000_par) == 0:
@@ -198,7 +209,7 @@ def dump_all_plots_together(
                 logging.error("ch000 will be plotted...")
                 for par in ch000_par:
                     map_dict = plot.plot_par_vs_time_ch000(
-                        raw_files,
+                        dsp_files,
                         par,
                         time_cut,
                         "ch000",
@@ -228,7 +239,7 @@ def select_and_plot_run(path: str, plot_path: str, map_path: str) -> None:
     map_path
                 Path where to save output heatmaps
     """
-    full_path = os.path.join(path, "raw", datatype, period, run)
+    full_path = os.path.join(path, "dsp", datatype, period, run)
 
     lh5_files = os.listdir(full_path)
     lh5_files = sorted(
@@ -277,7 +288,7 @@ def select_and_plot_run(path: str, plot_path: str, map_path: str) -> None:
 
 
 def main():
-    path = files_path
+    path = files_path + version + "/generated/tier"
     cwd_path = os.path.join(os.getcwd(), "out/")
     if os.path.isdir(cwd_path) is False:
         os.mkdir(cwd_path)
