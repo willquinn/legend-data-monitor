@@ -393,7 +393,7 @@ def plot_par_vs_time_ch000(
 
     # exit if no dsp files are found
     if len(dsp_files) == 0:
-        logging.warning(f"Dsp files do not exist")
+        logging.warning("Dsp files do not exist")
         return None
 
     # search for pulser events
@@ -808,7 +808,7 @@ def plot_ch_par_vs_time(
     det_dict: dict,
     pdf=None,
 ) -> dict:
-    """Plot time evolution of given parameter for each channel separately. WORK IN PROGRESS"""
+    """Plot time evolution of given parameter for each channel separately. WORK IN PROGRESS."""
     plt.rcParams["figure.figsize"] = 15,10
     if "1" in string_number:
         #fig, ((ax1), (ax2), (ax3), (ax4), (ax5), (ax6), (ax7), (ax8)) = plt.subplots(
@@ -849,7 +849,7 @@ def plot_ch_par_vs_time(
 
     # exit if no dsp files are found
     if len(dsp_all) == 0:
-        logging.warning(f"Dsp files do not exist")
+        logging.warning("Dsp files do not exist")
         return None
 
     # search for pulser events
@@ -906,7 +906,6 @@ def plot_ch_par_vs_time(
         )
         times = [datetime.fromtimestamp(t) for t in times_average]
 
-        status_flag = j_config[9][det_type]
         if det_type == "spms":
             col = j_plot[2][str(detector)]
         if det_type == "geds":
@@ -919,9 +918,9 @@ def plot_ch_par_vs_time(
 
         # plot detector and get its status
         #ax_list[ax_idx].plot(times, par_average, color=col, linewidth=1, label=f"{name} - {detector} - {card},{ch_orca}")#0, marker=".", markersize=0.5)
-        print("Prima dell'hist")
+        #print("Prima dell'hist")
         ax_list[ax_idx].bar(times, par_average, color=col, width=1)
-        print("Dopo l'hist")
+        #print("Dopo l'hist")
 
         #ax_list[ax_idx].set_yscale('log')
 
@@ -934,7 +933,7 @@ def plot_ch_par_vs_time(
             xlab = "%H:%M"
         labels = [dates.num2date(loc, tz=local_timezone).strftime(xlab) for loc in locs]
 
-        if ax_idx == 7: ax_list[ax_idx].set(xlabel=f"time (UTC)")
+        if ax_idx == 7: ax_list[ax_idx].set(xlabel="time (UTC)")
         ax_list[ax_idx].set_xticks(locs)
         ax_list[ax_idx].set_xticklabels(labels)
         plt.setp(ax_list[ax_idx].get_xticklabels(), rotation=0, ha="center")
