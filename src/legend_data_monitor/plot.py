@@ -143,7 +143,7 @@ def plot_par_vs_time(
 
     # exit if no dsp files are found
     if len(dsp_all) == 0:
-        logging.warning(f"Dsp files do not exist")
+        logging.warning("Dsp files do not exist")
         return None
 
     # search for pulser events
@@ -657,6 +657,7 @@ def plot_par_vs_time_2d(
             dsp_files, detector, "spms"
         )  # shifted timestamps (pulser events are not removed)
         utime_array, wf_array = analysis.time_analysis(utime_array, wf_array, time_cut)
+        par_array = parameters.spms_gain(wf_array)
 
         # define x-axis
         start_time = datetime.fromtimestamp(utime_array[0])
