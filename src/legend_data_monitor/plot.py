@@ -29,6 +29,7 @@ exp = j_config[0]["exp"]
 period = j_config[1]
 run = j_config[2]
 datatype = j_config[3]
+keep_puls = j_config[5]["pulser"]["keep-pulser"]
 
 
 def plot_parameters(
@@ -57,9 +58,9 @@ def plot_parameters(
     parameter
                   Parameter to plot
     """
-    # evaluate (x,y) points
-    # time_slice = j_config[6][det_type]
+    # the following piece of code does not work...disabled!!
     """
+    time_slice = j_config[6][det_type]
     if parameter != "event_rate" and parameter != "wf_max":   # <<<---- check it because for wf_max for all ievts gave problems!!!
         times_average, par_average = analysis.par_time_average(
             utime_array, par_array, time_slice
@@ -83,7 +84,7 @@ def plot_parameters(
     if det_type == "geds":
         col = j_plot[3][detector]
     if det_type == "ch000":
-        col = "k"
+        col = "r"
 
     # if we want to plot detectors that are only problematic
     if status_flag is True and status == 1:
@@ -91,14 +92,14 @@ def plot_parameters(
         plt.plot(times, par_average, color=col, linewidth=0, marker=".", markersize=0.5)
     # plot everything independently of the detector's status
     else:
-        ax.plot(times, par_average, color=col, linewidth=0, marker=".", markersize=0.5)
-        plt.plot(times, par_average, color=col, linewidth=0, marker=".", markersize=0.5)
+        ax.plot(times, par_average, color=col, linewidth=1)#0, marker=".", markersize=1) # switch here between points/lines
+        plt.plot(times, par_average, color=col, linewidth=1)#0, marker=".", markersize=1)
 
     return times[0], times[-1], status, ax
 
 
 def plot_par_vs_time(
-    raw_files: list[str],
+    dsp_all: list[str],
     det_list: list[str],
     parameter: str,
     time_cut: list[str],
@@ -108,12 +109,12 @@ def plot_par_vs_time(
     pdf=None,
 ) -> dict:
     """
-    Plot time evolution of given parameter.
+    Plot time evolution of given parameter for geds/spms.
 
     Parameters
     ----------
-    raw_files
-                    Strings of lh5 dsp files
+    dsp_all
+                    lh5 dsp files
     det_list
                     List of detectors present in a string
     parameter
@@ -137,100 +138,79 @@ def plot_par_vs_time(
     handle_list = []
     map_dict = {}
 
-    for raw_file in raw_files:
-        dsp_file = raw_file.replace("raw", "dsp")
+    # exit if no dsp files are found
+    if len(dsp_all) == 0:
+        logging.warning(f"Dsp files do not exist")
+        return None
 
-        # search for pulser events
-        puls_only_ievt, not_puls_ievt = analysis.get_puls_ievt(raw_file, dsp_file)
+    # search for pulser events
+    if keep_puls != "null":  all_ievt, puls_only_ievt, not_puls_ievt = analysis.get_puls_ievt(dsp_all)
+    else:
+        all_ievt = puls_only_ievt = not_puls_ievt = []
 
-        # skip the file if it does not exist the dsp one (just for dsp-related parameters)
-        if os.path.exists(dsp_file) is False:
-            logging.warning(f"File {dsp_file} does not exist")
-            if parameter in ["uncal_puls"] or j_par[0][parameter]["tier"] == 2:
-                continue
+    for index,detector in enumerate(det_list):
+      #if detector==det_list[1]: # <<-- for quick tests
 
-        for detector in det_list:
-            # skip detectors that are not geds/spms
-            if det_dict[detector]["system"] == "--":
-                continue
+        # need to define a variable for dsp files for every ch (due to the "remove")
+        dsp_files = dsp_all 
 
-            # skip the file if dsp-parameter is not present in the dsp file
-            if j_par[0][parameter]["tier"] == 2:
-                if f"{detector}/dsp/{parameter}" not in lh5.ls(
-                    dsp_file, f"{detector}/dsp/"
-                ):
-                    continue
+        # skip detectors that are not geds/spms
+        if det_dict[detector]["system"] == "--":
+            continue
 
-            # skip the detector if not in raw file
-            if detector not in lh5.ls(raw_file, ""):
-                logging.warning(f"No {detector} branch in file {raw_file}")
-                continue
-
-            # skip the detector if not in dsp file (just for dsp-related parameters)
-            if parameter in ["uncal_puls"] or j_par[0][parameter]["tier"] == 2:
-                if detector not in lh5.ls(dsp_file, ""):
-                    logging.warning(f"No {detector} branch in file {dsp_file}")
-                    continue
-
-            # add entries for the legend
-            card = det_dict[detector]["daq"]["card"]
-            ch_orca = det_dict[detector]["daq"]["ch_orca"]
-            if det_type == "geds":
-                name = det_dict[detector]["det"]
-                lab = f"{name} - {detector} - {card},{ch_orca}"
-            if det_type == "spms":
-                lab = f"{detector} - {card},{ch_orca}"
-            if raw_file == raw_files[0]:
-                if det_type == "spms":
-                    col = j_plot[2][str(detector)]
-                if det_type == "geds":
-                    col = j_plot[3][detector]
-                handle_list.append(
-                    mpatches.Patch(
-                        color=col,
-                        label=lab,
-                    )
-                )
-
-            # det parameter and time arrays for a given detector
-            par_np_array, utime_array = parameters.load_parameter(
-                parameter,
-                raw_file,
-                dsp_file,
-                detector,
-                det_type,
-                time_cut,
-                raw_files,
-                puls_only_ievt,
-                not_puls_ievt,
+        # add entries for the legend
+        card = det_dict[detector]["daq"]["card"]
+        ch_orca = det_dict[detector]["daq"]["ch_orca"]
+        if det_type == "geds":
+            name = det_dict[detector]["det"]
+            lab = f"{name} - {detector} - {card},{ch_orca}"
+        if det_type == "spms":
+            lab = f"{detector} - {card},{ch_orca}"
+        if det_type == "spms":
+            col = j_plot[2][str(detector)]
+        if det_type == "geds":
+            col = j_plot[3][detector]
+        handle_list.append(
+            mpatches.Patch(
+                color=col,
+                label=lab,                  
             )
+        )
 
-            # to handle particular cases where the timestamp array is outside the time window:
-            if len(par_np_array) == 0 and len(utime_array) == 0:
-                continue
+        # det parameter and time arrays for a given detector
+        par_np_array, utime_array = parameters.load_parameter(
+            parameter,
+            dsp_files,
+            detector,
+            det_type,
+            time_cut,
+            all_ievt,
+            puls_only_ievt,
+            not_puls_ievt,
+        )
 
-            # plot detector and get its status
-            start_time, end_time, status, ax = plot_parameters(
-                ax, par_np_array, utime_array, detector, det_type, parameter
-            )
+        offset = 1000*(0+index)
+        par_np_array = np.add(par_np_array, offset)
 
-            # fill the map with status flags
-            if det_type == "spms":
-                detector = str(detector)
-            if detector not in map_dict:
+        # plot detector and get its status
+        start_time, end_time, status, ax = plot_parameters(
+            ax, par_np_array, utime_array, detector, det_type, parameter
+        )
+
+        # fill the map with status flags
+        if det_type == "spms":
+            detector = str(detector)
+        if detector not in map_dict:
+            map_dict[detector] = status
+        else:
+            if map_dict[detector] == 0:
                 map_dict[detector] = status
-            else:
-                if map_dict[detector] == 0:
-                    map_dict[detector] = status
 
-            # skip those events that are not within the time window
-            if start_time == 0 and end_time == 0:
-                if raw_file != raw_files[-1]:
-                    continue
-                else:
-                    break
-            start_times.append(start_time)
-            end_times.append(end_time)
+        # skip those detectors that are not within the time window
+        if start_time == 0 and end_time == 0:
+            continue
+        start_times.append(start_time)
+        end_times.append(end_time)
 
     # no data were found at all
     if len(start_times) == 0 and len(end_times) == 0:
@@ -381,19 +361,19 @@ def plot_par_vs_time(
 
 
 def plot_par_vs_time_ch000(
-    raw_files: list[str],
+    dsp_files: list[str],
     parameter: str,
     time_cut: list[str],
     det_type: str,
     pdf=None,
 ) -> dict:
     """
-    Plot time evolution of given parameter.
+    Plot time evolution of given parameter for ch000.
 
     Parameters
     ----------
-    raw_files
-                    Strings of lh5 raw files
+    dsp_files
+                    Strings of lh5 dsp files
     parameter
                     Parameter to plot
     det_type
@@ -411,81 +391,62 @@ def plot_par_vs_time_ch000(
     handle_list = []
     map_dict = {}
 
-    for raw_file in raw_files:
-        dsp_file = raw_file.replace("raw", "dsp")
+    # exit if no dsp files are found
+    if len(dsp_files) == 0:
+        logging.warning(f"Dsp files do not exist")
+        return None
 
-        # search for pulser events
-        puls_only_ievt, not_puls_ievt = analysis.get_puls_ievt(raw_file, dsp_file)
+    # search for pulser events
+    if keep_puls != "null":  all_ievt, puls_only_ievt, not_puls_ievt = analysis.get_puls_ievt(dsp_files)
+    else:
+        all_ievt = puls_only_ievt = not_puls_ievt = []
 
-        # skip the file if it does not exist the dsp one (just for dsp-related parameters)
-        if os.path.exists(dsp_file) is False:
-            logging.warning(f"File {dsp_file} does not exist")
-            if parameter in ["uncal_puls"] or j_par[0][parameter]["tier"] == 2:
-                continue
+    # remove the dsp file if the channel is not there
+    #for dsp_file in dsp_files:
+    #    if "ch000" not in lh5.ls(dsp_file, ""):
+    #        dsp_files.remove(dsp_file)
+    #        logging.warning(f"No ch000 in {dsp_file}: removed")
 
-        # skip the file if dsp-parameter is not present in the dsp file
-        if j_par[0][parameter]["tier"] == 2:
-            parameter = "ch000/dsp/"+parameter
-            if parameter not in lh5.ls(dsp_file, "ch000/dsp/"):
-                continue
+    # remove the dsp file if the parameter for the channel under study is not there
+    #for dsp_file in dsp_files:
+    #    if "ch000/dsp/"+parameter not in lh5.ls(dsp_file, "ch000/dsp/"):
+    #        dsp_files.remove(dsp_file)
+    #        logging.warning(f"No {parameter} in {dsp_file}: removed")
 
-        # skip the detector if not in raw file
-        if "ch000" not in lh5.ls(raw_file, ""):
-            logging.warning(f'No "ch000" in file {raw_file}')
-            continue
-
-        # skip the detector if not in dsp file (just for dsp-related parameters)
-        if parameter in ["uncal_puls"] or j_par[0][parameter]["tier"] == 2:
-            if "ch000" not in lh5.ls(dsp_file, ""):
-                logging.warning(f'No "ch000" in file {dsp_file}')
-                continue
-
-        # add entries for the legend
-        if raw_file == raw_files[0]:
-            handle_list.append(
-                mpatches.Patch(
-                    color="k",
-                    label="ch000 - 0,0",  # channel - card, ch_orca (FC)
-                )
-            )
-
-        # det parameter and time arrays for a given detector
-        par_np_array, utime_array = parameters.load_parameter(
-            parameter,
-            raw_file,
-            dsp_file,
-            "ch000",
-            det_type,
-            time_cut,
-            raw_files,
-            puls_only_ievt,
-            not_puls_ievt,
+    # add entries for the legend
+    handle_list.append(
+        mpatches.Patch(
+        color="k",
+        label="ch000 - 0,0",  # channel - card, ch_orca (FC)
         )
+    )
 
-        # to handle particular cases where the timestamp array is outside the time window:
-        if len(par_np_array) == 0 and len(utime_array) == 0:
-            continue
+    # det parameter and time arrays for a given detector
+    par_np_array, utime_array = parameters.load_parameter(
+        parameter,
+        dsp_files,
+        "ch000",
+        det_type,
+        time_cut,
+        all_ievt,
+        puls_only_ievt,
+        not_puls_ievt,
+    )
 
-        # plot detector and get its status
-        start_time, end_time, status, ax = plot_parameters(
-            ax, par_np_array, utime_array, "ch000", det_type, parameter
-        )
+    # plot detector and get its status
+    start_time, end_time, status, ax = plot_parameters(
+        ax, par_np_array, utime_array, "ch000", det_type, parameter
+    )
 
-        # fill the map with status flags
-        if "ch000" not in map_dict:
+    # fill the map with status flags
+    if "ch000" not in map_dict:
+        map_dict["ch000"] = status
+    else:
+        if map_dict["ch000"] == 0:
             map_dict["ch000"] = status
-        else:
-            if map_dict["ch000"] == 0:
-                map_dict["ch000"] = status
 
-        # skip those events that are not within the time window
-        if start_time == 0 and end_time == 0:
-            if raw_file != raw_files[-1]:
-                continue
-            else:
-                break
-        start_times.append(start_time)
-        end_times.append(end_time)
+    start_times.append(start_time)
+    end_times.append(end_time)
 
     # no data were found at all
     if len(start_times) == 0 and len(end_times) == 0:
@@ -591,8 +552,9 @@ def plot_par_vs_time_ch000(
     return map_dict
 
 
+
 def plot_par_vs_time_2d(
-    raw_files: list[str],
+    dsp_files: list[str],
     det_list: list[str],
     time_cut: list[str],
     det_type: str,
@@ -601,12 +563,12 @@ def plot_par_vs_time_2d(
     pdf=None,
 ) -> None:
     """
-    No map is provided as an output.
+    Plot for gain parameter.
 
     Parameters
     ----------
-    raw_files
-                    Strings of lh5 raw files
+    dsp_files
+                    lh5 dsp files
     det_list
                     List of detectors present in a string
     det_list
@@ -666,8 +628,8 @@ def plot_par_vs_time_2d(
         if det_dict[detector]["system"] == "--":
             continue
 
-        wf_array = lh5.load_nda(raw_files, ["values"], detector + "/raw/waveform")[
-            "values"
+        wf_array = lh5.load_nda(dsp_files, ["wf_max"], detector + "/dsp/")[
+            "wf_max"
         ]
 
         # add entries for the legend
@@ -690,15 +652,9 @@ def plot_par_vs_time_2d(
 
         # select the channel
         utime_array = analysis.build_utime_array(
-            raw_files, detector, "spms"
+            dsp_files, detector, "spms"
         )  # shifted timestamps (pulser events are not removed)
         utime_array, wf_array = analysis.time_analysis(utime_array, wf_array, time_cut)
-
-        # calculate the gain
-        if parameter == "gain":
-            par_array = parameters.spms_gain(wf_array)
-        if len(par_array) == 0 and len(utime_array) == 0:
-            continue
 
         # define x-axis
         start_time = datetime.fromtimestamp(utime_array[0])
@@ -840,3 +796,254 @@ def plot_par_vs_time_2d(
     plt.close()
 
     return
+
+
+def plot_ch_par_vs_time(
+    dsp_all: list[str],
+    det_list: list[str],
+    parameter: str,
+    time_cut: list[str],
+    det_type: str,
+    string_number: str,
+    det_dict: dict,
+    pdf=None,
+) -> dict:
+    """Plot time evolution of given parameter for each channel separately. WORK IN PROGRESS"""
+    plt.rcParams["figure.figsize"] = 15,10
+    if "1" in string_number:
+        #fig, ((ax1), (ax2), (ax3), (ax4), (ax5), (ax6), (ax7), (ax8)) = plt.subplots(
+        #    8, 1, sharex=True, sharey=True
+        #)
+        #ax_list = [ax1, ax2, ax3, ax4, ax5, ax6, ax7, ax8]
+        fig, ((ax1), (ax2), (ax3), (ax4)) = plt.subplots(
+                4, 1, sharex=True, sharey=True
+        )
+        ax_list = [ax1, ax2, ax3, ax4]
+    else:
+        return None
+    """
+    if "2" in string_number:
+        fig, ((ax1), (ax2), (ax3), (ax4), (ax5), (ax6), (ax7)) = plt.subplots(
+            7, 1, sharex=True, sharey=True
+        )
+        ax_list = [ax1, ax2, ax3, ax4, ax5, ax6, ax7]
+    if "7" in string_number:
+        fig, ((ax1), (ax2), (ax3), (ax4), (ax5), (ax6), (ax7), (ax8)) = plt.subplots(
+            8, 1, sharex=True, sharey=True
+        )
+        ax_list = [ax1, ax2, ax3, ax4, ax5, ax6, ax7, ax8]
+    if "8" in string_number:
+        fig, ((ax1), (ax2), (ax3), (ax4), (ax5)) = plt.subplots(
+            5, 1, sharex=True, sharey=True
+        )
+        ax_list = [ax1, ax2, ax3, ax4, ax5]
+    """
+
+    ax_idx = 0
+    #fig.patch.set_facecolor(j_par[0][parameter]["facecol"])
+    fig.suptitle(f"{det_type} - {string_number} - {parameter}", fontsize=10)
+    start_times = []
+    end_times = []
+    handle_list = []
+    map_dict = {}
+
+    # exit if no dsp files are found
+    if len(dsp_all) == 0:
+        logging.warning(f"Dsp files do not exist")
+        return None
+
+    # search for pulser events
+    if keep_puls != "null":  all_ievt, puls_only_ievt, not_puls_ievt = analysis.get_puls_ievt(dsp_all)
+    else:
+        all_ievt = puls_only_ievt = not_puls_ievt = []
+
+    for index,detector in enumerate(det_list):
+      if detector==det_list[1]:
+        # need to define a variable for dsp files for every ch (due to the "remove")
+        dsp_files = dsp_all
+
+        # skip detectors that are not geds/spms
+        if det_dict[detector]["system"] == "--":
+            continue
+
+        # add entries for the legend
+        card = det_dict[detector]["daq"]["card"]
+        ch_orca = det_dict[detector]["daq"]["ch_orca"]
+        if det_type == "geds":
+            name = det_dict[detector]["det"]
+            lab = f"{name} - {detector} - {card},{ch_orca}"
+        if det_type == "spms":
+            lab = f"{detector} - {card},{ch_orca}"
+        if det_type == "spms":
+            col = j_plot[2][str(detector)]
+        if det_type == "geds":
+            col = j_plot[3][detector]
+        handle_list.append(
+            mpatches.Patch(
+                color=col,
+                label=lab,
+            )
+        )
+
+        # det parameter and time arrays for a given detector
+        par_np_array, utime_array = parameters.load_parameter(
+            parameter,
+            dsp_files,
+            detector,
+            det_type,
+            time_cut,
+            all_ievt,
+            puls_only_ievt,
+            not_puls_ievt,
+        )
+
+        times_average = utime_array
+        par_average = par_np_array
+
+        # function to check if par values are outside some pre-defined limits
+        status = analysis.check_par_values(
+            times_average, par_average, parameter, detector, det_type
+        )
+        times = [datetime.fromtimestamp(t) for t in times_average]
+
+        status_flag = j_config[9][det_type]
+        if det_type == "spms":
+            col = j_plot[2][str(detector)]
+        if det_type == "geds":
+            col = j_plot[3][detector]
+        if det_type == "ch000":
+            col = "r"
+
+        start_time = times[0]
+        end_time = times[-1]
+
+        # plot detector and get its status
+        #ax_list[ax_idx].plot(times, par_average, color=col, linewidth=1, label=f"{name} - {detector} - {card},{ch_orca}")#0, marker=".", markersize=0.5)
+        print("Prima dell'hist")
+        ax_list[ax_idx].bar(times, par_average, color=col, width=1)
+        print("Dopo l'hist")
+
+        #ax_list[ax_idx].set_yscale('log')
+
+        local_timezone = datetime.now(timezone.utc).astimezone().tzinfo
+        locs = np.linspace(dates.date2num(start_time), dates.date2num(end_time), 3)
+        xlab = "%d/%m"
+        if j_config[10]["frmt"] == "day/month-time":
+            xlab = "%d/%m\n%H:%M"
+        if j_config[10]["frmt"] == "time":
+            xlab = "%H:%M"
+        labels = [dates.num2date(loc, tz=local_timezone).strftime(xlab) for loc in locs]
+
+        if ax_idx == 7: ax_list[ax_idx].set(xlabel=f"time (UTC)")
+        ax_list[ax_idx].set_xticks(locs)
+        ax_list[ax_idx].set_xticklabels(labels)
+        plt.setp(ax_list[ax_idx].get_xticklabels(), rotation=0, ha="center")
+
+        ax_list[ax_idx].legend(
+         #loc=(1.04, 0.0),
+         ncol=1,
+         frameon=True,
+         facecolor="white",
+         framealpha=0.6,
+         #handles=handle_list,
+        )
+
+        # fill the map with status flags
+        if det_type == "spms":
+            detector = str(detector)
+        if detector not in map_dict:
+            map_dict[detector] = status
+        else:
+            if map_dict[detector] == 0:
+                map_dict[detector] = status
+
+        # skip those detectors that are not within the time window
+        if start_time == 0 and end_time == 0:
+            continue
+        start_times.append(start_time)
+        end_times.append(end_time)
+
+        if index==1 or index==3 or index==5:
+            ax_idx += 1
+            handle_list = []
+
+    # no data were found at all
+    if len(start_times) == 0 and len(end_times) == 0:
+        return None
+
+    # define name of pkl file (with info about time cut if present)
+    if len(time_cut) != 0:
+        start, end = timecut.time_dates(time_cut)
+        if det_type == "geds":
+            pkl_name = (
+                exp
+                + "-"
+                + period
+                + "-"
+                + run
+                + "-"
+                + datatype
+                + "-"
+                + start
+                + "_"
+                + end
+                + "-"
+                + parameter
+                + "-string"
+                + string_number
+                + ".pkl"
+            )
+        if det_type == "spms":
+            pkl_name = (
+                exp
+                + "-"
+                + period
+                + "-"
+                + run
+                + "-"
+                + datatype
+                + "-"
+                + start
+                + "_"
+                + end
+                + "-"
+                + parameter
+                + "-"
+                + string_number
+                + ".pkl"
+            )
+    else:
+        if det_type == "geds":
+            pkl_name = (
+                exp
+                + "-"
+                + period
+                + "-"
+                + run
+                + "-"
+                + datatype
+                + "-"
+                + parameter
+                + "-string"
+                + string_number
+                + ".pkl"
+            )
+        if det_type == "spms":
+            pkl_name = (
+                exp
+                + "-"
+                + period
+                + "-"
+                + run
+                + "-"
+                + datatype
+                + "-"
+                + parameter
+                + "-"
+                + string_number
+                + ".pkl"
+            )
+
+    fig.tight_layout()
+    pkl.dump(ax_list, open(f"out/pkl-files/par-vs-time/{pkl_name}", "wb"))
+    return map_dict

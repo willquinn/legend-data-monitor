@@ -1,7 +1,6 @@
 {
   "par_to_plot": {
     "baseline": {
-      "tier": 1,
       "label": "FPGA_bl - avg(FPGA_bl)",
       "units": "ADC",
       "facecol": [0.98, 0.91, 0.71],
@@ -12,7 +11,6 @@
       }
     },
     "card": {
-      "tier": 1,
       "label": "card",
       "units": "null",
       "facecol": [0.98, 0.91, 0.71],
@@ -23,7 +21,6 @@
       }
     },
     "ch_orca": {
-      "tier": 1,
       "label": "ch_orca",
       "units": "null",
       "facecol": [0.98, 0.91, 0.71],
@@ -34,7 +31,6 @@
       }
     },
     "channel": {
-      "tier": 1,
       "label": "channel",
       "units": "null",
       "facecol": [0.98, 0.91, 0.71],
@@ -45,7 +41,6 @@
       }
     },
     "crate": {
-      "tier": 1,
       "label": "crate",
       "units": "null",
       "facecol": [0.98, 0.91, 0.71],
@@ -56,7 +51,6 @@
       }
     },
     "daqenergy": {
-      "tier": 1,
       "label": "daqenergy",
       "units": "null",
       "facecol": [0.98, 0.91, 0.71],
@@ -67,7 +61,6 @@
       }
     },
     "numtraces": {
-      "tier": 1,
       "label": "numtraces",
       "units": "null",
       "facecol": [0.98, 0.91, 0.71],
@@ -78,7 +71,6 @@
       }
     },
     "eventnumber": {
-      "tier": 1,
       "label": "eventnumber",
       "units": "null",
       "facecol": [0.98, 0.91, 0.71],
@@ -89,7 +81,6 @@
       }
     },
     "bl_intercept": {
-      "tier": 2,
       "label": "Baseline Intercept",
       "units": "ADC",
       "facecol": [0.61, 0.87, 1.0],
@@ -100,7 +91,6 @@
       }
     },
     "bl_mean": {
-      "tier": 2,
       "label": "Mean Baseline",
       "units": "ADC",
       "facecol": [0.61, 0.87, 1.0],
@@ -111,7 +101,6 @@
       }
     },
     "bl_slope": {
-      "tier": 2,
       "label": "Baseline Slope",
       "units": "ADC/time",
       "facecol": [0.61, 0.87, 1.0],
@@ -122,7 +111,6 @@
       }
     },
     "bl_std": {
-      "tier": 2,
       "label": "Baseline Standard Deviation",
       "units": "ADC",
       "facecol": [0.61, 0.87, 1.0],
@@ -133,7 +121,6 @@
       }
     },
     "A_max": {
-      "tier": 2,
       "label": "Max. Current Pulse",
       "units": "a.u.",
       "facecol": [0.96, 0.73, 1.0],
@@ -144,7 +131,6 @@
       }
     },
     "QDrift": {
-      "tier": 2,
       "label": "QDrift",
       "units": "a.u.",
       "facecol": [0.56, 0.74, 0.56],
@@ -155,7 +141,6 @@
       }
     },
     "cuspEftp": {
-      "tier": 2,
       "label": "cuspEftp",
       "units": "a.u.",
       "facecol": [0.86, 0.86, 0.86],
@@ -166,7 +151,6 @@
       }
     },
     "cuspEmax": {
-      "tier": 2,
       "label": "cuspEmax",
       "units": "a.u.",
       "facecol": [0.86, 0.86, 0.86],
@@ -177,7 +161,6 @@
       }
     },
     "dt_eff": {
-      "tier": 2,
       "label": "dt_eff",
       "units": "a.u.",
       "facecol": "peachpuff",
@@ -188,7 +171,6 @@
       }
     },
     "pz_mean": {
-      "tier": 2,
       "label": "pz_mean",
       "units": "a.u.",
       "facecol": "paleturquoise",
@@ -199,7 +181,6 @@
       }
     },
     "pz_slope": {
-      "tier": 2,
       "label": "pz_slope",
       "units": "a.u.",
       "facecol": "paleturquoise",
@@ -210,7 +191,6 @@
       }
     },
     "pz_std": {
-      "tier": 2,
       "label": "pz_std",
       "units": "a.u.",
       "facecol": "paleturquoise",
@@ -221,7 +201,6 @@
       }
     },
     "tp_01": {
-      "tier": 2,
       "label": "tp_01",
       "units": "us",
       "facecol": "aliceblue",
@@ -232,7 +211,6 @@
       }
     },
     "tp_0_est": {
-      "tier": 2,
       "label": "tp_0_est",
       "units": "us",
       "facecol": "aliceblue",
@@ -243,7 +221,6 @@
       }
     },
     "tp_10": {
-      "tier": 2,
       "label": "tp_10",
       "units": "us",
       "facecol": "aliceblue",
@@ -254,7 +231,6 @@
       }
     },
     "tp_100": {
-      "tier": 2,
       "label": "tp_100",
       "units": "us",
       "facecol": "aliceblue",
@@ -265,7 +241,6 @@
       }
     },
     "tp_20": {
-      "tier": 2,
       "label": "tp_20",
       "units": "us",
       "facecol": "aliceblue",
@@ -276,7 +251,6 @@
       }
     },
     "tp_50": {
-      "tier": 2,
       "label": "tp_50",
       "units": "us",
       "facecol": "aliceblue",
@@ -287,7 +261,6 @@
       }
     },
     "tp_80": {
-      "tier": 2,
       "label": "tp_80",
       "units": "us",
       "facecol": "aliceblue",
@@ -298,7 +271,6 @@
       }
     },
     "tp_90": {
-      "tier": 2,
       "label": "tp_90",
       "units": "us",
       "facecol": "aliceblue",
@@ -309,7 +281,6 @@
       }
     },
     "tp_95": {
-      "tier": 2,
       "label": "tp_95",
       "units": "us",
       "facecol": "aliceblue",
@@ -320,7 +291,6 @@
       }
     },
     "tp_99": {
-      "tier": 2,
       "label": "tp_99",
       "units": "us",
       "facecol": "aliceblue",
@@ -331,7 +301,6 @@
       }
     },
     "tp_aoe_max": {
-      "tier": 2,
       "label": "tp_aoe_max",
       "units": "a.u.",
       "facecol": "plum",
@@ -342,7 +311,6 @@
       }
     },
     "tp_aoe_samp": {
-      "tier": 2,
       "label": "tp_aoe_samp",
       "units": "a.u.",
       "facecol": "plum",
@@ -353,7 +321,6 @@
       }
     },
     "tp_max": {
-      "tier": 2,
       "label": "tp_max",
       "units": "a.u.",
       "facecol": "palegreen",
@@ -364,7 +331,6 @@
       }
     },
     "tp_min": {
-      "tier": 2,
       "label": "tp_max",
       "units": "a.u.",
       "facecol": "palegreen",
@@ -375,7 +341,6 @@
       }
     },
     "trapEftp": {
-      "tier": 2,
       "label": "trapEftp",
       "units": "a.u.",
       "facecol": "palegoldenrod",
@@ -386,7 +351,6 @@
       }
     },
     "trapEmax": {
-      "tier": 2,
       "label": "trapEmax",
       "units": "a.u.",
       "facecol": "palegoldenrod",
@@ -397,7 +361,6 @@
       }
     },
     "trapTmax": {
-      "tier": 2,
       "label": "trapTmax",
       "units": "a.u.",
       "facecol": "palegoldenrod",
@@ -408,18 +371,16 @@
       }
     },
     "wf_max": {
-      "tier": 2,
       "label": "wf_max",
       "units": "a.u.",
       "facecol": "pink",
       "limit": {
         "spms": ["null", "null"],
         "geds": ["null", "null"],
-        "ch000": ["null", 24000]
+        "ch000": ["null", "null"]
       }
     },
     "wf_min": {
-      "tier": 2,
       "label": "wf_min",
       "units": "a.u.",
       "facecol": "pink",
@@ -430,7 +391,6 @@
       }
     },
     "zacEftp": {
-      "tier": 2,
       "label": "zacEftp",
       "units": "a.u.",
       "facecol": "aquamarine",
@@ -441,7 +401,6 @@
       }
     },
     "zacEmax": {
-      "tier": 2,
       "label": "zacEmax",
       "units": "a.u.",
       "facecol": "aquamarine",
@@ -452,7 +411,6 @@
       }
     },
     "event_rate": {
-      "tier": "null",
       "label": "Event Rate",
       "units": "null",
       "facecol": [0.82, 0.94, 0.75],
@@ -463,7 +421,6 @@
       }
     },
     "bl_rms": {
-      "tier": "null",
       "label": "Baseline RMS",
       "units": "null",
       "facecol": [0.86, 0.82, 1.0],
@@ -473,19 +430,7 @@
         "ch000": ["null", "null"]
       }
     },
-    "delta_bl_std": {
-      "tier": "null",
-      "label": "bl_std - avg(bl_std)",
-      "units": "ADC",
-      "facecol": [0.86, 0.82, 1.0],
-      "limit": {
-        "spms": ["null", 0.0],
-        "geds": ["null", 0.0],
-        "ch000": ["null", "null"]
-      }
-    },
     "lc": {
-      "tier": "null",
       "label": "LC",
       "units": "?",
       "facecol": [0.94, 0.87, 0.9],
@@ -495,19 +440,7 @@
         "ch000": ["null", "null"]
       }
     },
-    "delta_bl_mean": {
-      "tier": "null",
-      "label": "bl_mean - avg(bl_mean)",
-      "units": "ADC",
-      "facecol": [0.94, 0.87, 0.9],
-      "limit": {
-        "spms": ["null", 0.0],
-        "geds": ["null", 0.0],
-        "ch000": ["null", "null"]
-      }
-    },
     "gain": {
-      "tier": "null",
       "label": "Uncalibrated Gain",
       "units": "a.u.",
       "facecol": [0.68, 0.87, 0.68],
@@ -518,7 +451,6 @@
       }
     },
     "uncal_puls": {
-      "tier": "null",
       "label": "Uncalibrated pulser",
       "units": "ADC",
       "facecol": [0.27, 0.47, 0.9],
