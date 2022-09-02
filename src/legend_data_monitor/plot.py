@@ -799,6 +799,8 @@ def plot_par_vs_time_2d(
 
     return
 
+"""
+#Work in progress...
 
 def plot_ch_par_vs_time(
     dsp_all: list[str],
@@ -810,7 +812,6 @@ def plot_ch_par_vs_time(
     det_dict: dict,
     pdf=None,
 ) -> dict:
-    """Plot time evolution of given parameter for each channel separately. WORK IN PROGRESS."""
     plt.rcParams["figure.figsize"] = 15, 10
     if "1" in string_number:
         # fig, ((ax1), (ax2), (ax3), (ax4), (ax5), (ax6), (ax7), (ax8)) = plt.subplots(
@@ -819,9 +820,6 @@ def plot_ch_par_vs_time(
         # ax_list = [ax1, ax2, ax3, ax4, ax5, ax6, ax7, ax8]
         fig, ((ax1), (ax2), (ax3), (ax4)) = plt.subplots(4, 1, sharex=True, sharey=True)
         ax_list = [ax1, ax2, ax3, ax4]
-    else:
-        return None
-    """
     if "2" in string_number:
         fig, ((ax1), (ax2), (ax3), (ax4), (ax5), (ax6), (ax7)) = plt.subplots(
             7, 1, sharex=True, sharey=True
@@ -837,7 +835,6 @@ def plot_ch_par_vs_time(
             5, 1, sharex=True, sharey=True
         )
         ax_list = [ax1, ax2, ax3, ax4, ax5]
-    """
 
     ax_idx = 0
     # fig.patch.set_facecolor(j_par[0][parameter]["facecol"])
@@ -885,7 +882,6 @@ def plot_ch_par_vs_time(
                     label=lab,
                 )
             )
-        )
 
         # det parameter and time arrays for a given detector
         par_np_array, utime_array = parameters.load_parameter(
@@ -1090,3 +1086,4 @@ def plot_ch_par_vs_time(
     fig.tight_layout()
     pkl.dump(ax_list, open(f"out/pkl-files/par-vs-time/{pkl_name}", "wb"))
     return map_dict
+"""
