@@ -323,9 +323,7 @@ def build_utime_array(dsp_files: list[str], detector: str, det_type: str):
     det_type
                    Type of detector (geds/spms/pulser)
     """
-    utime_array = lh5.load_nda(dsp_files, ["timestamp"], detector + "/dsp")[
-            "timestamp"
-        ]
+    utime_array = lh5.load_nda(dsp_files, ["timestamp"], detector + "/dsp")["timestamp"]
 
     return utime_array
 
@@ -437,7 +435,7 @@ def get_puls_ievt(dsp_files: list[str]):
     pulser_entry = []
     not_pulser_entry = []
 
-    for idx,entry in enumerate(wf_max):
+    for idx, entry in enumerate(wf_max):
         puls_ievt.append(idx)
         if entry > 24000:
             pulser_entry.append(idx)
