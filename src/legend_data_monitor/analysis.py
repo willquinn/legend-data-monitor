@@ -100,14 +100,18 @@ def load_channels(raw_files: list[str]):
                     and entry["daq"]["board_ch"] == f"{ch_orca}"
                 ):
                     string_dict = {}
+                    hv_dict = {}
                     string_dict["number"] = entry["string"]["number"]
                     string_dict["position"] = entry["string"]["position"]
+                    hv_dict["board_chan"] = entry["high_voltage"]["board_chan"]
+                    hv_dict["flange_id"] = entry["high_voltage"]["flange_id"]
 
                     geds_dict[ch] = {
                         "system": "ged",
                         "det": det,
                         "string": string_dict,
                         "daq": daq_dict,
+                        "high_voltage": hv_dict,
                     }
 
         if crate == 1:

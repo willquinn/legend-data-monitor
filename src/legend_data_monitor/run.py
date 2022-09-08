@@ -49,7 +49,9 @@ def dump_all_plots_together(
         dsp_files = [dsp_files]
 
     # dsp_files = dsp_files[17:] # remove data prior to 20220817T124844Z in run22
-    dsp_files = dsp_files[:5]  # keep only first data (to perform tests in a quick way)
+    dsp_files = dsp_files[
+        17:20
+    ]  # keep only first data (to perform tests in a quick way)
 
     raw_files = [dsp_file.replace("dsp", "raw") for dsp_file in dsp_files]
     geds_dict, spms_dict, other_dict = analysis.load_channels(raw_files)
@@ -84,8 +86,9 @@ def dump_all_plots_together(
                         if len(det_list) == 0:
                             continue  # no detectors in a string
 
-                        map_dict = plot.plot_par_vs_time(
-                            # map_dict = plot.plot_ch_par_vs_time( # <-- funzione di prova
+                        # map_dict = plot.plot_par_vs_time(
+                        # map_dict = plot.plot_ch_par_vs_time( # <-- funzione non finita
+                        map_dict = plot.plot_wtrfll(
                             dsp_files,
                             det_list,
                             par,

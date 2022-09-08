@@ -18,11 +18,11 @@
   "par_to_plot": {
     "README": "Select here the parameters you want to plot for spms and geds (see 'Available-par' for parameters that are available to study).",
     "spms": [],
-    "geds": ["bl_std"],
+    "geds": ["baseline"],
     "ch000": [],
     "pulser": {
       "README": "Set the following flag to 'true' if you want to plot pulser events; set it to 'false' if you want to plot real events. Set it to 'null' if you want to keep everything",
-      "keep-pulser": false
+      "keep-pulser": true
     },
 
     "Available-par": {
