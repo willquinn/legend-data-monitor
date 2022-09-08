@@ -111,7 +111,7 @@ def load_channels(raw_files: list[str]):
                         "det": det,
                         "string": string_dict,
                         "daq": daq_dict,
-                        "high_voltage": hv_dict
+                        "high_voltage": hv_dict,
                     }
 
         if crate == 1:

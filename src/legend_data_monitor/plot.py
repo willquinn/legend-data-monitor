@@ -7,7 +7,6 @@ from datetime import datetime, timezone
 
 import matplotlib as mpl
 import matplotlib.patches as mpatches
-from matplotlib.collections import PolyCollection, LineCollection
 import matplotlib.pyplot as plt
 import numpy as np
 import pygama.lgdo.lh5_store as lh5
@@ -15,7 +14,7 @@ from matplotlib import dates
 
 from . import analysis, parameters, timecut
 
-plt.rcParams['agg.path.chunksize'] = 10000000000000000
+plt.rcParams["agg.path.chunksize"] = 10000000000000000
 plt.rcParams.update({"figure.max_open_warning": 0})
 plt.rcParams["figure.figsize"] = (10, 5)
 plt.rcParams["font.size"] = 12
@@ -155,7 +154,7 @@ def plot_par_vs_time(
         all_ievt = puls_only_ievt = not_puls_ievt = []
 
     for index, detector in enumerate(det_list):
-        #if detector!='ch043':
+        # if detector!='ch043':
         # if detector==det_list[1]: # <<-- for quick tests
 
         # need to define a variable for dsp files for every ch (due to the "remove")
@@ -196,8 +195,8 @@ def plot_par_vs_time(
             not_puls_ievt,
         )
 
-        #offset = 1000 * (0 + index)
-        #par_np_array = np.add(par_np_array, offset)
+        # offset = 1000 * (0 + index)
+        # par_np_array = np.add(par_np_array, offset)
 
         # plot detector and get its status
         start_time, end_time, status, ax = plot_parameters(
@@ -834,9 +833,9 @@ def plot_wtrfll(
     det_dict
                     Contains info (crate, card, ch_orca) for geds/spms/other
     """
-    #fig = plt.subplot(projection='3d')
-    fig = plt.figure(figsize=(20,16))
-    ax = fig.add_subplot(111, projection='3d')
+    # fig = plt.subplot(projection='3d')
+    fig = plt.figure(figsize=(20, 16))
+    ax = fig.add_subplot(111, projection="3d")
     y_values = []
     start_times = []
     end_times = []
@@ -855,7 +854,7 @@ def plot_wtrfll(
         all_ievt = puls_only_ievt = not_puls_ievt = []
 
     for index, detector in enumerate(det_list):
-        #if detector==det_list[1]: # <<-- for quick tests
+        # if detector==det_list[1]: # <<-- for quick tests
 
         # need to define a variable for dsp files for every ch (due to the "remove")
         dsp_files = dsp_all
@@ -867,11 +866,13 @@ def plot_wtrfll(
         # add entries for the legend
         if det_type == "geds":
             name = det_dict[detector]["det"]
-            if "V0" in name: name = name[2:]
+            if "V0" in name:
+                name = name[2:]
             string_no = det_dict[detector]["string"]["number"]
             string_pos = det_dict[detector]["string"]["position"]
             new_label = f"s{string_no}-p{string_pos}-{detector}-{name}"
-        else: name = f"{detector}"
+        else:
+            name = f"{detector}"
         if det_type == "spms":
             col = j_plot[2][str(detector)]
         if det_type == "geds":
@@ -900,7 +901,7 @@ def plot_wtrfll(
 
         utime_list = utime_array.tolist()
         par_np_list = par_np_array.tolist()
-        y_list =  [index for i in range(0,len(utime_list))]
+        y_list = [index for i in range(0, len(utime_list))]
         ax.plot3D(utime_list, y_list, par_np_list, color=col, zorder=-index, alpha=0.9)
         ax.set_xlim3d(utime_list[0], utime_list[-1])
 
@@ -931,19 +932,19 @@ def plot_wtrfll(
     """
 
     # plot features
-    ax.set_box_aspect(aspect = (1,1,0.5)) # aspect ratio for axes
+    ax.set_box_aspect(aspect=(1, 1, 0.5))  # aspect ratio for axes
 
-    ax.set_xlabel('Time (UTC)', labelpad=15) # axes labels
-    ax.set_zlabel(f'{parameter}')
+    ax.set_xlabel("Time (UTC)", labelpad=15)  # axes labels
+    ax.set_zlabel(f"{parameter}")
 
     # define new y-axis values
     yticks_loc = [i for i in range(0, len(y_values))]
     ax.set_yticks(yticks_loc)
-    ax.set_yticklabels(y_values, ha="left") # change number into name
+    ax.set_yticklabels(y_values, ha="left")  # change number into name
 
-    #ax.set_xlim3d(dates.date2num(start_times[0]), dates.date2num(end_times[-1]))
+    # ax.set_xlim3d(dates.date2num(start_times[0]), dates.date2num(end_times[-1]))
     ax.set_ylim3d(0, len(det_list))
-    fig.subplots_adjust(left=-0.21) # to move the plot towards the left
+    fig.subplots_adjust(left=-0.21)  # to move the plot towards the left
 
     # define name of pkl file (with info about time cut if present)
     if len(time_cut) != 0:
@@ -1022,8 +1023,6 @@ def plot_wtrfll(
     plt.close()
 
     return map_dict
-
-
 
 
 """

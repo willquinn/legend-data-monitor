@@ -86,7 +86,7 @@ def load_parameter(
     # base = lh5.load_nda(dsp_files, ["baseline"], detector + "/dsp/")["baseline"]
     par_array_mean = np.mean(par_array[:1000])  # mean over first X data
     par_array = np.subtract(par_array, par_array_mean)
-    par_array = np.divide(par_array, par_array_mean)*100
+    par_array = np.divide(par_array, par_array_mean) * 100
 
     # check if there are 'nan' values in par_array
     par_array, utime_array_cut = analysis.remove_nan_values(par_array, utime_array_cut)
