@@ -48,8 +48,10 @@ def dump_all_plots_together(
     if isinstance(dsp_files, str):
         dsp_files = [dsp_files]
 
-    #dsp_files = dsp_files[17:] # remove data prior to 20220817T124844Z in run22
-    dsp_files = dsp_files[17:20]  # keep only first data (to perform tests in a quick way)
+    # dsp_files = dsp_files[17:] # remove data prior to 20220817T124844Z in run22
+    dsp_files = dsp_files[
+        17:20
+    ]  # keep only first data (to perform tests in a quick way)
 
     raw_files = [dsp_file.replace("dsp", "raw") for dsp_file in dsp_files]
     geds_dict, spms_dict, other_dict = analysis.load_channels(raw_files)
@@ -79,13 +81,13 @@ def dump_all_plots_together(
                     det_status_dict = {}
                     for (det_list, string) in zip(string_geds, string_geds_name):
 
-                        #if det_list==string_geds[3]: # keep 1 string (per far prima)
+                        # if det_list==string_geds[3]: # keep 1 string (per far prima)
 
                         if len(det_list) == 0:
                             continue  # no detectors in a string
 
-                        #map_dict = plot.plot_par_vs_time(
-                        #map_dict = plot.plot_ch_par_vs_time( # <-- funzione non finita
+                        # map_dict = plot.plot_par_vs_time(
+                        # map_dict = plot.plot_ch_par_vs_time( # <-- funzione non finita
                         map_dict = plot.plot_wtrfll(
                             dsp_files,
                             det_list,
