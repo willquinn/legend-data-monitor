@@ -195,7 +195,7 @@ def plot_par_vs_time(
             not_puls_ievt,
         )
 
-        # offset = 1000 * (0 + index)
+        offset = 1000 * (0 + index)
         # par_np_array = np.add(par_np_array, offset)
 
         # plot detector and get its status
@@ -839,7 +839,6 @@ def plot_wtrfll(
     y_values = []
     start_times = []
     end_times = []
-    handle_list = []
     map_dict = {}
 
     # exit if no dsp files are found
