@@ -68,8 +68,12 @@ def load_parameter(
         par_array, utime_array_cut = event_rate(dsp_files, utime_array_cut, det_type)
     elif parameter == "uncal_puls":
         par_array = uncal_pulser(dsp_files, detector, puls_only_index)
+    elif parameter == "bl_difference":
+        par_array = bl_difference(dsp_files, detector)
+    elif parameter == "AoE":
+        par_array = aoe(dsp_files, detector)    
     else:
-        par_array = lh5.load_nda(dsp_files, [parameter], detector + "/dsp/")[parameter]
+        par_array = lh5.load_nda(dsp_files, [parameter], detector + "/dsp")[parameter]
 
     if all_ievt != [] and puls_only_ievt != [] and not_puls_ievt != []:
         if keep_puls is True:
@@ -121,6 +125,41 @@ def bl_rms(
     return np.array(bl_norm)
 """
 
+def bl_difference(dsp_files: list[str], detector: str):
+    """
+    Return the difference between offline reconstructed baseline (dsp/bl_mean)
+    and baseline from FPGA (dsp/baseline).
+
+    Parameters
+    ----------
+    dsp_files
+               lh5 dsp files
+    detector
+               Channel of the detector
+    """
+    fpga_baseline = lh5.load_nda(dsp_files, ["baseline"], detector + "/dsp")["baseline"]
+    reconstructed_bl = lh5.load_nda(dsp_files, ["bl_mean"], detector + "/dsp")["bl_mean"] 
+
+    return reconstructed_bl - fpga_baseline
+
+
+def aoe(dsp_files: list[str], detector: str):
+    """
+    Return the A/E ratio (dsp/A_max divided by dsp/cuspEmax).
+
+    Parameters
+    ----------
+    dsp_files
+               lh5 dsp files
+    detector
+               Channel of the detector
+    """
+    a_max = lh5.load_nda(dsp_files, ["A_max"], detector + "/dsp")["A_max"]
+    cuspEmax = lh5.load_nda(dsp_files, ["cuspEmax"], detector + "/dsp")["cuspEmax"]
+    
+    aoe = np.divide(a_max,cuspEmax)
+
+    return aoe
 
 def leakage_current(dsp_files: list[str], detector: str, det_type: str):
     """

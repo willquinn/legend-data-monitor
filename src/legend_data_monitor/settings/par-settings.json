@@ -459,6 +459,26 @@
         "geds": [-9, 9],
         "ch000": ["null", "null"]
       }
+    },
+    "bl_difference": {
+      "label": "reconstructed bl - FPGA bl",
+      "units": "%",
+      "facecol": [0.27, 0.47, 0.9],
+      "limit": {
+        "spms": ["null", "null"],
+        "geds": ["null", "null"],
+        "ch000": ["null", "null"]
+      }
+    },
+    "AoE": {
+      "label": "A over E",
+      "units": "%",
+      "facecol": [0.27, 0.47, 0.9],
+      "limit": {
+        "spms": ["null", "null"],
+        "geds": ["null", "null"],
+        "ch000": ["null", "null"]
+      }
     }
   }
 }

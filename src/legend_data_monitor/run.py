@@ -17,6 +17,7 @@ j_config, j_par, _ = analysis.read_json_files()
 exp = j_config[0]["exp"]
 files_path = j_config[0]["path"]["lh5-files"]
 version = j_config[0]["path"]["version"]
+output_path = j_config[0]["path"]["output-path"]
 period = j_config[1]
 run = j_config[2]
 datatype = j_config[3]
@@ -292,20 +293,21 @@ def select_and_plot_run(path: str, plot_path: str, map_path: str) -> None:
 
 def main():
     path = files_path + version + "/generated/tier"
-    cwd_path = os.path.join(os.getcwd(), "out/")
-    if os.path.isdir(cwd_path) is False:
-        os.mkdir(cwd_path)
-    pdf_path = os.path.join(cwd_path, "pdf-files")
-    log_path = os.path.join(cwd_path, "log-files")
+    out_path = os.path.join(output_path, "out/")
+
+    if os.path.isdir(out_path) is False:
+        os.mkdir(out_path)
+    pdf_path = os.path.join(out_path, "pdf-files")
+    log_path = os.path.join(out_path, "log-files")
 
     for out_dir in ["log-files", "pdf-files", "pkl-files"]:
-        if out_dir not in os.listdir(cwd_path):
-            os.mkdir(cwd_path + out_dir)
+        if out_dir not in os.listdir(out_path):
+            os.mkdir(out_path + out_dir)
         dirs = ["pdf-files", "pkl-files"]
         if out_dir in dirs:
             for out_subdir in ["par-vs-time", "heatmaps"]:
-                if os.path.isdir(f"{cwd_path}{out_dir}/{out_subdir}") is False:
-                    os.mkdir(f"{cwd_path}{out_dir}/{out_subdir}")
+                if os.path.isdir(f"{out_path}{out_dir}/{out_subdir}") is False:
+                    os.mkdir(f"{out_path}{out_dir}/{out_subdir}")
 
     plot_path = pdf_path + "/par-vs-time"
     map_path = pdf_path + "/heatmaps"
