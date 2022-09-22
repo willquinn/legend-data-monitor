@@ -1,7 +1,7 @@
 {
   "par_to_plot": {
     "baseline": {
-      "label": "FPGA_bl - avg(FPGA_bl)",
+      "label": "FPGA baseline",
       "units": "ADC",
       "facecol": [0.98, 0.91, 0.71],
       "limit": {
@@ -460,6 +460,16 @@
         "ch000": ["null", "null"]
       }
     },
+    "cal_puls": {
+      "label": "Calibrated pulser",
+      "units": "keV",
+      "facecol": [0.27, 0.47, 0.9],
+      "limit": {
+        "spms": ["null", "null"],
+        "geds": [-9, 9],
+        "ch000": ["null", "null"]
+      }
+    },
     "bl_difference": {
       "label": "reconstructed bl - FPGA bl",
       "units": "%",
@@ -474,6 +484,16 @@
       "label": "A over E",
       "units": "%",
       "facecol": [0.27, 0.47, 0.9],
+      "limit": {
+        "spms": ["null", "null"],
+        "geds": ["null", "null"],
+        "ch000": ["null", "null"]
+      }
+    },
+    "K_lines": {
+      "label": "Energy",
+      "units": "keV",
+      "facecol": [0.47, 0.61, 0.89],
       "limit": {
         "spms": ["null", "null"],
         "geds": ["null", "null"],

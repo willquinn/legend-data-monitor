@@ -34,7 +34,7 @@ def read_json_files():
     j_config.append(data_config["datatype"])  # 3
     j_config.append(data_config["det_type"])  # 4
     j_config.append(data_config["par_to_plot"])  # 5
-    j_config.append(data_config["time_slice"])  # 6
+    j_config.append(data_config["plot_style"])  # 6
     j_config.append(data_config["time_window"])  # 7
     j_config.append(data_config["last_hours"])  # 8
     j_config.append(data_config["status"])  # 9
@@ -392,39 +392,6 @@ def time_analysis(utime_array: np.ndarray, par_array: np.ndarray, time_cut: list
     return utime_array, par_array
 
 
-def par_time_average(utime_array: np.ndarray, par_array: np.ndarray, time_slice: int):
-    """
-    Compute time average using time slice.
-
-    Parameters
-    ----------
-    utime_array
-                  Array of (already shifted) timestamps
-    par_array
-                  Array with parameter values
-    time_slice
-                  Step value to separate parameter values in plot
-    """
-    bins = np.arange(
-        (np.amin(utime_array) // time_slice) * time_slice,
-        ((np.amax(utime_array) // time_slice) + 2) * time_slice,
-        time_slice,
-    )
-    binned = np.digitize(utime_array, bins)
-    bin_nos = np.unique(binned)
-
-    par_average = np.zeros(len(bins) - 1)
-    par_average[:] = np.nan
-    par_std = np.zeros(len(bins) - 1)
-    par_std[:] = np.nan
-    for i in bin_nos:
-        par_average[i - 1] = np.mean(par_array[np.where(binned == i)[0]])
-        par_std[i - 1] = np.std(par_array[np.where(binned == i)[0]])
-    times_average = (bins[:-1] + bins[1:]) / 2
-
-    return times_average, par_average
-
-
 def get_puls_ievt(dsp_files: list[str]):
     """
     Select pulser events.
@@ -441,6 +408,7 @@ def get_puls_ievt(dsp_files: list[str]):
 
     for idx, entry in enumerate(wf_max):
         puls_ievt.append(idx)
+
         if entry > 24000:
             pulser_entry.append(idx)
         if entry <= 24000:

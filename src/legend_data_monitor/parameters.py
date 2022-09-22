@@ -8,7 +8,13 @@ import pygama.lgdo.lh5_store as lh5
 from . import analysis
 
 j_config, j_par, _ = analysis.read_json_files()
-keep_puls = j_config[5]["pulser"]["keep-pulser"]
+keep_puls_pars = j_config[5]["pulser"][
+    "keep_puls_pars"
+]  # parameters for which we want to plot just pulser events
+keep_phys_pars = j_config[5]["pulser"][
+    "keep_phys_pars"
+]  # parameters for which we want to plot just physical (not pulser) events
+no_variation_pars = j_config[5]["plot_values"]["no_variation_pars"]
 
 
 def load_parameter(
@@ -46,9 +52,9 @@ def load_parameter(
         det_only_index = np.isin(all_ievt, not_puls_ievt)
         puls_only_index = np.isin(all_ievt, puls_only_ievt)
 
-        if keep_puls is True:
+        if parameter in keep_puls_pars:
             utime_array = utime_array[puls_only_index]
-        if keep_puls is False:
+        if parameter in keep_phys_pars:
             utime_array = utime_array[det_only_index]
 
     # cutting time array according to time selection
@@ -58,39 +64,55 @@ def load_parameter(
     if len(utime_array_cut) == 0:
         return [], []
 
-    # if parameter == "bl_rms": # <- abbandonata
-    #    par_array = bl_rms(
-    #        dsp_files, detector, det_type, puls_only_index
-    #    )
     if parameter == "lc":
         par_array = leakage_current(dsp_files, detector, det_type)
     elif parameter == "event_rate":
         par_array, utime_array_cut = event_rate(dsp_files, utime_array_cut, det_type)
     elif parameter == "uncal_puls":
-        par_array = uncal_pulser(dsp_files, detector, puls_only_index)
+        par_array = lh5.load_nda(dsp_files, ["trapTmax"], detector + "/dsp")["trapTmax"]
+    elif parameter == "cal_puls":
+        hit_files = [dsp_file.replace("dsp", "hit") for dsp_file in dsp_files]
+        par_array = lh5.load_nda(hit_files, ["trapEmax_ctc_cal"], detector + "/hit")[
+            "trapEmax_ctc_cal"
+        ]
     elif parameter == "bl_difference":
         par_array = bl_difference(dsp_files, detector)
     elif parameter == "AoE":
-        par_array = aoe(dsp_files, detector)    
+        par_array = aoe(dsp_files, detector)
+    elif parameter == "K_lines":
+        hit_files = [dsp_file.replace("dsp", "hit") for dsp_file in dsp_files]
+        par_array = np.array(
+            lh5.load_nda(hit_files, ["trapEmax_ctc_cal"], detector + "/hit")[
+                "trapEmax_ctc_cal"
+            ]
+        )
+        # keep physical events
+        if all_ievt != [] and puls_only_ievt != [] and not_puls_ievt != []:
+            par_array = par_array[det_only_index]
+        # temporal cut
+        _, par_array = analysis.time_analysis(utime_array, par_array, time_cut)
+        par_array, utime_array_cut = energy_potassium_lines(par_array, utime_array_cut)
     else:
         par_array = lh5.load_nda(dsp_files, [parameter], detector + "/dsp")[parameter]
 
     if all_ievt != [] and puls_only_ievt != [] and not_puls_ievt != []:
-        if keep_puls is True:
+        if parameter in keep_puls_pars:
             par_array = par_array[puls_only_index]
-        if keep_puls is False:
-            par_array = par_array[det_only_index]
+        if parameter in keep_phys_pars:
+            if parameter != "K_lines":
+                par_array = par_array[det_only_index]
 
     # cutting time array according to time selection
-    # (we do it here otherwise would arise conflicts with
-    # in the above few lines because of cut done with 'puls_only_index')
-    _, par_array = analysis.time_analysis(utime_array, par_array, time_cut)
+    no_timecut_pars = ["event_rate", "K_lines"]
+    if parameter not in no_timecut_pars:
+        _, par_array = analysis.time_analysis(utime_array, par_array, time_cut)
 
     # Enable following lines to get the delta of a parameter
-    # base = lh5.load_nda(dsp_files, ["baseline"], detector + "/dsp/")["baseline"]
-    par_array_mean = np.mean(par_array[:1000])  # mean over first X data
-    par_array = np.subtract(par_array, par_array_mean)
-    par_array = np.divide(par_array, par_array_mean) * 100
+    if parameter not in no_variation_pars and det_type != "ch000":
+        cut = int(0.05 * len(par_array))
+        par_array_mean = np.mean(par_array[:cut])
+        par_array = np.subtract(par_array, par_array_mean)
+        par_array = np.divide(par_array, par_array_mean) * 100
 
     # check if there are 'nan' values in par_array
     par_array, utime_array_cut = analysis.remove_nan_values(par_array, utime_array_cut)
@@ -98,37 +120,9 @@ def load_parameter(
     return par_array, utime_array_cut
 
 
-"""
-def bl_rms(
-    raw_files: list[str],
-    detector: str,
-    det_type: str,
-    puls_only_index: np.ndarray,
-):
-    #Return the RMS of the normalized baseline.
-    if det_type == "spms":
-        wf_det = lh5.load_nda(raw_files, ["values"], detector + "/raw/waveform/")[
-            "values"
-        ]
-    if det_type == "geds":
-        wf_det = lh5.load_nda(raw_files, ["values"], detector + "/raw/waveform/")[
-            "values"
-        ]
-
-    wf_puls = wf_det[puls_only_index][:100]
-    wf_samples = 1000
-    array_rms = [np.sqrt(np.mean(waveform[:wf_samples] ** 2)) for waveform in wf_det]
-    pulser_rms = [np.sqrt(np.mean(waveform[:wf_samples] ** 2)) for waveform in wf_puls]
-    puls_mean = np.mean(pulser_rms)
-    bl_norm = [ged_rms / puls_mean for ged_rms in array_rms]
-
-    return np.array(bl_norm)
-"""
-
 def bl_difference(dsp_files: list[str], detector: str):
     """
-    Return the difference between offline reconstructed baseline (dsp/bl_mean)
-    and baseline from FPGA (dsp/baseline).
+    Return the difference between offline reconstructed baseline (dsp/bl_mean) and baseline from FPGA (dsp/baseline).
 
     Parameters
     ----------
@@ -138,7 +132,9 @@ def bl_difference(dsp_files: list[str], detector: str):
                Channel of the detector
     """
     fpga_baseline = lh5.load_nda(dsp_files, ["baseline"], detector + "/dsp")["baseline"]
-    reconstructed_bl = lh5.load_nda(dsp_files, ["bl_mean"], detector + "/dsp")["bl_mean"] 
+    reconstructed_bl = lh5.load_nda(dsp_files, ["bl_mean"], detector + "/dsp")[
+        "bl_mean"
+    ]
 
     return reconstructed_bl - fpga_baseline
 
@@ -155,11 +151,11 @@ def aoe(dsp_files: list[str], detector: str):
                Channel of the detector
     """
     a_max = lh5.load_nda(dsp_files, ["A_max"], detector + "/dsp")["A_max"]
-    cuspEmax = lh5.load_nda(dsp_files, ["cuspEmax"], detector + "/dsp")["cuspEmax"]
-    
-    aoe = np.divide(a_max,cuspEmax)
+    cusp_e_max = lh5.load_nda(dsp_files, ["cuspEmax"], detector + "/dsp")["cuspEmax"]
+    aoe = np.divide(a_max, cusp_e_max)
 
     return aoe
+
 
 def leakage_current(dsp_files: list[str], detector: str, det_type: str):
     """
@@ -203,7 +199,9 @@ def event_rate(dsp_files: list[str], timestamp: list, det_type: str):
     for dsp_file in dsp_files:
         date_time = (((dsp_file.split("/")[-1]).split("-")[4]).split("Z")[0]).split("T")
         run_start = datetime.strptime(date_time[0] + date_time[1], "%Y%m%d%H%M%S")
-        run_start = datetime.timestamp(run_start)
+        run_start = datetime.timestamp(
+            run_start
+        )  # in the future, this will be replaced by timestamp[0]
 
         i = 0
         j = run_start
@@ -214,7 +212,7 @@ def event_rate(dsp_files: list[str], timestamp: list, det_type: str):
             while timestamp[i] < (j + dt):
                 num += 1
                 i += 1
-            if j != run_start:
+            if j != run_start and num != 0:
                 rate.append(num / dt)
                 times.append(j)
             j += dt
@@ -228,31 +226,6 @@ def event_rate(dsp_files: list[str], timestamp: list, det_type: str):
         fact = 0.001
 
     return np.array(rate) * fact, np.array(times)
-
-
-def uncal_pulser(dsp_files: list[str], detector: str, puls_only_index: np.ndarray):
-    """
-    Return the uncalibrated pulser value.
-
-    Parameters
-    ----------
-    dsp_files
-                      lh5 dsp files
-    detector
-                      Channel of the detector
-    puls_only_index
-                      Index for pulser only entries
-    """
-    if "trapEmax" not in lh5.ls(dsp_files, f"{detector}/dsp/"):
-        return []
-    puls_energy = lh5.load_nda(dsp_files, ["trapEmax"], detector + "/data")["trapEmax"]
-
-    puls_energy = puls_energy[puls_only_index]
-
-    puls_mean = np.mean(puls_energy[:100])
-    puls_energy_sub = np.array([en - puls_mean for en in puls_energy])
-
-    return puls_energy_sub
 
 
 def spms_gain(wf_array: np.ndarray):
@@ -269,3 +242,25 @@ def spms_gain(wf_array: np.ndarray):
     gain = np.array([np.max(wf) for wf in bl_removed_wf])
 
     return gain
+
+
+def energy_potassium_lines(par_array: list, timestamp: list):
+    """
+    Return the energy for events in around K-40 and K-42 lines.
+
+    Parameters
+    ----------
+    par_array
+                Energies (trapEmax) of events
+    timestamp
+                List of shifted UTC timestamps
+    """
+    par_list = []
+    time_list = []
+
+    for idx, entry in enumerate(par_array):
+        if entry > 1430 and entry < 1575:
+            par_list.append(entry)
+            time_list.append(timestamp[idx])
+
+    return np.array(par_list), np.array(time_list)

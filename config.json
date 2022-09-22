@@ -5,11 +5,11 @@
       "lh5-files": "/data1/shared/l60/l60-prodven-v1/prod-ref/",
       "version": "v05.01",
       "orca-files": "/data1/shared/l60/l60-daq/daq-v01/",
-      "output-path": "/data1/users/morella/legend-data-monitor/"
+      "output-path": "/data1/users/calgaro/legend-data-monitor/"
     }
   },
   "period": "p01",
-  "run": "r022",
+  "run": "r025",
   "datatype": "phy",
   "det_type": {
     "spms": false,
@@ -19,53 +19,48 @@
   "par_to_plot": {
     "README": "Select here the parameters you want to plot for spms and geds (see 'Available-par' for parameters that are available to study).",
     "spms": [],
-    "geds": ["AoE"],
-    "ch000": [],
+    "geds": ["K_lines"],
+    "ch000": ["wf_max"],
+
     "pulser": {
-      "README": "Set the following flag to 'true' if you want to plot pulser events; set it to 'false' if you want to plot real events. Set it to 'null' if you want to keep everything",
-      "keep-pulser": true
+      "README": "Specify for which parameters you want to keep only pulser events (in 'keep_puls_pars') or only physical events (in 'keep_phys_pars')",
+      "keep_puls_pars": ["uncal_puls", "cal_puls", "baseline"],
+      "keep_phys_pars": ["K_lines"]
+    },
+
+    "plot_values": {
+      "README": "Specify here the parameters for which you want the absolute value (and not the percentage variation wrt the mean value).",
+      "no_variation_pars": ["event_rate", "K_lines", "uncal_puls", "cal_puls"]
     },
 
     "Available-par": {
-      "Tier-2-par1": "A_max, QDrift, bl_intercept, bl_mean, bl_slope, bl_std, cuspEftp, cuspEmax, dt_eff, pz_mean, pz_slope",
-      "Tier-2-par2": "pz_std, tp_01, tp_0_est, tp_10, tp_100, tp_20, tp_50, tp_80, tp_90, tp_95, tp_99, tp_aoe_max, tp_aoe_samp",
-      "Tier-2-par3": "tp_max, tp_min, trapEftp, trapEmax, trapTmax, wf_max, wf_min, zacEftp, zacEmax",
+      "README": "Most of dsp parameters are available for being plotted. Parameters that were taken into account are: bl_mean, bl_std, baseline, bl_difference, AoE, trapTmax (pulser), wf_max (pulser), K_lines (phys), uncal_puls (pulser), cal_puls (pulser), event_rate.",
       "Other-par": {
         "event_rate": {
-          "README": "Event rate. Change 'dt' and 'units' if needed.",
+          "README": "Event rate. Change 'dt' and 'units' if needed. 'dt' is the time interval (in [s]) in which rate is evaluated: rate=cts/dt. 'units' can be chosen among: mHz, Hz, kHz.",
           "dt": {
-            "README": "Time interval (in [s]) in which rate is evaluated: rate=cts/dt.",
             "spms": 10,
-            "geds": 10,
+            "geds": 1,
             "ch000": 10
           },
           "units": {
-            "README": "Select the units you prefer between: mHz, Hz, kHz.",
             "spms": "Hz",
             "geds": "Hz",
             "ch000": "Hz"
           }
         },
-        "bl_rms": {
-          "README": "Baseline root mean square (available only for data with pulser)"
-        },
         "lc": {
-          "README": "Leakage current (available only for data with pulser)"
-        },
-        "uncal_puls": {
-          "README": "Uncalibrated pulser (available only for data with pulser; dsp files are needed)"
+          "README": "Leakage current (available only for data with pulser) - L60 conversion is needed"
         },
         "gain": {
-          "README": "(uncalibrated) gain (available only for SiPMs)"
+          "README": "(uncalibrated) gain (available only for SiPMs) - not checked for L60 data"
         }
-      },
-      "Still-not-available": "uncal_puls"
+      }
     }
   },
-  "time_slice": {
-    "spms": 1,
-    "geds": 1,
-    "ch000": 1
+  "plot_style": {
+    "README": "Specify here which parameter you want to plot in 2D. The other parameters will be automatically plotted in 3D.",
+    "two_dim_pars": ["K_lines"]
   },
   "time_window": {
     "enabled": false,
