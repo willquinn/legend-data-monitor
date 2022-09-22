@@ -81,7 +81,7 @@ def load_parameter(
             par_array = par_array[det_only_index]
         # temporal cut
         _, par_array = analysis.time_analysis(utime_array, par_array, time_cut)
-        par_array, utime_array_cut = energy_K_lines(par_array, utime_array_cut)
+        par_array, utime_array_cut = energy_potassium_lines(par_array, utime_array_cut)
     else:
         par_array = lh5.load_nda(dsp_files, [parameter], detector + "/dsp")[parameter]
 
@@ -111,8 +111,7 @@ def load_parameter(
 
 def bl_difference(dsp_files: list[str], detector: str):
     """
-    Return the difference between offline reconstructed baseline (dsp/bl_mean)
-    and baseline from FPGA (dsp/baseline).
+    Return the difference between offline reconstructed baseline (dsp/bl_mean) and baseline from FPGA (dsp/baseline).
 
     Parameters
     ----------
@@ -139,9 +138,9 @@ def aoe(dsp_files: list[str], detector: str):
                Channel of the detector
     """
     a_max = lh5.load_nda(dsp_files, ["A_max"], detector + "/dsp")["A_max"]
-    cuspEmax = lh5.load_nda(dsp_files, ["cuspEmax"], detector + "/dsp")["cuspEmax"]
+    cusp_e_max = lh5.load_nda(dsp_files, ["cuspEmax"], detector + "/dsp")["cuspEmax"]
     
-    aoe = np.divide(a_max,cuspEmax)
+    aoe = np.divide(a_max, cusp_e_max)
 
     return aoe
 
@@ -229,9 +228,9 @@ def spms_gain(wf_array: np.ndarray):
 
     return gain
 
-def energy_K_lines(par_array: list, timestamp: list):
+def energy_potassium_lines(par_array: list, timestamp: list):
     """
-    Returns the energy for events in around K-40 and K-42 lines.
+    Return the energy for events in around K-40 and K-42 lines.
 
     Parameters
     ----------

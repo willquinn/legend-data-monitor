@@ -23,7 +23,7 @@ run = j_config[2]
 datatype = j_config[3]
 det_type = j_config[4]
 par_to_plot = j_config[5]
-twoD_pars = j_config[6]["twoD_pars"]
+two_dim_pars = j_config[6]["two_dim_pars"]
 time_window = j_config[7]
 last_hours = j_config[8]
 verbose = j_config[11]
@@ -88,7 +88,7 @@ def dump_all_plots_together(
 
                         # map_dict = plot.plot_par_vs_time(
                         # map_dict = plot.plot_ch_par_vs_time( # <-- funzione non finita
-                        if par not in twoD_pars:
+                        if par not in two_dim_pars:
                           map_dict = plot.plot_wtrfll(
                             dsp_files,
                             det_list,
