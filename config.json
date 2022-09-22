@@ -29,7 +29,7 @@
     },
 
     "plot_values": {
-      "README": "Specifiy here the parameters for which you want the absolute value (and not the percentage variation wrt the mean value).",	    
+      "README": "Specifiy here the parameters for which you want the absolute value (and not the percentage variation wrt the mean value).",
       "no_variation_pars": ["event_rate", "K_lines", "uncal_puls", "cal_puls"]
     },
 
@@ -59,8 +59,8 @@
     }
   },
   "plot_style": {
-      "README": "Specifiy here which parameter you want to plot in 2D. The other parameters will be automatically plotted in 3D.",
-      "twoD_pars": ["K_lines"]
+    "README": "Specifiy here which parameter you want to plot in 2D. The other parameters will be automatically plotted in 3D.",
+    "twoD_pars": ["K_lines"]
   },
   "time_window": {
     "enabled": false,

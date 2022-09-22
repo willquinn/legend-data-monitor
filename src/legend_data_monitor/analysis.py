@@ -408,7 +408,7 @@ def get_puls_ievt(dsp_files: list[str]):
 
     for idx, entry in enumerate(wf_max):
         puls_ievt.append(idx)
-        
+
         if entry > 24000:
             pulser_entry.append(idx)
         if entry <= 24000:
