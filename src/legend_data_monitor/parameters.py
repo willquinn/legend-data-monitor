@@ -243,6 +243,7 @@ def spms_gain(wf_array: np.ndarray):
 
     return gain
 
+
 def energy_potassium_lines(par_array: list, timestamp: list):
     """
     Return the energy for events in around K-40 and K-42 lines.

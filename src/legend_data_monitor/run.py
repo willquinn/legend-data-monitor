@@ -89,16 +89,16 @@ def dump_all_plots_together(
                         # map_dict = plot.plot_par_vs_time(
                         # map_dict = plot.plot_ch_par_vs_time( # <-- funzione non finita
                         if par not in two_dim_pars:
-                          map_dict = plot.plot_wtrfll(
-                            dsp_files,
-                            det_list,
-                            par,
-                            time_cut,
-                            "geds",
-                            string,
-                            geds_dict,
-                            pdf,
-                          )
+                            map_dict = plot.plot_wtrfll(
+                                dsp_files,
+                                det_list,
+                                par,
+                                time_cut,
+                                "geds",
+                                string,
+                                geds_dict,
+                                pdf,
+                            )
                         else:
                             map_dict = plot.plot_par_vs_time(
                                 dsp_files,

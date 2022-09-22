@@ -137,8 +137,8 @@ def plot_par_vs_time(
     all_ievt, puls_only_ievt, not_puls_ievt = analysis.get_puls_ievt(dsp_files)
 
     for _, detector in enumerate(det_list):
-        if parameter=="cal_puls" or parameter=="K_lines":
-            if detector =="ch010" or detector=="ch024": 
+        if parameter == "cal_puls" or parameter == "K_lines":
+            if detector == "ch010" or detector == "ch024":
                 continue
 
         # if detector==det_list[1]: # <<-- for quick tests
