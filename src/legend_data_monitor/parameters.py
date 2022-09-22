@@ -8,8 +8,12 @@ import pygama.lgdo.lh5_store as lh5
 from . import analysis
 
 j_config, j_par, _ = analysis.read_json_files()
-keep_puls_pars = j_config[5]["pulser"]["keep_puls_pars"] # parameters for which we want to plot just pulser events
-keep_phys_pars = j_config[5]["pulser"]["keep_phys_pars"] # parameters for which we want to plot just physical (not pulser) events
+keep_puls_pars = j_config[5]["pulser"][
+    "keep_puls_pars"
+]  # parameters for which we want to plot just pulser events
+keep_phys_pars = j_config[5]["pulser"][
+    "keep_phys_pars"
+]  # parameters for which we want to plot just physical (not pulser) events
 no_variation_pars = j_config[5]["plot_values"]["no_variation_pars"]
 
 
@@ -63,19 +67,25 @@ def load_parameter(
     if parameter == "lc":
         par_array = leakage_current(dsp_files, detector, det_type)
     elif parameter == "event_rate":
-        par_array, utime_array_cut = event_rate(dsp_files, utime_array_cut, det_type) 
+        par_array, utime_array_cut = event_rate(dsp_files, utime_array_cut, det_type)
     elif parameter == "uncal_puls":
         par_array = lh5.load_nda(dsp_files, ["trapTmax"], detector + "/dsp")["trapTmax"]
     elif parameter == "cal_puls":
         hit_files = [dsp_file.replace("dsp", "hit") for dsp_file in dsp_files]
-        par_array = lh5.load_nda(hit_files, ["trapEmax_ctc_cal"], detector + "/hit")["trapEmax_ctc_cal"]
+        par_array = lh5.load_nda(hit_files, ["trapEmax_ctc_cal"], detector + "/hit")[
+            "trapEmax_ctc_cal"
+        ]
     elif parameter == "bl_difference":
         par_array = bl_difference(dsp_files, detector)
     elif parameter == "AoE":
-        par_array = aoe(dsp_files, detector)    
+        par_array = aoe(dsp_files, detector)
     elif parameter == "K_lines":
         hit_files = [dsp_file.replace("dsp", "hit") for dsp_file in dsp_files]
-        par_array = np.array(lh5.load_nda(hit_files, ["trapEmax_ctc_cal"], detector + "/hit")["trapEmax_ctc_cal"])
+        par_array = np.array(
+            lh5.load_nda(hit_files, ["trapEmax_ctc_cal"], detector + "/hit")[
+                "trapEmax_ctc_cal"
+            ]
+        )
         # keep physical events
         if all_ievt != [] and puls_only_ievt != [] and not_puls_ievt != []:
             par_array = par_array[det_only_index]
@@ -89,7 +99,8 @@ def load_parameter(
         if parameter in keep_puls_pars:
             par_array = par_array[puls_only_index]
         if parameter in keep_phys_pars:
-            if parameter != "K_lines": par_array = par_array[det_only_index]
+            if parameter != "K_lines":
+                par_array = par_array[det_only_index]
 
     # cutting time array according to time selection
     no_timecut_pars = ["event_rate", "K_lines"]
@@ -98,8 +109,8 @@ def load_parameter(
 
     # Enable following lines to get the delta of a parameter
     if parameter not in no_variation_pars and det_type != "ch000":
-        cut = int(0.05*len(par_array))
-        par_array_mean = np.mean(par_array[:cut])  
+        cut = int(0.05 * len(par_array))
+        par_array_mean = np.mean(par_array[:cut])
         par_array = np.subtract(par_array, par_array_mean)
         par_array = np.divide(par_array, par_array_mean) * 100
 
@@ -121,7 +132,9 @@ def bl_difference(dsp_files: list[str], detector: str):
                Channel of the detector
     """
     fpga_baseline = lh5.load_nda(dsp_files, ["baseline"], detector + "/dsp")["baseline"]
-    reconstructed_bl = lh5.load_nda(dsp_files, ["bl_mean"], detector + "/dsp")["bl_mean"] 
+    reconstructed_bl = lh5.load_nda(dsp_files, ["bl_mean"], detector + "/dsp")[
+        "bl_mean"
+    ]
 
     return reconstructed_bl - fpga_baseline
 
@@ -139,10 +152,10 @@ def aoe(dsp_files: list[str], detector: str):
     """
     a_max = lh5.load_nda(dsp_files, ["A_max"], detector + "/dsp")["A_max"]
     cusp_e_max = lh5.load_nda(dsp_files, ["cuspEmax"], detector + "/dsp")["cuspEmax"]
-    
     aoe = np.divide(a_max, cusp_e_max)
 
     return aoe
+
 
 def leakage_current(dsp_files: list[str], detector: str, det_type: str):
     """
@@ -186,7 +199,9 @@ def event_rate(dsp_files: list[str], timestamp: list, det_type: str):
     for dsp_file in dsp_files:
         date_time = (((dsp_file.split("/")[-1]).split("-")[4]).split("Z")[0]).split("T")
         run_start = datetime.strptime(date_time[0] + date_time[1], "%Y%m%d%H%M%S")
-        run_start = datetime.timestamp(run_start) # in the future, this will be replaced by timestamp[0]
+        run_start = datetime.timestamp(
+            run_start
+        )  # in the future, this will be replaced by timestamp[0]
 
         i = 0
         j = run_start
@@ -242,8 +257,8 @@ def energy_potassium_lines(par_array: list, timestamp: list):
     par_list = []
     time_list = []
 
-    for idx,entry in enumerate(par_array):
-        if entry>1430 and entry<1575:
+    for idx, entry in enumerate(par_array):
+        if entry > 1430 and entry < 1575:
             par_list.append(entry)
             time_list.append(timestamp[idx])
 

@@ -79,19 +79,11 @@ def plot_parameters(
     # plot everything independently of the detector's status
     else:
         if det_type == "ch000" or parameter == "K_lines":
-            ax.plot(
-                    times, par_array, color=col, linewidth=0, marker=".", markersize=6
-            )
-            plt.plot(
-                    times, par_array, color=col, linewidth=0, marker=".", markersize=6
-            )
+            ax.plot(times, par_array, color=col, linewidth=0, marker=".", markersize=6)
+            plt.plot(times, par_array, color=col, linewidth=0, marker=".", markersize=6)
         else:
-            ax.plot(
-                times, par_array, color=col, linewidth=1
-            )  
-            plt.plot(
-                times, par_array, color=col, linewidth=1
-            )  
+            ax.plot(times, par_array, color=col, linewidth=1)
+            plt.plot(times, par_array, color=col, linewidth=1)
 
     return times[0], times[-1], status, ax
 
@@ -248,7 +240,9 @@ def plot_par_vs_time(
         if j_par[0][parameter]["units"] != "null":
             ylab += " [" + j_par[0][parameter]["units"] + "]"
         if parameter == "event_rate":
-            units = j_config[5]["Available-par"]["Other-par"]["event_rate"]["units"][det_type]
+            units = j_config[5]["Available-par"]["Other-par"]["event_rate"]["units"][
+                det_type
+            ]
             ylab += " [" + units + "]"
     else:
         ylab += ", %"
@@ -489,7 +483,9 @@ def plot_par_vs_time_ch000(
         if j_par[0][parameter]["units"] != "null":
             ylab += " [" + j_par[0][parameter]["units"] + "]"
         if parameter == "event_rate":
-            units = j_config[5]["Available-par"]["Other-par"]["event_rate"]["units"][det_type]
+            units = j_config[5]["Available-par"]["Other-par"]["event_rate"]["units"][
+                det_type
+            ]
             ylab += " [" + units + "]"
     else:
         ylab += ", %"
@@ -845,8 +841,8 @@ def plot_wtrfll(
     all_ievt, puls_only_ievt, not_puls_ievt = analysis.get_puls_ievt(dsp_all)
 
     for index, detector in enumerate(det_list):
-        if parameter=="cal_puls" or parameter=="K_lines":
-            if detector =="ch010" or detector=="ch024":
+        if parameter == "cal_puls" or parameter == "K_lines":
+            if detector == "ch010" or detector == "ch024":
                 continue
         # if detector==det_list[1]: # <<-- for quick tests
 
@@ -934,7 +930,9 @@ def plot_wtrfll(
         if j_par[0][parameter]["units"] != "null":
             zlab = zlab + " [" + j_par[0][parameter]["units"] + "]"
         if parameter == "event_rate":
-            units = j_config[5]["Available-par"]["Other-par"]["event_rate"]["units"][det_type]
+            units = j_config[5]["Available-par"]["Other-par"]["event_rate"]["units"][
+                det_type
+            ]
             zlab = zlab + " [" + units + "]"
     else:
         zlab += ", %"
@@ -1026,4 +1024,3 @@ def plot_wtrfll(
     plt.close()
 
     return map_dict
-
