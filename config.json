@@ -29,8 +29,14 @@
     },
 
     "plot_values": {
-      "README": "Specify here the parameters for which you want the absolute value (and not the percentage variation wrt the mean value).",	    
-      "no_variation_pars": ["event_rate", "K_lines", "uncal_puls", "cal_puls", "wf_max"]
+      "README": "Specify here the parameters for which you want the absolute value (and not the percentage variation wrt the mean value).",
+      "no_variation_pars": [
+        "event_rate",
+        "K_lines",
+        "uncal_puls",
+        "cal_puls",
+        "wf_max"
+      ]
     },
 
     "Available-par": {
