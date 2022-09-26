@@ -372,7 +372,7 @@
     },
     "wf_max": {
       "label": "wf_max",
-      "units": "a.u.",
+      "units": "ADC",
       "facecol": "pink",
       "limit": {
         "spms": ["null", "null"],
@@ -493,7 +493,7 @@
     "K_lines": {
       "label": "Energy",
       "units": "keV",
-      "facecol": [0.47, 0.61, 0.89],
+      "facecol": [0.94, 0.87, 0.8],
       "limit": {
         "spms": ["null", "null"],
         "geds": ["null", "null"],

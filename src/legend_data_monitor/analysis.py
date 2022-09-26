@@ -403,28 +403,38 @@ def get_puls_ievt(dsp_files: list[str]):
     """
     wf_max = lh5.load_nda(dsp_files, ["wf_max"], "ch000/dsp/")["wf_max"]
     puls_ievt = []
-    pulser_entry = []
+    pulser_lowen_entry = []
+    pulser_highen_entry = []
     not_pulser_entry = []
 
     for idx, entry in enumerate(wf_max):
         puls_ievt.append(idx)
 
         if entry > 24000:
-            pulser_entry.append(idx)
-        if entry <= 24000:
+            pulser_highen_entry.append(idx)
+        if entry < 17500:
             not_pulser_entry.append(idx)
+        else:
+            pulser_lowen_entry.append(idx)
+
+    rate_FC_pulser = j_config[5]["pulser"]["rate_FC_pulser"]
+    rate_HW_pulser = j_config[5]["pulser"]["rate_HW_pulser"]
+    livetime_high_en = (len(pulser_highen_entry)*(1/rate_HW_pulser))/60/60/24
+    livetime_low_en = (len(pulser_lowen_entry)*(1/rate_FC_pulser))/60/60/24
+    logging.error(f"Livetime [days] - high E pulser: {livetime_high_en}")
+    logging.error(f"Livetime [days] - low E pulser: {livetime_low_en}")
 
     # pulser+physical events
     puls_ievt = np.array(puls_ievt)
-    # pulser entries
-    puls_only_ievt = puls_ievt[np.isin(puls_ievt, pulser_entry)]
+    # pulser entries (high E)
+    puls_only_ievt = puls_ievt[np.isin(puls_ievt, pulser_highen_entry)]
     # physical entries
     not_puls_ievt = puls_ievt[np.isin(puls_ievt, not_pulser_entry)]
 
     return puls_ievt, puls_only_ievt, not_puls_ievt
 
 
-def remove_nan_values(par_array: np.ndarray, time_array: np.ndarray):
+def remove_nan(par_array: np.ndarray, time_array: np.ndarray):
     """
     Remove NaN values from arrays.
 
@@ -435,14 +445,7 @@ def remove_nan_values(par_array: np.ndarray, time_array: np.ndarray):
     time_array
                  Array with time values
     """
-    par_array_no_nan = []
-    time_array_no_nan = []
-
-    if np.isnan(par_array).any():
-        par_array_no_nan = par_array[~np.isnan(par_array)]
-        time_array_no_nan = time_array[~np.isnan(par_array)]
-    else:
-        par_array_no_nan = par_array
-        time_array_no_nan = time_array
+    par_array_no_nan = par_array[~np.isnan(par_array)]
+    time_array_no_nan = time_array[~np.isnan(par_array)]
 
     return np.asarray(par_array_no_nan), np.asarray(time_array_no_nan)

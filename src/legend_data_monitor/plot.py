@@ -46,7 +46,7 @@ def plot_parameters(
     Parameters
     ----------
     ax
-                  PLot to be saved in pkl file
+                  Plot to be saved in pkl file
     par_array
                   Array with parameter values
     utime_array
@@ -70,17 +70,21 @@ def plot_parameters(
     if det_type == "geds":
         col = j_plot[3][detector]
     if det_type == "ch000":
-        col = "r"
+        col = "k"
 
     # if we want to plot detectors that are only problematic
     if status_flag is True and status == 1:
-        ax.plot(times, par_array, color=col, linewidth=0, marker=".", markersize=0.5)
-        plt.plot(times, par_array, color=col, linewidth=0, marker=".", markersize=0.5)
+        if det_type == "ch000" or parameter == "K_lines":
+            ax.plot(times, par_array, color=col, linewidth=0, marker=".", markersize=10)
+            plt.plot(times, par_array, color=col, linewidth=0, marker=".", markersize=10)
+        else:
+            ax.plot(times, par_array, color=col, linewidth=1)
+            plt.plot(times, par_array, color=col, linewidth=1)
     # plot everything independently of the detector's status
     else:
         if det_type == "ch000" or parameter == "K_lines":
-            ax.plot(times, par_array, color=col, linewidth=0, marker=".", markersize=6)
-            plt.plot(times, par_array, color=col, linewidth=0, marker=".", markersize=6)
+            ax.plot(times, par_array, color=col, linewidth=0, marker=".", markersize=10)
+            plt.plot(times, par_array, color=col, linewidth=0, marker=".", markersize=10)
         else:
             ax.plot(times, par_array, color=col, linewidth=1)
             plt.plot(times, par_array, color=col, linewidth=1)
@@ -96,6 +100,9 @@ def plot_par_vs_time(
     det_type: str,
     string_number: str,
     det_dict: dict,
+    all_ievt: np.ndarray,
+    puls_only_ievt: np.ndarray,
+    not_puls_ievt: np.ndarray,
     pdf=None,
 ) -> dict:
     """
@@ -103,7 +110,7 @@ def plot_par_vs_time(
 
     Parameters
     ----------
-    dsp_all
+    dsp_files
                     lh5 dsp files
     det_list
                     List of detectors present in a string
@@ -117,6 +124,12 @@ def plot_par_vs_time(
                     Number of the string under study
     det_dict
                     Contains info (crate, card, ch_orca) for geds/spms/other
+    all_ievt
+                    Event number for all events
+    puls_only_ievt
+                    Event number for high energy pulser events
+    not_puls_ievt
+                    Event number for physical events
     """
     fig, ax = plt.subplots(1, 1)
     ax.set_facecolor("w")
@@ -128,19 +141,10 @@ def plot_par_vs_time(
     handle_list = []
     map_dict = {}
 
-    # exit if no dsp files are found
-    if len(dsp_files) == 0:
-        logging.warning("Dsp files do not exist")
-        return None
-
-    # search for pulser events
-    all_ievt, puls_only_ievt, not_puls_ievt = analysis.get_puls_ievt(dsp_files)
-
     for _, detector in enumerate(det_list):
         if parameter=="cal_puls" or parameter=="K_lines":
             if detector =="ch010" or detector=="ch024": 
                 continue
-
         # if detector==det_list[1]: # <<-- for quick tests
 
         # skip detectors that are not geds/spms
@@ -152,7 +156,11 @@ def plot_par_vs_time(
         ch_orca = det_dict[detector]["daq"]["ch_orca"]
         if det_type == "geds":
             name = det_dict[detector]["det"]
-            lab = f"{name} - {detector} - {card},{ch_orca}"
+            if "V0" in name:
+                name = name[2:]
+            string_no = det_dict[detector]["string"]["number"]
+            string_pos = det_dict[detector]["string"]["position"]
+            lab = f"s{string_no}-p{string_pos}-{detector}-{name}"
         if det_type == "spms":
             lab = f"{detector} - {card},{ch_orca}"
         if det_type == "spms":
@@ -205,17 +213,16 @@ def plot_par_vs_time(
     if len(start_times) == 0 and len(end_times) == 0:
         return None
 
-    # 1D-plot
-    local_timezone = datetime.now(timezone.utc).astimezone().tzinfo
     locs = np.linspace(
-        dates.date2num(min(start_times)), dates.date2num(max(end_times)), 10
+            dates.date2num(min(start_times)), dates.date2num(max(end_times)), 10
     )
     xlab = "%d/%m"
     if j_config[10]["frmt"] == "day/month-time":
         xlab = "%d/%m\n%H:%M"
     if j_config[10]["frmt"] == "time":
         xlab = "%H:%M"
-    labels = [dates.num2date(loc, tz=local_timezone).strftime(xlab) for loc in locs]
+    labels = [dates.num2date(loc).strftime(xlab) for loc in locs]
+
     ax.set_xticks(locs)
     ax.set_xticklabels(labels)
     plt.xticks(locs, labels)
@@ -362,6 +369,9 @@ def plot_par_vs_time_ch000(
     parameter: str,
     time_cut: list[str],
     det_type: str,
+    all_ievt: np.ndarray,
+    puls_only_ievt: np.ndarray,
+    not_puls_ievt: np.ndarray,
     pdf=None,
 ) -> dict:
     """
@@ -373,10 +383,16 @@ def plot_par_vs_time_ch000(
                     Strings of lh5 dsp files
     parameter
                     Parameter to plot
-    det_type
-                    Type of detector (pulser)
     time_cut
                     List with info about time cuts
+    det_type
+                    Type of detector (pulser)
+    all_ievt
+                    Event number for all events
+    puls_only_ievt
+                    Event number for high energy pulser events
+    not_puls_ievt
+                    Event number for physical events
     """
     fig, ax = plt.subplots(1, 1)
     ax.set_facecolor("w")
@@ -387,14 +403,6 @@ def plot_par_vs_time_ch000(
     end_times = []
     handle_list = []
     map_dict = {}
-
-    # exit if no dsp files are found
-    if len(dsp_files) == 0:
-        logging.warning("Dsp files do not exist")
-        return None
-
-    # search for pulser events
-    all_ievt, puls_only_ievt, not_puls_ievt = analysis.get_puls_ievt(dsp_files)
 
     # remove the dsp file if the channel is not there
     # for dsp_file in dsp_files:
@@ -448,7 +456,7 @@ def plot_par_vs_time_ch000(
         return None
 
     # 1D-plot
-    local_timezone = datetime.now(timezone.utc).astimezone().tzinfo
+    #local_timezone = datetime.now(timezone.utc).astimezone().tzinfo
     locs = np.linspace(
         dates.date2num(start_times[0]), dates.date2num(end_times[-1]), 10
     )
@@ -457,7 +465,7 @@ def plot_par_vs_time_ch000(
         xlab = "%d/%m\n%H:%M"
     if j_config[10]["frmt"] == "time":
         xlab = "%H:%M"
-    labels = [dates.num2date(loc, tz=local_timezone).strftime(xlab) for loc in locs]
+    labels = [dates.num2date(loc).strftime(xlab) for loc in locs]
     ax.set_xticks(locs)
     ax.set_xticklabels(labels)
     plt.xticks(locs, labels)
@@ -795,13 +803,16 @@ def plot_par_vs_time_2d(
 
 
 def plot_wtrfll(
-    dsp_all: list[str],
+    dsp_files: list[str],
     det_list: list[str],
     parameter: str,
     time_cut: list[str],
     det_type: str,
     string_number: str,
     det_dict: dict,
+    all_ievt: np.ndarray,
+    puls_only_ievt: np.ndarray,
+    not_puls_ievt: np.ndarray, 
     pdf=None,
 ) -> dict:
     """
@@ -809,7 +820,7 @@ def plot_wtrfll(
 
     Parameters
     ----------
-    dsp_all
+    dsp_files
                     lh5 dsp files
     det_list
                     List of detectors present in a string
@@ -823,6 +834,12 @@ def plot_wtrfll(
                     Number of the string under study
     det_dict
                     Contains info (crate, card, ch_orca) for geds/spms/other
+    all_ievt
+                    Event number for all events
+    puls_only_ievt
+                    Event number for high energy pulser events
+    not_puls_ievt
+                    Event number for physical events
     """
     # fig = plt.subplot(projection='3d')
     fig = plt.figure(figsize=(20, 16))
@@ -832,22 +849,11 @@ def plot_wtrfll(
     end_times = []
     map_dict = {}
 
-    # exit if no dsp files are found
-    if len(dsp_all) == 0:
-        logging.warning("Dsp files do not exist")
-        return None
-
-    # search for pulser events
-    all_ievt, puls_only_ievt, not_puls_ievt = analysis.get_puls_ievt(dsp_all)
-
     for index, detector in enumerate(det_list):
         if parameter == "cal_puls" or parameter == "K_lines":
             if detector == "ch010" or detector == "ch024":
                 continue
         # if detector==det_list[1]: # <<-- for quick tests
-
-        # need to define a variable for dsp files for every ch (due to the "remove")
-        dsp_files = dsp_all
 
         # skip detectors that are not geds/spms
         if det_dict[detector]["system"] == "--":
@@ -885,7 +891,8 @@ def plot_wtrfll(
         status = analysis.check_par_values(
             utime_array, par_np_array, parameter, detector, det_type
         )
-        times = [datetime.fromtimestamp(t) for t in utime_array]
+        #times = [datetime.fromtimestamp(t) for t in utime_array]
+        times = [datetime.utcfromtimestamp(t) for t in utime_array]
         start_time = times[0]
         end_time = times[-1]
 
@@ -910,21 +917,22 @@ def plot_wtrfll(
         start_times.append(start_time)
         end_times.append(end_time)
 
-    """
-    # x-axis in dates (not working...)
-    local_timezone = datetime.now(timezone.utc).astimezone().tzinfo
-    locs = np.linspace(
-        dates.date2num(start_time), dates.date2num(end_time), 5
-    )
-    labels = [dates.num2date(loc, tz=local_timezone).strftime("%d/%m\n%H:%M") for loc in locs]
+    # x-axis in dates
+    locs = np.linspace(start_time.timestamp(), end_time.timestamp(), 10)
+    xlab = "%d/%m"
+    if j_config[10]["frmt"] == "day/month-time":
+        xlab = "%d/%m\n%H:%M"
+    if j_config[10]["frmt"] == "time":
+        xlab = "%H:%M"
+    labels = [datetime.fromtimestamp(loc).strftime(xlab) for loc in locs]
     ax.set_xticks(locs)
     ax.set_xticklabels(labels)
-    """
+    plt.xticks(locs, labels)
 
     # plot features
     ax.set_box_aspect(aspect=(1, 1, 0.5))  # aspect ratio for axes
 
-    ax.set_xlabel("Time (UTC)", labelpad=15)  # axes labels
+    ax.set_xlabel("Time (UTC)", labelpad=20)  # axes labels
     zlab = j_par[0][parameter]["label"]
     if parameter in no_variation_pars:
         if j_par[0][parameter]["units"] != "null":
@@ -936,7 +944,7 @@ def plot_wtrfll(
             zlab = zlab + " [" + units + "]"
     else:
         zlab += ", %"
-    ax.set_zlabel(zlab)
+    ax.set_zlabel(zlab, labelpad=15)
 
     # define new y-axis values
     yticks_loc = [i for i in range(0, len(y_values))]

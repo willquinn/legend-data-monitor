@@ -8,12 +8,8 @@ import pygama.lgdo.lh5_store as lh5
 from . import analysis
 
 j_config, j_par, _ = analysis.read_json_files()
-keep_puls_pars = j_config[5]["pulser"][
-    "keep_puls_pars"
-]  # parameters for which we want to plot just pulser events
-keep_phys_pars = j_config[5]["pulser"][
-    "keep_phys_pars"
-]  # parameters for which we want to plot just physical (not pulser) events
+keep_puls_pars = j_config[5]["pulser"]["keep_puls_pars"]
+keep_phys_pars = j_config[5]["pulser"]["keep_phys_pars"]
 no_variation_pars = j_config[5]["plot_values"]["no_variation_pars"]
 
 
@@ -33,17 +29,21 @@ def load_parameter(
     Parameters
     ----------
     parameter
-                Parameter to plot
+                    Parameter to plot
     dsp_files
-                lh5 dsp files
+                    lh5 dsp files
     detector
-                Name of the detector
+                    Name of the detector
     det_type
-                Type of detector (geds or spms)
+                    Type of detector (geds or spms)
     time_cut
-                List with info about time cuts
+                    List with info about time cuts
+    all_ievt
+                    Event number for all events
     puls_only_ievt
-                Array containing info about pulser event numbers
+                    Event number for high energy pulser events
+    not_puls_ievt
+                    Event number for physical events
     """
     par_array = np.array([])
     utime_array = analysis.build_utime_array(dsp_files, detector, det_type)
@@ -72,8 +72,8 @@ def load_parameter(
         par_array = lh5.load_nda(dsp_files, ["trapTmax"], detector + "/dsp")["trapTmax"]
     elif parameter == "cal_puls":
         hit_files = [dsp_file.replace("dsp", "hit") for dsp_file in dsp_files]
-        par_array = lh5.load_nda(hit_files, ["trapEmax_ctc_cal"], detector + "/hit")[
-            "trapEmax_ctc_cal"
+        par_array = lh5.load_nda(hit_files, ["cuspEmax_ctc_cal"], detector + "/hit")[
+            "cuspEmax_ctc_cal"
         ]
     elif parameter == "bl_difference":
         par_array = bl_difference(dsp_files, detector)
@@ -82,9 +82,7 @@ def load_parameter(
     elif parameter == "K_lines":
         hit_files = [dsp_file.replace("dsp", "hit") for dsp_file in dsp_files]
         par_array = np.array(
-            lh5.load_nda(hit_files, ["trapEmax_ctc_cal"], detector + "/hit")[
-                "trapEmax_ctc_cal"
-            ]
+            lh5.load_nda(hit_files, ["cuspEmax_ctc_cal"], detector + "/hit")["cuspEmax_ctc_cal"]
         )
         # keep physical events
         if all_ievt != [] and puls_only_ievt != [] and not_puls_ievt != []:
@@ -97,7 +95,8 @@ def load_parameter(
 
     if all_ievt != [] and puls_only_ievt != [] and not_puls_ievt != []:
         if parameter in keep_puls_pars:
-            par_array = par_array[puls_only_index]
+            if parameter != "K_lines" and parameter != "event_rate":
+                par_array = par_array[puls_only_index]
         if parameter in keep_phys_pars:
             if parameter != "K_lines":
                 par_array = par_array[det_only_index]
@@ -114,8 +113,9 @@ def load_parameter(
         par_array = np.subtract(par_array, par_array_mean)
         par_array = np.divide(par_array, par_array_mean) * 100
 
-    # check if there are 'nan' values in par_array
-    par_array, utime_array_cut = analysis.remove_nan_values(par_array, utime_array_cut)
+    # check if there are 'nan' values in par_array; if 'yes', remove them
+    if np.isnan(par_array).any():
+        par_array, utime_array_cut = analysis.remove_nan(par_array, utime_array_cut)
 
     return par_array, utime_array_cut
 
