@@ -19,18 +19,31 @@
   "par_to_plot": {
     "README": "Select here the parameters you want to plot for spms and geds (see 'Available-par' for parameters that are available to study).",
     "spms": [],
-    "geds": ["K_lines"],
+    "geds": ["uncal_puls", "cal_puls"],
     "ch000": ["wf_max"],
 
     "pulser": {
-      "README": "Specify for which parameters you want to keep only pulser events (in 'keep_puls_pars') or only physical events (in 'keep_phys_pars')",
-      "keep_puls_pars": ["uncal_puls", "cal_puls", "baseline"],
+      "README": "Specify for which parameters you want to keep only pulser events (in 'keep_puls_pars') or only physical events (in 'keep_phys_pars'), otherwise every events will be kept.",
+      "keep_puls_pars": [
+        "uncal_puls",
+        "cal_puls",
+        "baseline",
+        "event_rate",
+        "A_max",
+        "bl_mean"
+      ],
       "keep_phys_pars": ["K_lines"]
     },
 
     "plot_values": {
       "README": "Specify here the parameters for which you want the absolute value (and not the percentage variation wrt the mean value).",
-      "no_variation_pars": ["event_rate", "K_lines", "uncal_puls", "cal_puls"]
+      "no_variation_pars": [
+        "event_rate",
+        "K_lines",
+        "uncal_puls",
+        "cal_puls",
+        "wf_max"
+      ]
     },
 
     "Available-par": {
@@ -64,9 +77,9 @@
   },
   "time_window": {
     "enabled": false,
-    "start_date": "17/08/2022",
-    "start_hour": "12:45:00",
-    "end_date": "17/09/2022",
+    "start_date": "10/09/2022",
+    "start_hour": "01:45:00",
+    "end_date": "11/09/2022",
     "end_hour": "13:00:00"
   },
   "last_hours": {
