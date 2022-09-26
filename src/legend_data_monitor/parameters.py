@@ -82,7 +82,9 @@ def load_parameter(
     elif parameter == "K_lines":
         hit_files = [dsp_file.replace("dsp", "hit") for dsp_file in dsp_files]
         par_array = np.array(
-            lh5.load_nda(hit_files, ["cuspEmax_ctc_cal"], detector + "/hit")["cuspEmax_ctc_cal"]
+            lh5.load_nda(hit_files, ["cuspEmax_ctc_cal"], detector + "/hit")[
+                "cuspEmax_ctc_cal"
+            ]
         )
         # keep physical events
         if all_ievt != [] and puls_only_ievt != [] and not_puls_ievt != []:

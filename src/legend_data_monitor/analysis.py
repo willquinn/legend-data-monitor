@@ -419,8 +419,8 @@ def get_puls_ievt(dsp_files: list[str]):
 
     rate_FC_pulser = j_config[5]["pulser"]["rate_FC_pulser"]
     rate_HW_pulser = j_config[5]["pulser"]["rate_HW_pulser"]
-    livetime_high_en = (len(pulser_highen_entry)*(1/rate_HW_pulser))/60/60/24
-    livetime_low_en = (len(pulser_lowen_entry)*(1/rate_FC_pulser))/60/60/24
+    livetime_high_en = (len(pulser_highen_entry) * (1 / rate_HW_pulser)) / 60 / 60 / 24
+    livetime_low_en = (len(pulser_lowen_entry) * (1 / rate_FC_pulser)) / 60 / 60 / 24
     logging.error(f"Livetime [days] - high E pulser: {livetime_high_en}")
     logging.error(f"Livetime [days] - low E pulser: {livetime_low_en}")
 

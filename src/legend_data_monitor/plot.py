@@ -76,7 +76,9 @@ def plot_parameters(
     if status_flag is True and status == 1:
         if det_type == "ch000" or parameter == "K_lines":
             ax.plot(times, par_array, color=col, linewidth=0, marker=".", markersize=10)
-            plt.plot(times, par_array, color=col, linewidth=0, marker=".", markersize=10)
+            plt.plot(
+                times, par_array, color=col, linewidth=0, marker=".", markersize=10
+            )
         else:
             ax.plot(times, par_array, color=col, linewidth=1)
             plt.plot(times, par_array, color=col, linewidth=1)
@@ -84,7 +86,9 @@ def plot_parameters(
     else:
         if det_type == "ch000" or parameter == "K_lines":
             ax.plot(times, par_array, color=col, linewidth=0, marker=".", markersize=10)
-            plt.plot(times, par_array, color=col, linewidth=0, marker=".", markersize=10)
+            plt.plot(
+                times, par_array, color=col, linewidth=0, marker=".", markersize=10
+            )
         else:
             ax.plot(times, par_array, color=col, linewidth=1)
             plt.plot(times, par_array, color=col, linewidth=1)
@@ -214,7 +218,7 @@ def plot_par_vs_time(
         return None
 
     locs = np.linspace(
-            dates.date2num(min(start_times)), dates.date2num(max(end_times)), 10
+        dates.date2num(min(start_times)), dates.date2num(max(end_times)), 10
     )
     xlab = "%d/%m"
     if j_config[10]["frmt"] == "day/month-time":
@@ -456,7 +460,7 @@ def plot_par_vs_time_ch000(
         return None
 
     # 1D-plot
-    #local_timezone = datetime.now(timezone.utc).astimezone().tzinfo
+    # local_timezone = datetime.now(timezone.utc).astimezone().tzinfo
     locs = np.linspace(
         dates.date2num(start_times[0]), dates.date2num(end_times[-1]), 10
     )
@@ -812,7 +816,7 @@ def plot_wtrfll(
     det_dict: dict,
     all_ievt: np.ndarray,
     puls_only_ievt: np.ndarray,
-    not_puls_ievt: np.ndarray, 
+    not_puls_ievt: np.ndarray,
     pdf=None,
 ) -> dict:
     """
@@ -891,7 +895,7 @@ def plot_wtrfll(
         status = analysis.check_par_values(
             utime_array, par_np_array, parameter, detector, det_type
         )
-        #times = [datetime.fromtimestamp(t) for t in utime_array]
+        # times = [datetime.fromtimestamp(t) for t in utime_array]
         times = [datetime.utcfromtimestamp(t) for t in utime_array]
         start_time = times[0]
         end_time = times[-1]

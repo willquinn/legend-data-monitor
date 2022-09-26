@@ -50,9 +50,9 @@ def dump_all_plots_together(
     if isinstance(dsp_files, str):
         dsp_files = [dsp_files]
 
-    #dsp_files = dsp_files[17:] # remove data prior to 20220817T124844Z in run22
-    #dsp_files = dsp_files[25:]
-    #dsp_files = dsp_files[17:50]  # keep only first data (to perform tests in a quick way)
+    # dsp_files = dsp_files[17:] # remove data prior to 20220817T124844Z in run22
+    # dsp_files = dsp_files[25:]
+    # dsp_files = dsp_files[17:50]  # keep only first data (to perform tests in a quick way)
 
     # exit if no dsp files are found
     if len(dsp_files) == 0:
@@ -86,38 +86,38 @@ def dump_all_plots_together(
                 for par in geds_par:
                     det_status_dict = {}
                     for (det_list, string) in zip(string_geds, string_geds_name):
-                        #if det_list==string_geds[3]: # keep 1 string (per far prima)
+                        # if det_list==string_geds[3]: # keep 1 string (per far prima)
 
                         if len(det_list) == 0:
-                            continue  
+                            continue
 
                         if par not in two_dim_pars:
-                          map_dict = plot.plot_wtrfll(
-                                  dsp_files,
-                                  det_list,
-                                  par,
-                                  time_cut,
-                                  "geds",
-                                  string,
-                                  geds_dict,
-                                  all_ievt, 
-                                  puls_only_ievt, 
-                                  not_puls_ievt,
-                                  pdf,
-                          )
+                            map_dict = plot.plot_wtrfll(
+                                dsp_files,
+                                det_list,
+                                par,
+                                time_cut,
+                                "geds",
+                                string,
+                                geds_dict,
+                                all_ievt,
+                                puls_only_ievt,
+                                not_puls_ievt,
+                                pdf,
+                            )
                         else:
                             map_dict = plot.plot_par_vs_time(
-                                  dsp_files,
-                                  det_list,
-                                  par,
-                                  time_cut,
-                                  "geds",
-                                  string,
-                                  geds_dict,
-                                  all_ievt, 
-                                  puls_only_ievt, 
-                                  not_puls_ievt,
-                                  pdf,
+                                dsp_files,
+                                det_list,
+                                par,
+                                time_cut,
+                                "geds",
+                                string,
+                                geds_dict,
+                                all_ievt,
+                                puls_only_ievt,
+                                not_puls_ievt,
+                                pdf,
                             )
                         if map_dict is not None:
                             for det, status in map_dict.items():
@@ -239,8 +239,8 @@ def dump_all_plots_together(
                         par,
                         time_cut,
                         "ch000",
-                        all_ievt, 
-                        puls_only_ievt, 
+                        all_ievt,
+                        puls_only_ievt,
                         not_puls_ievt,
                         pdf,
                     )
