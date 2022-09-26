@@ -24,7 +24,14 @@
 
     "pulser": {
       "README": "Specify for which parameters you want to keep only pulser events (in 'keep_puls_pars') or only physical events (in 'keep_phys_pars'), otherwise every events will be kept.",
-      "keep_puls_pars": ["uncal_puls", "cal_puls", "baseline", "event_rate", "A_max", "bl_mean"],
+      "keep_puls_pars": [
+        "uncal_puls",
+        "cal_puls",
+        "baseline",
+        "event_rate",
+        "A_max",
+        "bl_mean"
+      ],
       "keep_phys_pars": ["K_lines"]
     },
 
