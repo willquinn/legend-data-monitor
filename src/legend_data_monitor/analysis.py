@@ -456,7 +456,7 @@ def apply_quality_cut(
         "Quality_cuts"
     ]
     quality_cut = quality_cut[puls_only_index]
-    par_array_qc = par_array[np.where(if quality_cut is True)]
-    time_array_qc = time_array[np.where(if quality_cut is True)]
+    par_array_qc = par_array[np.where(quality_cut == True)]
+    time_array_qc = time_array[np.where(quality_cut == True)]
 
     return par_array_qc, time_array_qc
