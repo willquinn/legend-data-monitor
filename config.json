@@ -3,13 +3,13 @@
     "exp": "l60",
     "path": {
       "lh5-files": "/data1/shared/l60/l60-prodven-v1/prod-ref/",
-      "version": "v05.01",
+      "version": "v06.00",
       "orca-files": "/data1/shared/l60/l60-daq/daq-v01/",
-      "output-path": "/data1/users/calgaro/legend-data-monitor/"
+      "output-path": "/data1/users/morella/legend-data-monitor/"
     }
   },
   "period": "p01",
-  "run": "r025",
+  "run": "r026",
   "datatype": "phy",
   "det_type": {
     "spms": false,
@@ -19,7 +19,7 @@
   "par_to_plot": {
     "README": "Select here the parameters you want to plot for spms and geds (see 'Available-par' for parameters that are available to study).",
     "spms": [],
-    "geds": ["uncal_puls", "cal_puls"],
+    "geds": ["AoE"],
     "ch000": ["wf_max"],
 
     "pulser": {
@@ -30,7 +30,9 @@
         "baseline",
         "event_rate",
         "A_max",
-        "bl_mean"
+        "bl_mean",
+        "AoE",
+        "bl_std"
       ],
       "keep_phys_pars": ["K_lines"]
     },

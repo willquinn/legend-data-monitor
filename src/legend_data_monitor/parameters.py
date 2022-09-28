@@ -47,6 +47,7 @@ def load_parameter(
     """
     par_array = np.array([])
     utime_array = analysis.build_utime_array(dsp_files, detector, det_type)
+    hit_files = [dsp_file.replace("dsp", "hit") for dsp_file in dsp_files]
 
     if all_ievt != [] and puls_only_ievt != [] and not_puls_ievt != []:
         det_only_index = np.isin(all_ievt, not_puls_ievt)
@@ -71,7 +72,6 @@ def load_parameter(
     elif parameter == "uncal_puls":
         par_array = lh5.load_nda(dsp_files, ["trapTmax"], detector + "/dsp")["trapTmax"]
     elif parameter == "cal_puls":
-        hit_files = [dsp_file.replace("dsp", "hit") for dsp_file in dsp_files]
         par_array = lh5.load_nda(hit_files, ["cuspEmax_ctc_cal"], detector + "/hit")[
             "cuspEmax_ctc_cal"
         ]
@@ -80,7 +80,6 @@ def load_parameter(
     elif parameter == "AoE":
         par_array = aoe(dsp_files, detector)
     elif parameter == "K_lines":
-        hit_files = [dsp_file.replace("dsp", "hit") for dsp_file in dsp_files]
         par_array = np.array(
             lh5.load_nda(hit_files, ["cuspEmax_ctc_cal"], detector + "/hit")[
                 "cuspEmax_ctc_cal"
@@ -103,21 +102,25 @@ def load_parameter(
             if parameter != "K_lines":
                 par_array = par_array[det_only_index]
 
+    # Applying Quality Cuts, removing ch010 and ch024 because they are missing in hit tier (why?) 
+    # if detector not in ['ch010', 'ch024']:
+    #     par_array, utime_array_cut = analysis.apply_quality_cut(hit_files, par_array, utime_array_cut, detector, puls_only_index)
+
     # cutting time array according to time selection
     no_timecut_pars = ["event_rate", "K_lines"]
     if parameter not in no_timecut_pars:
         _, par_array = analysis.time_analysis(utime_array, par_array, time_cut)
 
+    # check if there are 'nan' values in par_array; if 'yes', remove them
+    if np.isnan(par_array).any():
+        par_array, utime_array_cut = analysis.remove_nan(par_array, utime_array_cut)    
+
     # Enable following lines to get the delta of a parameter
-    if parameter not in no_variation_pars and det_type != "ch000":
+    if (parameter not in no_variation_pars) and (det_type != "ch000"):
         cut = int(0.05 * len(par_array))
         par_array_mean = np.mean(par_array[:cut])
         par_array = np.subtract(par_array, par_array_mean)
         par_array = np.divide(par_array, par_array_mean) * 100
-
-    # check if there are 'nan' values in par_array; if 'yes', remove them
-    if np.isnan(par_array).any():
-        par_array, utime_array_cut = analysis.remove_nan(par_array, utime_array_cut)
 
     return par_array, utime_array_cut
 
