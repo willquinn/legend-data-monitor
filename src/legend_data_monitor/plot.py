@@ -895,7 +895,7 @@ def plot_wtrfll(
         status = analysis.check_par_values(
             utime_array, par_np_array, parameter, detector, det_type
         )
-        
+
         times = [datetime.utcfromtimestamp(t) for t in utime_array]
         start_time = times[0]
         end_time = times[-1]
