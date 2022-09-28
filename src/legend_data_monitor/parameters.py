@@ -102,7 +102,7 @@ def load_parameter(
             if parameter != "K_lines":
                 par_array = par_array[det_only_index]
 
-    # Applying Quality Cuts, removing ch010 and ch024 because they are missing in hit tier (why?) 
+    # Applying Quality Cuts, removing ch010 and ch024 because they are missing in hit tier (why?)
     # if detector not in ['ch010', 'ch024']:
     #     par_array, utime_array_cut = analysis.apply_quality_cut(hit_files, par_array, utime_array_cut, detector, puls_only_index)
 
@@ -113,7 +113,7 @@ def load_parameter(
 
     # check if there are 'nan' values in par_array; if 'yes', remove them
     if np.isnan(par_array).any():
-        par_array, utime_array_cut = analysis.remove_nan(par_array, utime_array_cut)    
+        par_array, utime_array_cut = analysis.remove_nan(par_array, utime_array_cut)
 
     # Enable following lines to get the delta of a parameter
     if (parameter not in no_variation_pars) and (det_type != "ch000"):
