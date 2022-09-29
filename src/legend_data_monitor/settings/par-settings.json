@@ -456,7 +456,7 @@
       "facecol": [0.27, 0.47, 0.9],
       "limit": {
         "spms": ["null", "null"],
-        "geds": [-9, 9],
+        "geds": ["null", "null"],
         "ch000": ["null", "null"]
       }
     },
@@ -466,13 +466,13 @@
       "facecol": [0.27, 0.47, 0.9],
       "limit": {
         "spms": ["null", "null"],
-        "geds": [-9, 9],
+        "geds": ["null", "null"],
         "ch000": ["null", "null"]
       }
     },
     "bl_difference": {
       "label": "reconstructed bl - FPGA bl",
-      "units": "%",
+      "units": "null",
       "facecol": [0.27, 0.47, 0.9],
       "limit": {
         "spms": ["null", "null"],
@@ -482,7 +482,27 @@
     },
     "AoE": {
       "label": "A over E",
-      "units": "%",
+      "units": "a.u.",
+      "facecol": [0.27, 0.47, 0.9],
+      "limit": {
+        "spms": ["null", "null"],
+        "geds": ["null", "null"],
+        "ch000": ["null", "null"]
+      }
+    },
+    "AoE_Classifier": {
+      "label": "AoE (hit)",
+      "units": "a.u.",
+      "facecol": [0.27, 0.47, 0.9],
+      "limit": {
+        "spms": ["null", "null"],
+        "geds": ["null", "null"],
+        "ch000": ["null", "null"]
+      }
+    },
+    "AoE_Corrected": {
+      "label": "AoE_Corrected (hit)",
+      "units": "a.u.",
       "facecol": [0.27, 0.47, 0.9],
       "limit": {
         "spms": ["null", "null"],
