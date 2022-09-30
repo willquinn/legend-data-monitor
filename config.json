@@ -19,21 +19,12 @@
   "par_to_plot": {
     "README": "Select here the parameters you want to plot for spms and geds (see 'Available-par' for parameters that are available to study).",
     "spms": [],
-    "geds": ["AoE"],
+    "geds": ["baseline"],
     "ch000": ["wf_max"],
 
     "pulser": {
       "README": "Specify for which parameters you want to keep only pulser events (in 'keep_puls_pars') or only physical events (in 'keep_phys_pars'), otherwise every events will be kept.",
-      "keep_puls_pars": [
-        "uncal_puls",
-        "cal_puls",
-        "baseline",
-        "event_rate",
-        "A_max",
-        "bl_mean",
-        "AoE",
-        "bl_std"
-      ],
+      "keep_puls_pars": ["uncal_puls", "cal_puls", "baseline", "event_rate", "AoE", "bl_mean", "bl_std", "AoE_Classifier", "AoE_Corrected"],
       "keep_phys_pars": ["K_lines"]
     },
 
@@ -42,8 +33,7 @@
       "no_variation_pars": [
         "event_rate",
         "K_lines",
-        "uncal_puls",
-        "cal_puls",
+	"AoE_Classifier",
         "wf_max"
       ]
     },
@@ -54,9 +44,9 @@
         "event_rate": {
           "README": "Event rate. Change 'dt' and 'units' if needed. 'dt' is the time interval (in [s]) in which rate is evaluated: rate=cts/dt. 'units' can be chosen among: mHz, Hz, kHz.",
           "dt": {
-            "spms": 10,
+            "spms": 1,
             "geds": 1,
-            "ch000": 10
+            "ch000": 1
           },
           "units": {
             "spms": "Hz",
@@ -74,15 +64,19 @@
     }
   },
   "plot_style": {
-    "README": "Specify here which parameter you want to plot in 2D. The other parameters will be automatically plotted in 3D.",
-    "two_dim_pars": ["K_lines"]
+    "README": "Specify here which parameter you want to plot in 2D. The other parameters will be automatically plotted in 3D. Set to true 'par_average' if you want to average over 'step' entries, otherwise set it to false.",
+    "two_dim_pars": ["K_lines"],
+    "par_average": {
+	    "flag": false,
+	    "step": 50
+    }
   },
   "time_window": {
     "enabled": false,
-    "start_date": "10/09/2022",
-    "start_hour": "01:45:00",
-    "end_date": "11/09/2022",
-    "end_hour": "13:00:00"
+    "start_date": "17/09/2022",
+    "start_hour": "12:00:00",
+    "end_date": "17/09/2022",
+    "end_hour": "16:00:00"
   },
   "last_hours": {
     "enabled": false,

@@ -402,20 +402,22 @@ def get_puls_ievt(dsp_files: list[str]):
                lh5 dsp file
     """
     wf_max = lh5.load_nda(dsp_files, ["wf_max"], "ch000/dsp/")["wf_max"]
+    baseline = lh5.load_nda(dsp_files, ["baseline"], "ch000/dsp")["baseline"]
+    wf_max = np.subtract(wf_max, baseline)
     puls_ievt = []
-    pulser_lowen_entry = []
+    baseline_entry = []
     pulser_highen_entry = []
     not_pulser_entry = []
 
     for idx, entry in enumerate(wf_max):
         puls_ievt.append(idx)
-
-        if entry > 24000:
+        if entry > 12500: # high energy
+        #if entry > 17500:
             pulser_highen_entry.append(idx)
-        if entry < 17500:
+        if entry < 2500: # low energy
             not_pulser_entry.append(idx)
-        else:
-            pulser_lowen_entry.append(idx)
+        else: # intermediate energy
+            baseline_entry.append(idx)
 
     # pulser+physical events
     puls_ievt = np.array(puls_ievt)
@@ -460,3 +462,33 @@ def apply_quality_cut(
     time_array_qc = time_array[np.where(quality_cut == True)]
 
     return par_array_qc, time_array_qc
+
+
+def par_average(par_array: np.ndarray, time_array: np.ndarray):
+    """
+    Evaluate the average of entries in arrays.
+
+    Parameters
+    ----------
+    par_array
+                 Array with parameter values
+    time_array
+                 Array with time values
+    """
+    par_avg = []
+    time_avg = []
+
+    step = j_config[6]["par_average"]["step"]
+    i = 0
+
+    while (i+1)*step<len(par_array):
+        total = 0
+        tot_time = 0
+        for entry in range(i*step, (i+1)*step):
+            total = total + par_array[entry]
+            tot_time = tot_time + time_array[entry]
+        par_avg.append(total/step)
+        time_avg.append(tot_time/step)
+        i += 1
+
+    return par_avg, time_avg
