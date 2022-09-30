@@ -469,7 +469,6 @@ def apply_quality_cut(
     puls_only_index
                  Event number for high energy pulser events
     """
-
     quality_cut = lh5.load_nda(hit_files, ["Quality_cuts"], detector + "/hit")[
         "Quality_cuts"
     ]
