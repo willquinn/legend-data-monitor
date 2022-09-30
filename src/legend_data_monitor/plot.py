@@ -151,7 +151,7 @@ def plot_par_vs_time(
     handle_list = []
     map_dict = {}
 
-    for index, detector in enumerate(det_list):
+    for _, detector in enumerate(det_list):
         # if detector==det_list[1]: # <<-- for quick tests
         if parameter == "cal_puls" or parameter == "K_lines" or parameter == "AoE_Classifier" or parameter == "AoE_Corrected":
             hit_files = [dsp_file.replace("dsp", "hit") for dsp_file in dsp_files]
