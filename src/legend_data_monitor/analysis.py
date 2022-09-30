@@ -411,12 +411,12 @@ def get_puls_ievt(dsp_files: list[str]):
 
     for idx, entry in enumerate(wf_max):
         puls_ievt.append(idx)
-        if entry > 12500: # high energy
-        #if entry > 17500:
+        if entry > 12500:  # high energy
+            # if entry > 17500:
             pulser_highen_entry.append(idx)
-        if entry < 2500: # low energy
+        if entry < 2500:  # low energy
             not_pulser_entry.append(idx)
-        else: # intermediate energy
+        else:  # intermediate energy
             baseline_entry.append(idx)
 
     # pulser+physical events
@@ -497,14 +497,14 @@ def par_average(par_array: np.ndarray, time_array: np.ndarray):
     step = j_config[6]["par_average"]["step"]
     i = 0
 
-    while (i+1)*step<len(par_array):
+    while (i + 1) * step < len(par_array):
         total = 0
         tot_time = 0
-        for entry in range(i*step, (i+1)*step):
+        for entry in range(i * step, (i + 1) * step):
             total = total + par_array[entry]
             tot_time = tot_time + time_array[entry]
-        par_avg.append(total/step)
-        time_avg.append(tot_time/step)
+        par_avg.append(total / step)
+        time_avg.append(tot_time / step)
         i += 1
 
     return par_avg, time_avg
