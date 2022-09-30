@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import os
 import logging
+import os
 import pickle as pkl
 from copy import copy
 from datetime import datetime, timezone
@@ -61,7 +61,7 @@ def plot_parameters(
                   Parameter to plot
     """
     # rebinning
-    if plot_style["par_average"]["flag"] is True and parameter!="K_lines":
+    if plot_style["par_average"]["flag"] is True and parameter != "K_lines":
         par_array, utime_array = analysis.par_average(par_array, utime_array)
 
     # function to check if par values are outside some pre-defined limits
@@ -153,12 +153,17 @@ def plot_par_vs_time(
 
     for index, detector in enumerate(det_list):
         # if detector==det_list[1]: # <<-- for quick tests
-        if parameter == "cal_puls" or parameter == "K_lines" or parameter == "AoE_Classifier" or parameter == "AoE_Corrected":
+        if (
+            parameter == "cal_puls"
+            or parameter == "K_lines"
+            or parameter == "AoE_Classifier"
+            or parameter == "AoE_Corrected"
+        ):
             hit_files = [dsp_file.replace("dsp", "hit") for dsp_file in dsp_files]
             all_files = [dsp_file.replace("dsp", "hit") for dsp_file in dsp_files]
             for hit_file in hit_files:
                 if os.path.isfile(hit_file):
-                    if detector not in lh5.ls(hit_file, ''):
+                    if detector not in lh5.ls(hit_file, ""):
                         all_files.remove(hit_file)
                         logging.warning(f'No "{detector}" branch in file {hit_file}')
                 else:
@@ -209,8 +214,8 @@ def plot_par_vs_time(
         if len(par_np_array) == 0:
             continue
 
-        #offset = 10 * (0 + index)
-        #par_np_array = np.add(par_np_array, offset)
+        # offset = 10 * (0 + index)
+        # par_np_array = np.add(par_np_array, offset)
 
         # plot detector and get its status
         start_time, end_time, status, ax = plot_parameters(
@@ -865,12 +870,17 @@ def plot_wtrfll(
         if det_type == "geds":
             col = j_plot[3][detector]
 
-        if parameter == "cal_puls" or parameter == "K_lines" or parameter == "AoE_Classifier" or parameter == "AoE_Corrected":
+        if (
+            parameter == "cal_puls"
+            or parameter == "K_lines"
+            or parameter == "AoE_Classifier"
+            or parameter == "AoE_Corrected"
+        ):
             hit_files = [dsp_file.replace("dsp", "hit") for dsp_file in dsp_files]
             all_files = [dsp_file.replace("dsp", "hit") for dsp_file in dsp_files]
             for hit_file in hit_files:
                 if os.path.isfile(hit_file):
-                    if detector not in lh5.ls(hit_file, ''):
+                    if detector not in lh5.ls(hit_file, ""):
                         all_files.remove(hit_file)
                         logging.warning(f'No "{detector}" branch in file {hit_file}')
                 else:
@@ -899,7 +909,7 @@ def plot_wtrfll(
             continue
 
         # rebinning
-        if plot_style["par_average"]["flag"] is True and parameter!="K_lines":
+        if plot_style["par_average"]["flag"] is True and parameter != "K_lines":
             par_list, utime_list = analysis.par_average(par_np_array, utime_array)
 
         # function to check if par values are outside some pre-defined limits
@@ -959,7 +969,7 @@ def plot_wtrfll(
     ax.set_zlabel(zlab, labelpad=15)
 
     # define new y-axis values
-    yticks_loc = [i for i in range(0, len(det_list))]#y_values))]
+    yticks_loc = [i for i in range(0, len(det_list))]  # y_values))]
     ax.set_yticks(yticks_loc)
     ax.set_yticklabels(y_values, ha="left")  # change number into name
 

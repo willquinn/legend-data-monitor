@@ -24,18 +24,23 @@
 
     "pulser": {
       "README": "Specify for which parameters you want to keep only pulser events (in 'keep_puls_pars') or only physical events (in 'keep_phys_pars'), otherwise every events will be kept.",
-      "keep_puls_pars": ["uncal_puls", "cal_puls", "baseline", "event_rate", "AoE", "bl_mean", "bl_std", "AoE_Classifier", "AoE_Corrected"],
+      "keep_puls_pars": [
+        "uncal_puls",
+        "cal_puls",
+        "baseline",
+        "event_rate",
+        "AoE",
+        "bl_mean",
+        "bl_std",
+        "AoE_Classifier",
+        "AoE_Corrected"
+      ],
       "keep_phys_pars": ["K_lines"]
     },
 
     "plot_values": {
       "README": "Specify here the parameters for which you want the absolute value (and not the percentage variation wrt the mean value).",
-      "no_variation_pars": [
-        "event_rate",
-        "K_lines",
-	"AoE_Classifier",
-        "wf_max"
-      ]
+      "no_variation_pars": ["event_rate", "K_lines", "AoE_Classifier", "wf_max"]
     },
 
     "Available-par": {
@@ -67,8 +72,8 @@
     "README": "Specify here which parameter you want to plot in 2D. The other parameters will be automatically plotted in 3D. Set to true 'par_average' if you want to average over 'step' entries, otherwise set it to false.",
     "two_dim_pars": ["K_lines"],
     "par_average": {
-	    "flag": false,
-	    "step": 50
+      "flag": false,
+      "step": 50
     }
   },
   "time_window": {
