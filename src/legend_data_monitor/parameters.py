@@ -81,7 +81,11 @@ def load_parameter(
         par_array = aoe(dsp_files, detector)
     elif parameter == "AoE_Corrected":
         hit_files = [dsp_file.replace("dsp", "hit") for dsp_file in dsp_files]
-        par_array = np.array(lh5.load_nda(hit_files, ["AoE_Corrected"], detector + "/hit")["AoE_Corrected"])
+        par_array = np.array(
+            lh5.load_nda(hit_files, ["AoE_Corrected"], detector + "/hit")[
+                "AoE_Corrected"
+            ]
+        )
     elif parameter == "K_lines":
         par_array = np.array(
             lh5.load_nda(hit_files, ["cuspEmax_ctc_cal"], detector + "/hit")[
@@ -96,7 +100,11 @@ def load_parameter(
         par_array, utime_array_cut = energy_potassium_lines(par_array, utime_array_cut)
     elif parameter == "AoE_Classifier":
         hit_files = [dsp_file.replace("dsp", "hit") for dsp_file in dsp_files]
-        par_array = np.array(lh5.load_nda(hit_files, ["AoE_Classifier"], detector + "/hit")["AoE_Classifier"])
+        par_array = np.array(
+            lh5.load_nda(hit_files, ["AoE_Classifier"], detector + "/hit")[
+                "AoE_Classifier"
+            ]
+        )
     else:
         par_array = lh5.load_nda(dsp_files, [parameter], detector + "/dsp")[parameter]
         if parameter == "wf_max" and det_type == "ch000":
