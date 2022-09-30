@@ -5,7 +5,7 @@
       "lh5-files": "/data1/shared/l60/l60-prodven-v1/prod-ref/",
       "version": "v06.00",
       "orca-files": "/data1/shared/l60/l60-daq/daq-v01/",
-      "output-path": "/data1/users/calgaro/legend-data-monitor/"
+      "output-path": "/data1/users/morella/legend-data-monitor/"
     }
   },
   "period": "p01",

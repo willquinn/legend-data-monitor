@@ -446,6 +446,23 @@ def remove_nan(par_array: np.ndarray, time_array: np.ndarray):
     return np.asarray(par_array_no_nan), np.asarray(time_array_no_nan)
 
 
+def apply_quality_cut(
+    hit_files: list,
+    par_array: np.array,
+    time_array: np.array,
+    detector: string,
+    puls_only_index: np.array,
+):
+
+    quality_cut = lh5.load_nda(hit_files, ["Quality_cuts"], detector + "/hit")[
+        "Quality_cuts"
+    ]
+    quality_cut = quality_cut[puls_only_index]
+    par_array_qc = par_array[np.where(quality_cut == True)]
+    time_array_qc = time_array[np.where(quality_cut == True)]
+
+    return par_array_qc, time_array_qc
+
 
 def par_average(par_array: np.ndarray, time_array: np.ndarray):
     """
