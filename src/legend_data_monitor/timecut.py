@@ -152,12 +152,12 @@ def cut_min_max_filelist(runs: list[str], time_cut: list[str]):
     day = np.core.defchararray.add(day, hour)
     day = np.array([int(single_day) for single_day in day])
 
-    timecut_low = np.int64(int(
-        date_string_formatting(time_cut[0]) + hour_string_formatting(time_cut[1])
-    ))
-    timecut_high = np.int64(int(
-        date_string_formatting(time_cut[2]) + hour_string_formatting(time_cut[3])
-    ))
+    timecut_low = np.int64(
+        int(date_string_formatting(time_cut[0]) + hour_string_formatting(time_cut[1]))
+    )
+    timecut_high = np.int64(
+        int(date_string_formatting(time_cut[2]) + hour_string_formatting(time_cut[3]))
+    )
 
     lowcut_list = np.where(day > timecut_low)[0]
     highcut_list = np.where(day < timecut_high)[0]
@@ -166,7 +166,7 @@ def cut_min_max_filelist(runs: list[str], time_cut: list[str]):
         logging.error("No entries in the selected time window, retry!")
         sys.exit(1)
 
-    files_index = np.arange(lowcut_list[0]-1, highcut_list[-1] + 2, 1)
+    files_index = np.arange(lowcut_list[0] - 1, highcut_list[-1] + 2, 1)
     runs = np.array(runs)
 
     return runs[files_index]
