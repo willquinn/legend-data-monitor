@@ -190,8 +190,8 @@ def plot_par_vs_time(
             not_puls_ievt,
         )
 
-        # offset = 1000 * (0 + index)
-        # par_np_array = np.add(par_np_array, offset)
+        offset = 1000 * (0 + index)
+        par_np_array = np.add(par_np_array, offset)
 
         # plot detector and get its status
         start_time, end_time, status, ax = plot_parameters(
@@ -854,8 +854,12 @@ def plot_wtrfll(
     map_dict = {}
 
     for index, detector in enumerate(det_list):
-        if parameter == "cal_puls" or parameter == "K_lines":
-            if detector == "ch010" or detector == "ch024":
+        if parameter in ["cal_puls", "uncal_puls", "K_lines"]:
+            if detector in ["ch024", "ch041", "ch010"]:
+                continue
+
+        if parameter in ["AoE_Classifier"]:
+            if detector in ["ch024", "ch041", "ch010"]:
                 continue
         # if detector==det_list[1]: # <<-- for quick tests
 
@@ -955,7 +959,6 @@ def plot_wtrfll(
     ax.set_yticks(yticks_loc)
     ax.set_yticklabels(y_values, ha="left")  # change number into name
 
-    # ax.set_xlim3d(dates.date2num(start_times[0]), dates.date2num(end_times[-1]))
     ax.set_ylim3d(0, len(det_list))
     fig.subplots_adjust(left=-0.21)  # to move the plot towards the left
 
