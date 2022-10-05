@@ -79,8 +79,12 @@ def load_parameter(
         par_array = bl_difference(dsp_files, detector)
     elif parameter == "AoE":
         par_array = aoe(dsp_files, detector)
+
+    elif parameter == "AoE_Classifier":
+        par_array = lh5.load_nda(hit_files, ["AoE_Classifier"], detector + "/hit")[
+            "AoE_Classifier"
+        ]
     elif parameter == "AoE_Corrected":
-        hit_files = [dsp_file.replace("dsp", "hit") for dsp_file in dsp_files]
         par_array = np.array(
             lh5.load_nda(hit_files, ["AoE_Corrected"], detector + "/hit")[
                 "AoE_Corrected"

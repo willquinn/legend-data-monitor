@@ -152,11 +152,11 @@ def cut_min_max_filelist(runs: list[str], time_cut: list[str]):
     day = np.core.defchararray.add(day, hour)
     day = np.array([int(single_day) for single_day in day])
 
-    timecut_low = int(
-        date_string_formatting(time_cut[0]) + hour_string_formatting(time_cut[1])
+    timecut_low = np.int64(
+        int(date_string_formatting(time_cut[0]) + hour_string_formatting(time_cut[1]))
     )
-    timecut_high = int(
-        date_string_formatting(time_cut[2]) + hour_string_formatting(time_cut[3])
+    timecut_high = np.int64(
+        int(date_string_formatting(time_cut[2]) + hour_string_formatting(time_cut[3]))
     )
 
     lowcut_list = np.where(day > timecut_low)[0]
@@ -166,7 +166,7 @@ def cut_min_max_filelist(runs: list[str], time_cut: list[str]):
         logging.error("No entries in the selected time window, retry!")
         sys.exit(1)
 
-    files_index = np.arange(lowcut_list[0], highcut_list[-1] + 1, 1)
+    files_index = np.arange(lowcut_list[0] - 1, highcut_list[-1] + 2, 1)
     runs = np.array(runs)
 
     return runs[files_index]
@@ -226,8 +226,10 @@ def min_max_timestamp_thr(timestamp: list, start_time: str, end_time: str):
     end_time
                 End time to include events (in %d/%m/%Y %H:%M:%S format)
     """
-    start_timestamp = (datetime.strptime(start_time, "%d/%m/%Y %H:%M:%S")).timestamp()
-    end_timestamp = (datetime.strptime(end_time, "%d/%m/%Y %H:%M:%S")).timestamp()
+    start_time = start_time + "+0000"
+    end_time = end_time + "+0000"
+    start_timestamp = (datetime.strptime(start_time, "%d/%m/%Y %H:%M:%S%z")).timestamp()
+    end_timestamp = (datetime.strptime(end_time, "%d/%m/%Y %H:%M:%S%z")).timestamp()
 
     start_t = 0
     for t in timestamp:

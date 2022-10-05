@@ -214,8 +214,8 @@ def plot_par_vs_time(
         if len(par_np_array) == 0:
             continue
 
-        # offset = 10 * (0 + index)
-        # par_np_array = np.add(par_np_array, offset)
+        offset = 1000 * (0 + index)
+        par_np_array = np.add(par_np_array, offset)
 
         # plot detector and get its status
         start_time, end_time, status, ax = plot_parameters(
@@ -854,6 +854,7 @@ def plot_wtrfll(
     map_dict = {}
 
     for index, detector in enumerate(det_list):
+
         # add entries for the legend
         if det_type == "geds":
             name = det_dict[detector]["det"]
@@ -973,7 +974,6 @@ def plot_wtrfll(
     ax.set_yticks(yticks_loc)
     ax.set_yticklabels(y_values, ha="left")  # change number into name
 
-    # ax.set_xlim3d(dates.date2num(start_times[0]), dates.date2num(end_times[-1]))
     ax.set_ylim3d(0, len(det_list))
     fig.subplots_adjust(left=-0.21)  # to move the plot towards the left
 
