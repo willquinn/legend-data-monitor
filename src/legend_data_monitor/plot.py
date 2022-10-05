@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import pickle as pkl
 from copy import copy
 from datetime import datetime, timezone
@@ -30,6 +31,7 @@ period = j_config[1]
 run = j_config[2]
 datatype = j_config[3]
 no_variation_pars = j_config[5]["plot_values"]["no_variation_pars"]
+plot_style = j_config[6]
 
 
 def plot_parameters(
@@ -58,6 +60,10 @@ def plot_parameters(
     parameter
                   Parameter to plot
     """
+    # rebinning
+    if plot_style["par_average"]["flag"] is True and parameter != "K_lines":
+        par_array, utime_array = analysis.par_average(par_array, utime_array)
+
     # function to check if par values are outside some pre-defined limits
     status = analysis.check_par_values(
         utime_array, par_array, parameter, detector, det_type
@@ -146,10 +152,26 @@ def plot_par_vs_time(
     map_dict = {}
 
     for _, detector in enumerate(det_list):
-        if parameter == "cal_puls" or parameter == "K_lines":
-            if detector == "ch010" or detector == "ch024":
-                continue
         # if detector==det_list[1]: # <<-- for quick tests
+        if (
+            parameter == "cal_puls"
+            or parameter == "K_lines"
+            or parameter == "AoE_Classifier"
+            or parameter == "AoE_Corrected"
+        ):
+            hit_files = [dsp_file.replace("dsp", "hit") for dsp_file in dsp_files]
+            all_files = [dsp_file.replace("dsp", "hit") for dsp_file in dsp_files]
+            for hit_file in hit_files:
+                if os.path.isfile(hit_file):
+                    if detector not in lh5.ls(hit_file, ""):
+                        all_files.remove(hit_file)
+                        logging.warning(f'No "{detector}" branch in file {hit_file}')
+                else:
+                    all_files.remove(hit_file)
+                    logging.warning("hit file does not exist")
+            if len(all_files) == 0:
+                continue
+            hit_files = all_files
 
         # skip detectors that are not geds/spms
         if det_dict[detector]["system"] == "--":
@@ -189,6 +211,8 @@ def plot_par_vs_time(
             puls_only_ievt,
             not_puls_ievt,
         )
+        if len(par_np_array) == 0:
+            continue
 
         offset = 1000 * (0 + index)
         par_np_array = np.add(par_np_array, offset)
@@ -405,28 +429,7 @@ def plot_par_vs_time_ch000(
     plt.figure().patch.set_facecolor(j_par[0][parameter]["facecol"])
     start_times = []
     end_times = []
-    handle_list = []
     map_dict = {}
-
-    # remove the dsp file if the channel is not there
-    # for dsp_file in dsp_files:
-    #    if "ch000" not in lh5.ls(dsp_file, ""):
-    #        dsp_files.remove(dsp_file)
-    #        logging.warning(f"No ch000 in {dsp_file}: removed")
-
-    # remove the dsp file if the parameter for the channel under study is not there
-    # for dsp_file in dsp_files:
-    #    if "ch000/dsp/"+parameter not in lh5.ls(dsp_file, "ch000/dsp/"):
-    #        dsp_files.remove(dsp_file)
-    #        logging.warning(f"No {parameter} in {dsp_file}: removed")
-
-    # add entries for the legend
-    handle_list.append(
-        mpatches.Patch(
-            color="k",
-            label="ch000 - 0,0",  # channel - card, ch_orca (FC)
-        )
-    )
 
     # det parameter and time arrays for a given detector
     par_np_array, utime_array = parameters.load_parameter(
@@ -460,7 +463,6 @@ def plot_par_vs_time_ch000(
         return None
 
     # 1D-plot
-    # local_timezone = datetime.now(timezone.utc).astimezone().tzinfo
     locs = np.linspace(
         dates.date2num(start_times[0]), dates.date2num(end_times[-1]), 10
     )
@@ -479,7 +481,6 @@ def plot_par_vs_time_ch000(
         frameon=True,
         facecolor="white",
         framealpha=0,
-        handles=handle_list,
     )
     plt.legend(
         loc=(1.04, 0.0),
@@ -487,7 +488,6 @@ def plot_par_vs_time_ch000(
         frameon=True,
         facecolor="white",
         framealpha=0,
-        handles=handle_list,
     )
     xlab = j_config[10]["frmt"]
     ylab = j_par[0][parameter]["label"]
@@ -507,8 +507,8 @@ def plot_par_vs_time_ch000(
     plt.xlabel(f"{xlab} (UTC)")
 
     # set title
-    ax.set_title("pulser - ch000")
-    plt.title("pulser - ch000")
+    ax.set_title("ch000")
+    plt.title("ch000")
 
     # set y-label
     low_lim = j_par[0][parameter]["limit"][det_type][0]
@@ -854,18 +854,6 @@ def plot_wtrfll(
     map_dict = {}
 
     for index, detector in enumerate(det_list):
-        if parameter in ["cal_puls", "uncal_puls", "K_lines"]:
-            if detector in ["ch024", "ch041", "ch010"]:
-                continue
-
-        if parameter in ["AoE_Classifier"]:
-            if detector in ["ch024", "ch041", "ch010"]:
-                continue
-        # if detector==det_list[1]: # <<-- for quick tests
-
-        # skip detectors that are not geds/spms
-        if det_dict[detector]["system"] == "--":
-            continue
 
         # add entries for the legend
         if det_type == "geds":
@@ -877,11 +865,35 @@ def plot_wtrfll(
             new_label = f"s{string_no}-p{string_pos}-{detector}-{name}"
         else:
             name = f"{detector}"
+        y_values.append(new_label)
         if det_type == "spms":
             col = j_plot[2][str(detector)]
         if det_type == "geds":
             col = j_plot[3][detector]
-        y_values.append(new_label)
+
+        if (
+            parameter == "cal_puls"
+            or parameter == "K_lines"
+            or parameter == "AoE_Classifier"
+            or parameter == "AoE_Corrected"
+        ):
+            hit_files = [dsp_file.replace("dsp", "hit") for dsp_file in dsp_files]
+            all_files = [dsp_file.replace("dsp", "hit") for dsp_file in dsp_files]
+            for hit_file in hit_files:
+                if os.path.isfile(hit_file):
+                    if detector not in lh5.ls(hit_file, ""):
+                        all_files.remove(hit_file)
+                        logging.warning(f'No "{detector}" branch in file {hit_file}')
+                else:
+                    all_files.remove(hit_file)
+                    logging.warning("hit file does not exist")
+            if len(all_files) == 0:
+                continue
+            hit_files = all_files
+
+        # skip detectors that are not geds/spms
+        if det_dict[detector]["system"] == "--":
+            continue
 
         # det parameter and time arrays for a given detector
         par_np_array, utime_array = parameters.load_parameter(
@@ -894,20 +906,23 @@ def plot_wtrfll(
             puls_only_ievt,
             not_puls_ievt,
         )
+        if len(par_np_array) == 0:
+            continue
+
+        # rebinning
+        if plot_style["par_average"]["flag"] is True and parameter != "K_lines":
+            par_list, utime_list = analysis.par_average(par_np_array, utime_array)
 
         # function to check if par values are outside some pre-defined limits
         status = analysis.check_par_values(
-            utime_array, par_np_array, parameter, detector, det_type
+            utime_list, par_list, parameter, detector, det_type
         )
-
-        times = [datetime.utcfromtimestamp(t) for t in utime_array]
+        times = [datetime.utcfromtimestamp(t) for t in utime_list]
         start_time = times[0]
         end_time = times[-1]
 
-        utime_list = utime_array.tolist()
-        par_np_list = par_np_array.tolist()
         y_list = [index for i in range(0, len(utime_list))]
-        ax.plot3D(utime_list, y_list, par_np_list, color=col, zorder=-index, alpha=0.9)
+        ax.plot3D(utime_list, y_list, par_list, color=col, zorder=-index, alpha=0.9)
         ax.set_xlim3d(utime_list[0], utime_list[-1])
 
         # fill the map with status flags
@@ -955,7 +970,7 @@ def plot_wtrfll(
     ax.set_zlabel(zlab, labelpad=15)
 
     # define new y-axis values
-    yticks_loc = [i for i in range(0, len(y_values))]
+    yticks_loc = [i for i in range(0, len(det_list))]  # y_values))]
     ax.set_yticks(yticks_loc)
     ax.set_yticklabels(y_values, ha="left")  # change number into name
 

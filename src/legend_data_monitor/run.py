@@ -87,7 +87,7 @@ def dump_all_plots_together(
                 for par in geds_par:
                     det_status_dict = {}
                     for (det_list, string) in zip(string_geds, string_geds_name):
-                        # if det_list==string_geds[3]: # keep 1 string (per far prima)
+                        # if det_list==string_geds[1]: # keep 1 string (per far prima)
 
                         if len(det_list) == 0:
                             continue

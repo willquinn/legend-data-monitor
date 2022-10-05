@@ -74,7 +74,7 @@ def time_dates(time_cut: list):
             + "Z"
         )
     if len(time_cut) == 3:
-        end = datetime.now().strftime("%Y%m%dT&H%M%SZ")
+        end = datetime.now().strftime("%Y%m%dT%H%M%SZ")
         start = (
             datetime.now()
             - timedelta(days=time_cut[0], hours=time_cut[1], minutes=time_cut[2])

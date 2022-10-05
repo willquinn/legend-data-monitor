@@ -79,8 +79,15 @@ def load_parameter(
         par_array = bl_difference(dsp_files, detector)
     elif parameter == "AoE":
         par_array = aoe(dsp_files, detector)
+
     elif parameter == "AoE_Classifier":
         par_array = lh5.load_nda(hit_files, ["AoE_Classifier"], detector + "/hit")["AoE_Classifier"]
+    elif parameter == "AoE_Corrected":
+        par_array = np.array(
+            lh5.load_nda(hit_files, ["AoE_Corrected"], detector + "/hit")[
+                "AoE_Corrected"
+            ]
+        )
     elif parameter == "K_lines":
         par_array = np.array(
             lh5.load_nda(hit_files, ["cuspEmax_ctc_cal"], detector + "/hit")[
@@ -93,8 +100,18 @@ def load_parameter(
         # temporal cut
         _, par_array = analysis.time_analysis(utime_array, par_array, time_cut)
         par_array, utime_array_cut = energy_potassium_lines(par_array, utime_array_cut)
+    elif parameter == "AoE_Classifier":
+        hit_files = [dsp_file.replace("dsp", "hit") for dsp_file in dsp_files]
+        par_array = np.array(
+            lh5.load_nda(hit_files, ["AoE_Classifier"], detector + "/hit")[
+                "AoE_Classifier"
+            ]
+        )
     else:
         par_array = lh5.load_nda(dsp_files, [parameter], detector + "/dsp")[parameter]
+        if parameter == "wf_max" and det_type == "ch000":
+            baseline = lh5.load_nda(dsp_files, ["baseline"], "ch000/dsp")["baseline"]
+            par_array = np.subtract(par_array, baseline)
 
     if all_ievt != [] and puls_only_ievt != [] and not_puls_ievt != []:
         if parameter in keep_puls_pars:
