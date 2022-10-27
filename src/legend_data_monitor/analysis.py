@@ -254,8 +254,8 @@ def check_par_values(
     det_type
                    Type of detector (geds or spms)
     """
-    low_lim = (j_par[0][parameter]["limit"][det_type][0])
-    upp_lim = (j_par[0][parameter]["limit"][det_type][1])
+    low_lim = j_par[0][parameter]["limit"][det_type][0]
+    upp_lim = j_par[0][parameter]["limit"][det_type][1]
     units = j_par[0][parameter]["units"]
     thr_flag = 0
 
@@ -493,7 +493,7 @@ def avg_over_entries(par_array: np.ndarray, time_array: np.ndarray):
     par_avg = []
     time_avg = []
 
-    step = round( ((time_array[-1] - time_array[0])*6) / (4*60*60))
+    step = round(((time_array[-1] - time_array[0]) * 6) / (4 * 60 * 60))
     i = 0
 
     while (i + 1) * step < len(par_array):

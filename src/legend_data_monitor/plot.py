@@ -92,9 +92,7 @@ def plot_parameters(
     else:
         if det_type == "ch000" or parameter == "K_lines":
             ax.plot(times, par_array, color=col, linewidth=0, marker=".", markersize=1)
-            plt.plot(
-                times, par_array, color=col, linewidth=0, marker=".", markersize=1
-            )
+            plt.plot(times, par_array, color=col, linewidth=0, marker=".", markersize=1)
         else:
             ax.plot(times, par_array, color=col, linewidth=2)
             plt.plot(times, par_array, color=col, linewidth=2)
@@ -148,14 +146,14 @@ def plot_par_vs_time(
     ax.set_facecolor("w")
     ax.grid(axis="both", which="major")
     plt.grid(axis="both", which="major")
-    #plt.figure().patch.set_facecolor(j_par[0][parameter]["facecol"])
+    # plt.figure().patch.set_facecolor(j_par[0][parameter]["facecol"])
     start_times = []
     end_times = []
     handle_list = []
     map_dict = {}
 
     for index, detector in enumerate(det_list):
-        #if detector == "ch016" or detector=="ch010": # <<-- for quick tests
+        # if detector == "ch016" or detector=="ch010": # <<-- for quick tests
 
         if (
             parameter == "cal_puls"
@@ -1087,7 +1085,7 @@ def plot_ch_par_vs_time(
     pdf=None,
 ) -> dict:
     """Plot time evolution of given parameter for each channel separately.
-    
+
     Parameters
     ----------
     dsp_files
@@ -1129,13 +1127,11 @@ def plot_ch_par_vs_time(
         )
         ax_list = [ax1, ax2, ax3, ax4, ax5, ax6, ax7, ax8]
     if "8" in string_number:
-        fig, ((ax1), (ax2), (ax3), (ax4), (ax5)) = plt.subplots(
-            5, 1, sharex=True
-        )
+        fig, ((ax1), (ax2), (ax3), (ax4), (ax5)) = plt.subplots(5, 1, sharex=True)
         ax_list = [ax1, ax2, ax3, ax4, ax5]
 
     ax_idx = 0
-    #fig.patch.set_facecolor(j_par[0][parameter]["facecol"])
+    # fig.patch.set_facecolor(j_par[0][parameter]["facecol"])
     fig.suptitle(f"{det_type} - S{string_number}")
     zlab = j_par[0][parameter]["label"]
     if parameter in no_variation_pars:
@@ -1231,8 +1227,15 @@ def plot_ch_par_vs_time(
         # plot detector
         lbl += "\nmean = " + '{:.2f}'.format(par_array_mean) + " [" + j_par[0][parameter]["units"] + "]"
         ax_list[ax_idx].plot(times, par_list, color=col, linewidth=2, label=lbl)
-        ax_list[ax_idx].legend(bbox_to_anchor=(1.01, 1.0), loc='upper left', borderaxespad=0, handlelength=0, handletextpad=0, frameon=False)
-        #plt.text(1.02, 1.0, lbl, fontsize = 12)
+        ax_list[ax_idx].legend(
+            bbox_to_anchor=(1.01, 1.0),
+            loc="upper left",
+            borderaxespad=0,
+            handlelength=0,
+            handletextpad=0,
+            frameon=False,
+        )
+        # plt.text(1.02, 1.0, lbl, fontsize = 12)
 
         local_timezone = datetime.now(timezone.utc).astimezone().tzinfo
         locs = np.linspace(dates.date2num(start_time), dates.date2num(end_time), 10)
@@ -1260,7 +1263,7 @@ def plot_ch_par_vs_time(
             if map_dict[detector] == 0:
                 map_dict[detector] = status
         # save mean over first entries
-        mean_dict[detector] = { parameter: par_array_mean}
+        mean_dict[detector] = {parameter: par_array_mean}
 
         # skip those detectors that are not within the time window
         if start_time == 0 and end_time == 0:

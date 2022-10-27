@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from datetime import datetime
 
-import logging
 import numpy as np
 import pygama.lgdo.lh5_store as lh5
 
@@ -144,7 +143,7 @@ def load_parameter(
         par_array = np.subtract(par_array, par_array_mean)
         par_array = np.divide(par_array, par_array_mean) * 100
 
-    #logging.warning(f'{parameter} mean for {detector}: {par_array_mean} [{j_par[0][parameter]["units"]}]' )
+    # logging.warning(f'{parameter} mean for {detector}: {par_array_mean} [{j_par[0][parameter]["units"]}]' )
 
     return par_array_mean, par_array, utime_array_cut
 
