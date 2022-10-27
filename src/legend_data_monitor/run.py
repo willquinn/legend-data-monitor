@@ -3,13 +3,13 @@ from __future__ import annotations
 import logging
 import os
 import sys
+import json
 from datetime import datetime
 
 import matplotlib as mpl
 from matplotlib.backends.backend_pdf import PdfPages
 
-# modules
-from . import analysis, plot, timecut
+from . import analysis, plot, timecut, map
 
 log = logging.getLogger(__name__)
 
@@ -29,13 +29,131 @@ time_window = j_config[7]
 last_hours = j_config[8]
 verbose = j_config[11]
 
+def main():
+    start_code = (datetime.utcnow()).strftime("%d/%m/%Y %H:%M:%S") # common starting time
+    path = files_path + version + "/generated/tier"
+    out_path = os.path.join(output_path, "out/")
 
-# for multiple detectors
+    # output folders
+    if os.path.isdir(out_path) is False:
+        os.mkdir(out_path)
+    pdf_path = os.path.join(out_path, "pdf-files")
+    log_path = os.path.join(out_path, "log-files")
+    for out_dir in ["log-files", "pdf-files", "pkl-files"]:
+        if out_dir not in os.listdir(out_path):
+            os.mkdir(out_path + out_dir)
+        dirs = ["pdf-files", "pkl-files"]
+        if out_dir in dirs:
+            for out_subdir in ["par-vs-time", "heatmaps"]:
+                if os.path.isdir(f"{out_path}{out_dir}/{out_subdir}") is False:
+                    os.mkdir(f"{out_path}{out_dir}/{out_subdir}")
+    plot_path = pdf_path + "/par-vs-time"
+    map_path = pdf_path + "/heatmaps"
+
+    # output log-filenames
+    time_cut = timecut.build_timecut_list(time_window, last_hours)
+    if len(time_cut) != 0:
+        start, end = timecut.time_dates(time_cut, start_code)
+        log_name = f"{log_path}/{exp}-{period}-{run}-{datatype}_{start}_{end}.log"
+    else:
+        log_name = f"{log_path}/{exp}-{period}-{run}-{datatype}.log"
+
+    # set up logging to file
+    logging.basicConfig(
+        filename=log_name,
+        level=logging.INFO,
+        filemode="w",
+        format="%(levelname)s: %(message)s",
+    )
+    # set up logging to console
+    console = logging.StreamHandler()
+    console.setLevel(logging.ERROR)
+    formatter = logging.Formatter("%(asctime)s:  %(message)s")
+    console.setFormatter(formatter)
+    logging.getLogger("").addHandler(console)
+
+    logging.error(
+        f'Started compiling at {start_code}'
+    )
+
+    # start analysis
+    select_and_plot_run(path, plot_path, map_path, start_code)
+
+    logging.error(
+        f'Finished compiling at {(datetime.now()).strftime("%d/%m/%Y %H:%M:%S")}'
+    )
+
+def select_and_plot_run(path: str, plot_path: str, map_path: str, start_code: str) -> None:
+    """
+    Select run and call dump_all_plots_together().
+
+    Parameters
+    ----------
+    path
+                Path to pgt folder
+    plot_path
+                Path where to save output plots
+    map_path
+                Path where to save output heatmaps
+    start_code
+                Starting time of the code
+    """
+    full_path = os.path.join(path, "dsp", datatype, period, run)
+
+    # get list of lh5 files
+    lh5_files = os.listdir(full_path)
+    lh5_files = sorted(
+        lh5_files,
+        key=lambda file: int(
+            ((file.split("-")[4]).split("Z")[0]).split("T")[0]
+            + ((file.split("-")[4]).split("Z")[0]).split("T")[1]
+        ),
+    )
+
+    # keep 'cal' or 'phy' data
+    if datatype == "cal":
+        runs = [file for file in lh5_files if "cal" in file]
+        if verbose is True:
+            logging.error("Calib files have been loaded")
+    if datatype == "phy":
+        runs = [file for file in lh5_files if "phy" in file]
+        if verbose is True:
+            logging.error("Phys files have been loaded")
+
+    mpl.use("pdf")
+
+    # get time cuts info
+    time_cut = timecut.build_timecut_list(time_window, last_hours)
+
+    # time analysis: set output-pdf filenames
+    if len(time_cut) != 0: # time cuts
+        start, end = timecut.time_dates(time_cut, start_code)
+        path = os.path.join(
+            plot_path, f"{exp}-{period}-{run}-{datatype}_{start}_{end}.pdf"
+        )
+        map_path = os.path.join(
+            map_path, f"{exp}-{period}-{run}-{datatype}_{start}_{end}.pdf"
+        )
+    else: # no time cuts
+        path = os.path.join(plot_path, f"{exp}-{period}-{run}-{datatype}.pdf")
+        map_path = os.path.join(map_path, f"{exp}-{period}-{run}-{datatype}.pdf")
+
+    # apply time cut to lh5 filenames
+    if len(time_cut) == 3:
+        runs = timecut.cut_below_threshold_filelist(runs, time_cut)
+    elif len(time_cut) == 4:
+        runs = timecut.cut_min_max_filelist(runs, time_cut)
+
+    # get full file paths
+    runs = [os.path.join(full_path, run_file) for run_file in runs]
+
+    dump_all_plots_together(runs, time_cut, path, map_path, start_code)
+
 def dump_all_plots_together(
-    dsp_files: list[str], time_cut: list[str], path: str, map_path: str
+        dsp_files: list[str], time_cut: list[str], path: str, map_path: str, start_code: str
 ) -> None:
     """
-    Create and dump plot in single pdf and multiple pkl files.
+    Create and fill plots in a single pdf and multiple pkl files.
 
     Parameters
     ----------
@@ -47,10 +165,13 @@ def dump_all_plots_together(
                 Path where to save output files
     map_path
                 Path where to save output heatmaps
+    start_code
+                Starting time of the code
     """
     if isinstance(dsp_files, str):
         dsp_files = [dsp_files]
 
+    # key selection (add it to the config file?)
     # dsp_files = dsp_files[17:] # remove data prior to 20220817T124844Z in run22
     # dsp_files = dsp_files[25:]
     # dsp_files = dsp_files[17:50]  # keep only first data (to perform tests in a quick way)
@@ -60,12 +181,15 @@ def dump_all_plots_together(
         logging.warning("There are no files to inspect!")
         sys.exit(1)
 
+    # create channel maps from orca+raw files
     raw_files = [dsp_file.replace("dsp", "raw") for dsp_file in dsp_files]
-    geds_dict, spms_dict, other_dict = analysis.load_channels(raw_files)
+    geds_dict, spms_dict, _ = analysis.load_channels(raw_files)
+
+    # get pulser-events indices
     all_ievt, puls_only_ievt, not_puls_ievt = analysis.get_puls_ievt(dsp_files)
 
     with PdfPages(path) as pdf:
-        # with PdfPages(map_path) as pdf_map: # <- enable it for heatmaps
+      with PdfPages(map_path) as pdf_map:
         if (
             det_type["geds"] is False
             and det_type["spms"] is False
@@ -76,7 +200,7 @@ def dump_all_plots_together(
             )
             return
 
-        # Geds plots
+        # geds plots
         if det_type["geds"] is True:
             string_geds, string_geds_name = analysis.read_geds(geds_dict)
             geds_par = par_to_plot["geds"]
@@ -87,7 +211,7 @@ def dump_all_plots_together(
                 for par in geds_par:
                     det_status_dict = {}
                     for (det_list, string) in zip(string_geds, string_geds_name):
-                        # if det_list==string_geds[1]: # keep 1 string (per far prima)
+                      if det_list==string_geds[0]: # keep 1 string (per far prima)
 
                         if len(det_list) == 0:
                             continue
@@ -104,10 +228,12 @@ def dump_all_plots_together(
                                 all_ievt,
                                 puls_only_ievt,
                                 not_puls_ievt,
+                                start_code,
                                 pdf,
                             )
                         else:
-                            map_dict = plot.plot_par_vs_time(
+                            #map_dict = plot.plot_par_vs_time( # plot style
+                            _, map_dict = plot.plot_ch_par_vs_time( # subplot style
                                 dsp_files,
                                 det_list,
                                 par,
@@ -118,6 +244,7 @@ def dump_all_plots_together(
                                 all_ievt,
                                 puls_only_ievt,
                                 not_puls_ievt,
+                                start_code,
                                 pdf,
                             )
                         if map_dict is not None:
@@ -133,20 +260,20 @@ def dump_all_plots_together(
                                 logging.error(
                                     f"\t...no {par} plots for geds - string #{string}!"
                                 )
-                    # maps are disabled!
-                    # if det_status_dict != []:
-                    #    map.geds_map(
-                    #        par,
-                    #        geds_dict,
-                    #        string_geds,
-                    #        string_geds_name,
-                    #        det_status_dict,
-                    #        time_cut,
-                    #        map_path,
-                    #        pdf_map,
-                    #    )
+                    if det_status_dict != []:
+                       map.geds_map(
+                           par,
+                           geds_dict,
+                           string_geds,
+                           string_geds_name,
+                           det_status_dict,
+                           time_cut,
+                           map_path,
+                           start_code,
+                           pdf_map,
+                       )
 
-        # Spms plots
+        # spms plots
         if det_type["spms"] is True:
             if datatype == "cal":
                 logging.error("No SiPMs for calibration data!")
@@ -199,6 +326,7 @@ def dump_all_plots_together(
                                         None,
                                         None,
                                         None,
+                                        start_code,
                                         pdf,
                                     )
                                 if map_dict is not None:
@@ -224,6 +352,7 @@ def dump_all_plots_together(
                             #        det_status_dict,
                             #        time_cut,
                             #        map_path,
+                            #        start_code,
                             #        pdf_map,
                             #    )
 
@@ -243,6 +372,7 @@ def dump_all_plots_together(
                         all_ievt,
                         puls_only_ievt,
                         not_puls_ievt,
+                        start_code,
                         pdf,
                     )
                     if verbose is True:
@@ -252,117 +382,5 @@ def dump_all_plots_together(
                             logging.error(f"\t...no {par} plots for ch000!")
 
     if verbose is True:
-        logging.error(f"Plots are in {path}")
-        logging.error(f"Heatmaps are in {map_path}")
-
-
-def select_and_plot_run(path: str, plot_path: str, map_path: str) -> None:
-    """
-    Select run and call dump_all_plots_together().
-
-    Parameters
-    ----------
-    path
-                Path to pgt folder
-    plot_path
-                Path where to save output plots
-    map_path
-                Path where to save output heatmaps
-    """
-    full_path = os.path.join(path, "dsp", datatype, period, run)
-
-    lh5_files = os.listdir(full_path)
-    lh5_files = sorted(
-        lh5_files,
-        key=lambda file: int(
-            ((file.split("-")[4]).split("Z")[0]).split("T")[0]
-            + ((file.split("-")[4]).split("Z")[0]).split("T")[1]
-        ),
-    )
-
-    if datatype == "cal":
-        runs = [file for file in lh5_files if "cal" in file]
-        if verbose is True:
-            logging.error("Calib runs have been loaded")
-    if datatype == "phy":
-        runs = [file for file in lh5_files if "phy" in file]
-        if verbose is True:
-            logging.error("Phys runs have been loaded")
-
-    mpl.use("pdf")
-
-    time_cut = timecut.build_timecut_list(time_window, last_hours)
-
-    # time analysis
-    if len(time_cut) != 0:
-        start, end = timecut.time_dates(time_cut)
-        path = os.path.join(
-            plot_path, f"{exp}-{period}-{run}-{datatype}_{start}_{end}.pdf"
-        )
-        map_path = os.path.join(
-            map_path, f"{exp}-{period}-{run}-{datatype}_{start}_{end}.pdf"
-        )
-    # no time cuts
-    else:
-        path = os.path.join(plot_path, f"{exp}-{period}-{run}-{datatype}.pdf")
-        map_path = os.path.join(map_path, f"{exp}-{period}-{run}-{datatype}.pdf")
-
-    if len(time_cut) == 3:
-        runs = timecut.cut_below_threshold_filelist(runs, time_cut)
-    elif len(time_cut) == 4:
-        runs = timecut.cut_min_max_filelist(runs, time_cut)
-
-    runs = [os.path.join(full_path, run_file) for run_file in runs]
-
-    dump_all_plots_together(runs, time_cut, path, map_path)
-
-
-def main():
-    path = files_path + version + "/generated/tier"
-    out_path = os.path.join(output_path, "out/")
-
-    if os.path.isdir(out_path) is False:
-        os.mkdir(out_path)
-    pdf_path = os.path.join(out_path, "pdf-files")
-    log_path = os.path.join(out_path, "log-files")
-
-    for out_dir in ["log-files", "pdf-files", "pkl-files"]:
-        if out_dir not in os.listdir(out_path):
-            os.mkdir(out_path + out_dir)
-        dirs = ["pdf-files", "pkl-files"]
-        if out_dir in dirs:
-            for out_subdir in ["par-vs-time", "heatmaps"]:
-                if os.path.isdir(f"{out_path}{out_dir}/{out_subdir}") is False:
-                    os.mkdir(f"{out_path}{out_dir}/{out_subdir}")
-
-    plot_path = pdf_path + "/par-vs-time"
-    map_path = pdf_path + "/heatmaps"
-
-    time_cut = timecut.build_timecut_list(time_window, last_hours)
-    if len(time_cut) != 0:
-        start, end = timecut.time_dates(time_cut)
-        log_name = f"{log_path}/{exp}-{period}-{run}-{datatype}_{start}_{end}.log"
-    else:
-        log_name = f"{log_path}/{exp}-{period}-{run}-{datatype}.log"
-
-    # set up logging to file
-    logging.basicConfig(
-        filename=log_name,
-        level=logging.INFO,
-        filemode="w",
-        format="%(levelname)s: %(message)s",
-    )
-    # set up logging to console
-    console = logging.StreamHandler()
-    console.setLevel(logging.ERROR)
-    formatter = logging.Formatter("%(asctime)s:  %(message)s")
-    console.setFormatter(formatter)
-    logging.getLogger("").addHandler(console)
-
-    logging.error(
-        f'Started compiling at {(datetime.now()).strftime("%d/%m/%Y %H:%M:%S")}'
-    )
-    select_and_plot_run(path, plot_path, map_path)
-    logging.error(
-        f'Finished compiling at {(datetime.now()).strftime("%d/%m/%Y %H:%M:%S")}'
-    )
+        logging.error(f"Plots are saved in {path}")
+        logging.error(f"Heatmaps are saved in {map_path}")

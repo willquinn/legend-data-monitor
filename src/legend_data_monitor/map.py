@@ -16,7 +16,7 @@ run = j_config[2]
 datatype = j_config[3]
 
 
-def pkl_name(time_cut: list[str], parameter: str):
+def pkl_name(time_cut: list[str], parameter: str, start_code: str):
     """
     Define the name of output pkl file.
 
@@ -26,9 +26,11 @@ def pkl_name(time_cut: list[str], parameter: str):
                      List with info about time cuts
     parameter
                      Parameter to plot
+    start_code
+                     Starting time of the code
     """
     if len(time_cut) != 0:
-        start, end = timecut.time_dates(time_cut)
+        start, end = timecut.time_dates(time_cut, start_code)
         pkl_filename = (
             exp
             + "-"
@@ -122,6 +124,7 @@ def geds_map(
     cmap_dict: dict,
     time_cut: list[str],
     map_path: str,
+    start_code: str,
     pdf,
 ):
     """
@@ -143,6 +146,8 @@ def geds_map(
                      List with info about time cuts
     map_path
                      Path where to save output heatmaps
+    start_code
+                     Starting time of the code
     """
     string_entries = place_dets(det_dict, string_entries)
     df = pd.DataFrame(data=list(string_entries))
@@ -174,7 +179,7 @@ def geds_map(
     dataframe = dataframe.replace(np.nan, 4)
     dataframe = dataframe.replace("", 4)
 
-    x_axis_labels = [f"String {no}" for no in string_name]
+    x_axis_labels = [f"S{no}" for no in string_name]
     y_axis_labels = ["" for idx in range(0, len(df))]
 
     fig = plt.figure(num=None, figsize=(8, 12), dpi=80, facecolor="w", edgecolor="k")
@@ -212,7 +217,7 @@ def geds_map(
     )
     plt.title(f"geds ({parameter})")
 
-    pkl_file = pkl_name(time_cut, parameter)
+    pkl_file = pkl_name(time_cut, parameter, start_code)
     pkl.dump(fig, open(f"out/pkl-files/heatmaps/{pkl_file}.pkl", "wb"))
     pdf.savefig(bbox_inches="tight")
     plt.close()
@@ -228,6 +233,7 @@ def spms_map(
     cmap_dict: dict,
     time_cut: list[str],
     map_path: str,
+    start_code: str,
     pdf,
 ):
     """
@@ -249,6 +255,8 @@ def spms_map(
                      List with info about time cuts
     map_path
                      Path where to save output heatmaps
+    start_code
+                     Starting time of the code
     """
     cmap_dict = check_det(cmap_dict, det_dict)
 
@@ -331,7 +339,7 @@ def spms_map(
     )
     plt.title(f"spms - outer barrel ({parameter})")
 
-    pkl_file = pkl_name(time_cut, parameter)
+    pkl_file = pkl_name(time_cut, parameter, start_code)
     pkl.dump(fig_ob, open(f"out/pkl-files/heatmaps/{pkl_file}-OB.pkl", "wb"))
     pdf.savefig(bbox_inches="tight")
 

@@ -39,7 +39,7 @@ def build_timecut_list(time_window: list, last_hours: list):
     return time_cut
 
 
-def time_dates(time_cut: list):
+def time_dates(time_cut: list, start_code: str):
     """
     Return start/end time of cuts in UTC+00:00 format.
 
@@ -47,6 +47,8 @@ def time_dates(time_cut: list):
     ----------
     time_cut
                List with info about time cuts
+    start_code
+                Starting time of the code
     """
     if len(time_cut) == 4:
         start_date = time_cut[0].split("/")
@@ -74,9 +76,9 @@ def time_dates(time_cut: list):
             + "Z"
         )
     if len(time_cut) == 3:
-        end = datetime.now().strftime("%Y%m%dT%H%M%SZ")
+        end = start_code.strftime("%Y%m%dT%H%M%SZ")
         start = (
-            datetime.now()
+            start_code
             - timedelta(days=time_cut[0], hours=time_cut[1], minutes=time_cut[2])
         ).strftime("%Y%m%dT%H%M%SZ")
 
