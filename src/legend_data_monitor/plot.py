@@ -1225,7 +1225,13 @@ def plot_ch_par_vs_time(
             col = "r"
 
         # plot detector
-        lbl += "\nmean = " + '{:.2f}'.format(par_array_mean) + " [" + j_par[0][parameter]["units"] + "]"
+        lbl += (
+            "\nmean = "
+            + f"{par_array_mean:.2f}"
+            + " ["
+            + j_par[0][parameter]["units"]
+            + "]"
+        )
         ax_list[ax_idx].plot(times, par_list, color=col, linewidth=2, label=lbl)
         ax_list[ax_idx].legend(
             bbox_to_anchor=(1.01, 1.0),
@@ -1249,7 +1255,8 @@ def plot_ch_par_vs_time(
         # line at 0%
         ax_list[ax_idx].axhline(y=0, color="r", linestyle="--", linewidth=1)
 
-        if ax_idx == 7: ax_list[ax_idx].set(xlabel="time (UTC)")
+        if ax_idx == 7:
+            ax_list[ax_idx].set(xlabel="time (UTC)")
         ax_list[ax_idx].set_xticks(locs)
         ax_list[ax_idx].set_xticklabels(labels)
         plt.setp(ax_list[ax_idx].get_xticklabels(), rotation=0, ha="center")
