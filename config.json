@@ -34,14 +34,20 @@
         "bl_std",
         "AoE_Classifier",
         "AoE_Corrected",
-	      "trapTmax"
+        "trapTmax"
       ],
       "keep_phys_pars": ["K_lines"]
     },
 
     "plot_values": {
       "README": "Specify here the parameters for which you want the absolute value (and not the percentage variation wrt the mean value).",
-      "no_variation_pars": ["event_rate", "K_lines", "AoE_Classifier", "wf_max", "AoE_Corrected"]
+      "no_variation_pars": [
+        "event_rate",
+        "K_lines",
+        "AoE_Classifier",
+        "wf_max",
+        "AoE_Corrected"
+      ]
     },
 
     "Available-par": {
@@ -65,7 +71,14 @@
   },
   "plot_style": {
     "README": "Specify here which parameter you want to plot in 2D. The other parameters will be automatically plotted in 3D. Set to true 'par_average' if you want to average over 'step' entries, otherwise set it to false.",
-    "two_dim_pars": ["K_lines", "baseline", "bl_std", "trapTmax", "AoE_Corrected", "wf_max"],
+    "two_dim_pars": [
+      "K_lines",
+      "baseline",
+      "bl_std",
+      "trapTmax",
+      "AoE_Corrected",
+      "wf_max"
+    ],
     "par_average": true
   },
   "time_window": {
