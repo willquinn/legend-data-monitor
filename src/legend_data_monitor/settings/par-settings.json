@@ -510,16 +510,6 @@
         "ch000": ["null", "null"]
       }
     },
-    "AoE_Classifier": {
-      "label": "A over E",
-      "units": "%",
-      "facecol": [0.27, 0.47, 0.9],
-      "limit": {
-        "spms": ["null", "null"],
-        "geds": ["null", "null"],
-        "ch000": ["null", "null"]
-      }
-    },
     "K_lines": {
       "label": "Energy",
       "units": "keV",
