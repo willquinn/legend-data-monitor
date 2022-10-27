@@ -15,9 +15,8 @@ from matplotlib import dates
 
 from . import analysis, parameters, timecut
 
-plt.rcParams["agg.path.chunksize"] = 10000000000000000
 plt.rcParams.update({"figure.max_open_warning": 0})
-plt.rcParams["figure.figsize"] = (10, 5)
+plt.rcParams["figure.figsize"] = (15, 10)
 plt.rcParams["font.size"] = 12
 plt.rcParams["figure.facecolor"] = "w"
 plt.rcParams["grid.color"] = "b0b0b0"
@@ -25,6 +24,7 @@ plt.rcParams["axes.facecolor"] = "w"
 plt.rcParams["axes.grid"] = True
 plt.rcParams["axes.grid.axis"] = "both"
 plt.rcParams["axes.grid.which"] = "major"
+
 j_config, j_par, j_plot = analysis.read_json_files()
 exp = j_config[0]["exp"]
 period = j_config[1]
@@ -61,8 +61,8 @@ def plot_parameters(
                   Parameter to plot
     """
     # rebinning
-    if plot_style["par_average"]["flag"] is True and parameter != "K_lines":
-        par_array, utime_array = analysis.par_average(par_array, utime_array)
+    if plot_style["par_average"] is True and parameter != "K_lines":
+        par_array, utime_array = analysis.avg_over_entries(par_array, utime_array)
 
     # function to check if par values are outside some pre-defined limits
     status = analysis.check_par_values(
@@ -70,7 +70,6 @@ def plot_parameters(
     )
     times = [datetime.fromtimestamp(t) for t in utime_array]
 
-    status_flag = j_config[9][det_type]
     if det_type == "spms":
         col = j_plot[2][str(detector)]
     if det_type == "geds":
@@ -79,6 +78,7 @@ def plot_parameters(
         col = "k"
 
     # if we want to plot detectors that are only problematic
+    status_flag = j_config[9][det_type]
     if status_flag is True and status == 1:
         if det_type == "ch000" or parameter == "K_lines":
             ax.plot(times, par_array, color=col, linewidth=0, marker=".", markersize=10)
@@ -91,13 +91,11 @@ def plot_parameters(
     # plot everything independently of the detector's status
     else:
         if det_type == "ch000" or parameter == "K_lines":
-            ax.plot(times, par_array, color=col, linewidth=0, marker=".", markersize=10)
-            plt.plot(
-                times, par_array, color=col, linewidth=0, marker=".", markersize=10
-            )
+            ax.plot(times, par_array, color=col, linewidth=0, marker=".", markersize=1)
+            plt.plot(times, par_array, color=col, linewidth=0, marker=".", markersize=1)
         else:
-            ax.plot(times, par_array, color=col, linewidth=1)
-            plt.plot(times, par_array, color=col, linewidth=1)
+            ax.plot(times, par_array, color=col, linewidth=2)
+            plt.plot(times, par_array, color=col, linewidth=2)
 
     return times[0], times[-1], status, ax
 
@@ -113,6 +111,7 @@ def plot_par_vs_time(
     all_ievt: np.ndarray,
     puls_only_ievt: np.ndarray,
     not_puls_ievt: np.ndarray,
+    start_code: str,
     pdf=None,
 ) -> dict:
     """
@@ -140,19 +139,22 @@ def plot_par_vs_time(
                     Event number for high energy pulser events
     not_puls_ievt
                     Event number for physical events
+    start_code
+                Starting time of the code
     """
     fig, ax = plt.subplots(1, 1)
     ax.set_facecolor("w")
     ax.grid(axis="both", which="major")
     plt.grid(axis="both", which="major")
-    plt.figure().patch.set_facecolor(j_par[0][parameter]["facecol"])
+    # plt.figure().patch.set_facecolor(j_par[0][parameter]["facecol"])
     start_times = []
     end_times = []
     handle_list = []
     map_dict = {}
 
-    for _, detector in enumerate(det_list):
-        # if detector==det_list[1]: # <<-- for quick tests
+    for index, detector in enumerate(det_list):
+        # if detector == "ch016" or detector=="ch010": # <<-- for quick tests
+
         if (
             parameter == "cal_puls"
             or parameter == "K_lines"
@@ -201,7 +203,7 @@ def plot_par_vs_time(
         )
 
         # det parameter and time arrays for a given detector
-        par_np_array, utime_array = parameters.load_parameter(
+        par_array_mean, par_np_array, utime_array = parameters.load_parameter(
             parameter,
             dsp_files,
             detector,
@@ -214,7 +216,7 @@ def plot_par_vs_time(
         if len(par_np_array) == 0:
             continue
 
-        offset = 1000 * (0 + index)
+        offset = 15 * (0 + index)
         par_np_array = np.add(par_np_array, offset)
 
         # plot detector and get its status
@@ -309,6 +311,15 @@ def plot_par_vs_time(
         plt.axhline(y=1460.8, color="r", linestyle="--", linewidth=1)
         ax.axhline(y=1524.6, color="r", linestyle="--", linewidth=1)
         plt.axhline(y=1524.6, color="r", linestyle="--", linewidth=1)
+    ax.axhline(y=0, color="r", linestyle="--", linewidth=1)
+    plt.axhline(y=0, color="r", linestyle="--", linewidth=1)
+
+    """
+    if "1" in string_number:
+        plt.ylim(ymin_st1, ymax_st1)
+    else:
+        plt.ylim(ymin_st2, ymax_st2)
+    """
 
     # define name of pkl file (with info about time cut if present)
     if len(time_cut) != 0:
@@ -400,6 +411,7 @@ def plot_par_vs_time_ch000(
     all_ievt: np.ndarray,
     puls_only_ievt: np.ndarray,
     not_puls_ievt: np.ndarray,
+    start_code: str,
     pdf=None,
 ) -> dict:
     """
@@ -421,6 +433,8 @@ def plot_par_vs_time_ch000(
                     Event number for high energy pulser events
     not_puls_ievt
                     Event number for physical events
+    start_code
+                Starting time of the code
     """
     fig, ax = plt.subplots(1, 1)
     ax.set_facecolor("w")
@@ -432,7 +446,7 @@ def plot_par_vs_time_ch000(
     map_dict = {}
 
     # det parameter and time arrays for a given detector
-    par_np_array, utime_array = parameters.load_parameter(
+    par_array_mean, par_np_array, utime_array = parameters.load_parameter(
         parameter,
         dsp_files,
         "ch000",
@@ -896,7 +910,7 @@ def plot_wtrfll(
             continue
 
         # det parameter and time arrays for a given detector
-        par_np_array, utime_array = parameters.load_parameter(
+        par_array_mean, par_np_array, utime_array = parameters.load_parameter(
             parameter,
             dsp_files,
             detector,
@@ -910,8 +924,8 @@ def plot_wtrfll(
             continue
 
         # rebinning
-        if plot_style["par_average"]["flag"] is True and parameter != "K_lines":
-            par_list, utime_list = analysis.par_average(par_np_array, utime_array)
+        if plot_style["par_average"] is True and parameter != "K_lines":
+            par_list, utime_list = analysis.avg_over_entries(par_np_array, utime_array)
 
         # function to check if par values are outside some pre-defined limits
         status = analysis.check_par_values(
@@ -1054,3 +1068,297 @@ def plot_wtrfll(
     plt.close()
 
     return map_dict
+
+
+def plot_ch_par_vs_time(
+    dsp_files: list[str],
+    det_list: list[str],
+    parameter: str,
+    time_cut: list[str],
+    det_type: str,
+    string_number: str,
+    det_dict: dict,
+    all_ievt: np.ndarray,
+    puls_only_ievt: np.ndarray,
+    not_puls_ievt: np.ndarray,
+    start_code: str,
+    pdf=None,
+) -> dict:
+    """Plot time evolution of given parameter for each channel separately.
+
+    Parameters
+    ----------
+    dsp_files
+                    lh5 dsp files
+    det_list
+                    List of detectors present in a string
+    parameter
+                    Parameter to plot
+    time_cut
+                    List with info about time cuts
+    det_type
+                    Type of detector (geds or spms)
+    string_number
+                    Number of the string under study
+    det_dict
+                    Contains info (crate, card, ch_orca) for geds/spms/other
+    all_ievt
+                    Event number for all events
+    puls_only_ievt
+                    Event number for high energy pulser events
+    not_puls_ievt
+                    Event number for physical events
+    start_code
+                Starting time of the code
+    """
+    if "1" in string_number:
+        fig, ((ax1), (ax2), (ax3), (ax4), (ax5), (ax6), (ax7), (ax8)) = plt.subplots(
+            8, 1, sharex=True
+        )
+        ax_list = [ax1, ax2, ax3, ax4, ax5, ax6, ax7, ax8]
+    if "2" in string_number:
+        fig, ((ax1), (ax2), (ax3), (ax4), (ax5), (ax6), (ax7)) = plt.subplots(
+            7, 1, sharex=True
+        )
+        ax_list = [ax1, ax2, ax3, ax4, ax5, ax6, ax7]
+    if "7" in string_number:
+        fig, ((ax1), (ax2), (ax3), (ax4), (ax5), (ax6), (ax7), (ax8)) = plt.subplots(
+            8, 1, sharex=True
+        )
+        ax_list = [ax1, ax2, ax3, ax4, ax5, ax6, ax7, ax8]
+    if "8" in string_number:
+        fig, ((ax1), (ax2), (ax3), (ax4), (ax5)) = plt.subplots(5, 1, sharex=True)
+        ax_list = [ax1, ax2, ax3, ax4, ax5]
+
+    ax_idx = 0
+    # fig.patch.set_facecolor(j_par[0][parameter]["facecol"])
+    fig.suptitle(f"{det_type} - S{string_number}")
+    zlab = j_par[0][parameter]["label"]
+    if parameter in no_variation_pars:
+        if j_par[0][parameter]["units"] != "null":
+            zlab = zlab + " [" + j_par[0][parameter]["units"] + "]"
+        if parameter == "event_rate":
+            units = j_config[5]["Available-par"]["Other-par"]["event_rate"]["units"][
+                det_type
+            ]
+            zlab = zlab + " [" + units + "]"
+    else:
+        zlab += ", %"
+    fig.supylabel(zlab)
+    start_times = []
+    end_times = []
+    map_dict = {}
+    mean_dict = {}
+
+    for _, detector in enumerate(det_list):
+        # skip detectors that are not geds/spms
+        if det_dict[detector]["system"] == "--":
+            continue
+
+        if det_type == "geds":
+            name = det_dict[detector]["det"]
+            string_no = det_dict[detector]["string"]["number"]
+            string_pos = det_dict[detector]["string"]["position"]
+            lbl = f"s{string_no}-p{string_pos}-{detector}\n{name}"
+        else:
+            lbl = f"{detector}"
+        if det_type == "spms":
+            col = j_plot[2][str(detector)]
+        if det_type == "geds":
+            col = j_plot[3][detector]
+
+        if (
+            parameter == "cal_puls"
+            or parameter == "K_lines"
+            or parameter == "AoE_Classifier"
+            or parameter == "AoE_Corrected"
+        ):
+            hit_files = [dsp_file.replace("dsp", "hit") for dsp_file in dsp_files]
+            all_files = [dsp_file.replace("dsp", "hit") for dsp_file in dsp_files]
+            for hit_file in hit_files:
+                if os.path.isfile(hit_file):
+                    if detector not in lh5.ls(hit_file, ""):
+                        all_files.remove(hit_file)
+                        logging.warning(f'No "{detector}" branch in file {hit_file}')
+                else:
+                    all_files.remove(hit_file)
+                    logging.warning("hit file does not exist")
+            if len(all_files) == 0:
+                continue
+            hit_files = all_files
+
+        # skip detectors that are not geds/spms
+        if det_dict[detector]["system"] == "--":
+            continue
+
+        # det parameter and time arrays for a given detector
+        par_array_mean, par_np_array, utime_array = parameters.load_parameter(
+            parameter,
+            dsp_files,
+            detector,
+            det_type,
+            time_cut,
+            all_ievt,
+            puls_only_ievt,
+            not_puls_ievt,
+        )
+        if len(par_np_array) == 0:
+            continue
+
+        # rebinning
+        if plot_style["par_average"] is True and parameter != "K_lines":
+            par_list, utime_list = analysis.avg_over_entries(par_np_array, utime_array)
+
+        # function to check if par values are outside some pre-defined limits
+        status = analysis.check_par_values(
+            utime_list, par_list, parameter, detector, det_type
+        )
+        times = [datetime.utcfromtimestamp(t) for t in utime_list]
+        start_time = times[0]
+        end_time = times[-1]
+
+        if det_type == "spms":
+            col = j_plot[2][str(detector)]
+        if det_type == "geds":
+            col = j_plot[3][detector]
+        if det_type == "ch000":
+            col = "r"
+
+        # plot detector
+        lbl += (
+            "\nmean = "
+            + f"{par_array_mean:.2f}"
+            + " ["
+            + j_par[0][parameter]["units"]
+            + "]"
+        )
+        ax_list[ax_idx].plot(times, par_list, color=col, linewidth=2, label=lbl)
+        ax_list[ax_idx].legend(
+            bbox_to_anchor=(1.01, 1.0),
+            loc="upper left",
+            borderaxespad=0,
+            handlelength=0,
+            handletextpad=0,
+            frameon=False,
+        )
+        # plt.text(1.02, 1.0, lbl, fontsize = 12)
+
+        local_timezone = datetime.now(timezone.utc).astimezone().tzinfo
+        locs = np.linspace(dates.date2num(start_time), dates.date2num(end_time), 10)
+        xlab = "%d/%m"
+        if j_config[10]["frmt"] == "day/month-time":
+            xlab = "%d/%m\n%H:%M"
+        if j_config[10]["frmt"] == "time":
+            xlab = "%H:%M"
+        labels = [dates.num2date(loc, tz=local_timezone).strftime(xlab) for loc in locs]
+
+        # line at 0%
+        ax_list[ax_idx].axhline(y=0, color="r", linestyle="--", linewidth=1)
+
+        if ax_idx == 7:
+            ax_list[ax_idx].set(xlabel="time (UTC)")
+        ax_list[ax_idx].set_xticks(locs)
+        ax_list[ax_idx].set_xticklabels(labels)
+        plt.setp(ax_list[ax_idx].get_xticklabels(), rotation=0, ha="center")
+
+        # fill the map with status flags
+        if det_type == "spms":
+            detector = str(detector)
+        if detector not in map_dict:
+            map_dict[detector] = status
+        else:
+            if map_dict[detector] == 0:
+                map_dict[detector] = status
+        # save mean over first entries
+        mean_dict[detector] = {parameter: par_array_mean}
+
+        # skip those detectors that are not within the time window
+        if start_time == 0 and end_time == 0:
+            continue
+        start_times.append(start_time)
+        end_times.append(end_time)
+        ax_idx += 1
+
+    # no data were found at all
+    if len(start_times) == 0 and len(end_times) == 0:
+        return None
+
+    # define name of pkl file (with info about time cut if present)
+    if len(time_cut) != 0:
+        start, end = timecut.time_dates(time_cut, start_code)
+        if det_type == "geds":
+            pkl_name = (
+                exp
+                + "-"
+                + period
+                + "-"
+                + run
+                + "-"
+                + datatype
+                + "-"
+                + start
+                + "_"
+                + end
+                + "-"
+                + parameter
+                + "-string"
+                + string_number
+                + ".pkl"
+            )
+        if det_type == "spms":
+            pkl_name = (
+                exp
+                + "-"
+                + period
+                + "-"
+                + run
+                + "-"
+                + datatype
+                + "-"
+                + start
+                + "_"
+                + end
+                + "-"
+                + parameter
+                + "-"
+                + string_number
+                + ".pkl"
+            )
+    else:
+        if det_type == "geds":
+            pkl_name = (
+                exp
+                + "-"
+                + period
+                + "-"
+                + run
+                + "-"
+                + datatype
+                + "-"
+                + parameter
+                + "-string"
+                + string_number
+                + ".pkl"
+            )
+        if det_type == "spms":
+            pkl_name = (
+                exp
+                + "-"
+                + period
+                + "-"
+                + run
+                + "-"
+                + datatype
+                + "-"
+                + parameter
+                + "-"
+                + string_number
+                + ".pkl"
+            )
+
+    fig.tight_layout()
+    pkl.dump(ax_list, open(f"out/pkl-files/par-vs-time/{pkl_name}", "wb"))
+    pdf.savefig(bbox_inches="tight")
+    plt.close()
+
+    return mean_dict, map_dict

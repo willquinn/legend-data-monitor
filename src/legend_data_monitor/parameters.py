@@ -143,7 +143,9 @@ def load_parameter(
         par_array = np.subtract(par_array, par_array_mean)
         par_array = np.divide(par_array, par_array_mean) * 100
 
-    return par_array, utime_array_cut
+    # logging.warning(f'{parameter} mean for {detector}: {par_array_mean} [{j_par[0][parameter]["units"]}]' )
+
+    return par_array_mean, par_array, utime_array_cut
 
 
 def bl_difference(dsp_files: list[str], detector: str):

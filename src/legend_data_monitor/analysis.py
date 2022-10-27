@@ -479,9 +479,9 @@ def apply_quality_cut(
     return par_array_qc, time_array_qc
 
 
-def par_average(par_array: np.ndarray, time_array: np.ndarray):
+def avg_over_entries(par_array: np.ndarray, time_array: np.ndarray):
     """
-    Evaluate the average of entries in arrays.
+    Evaluate the average among N entries in arrays.
 
     Parameters
     ----------
@@ -493,7 +493,7 @@ def par_average(par_array: np.ndarray, time_array: np.ndarray):
     par_avg = []
     time_avg = []
 
-    step = j_config[6]["par_average"]["step"]
+    step = round(((time_array[-1] - time_array[0]) * 6) / (4 * 60 * 60))
     i = 0
 
     while (i + 1) * step < len(par_array):
