@@ -9,10 +9,9 @@ from datetime import datetime, timezone
 import matplotlib as mpl
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
-from matplotlib import ticker
 import numpy as np
 import pygama.lgdo.lh5_store as lh5
-from matplotlib import dates
+from matplotlib import dates, ticker
 
 from . import analysis, parameters, timecut
 
@@ -1137,7 +1136,9 @@ def plot_ch_par_vs_time(
         )
         ax_list = [ax1, ax2, ax3, ax4, ax5, ax6, ax7, ax8]
     if "8" in string_number:
-        fig, ((ax1), (ax2), (ax3), (ax4), (ax5)) = plt.subplots(5, 1, sharex=True, sharey=False)
+        fig, ((ax1), (ax2), (ax3), (ax4), (ax5)) = plt.subplots(
+            5, 1, sharex=True, sharey=False
+        )
         ax_list = [ax1, ax2, ax3, ax4, ax5]
 
     ax_idx = 0

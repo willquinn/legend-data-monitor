@@ -507,4 +507,3 @@ def avg_over_entries(par_array: np.ndarray, time_array: np.ndarray):
         i += 1
 
     return par_avg, time_avg
-
