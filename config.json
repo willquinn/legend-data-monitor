@@ -19,7 +19,7 @@
   "par_to_plot": {
     "README": "Select here the parameters you want to plot for spms and geds.",
     "spms": ["baseline"],
-    "geds": ["baseline"],
+    "geds": ["baseline", "bl_std"],
     "ch000": ["wf_max"],
 
     "pulser": {
@@ -82,7 +82,7 @@
     "par_average": true
   },
   "time_window": {
-    "enabled": false,
+    "enabled": true,
     "start_date": "19/09/2022",
     "start_hour": "08:00:00",
     "end_date": "19/09/2022",

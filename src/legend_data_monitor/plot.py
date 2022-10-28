@@ -11,7 +11,7 @@ import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import numpy as np
 import pygama.lgdo.lh5_store as lh5
-from matplotlib import dates
+from matplotlib import dates, ticker
 
 from . import analysis, parameters, timecut
 
@@ -151,6 +151,7 @@ def plot_par_vs_time(
     end_times = []
     handle_list = []
     map_dict = {}
+    string_mean_dict = {}
 
     for index, detector in enumerate(det_list):
         # if detector == "ch016" or detector=="ch010": # <<-- for quick tests
@@ -232,6 +233,8 @@ def plot_par_vs_time(
         else:
             if map_dict[detector] == 0:
                 map_dict[detector] = status
+        # save mean over first entries
+        string_mean_dict[detector] = {parameter: str(par_array_mean)}
 
         # skip those detectors that are not within the time window
         if start_time == 0 and end_time == 0:
@@ -400,7 +403,7 @@ def plot_par_vs_time(
 
     logging.info(f"{parameter} is plotted from {start_times[0]} to {end_times[-1]}")
 
-    return map_dict
+    return string_mean_dict, map_dict
 
 
 def plot_par_vs_time_ch000(
@@ -831,6 +834,7 @@ def plot_wtrfll(
     all_ievt: np.ndarray,
     puls_only_ievt: np.ndarray,
     not_puls_ievt: np.ndarray,
+    start_code: str,
     pdf=None,
 ) -> dict:
     """
@@ -858,6 +862,8 @@ def plot_wtrfll(
                     Event number for high energy pulser events
     not_puls_ievt
                     Event number for physical events
+    start_code
+                Starting time of the code
     """
     # fig = plt.subplot(projection='3d')
     fig = plt.figure(figsize=(20, 16))
@@ -866,6 +872,7 @@ def plot_wtrfll(
     start_times = []
     end_times = []
     map_dict = {}
+    string_mean_dict = {}
 
     for index, detector in enumerate(det_list):
 
@@ -947,6 +954,8 @@ def plot_wtrfll(
         else:
             if map_dict[detector] == 0:
                 map_dict[detector] = status
+        # save mean over first entries
+        string_mean_dict[detector] = {parameter: str(par_array_mean)}
 
         # skip those detectors that are not within the time window
         if start_time == 0 and end_time == 0:
@@ -993,7 +1002,7 @@ def plot_wtrfll(
 
     # define name of pkl file (with info about time cut if present)
     if len(time_cut) != 0:
-        start, end = timecut.time_dates(time_cut)
+        start, end = timecut.time_dates(time_cut, start_code)
         if det_type == "geds":
             pkl_name = (
                 exp
@@ -1067,7 +1076,7 @@ def plot_wtrfll(
     pdf.savefig(bbox_inches="tight")
     plt.close()
 
-    return map_dict
+    return string_mean_dict, map_dict
 
 
 def plot_ch_par_vs_time(
@@ -1113,21 +1122,23 @@ def plot_ch_par_vs_time(
     """
     if "1" in string_number:
         fig, ((ax1), (ax2), (ax3), (ax4), (ax5), (ax6), (ax7), (ax8)) = plt.subplots(
-            8, 1, sharex=True
+            8, 1, sharex=True, sharey=False
         )
         ax_list = [ax1, ax2, ax3, ax4, ax5, ax6, ax7, ax8]
     if "2" in string_number:
         fig, ((ax1), (ax2), (ax3), (ax4), (ax5), (ax6), (ax7)) = plt.subplots(
-            7, 1, sharex=True
+            7, 1, sharex=True, sharey=False
         )
         ax_list = [ax1, ax2, ax3, ax4, ax5, ax6, ax7]
     if "7" in string_number:
         fig, ((ax1), (ax2), (ax3), (ax4), (ax5), (ax6), (ax7), (ax8)) = plt.subplots(
-            8, 1, sharex=True
+            8, 1, sharex=True, sharey=False
         )
         ax_list = [ax1, ax2, ax3, ax4, ax5, ax6, ax7, ax8]
     if "8" in string_number:
-        fig, ((ax1), (ax2), (ax3), (ax4), (ax5)) = plt.subplots(5, 1, sharex=True)
+        fig, ((ax1), (ax2), (ax3), (ax4), (ax5)) = plt.subplots(
+            5, 1, sharex=True, sharey=False
+        )
         ax_list = [ax1, ax2, ax3, ax4, ax5]
 
     ax_idx = 0
@@ -1144,11 +1155,11 @@ def plot_ch_par_vs_time(
             zlab = zlab + " [" + units + "]"
     else:
         zlab += ", %"
-    fig.supylabel(zlab)
+    fig.supylabel(zlab, x=0.005)
     start_times = []
     end_times = []
     map_dict = {}
-    mean_dict = {}
+    string_mean_dict = {}
 
     for _, detector in enumerate(det_list):
         # skip detectors that are not geds/spms
@@ -1159,7 +1170,7 @@ def plot_ch_par_vs_time(
             name = det_dict[detector]["det"]
             string_no = det_dict[detector]["string"]["number"]
             string_pos = det_dict[detector]["string"]["position"]
-            lbl = f"s{string_no}-p{string_pos}-{detector}\n{name}"
+            lbl = f"{name}\ns{string_no}-p{string_pos}-{detector}"
         else:
             lbl = f"{detector}"
         if det_type == "spms":
@@ -1241,7 +1252,6 @@ def plot_ch_par_vs_time(
             handletextpad=0,
             frameon=False,
         )
-        # plt.text(1.02, 1.0, lbl, fontsize = 12)
 
         local_timezone = datetime.now(timezone.utc).astimezone().tzinfo
         locs = np.linspace(dates.date2num(start_time), dates.date2num(end_time), 10)
@@ -1260,6 +1270,8 @@ def plot_ch_par_vs_time(
         ax_list[ax_idx].set_xticks(locs)
         ax_list[ax_idx].set_xticklabels(labels)
         plt.setp(ax_list[ax_idx].get_xticklabels(), rotation=0, ha="center")
+        yticks = ticker.MaxNLocator(3)
+        ax_list[ax_idx].yaxis.set_major_locator(yticks)
 
         # fill the map with status flags
         if det_type == "spms":
@@ -1270,7 +1282,7 @@ def plot_ch_par_vs_time(
             if map_dict[detector] == 0:
                 map_dict[detector] = status
         # save mean over first entries
-        mean_dict[detector] = {parameter: par_array_mean}
+        string_mean_dict[detector] = {parameter: str(par_array_mean)}
 
         # skip those detectors that are not within the time window
         if start_time == 0 and end_time == 0:
@@ -1281,7 +1293,7 @@ def plot_ch_par_vs_time(
 
     # no data were found at all
     if len(start_times) == 0 and len(end_times) == 0:
-        return None
+        return None, None
 
     # define name of pkl file (with info about time cut if present)
     if len(time_cut) != 0:
@@ -1361,4 +1373,4 @@ def plot_ch_par_vs_time(
     pdf.savefig(bbox_inches="tight")
     plt.close()
 
-    return mean_dict, map_dict
+    return string_mean_dict, map_dict

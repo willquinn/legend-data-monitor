@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import logging
 import os
 import sys
@@ -41,11 +42,11 @@ def main():
         os.mkdir(out_path)
     pdf_path = os.path.join(out_path, "pdf-files")
     log_path = os.path.join(out_path, "log-files")
-    for out_dir in ["log-files", "pdf-files", "pkl-files"]:
+    json_path = os.path.join(out_path, "json-files")
+    for out_dir in ["log-files", "pdf-files", "pkl-files", "json-files"]:
         if out_dir not in os.listdir(out_path):
             os.mkdir(out_path + out_dir)
-        dirs = ["pdf-files", "pkl-files"]
-        if out_dir in dirs:
+        if out_dir in ["pdf-files", "pkl-files"]:
             for out_subdir in ["par-vs-time", "heatmaps"]:
                 if os.path.isdir(f"{out_path}{out_dir}/{out_subdir}") is False:
                     os.mkdir(f"{out_path}{out_dir}/{out_subdir}")
@@ -74,10 +75,12 @@ def main():
     console.setFormatter(formatter)
     logging.getLogger("").addHandler(console)
 
-    logging.error(f"Started compiling at {start_code}")
+    logging.error(
+        f'Started compiling at {(datetime.now()).strftime("%d/%m/%Y %H:%M:%S")}'
+    )
 
     # start analysis
-    select_and_plot_run(path, plot_path, map_path, start_code)
+    select_and_plot_run(path, json_path, plot_path, map_path, start_code)
 
     logging.error(
         f'Finished compiling at {(datetime.now()).strftime("%d/%m/%Y %H:%M:%S")}'
@@ -85,7 +88,7 @@ def main():
 
 
 def select_and_plot_run(
-    path: str, plot_path: str, map_path: str, start_code: str
+    path: str, json_path: str, plot_path: str, map_path: str, start_code: str
 ) -> None:
     """
     Select run and call dump_all_plots_together().
@@ -93,7 +96,9 @@ def select_and_plot_run(
     Parameters
     ----------
     path
-                Path to pgt folder
+                Path to lh5 folders
+    json_path
+                Path where to save mean of perentage variations plots
     plot_path
                 Path where to save output plots
     map_path
@@ -134,11 +139,15 @@ def select_and_plot_run(
         path = os.path.join(
             plot_path, f"{exp}-{period}-{run}-{datatype}_{start}_{end}.pdf"
         )
+        json_path = os.path.join(
+            json_path, f"{exp}-{period}-{run}-{datatype}_{start}_{end}.json"
+        )
         map_path = os.path.join(
             map_path, f"{exp}-{period}-{run}-{datatype}_{start}_{end}.pdf"
         )
     else:  # no time cuts
         path = os.path.join(plot_path, f"{exp}-{period}-{run}-{datatype}.pdf")
+        json_path = os.path.join(json_path, f"{exp}-{period}-{run}-{datatype}.json")
         map_path = os.path.join(map_path, f"{exp}-{period}-{run}-{datatype}.pdf")
 
     # apply time cut to lh5 filenames
@@ -150,11 +159,16 @@ def select_and_plot_run(
     # get full file paths
     runs = [os.path.join(full_path, run_file) for run_file in runs]
 
-    dump_all_plots_together(runs, time_cut, path, map_path, start_code)
+    dump_all_plots_together(runs, time_cut, path, json_path, map_path, start_code)
 
 
 def dump_all_plots_together(
-    dsp_files: list[str], time_cut: list[str], path: str, map_path: str, start_code: str
+    dsp_files: list[str],
+    time_cut: list[str],
+    path: str,
+    json_path: str,
+    map_path: str,
+    start_code: str,
 ) -> None:
     """
     Create and fill plots in a single pdf and multiple pkl files.
@@ -167,6 +181,8 @@ def dump_all_plots_together(
                 List with info about time cuts
     path
                 Path where to save output files
+    json_path
+                Path where to save mean of perentage variations plots
     map_path
                 Path where to save output heatmaps
     start_code
@@ -188,6 +204,7 @@ def dump_all_plots_together(
     # create channel maps from orca+raw files
     raw_files = [dsp_file.replace("dsp", "raw") for dsp_file in dsp_files]
     geds_dict, spms_dict, _ = analysis.load_channels(raw_files)
+    mean_dict = {}
 
     # get pulser-events indices
     all_ievt, puls_only_ievt, not_puls_ievt = analysis.get_puls_ievt(dsp_files)
@@ -215,60 +232,65 @@ def dump_all_plots_together(
                     for par in geds_par:
                         det_status_dict = {}
                         for (det_list, string) in zip(string_geds, string_geds_name):
-                            if (
-                                det_list == string_geds[0]
-                            ):  # keep 1 string (per far prima)
+                            # if (det_list == string_geds[0]):  # keep 1 string (per far prima)
 
-                                if len(det_list) == 0:
-                                    continue
+                            if len(det_list) == 0:
+                                continue
 
-                                if par not in two_dim_pars:
-                                    map_dict = plot.plot_wtrfll(
-                                        dsp_files,
-                                        det_list,
-                                        par,
-                                        time_cut,
-                                        "geds",
-                                        string,
-                                        geds_dict,
-                                        all_ievt,
-                                        puls_only_ievt,
-                                        not_puls_ievt,
-                                        start_code,
-                                        pdf,
+                            if par not in two_dim_pars:
+                                string_mean_dict, map_dict = plot.plot_wtrfll(
+                                    dsp_files,
+                                    det_list,
+                                    par,
+                                    time_cut,
+                                    "geds",
+                                    string,
+                                    geds_dict,
+                                    all_ievt,
+                                    puls_only_ievt,
+                                    not_puls_ievt,
+                                    start_code,
+                                    pdf,
+                                )
+                            else:
+                                # string_mean_dict, map_dict = plot.plot_par_vs_time( # plot style
+                                (
+                                    string_mean_dict,
+                                    map_dict,
+                                ) = plot.plot_ch_par_vs_time(  # subplot style
+                                    dsp_files,
+                                    det_list,
+                                    par,
+                                    time_cut,
+                                    "geds",
+                                    string,
+                                    geds_dict,
+                                    all_ievt,
+                                    puls_only_ievt,
+                                    not_puls_ievt,
+                                    start_code,
+                                    pdf,
+                                )
+                            if map_dict is not None:
+                                for det, status in map_dict.items():
+                                    det_status_dict[det] = status
+
+                            if string_mean_dict is not None:
+                                for k in string_mean_dict:
+                                    if k in mean_dict:
+                                        mean_dict[k].update(string_mean_dict[k])
+                                    else:
+                                        mean_dict[k] = string_mean_dict[k]
+
+                            if verbose is True:
+                                if map_dict is not None:
+                                    logging.error(
+                                        f"\t...{par} for geds (string #{string}) has been plotted!"
                                     )
                                 else:
-                                    # map_dict = plot.plot_par_vs_time( # plot style
-                                    (
-                                        _,
-                                        map_dict,
-                                    ) = plot.plot_ch_par_vs_time(  # subplot style
-                                        dsp_files,
-                                        det_list,
-                                        par,
-                                        time_cut,
-                                        "geds",
-                                        string,
-                                        geds_dict,
-                                        all_ievt,
-                                        puls_only_ievt,
-                                        not_puls_ievt,
-                                        start_code,
-                                        pdf,
+                                    logging.error(
+                                        f"\t...no {par} plots for geds - string #{string}!"
                                     )
-                                if map_dict is not None:
-                                    for det, status in map_dict.items():
-                                        det_status_dict[det] = status
-
-                                if verbose is True:
-                                    if map_dict is not None:
-                                        logging.error(
-                                            f"\t...{par} for geds (string #{string}) has been plotted!"
-                                        )
-                                    else:
-                                        logging.error(
-                                            f"\t...no {par} plots for geds - string #{string}!"
-                                        )
                         if det_status_dict != []:
                             map.geds_map(
                                 par,
@@ -390,6 +412,10 @@ def dump_all_plots_together(
                             else:
                                 logging.error(f"\t...no {par} plots for ch000!")
 
+    with open(json_path, "w") as f:
+        json.dump(mean_dict, f)
+
     if verbose is True:
+        logging.error(f"Means are saved in {json_path}")
         logging.error(f"Plots are saved in {path}")
         logging.error(f"Heatmaps are saved in {map_path}")
