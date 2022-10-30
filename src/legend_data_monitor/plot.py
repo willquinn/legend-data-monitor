@@ -1214,10 +1214,8 @@ def plot_ch_par_vs_time(
         )
         if len(par_np_array) == 0:
             continue
-
-        # rebinning
-        if plot_style["par_average"] is True and parameter != "K_lines":
-            par_list, utime_list = analysis.avg_over_entries(par_np_array, utime_array)
+        utime_list = utime_array.tolist()
+        par_list = par_np_array.tolist()
 
         # function to check if par values are outside some pre-defined limits
         status = analysis.check_par_values(
@@ -1242,7 +1240,12 @@ def plot_ch_par_vs_time(
             + j_par[0][parameter]["units"]
             + "]"
         )
-        ax_list[ax_idx].plot(times, par_list, color=col, linewidth=2, label=lbl)
+        ax_list[ax_idx].plot(times, par_list, color="gainsboro", linewidth=1, label=lbl)
+        # rebinning (always)
+        if parameter != "K_lines":
+            par_avg, utime_avg = analysis.avg_over_minutes(par_np_array, utime_array)
+            times_avg = [datetime.utcfromtimestamp(t) for t in utime_avg]
+            ax_list[ax_idx].plot(times_avg, par_avg, color=col, linewidth=2)
         ax_list[ax_idx].legend(
             bbox_to_anchor=(1.01, 1.0),
             loc="upper left",
@@ -1262,10 +1265,9 @@ def plot_ch_par_vs_time(
         labels = [dates.num2date(loc, tz=local_timezone).strftime(xlab) for loc in locs]
 
         # line at 0%
-        ax_list[ax_idx].axhline(y=0, color="r", linestyle="--", linewidth=1)
+        ax_list[ax_idx].axhline(y=0, color="k", linestyle="--", linewidth=1)
 
-        if ax_idx == 7:
-            ax_list[ax_idx].set(xlabel="time (UTC)")
+        # ax_list[ax_idx].set(xlabel="time (UTC)")
         ax_list[ax_idx].set_xticks(locs)
         ax_list[ax_idx].set_xticklabels(labels)
         plt.setp(ax_list[ax_idx].get_xticklabels(), rotation=0, ha="center")
