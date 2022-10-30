@@ -1117,10 +1117,12 @@ def plot_ch_par_vs_time(
                     Event number for physical events
     start_code
                 Starting time of the code
-    """  
+    """
     columns = 1
     rows = len(det_list)
-    fig, ax_array = plt.subplots(rows, columns, squeeze=False, sharex=True, sharey=False)
+    fig, ax_array = plt.subplots(
+        rows, columns, squeeze=False, sharex=True, sharey=False
+    )
     # fig.patch.set_facecolor(j_par[0][parameter]["facecol"])
     fig.suptitle(f"{det_type} - S{string_number}")
     zlab = j_par[0][parameter]["label"]
@@ -1140,7 +1142,7 @@ def plot_ch_par_vs_time(
     map_dict = {}
     string_mean_dict = {}
 
-    for i,ax_row in enumerate(ax_array):
+    for i, ax_row in enumerate(ax_array):
         for axes in ax_row:
 
             detector = det_list[i]
@@ -1172,7 +1174,9 @@ def plot_ch_par_vs_time(
                     if os.path.isfile(hit_file):
                         if detector not in lh5.ls(hit_file, ""):
                             all_files.remove(hit_file)
-                            logging.warning(f'No "{detector}" branch in file {hit_file}')
+                            logging.warning(
+                                f'No "{detector}" branch in file {hit_file}'
+                            )
                     else:
                         all_files.remove(hit_file)
                         logging.warning("hit file does not exist")
@@ -1226,7 +1230,9 @@ def plot_ch_par_vs_time(
             axes.plot(times, par_list, color="gainsboro", linewidth=1, label=lbl)
             # rebinning (always)
             if parameter != "K_lines":
-                par_avg, utime_avg = analysis.avg_over_minutes(par_np_array, utime_array)
+                par_avg, utime_avg = analysis.avg_over_minutes(
+                    par_np_array, utime_array
+                )
                 times_avg = [datetime.utcfromtimestamp(t) for t in utime_avg]
                 axes.plot(times_avg, par_avg, color=col, linewidth=2)
             axes.legend(
@@ -1245,7 +1251,9 @@ def plot_ch_par_vs_time(
                 xlab = "%d/%m\n%H:%M"
             if j_config[10]["frmt"] == "time":
                 xlab = "%H:%M"
-            labels = [dates.num2date(loc, tz=local_timezone).strftime(xlab) for loc in locs]
+            labels = [
+                dates.num2date(loc, tz=local_timezone).strftime(xlab) for loc in locs
+            ]
 
             # line at 0%
             axes.axhline(y=0, color="k", linestyle="--", linewidth=1)
