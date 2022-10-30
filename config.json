@@ -79,7 +79,8 @@
       "AoE_Corrected",
       "wf_max"
     ],
-    "par_average": true
+    "par_average": true,
+    "avg_interval": 30
   },
   "time_window": {
     "enabled": true,
