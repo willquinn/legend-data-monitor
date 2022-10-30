@@ -76,7 +76,9 @@ def load_channels(raw_files: list[str]):
     orca_file = f"{orca_path}{data_type}/{period}/{run}/{orca_name}"
     orstr = orca_streamer.OrcaStreamer()
     orstr.open_stream(orca_file)
-    channel_map_geds = json.loads(orstr.header["ObjectInfo"]["ORL200Model"]["DetectorMap"])
+    channel_map_geds = json.loads(
+        orstr.header["ObjectInfo"]["ORL200Model"]["DetectorMap"]
+    )
     channel_map_spms = json.loads(orstr.header["ObjectInfo"]["ORL200Model"]["SiPMMap"])
     store = LH5Store()
 
@@ -268,10 +270,10 @@ def read_spms(spms_dict: dict):
     for ch in list(spms_dict.keys()):
         card = spms_dict[ch]["daq"]["card"]
         ch_orca = spms_dict[ch]["daq"]["ch_orca"]
-        
+
         spms_type = spms_dict[ch]["barrel"]
         det_name_int = int(spms_dict[ch]["det"].split("S")[1])
-    
+
         if spms_type == "OB" and det_name_int % 2 != 0:
             top_ob.append(ch)
         if spms_type == "OB" and det_name_int % 2 == 0:
@@ -285,6 +287,7 @@ def read_spms(spms_dict: dict):
     string_name = ["top_OB", "bot_OB", "top_IB", "bot_IB"]
 
     return string_tot, string_name, string_tot, string_name
+
 
 def check_par_values(
     times_average: np.ndarray,

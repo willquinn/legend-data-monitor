@@ -269,7 +269,8 @@ def spms_map(
     # If you want to put SiPM name in spms label
     for k1, v1 in det_dict.items():
         for k2, v2 in v1.items():
-            if k2 == "det": det_name = v2
+            if k2 == "det":
+                det_name = v2
             if k2 == "daq":
                 for k3, v3 in v2.items():
                     if k3 == "card":
@@ -282,7 +283,6 @@ def spms_map(
                             spms_ob_dict[k1] += f"{v3}"
                         else:
                             spms_ib_dict[k1] += f"{v3}"
-
 
     labels_ob = df_ob.replace(spms_ob_dict)
     labels_ib = df_ib.replace(spms_ib_dict)
