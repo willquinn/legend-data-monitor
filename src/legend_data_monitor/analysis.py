@@ -76,7 +76,8 @@ def load_channels(raw_files: list[str]):
     orca_file = f"{orca_path}{data_type}/{period}/{run}/{orca_name}"
     orstr = orca_streamer.OrcaStreamer()
     orstr.open_stream(orca_file)
-    channel_map = json.loads(orstr.header["ObjectInfo"]["ORL200Model"]["DetectorMap"])
+    channel_map_geds = json.loads(orstr.header["ObjectInfo"]["ORL200Model"]["DetectorMap"])
+    channel_map_spms = json.loads(orstr.header["ObjectInfo"]["ORL200Model"]["SiPMMap"])
     store = LH5Store()
 
     geds_dict = {}
@@ -93,7 +94,7 @@ def load_channels(raw_files: list[str]):
         daq_dict["ch_orca"] = ch_orca
 
         if crate == 0:
-            for det, entry in channel_map.items():
+            for det, entry in channel_map_geds.items():
                 if (
                     entry["daq"]["crate"] == f"{crate}"
                     and entry["daq"]["board_slot"] == f"{card}"
@@ -117,7 +118,25 @@ def load_channels(raw_files: list[str]):
         if crate == 1:
             other_dict[ch] = {"system": "--", "daq": daq_dict}
         if crate == 2:
-            spms_dict[ch] = {"system": "spm", "daq": daq_dict}
+            for det, entry in channel_map_spms.items():
+                if (
+                    entry["daq"]["crate"] == f"{crate}"
+                    and entry["daq"]["board_slot"] == f"{card}"
+                    and entry["daq"]["board_ch"] == f"{ch_orca}"
+                ):
+                    # Do we need such an information?
+                    # hv_dict = {}
+                    # hv_dict["board_chan"] = entry["low_voltage"]["board_chan"]
+                    # hv_dict["flange_id"] = entry["low_voltage"]["flange_id"]
+
+                    spms_dict[ch] = {
+                        "system": "spm",
+                        "det": det,
+                        "barrel": entry["det_type"],
+                        "daq": daq_dict
+                        # "high_voltage": hv_dict,
+                    }
+            # spms_dict[ch] = {"system": "spm", "daq": daq_dict}
 
     return geds_dict, spms_dict, other_dict
 
@@ -167,7 +186,7 @@ def read_geds(geds_dict: dict):
     return string_tot, string_name
 
 
-def read_spms(spms_dict: dict):
+def read_spms_old(spms_dict: dict):
     """
     Build two lists for IN and OUT spms.
 
@@ -230,6 +249,42 @@ def read_spms(spms_dict: dict):
 
     return string_tot, string_name, string_tot_div, string_name_div
 
+
+def read_spms(spms_dict: dict):
+    """
+    Build two lists for IN and OUT spms.
+
+    Parameters
+    ----------
+    spms_dict
+               Contains info (crate, card, ch_orca, barrel, det_name) for spms
+    """
+    top_ob = []
+    bot_ob = []
+    top_ib = []
+    bot_ib = []
+
+    # loop over spms channels (i.e. channels w/ crate=2)
+    for ch in list(spms_dict.keys()):
+        card = spms_dict[ch]["daq"]["card"]
+        ch_orca = spms_dict[ch]["daq"]["ch_orca"]
+        
+        spms_type = spms_dict[ch]["barrel"]
+        det_name_int = int(spms_dict[ch]["det"].split("S")[1])
+    
+        if spms_type == "OB" and det_name_int % 2 != 0:
+            top_ob.append(ch)
+        if spms_type == "OB" and det_name_int % 2 == 0:
+            bot_ob.append(ch)
+        if spms_type == "IB" and det_name_int % 2 != 0:
+            top_ib.append(ch)
+        if spms_type == "IB" and det_name_int % 2 == 0:
+            bot_ib.append(ch)
+
+    string_tot = [top_ob, bot_ob, top_ib, bot_ib]
+    string_name = ["top_OB", "bot_OB", "top_IB", "bot_IB"]
+
+    return string_tot, string_name, string_tot, string_name
 
 def check_par_values(
     times_average: np.ndarray,
@@ -327,6 +382,7 @@ def build_utime_array(dsp_files: list[str], detector: str, det_type: str):
     det_type
                    Type of detector (geds/spms/pulser)
     """
+
     utime_array = lh5.load_nda(dsp_files, ["timestamp"], detector + "/dsp")["timestamp"]
 
     return utime_array
@@ -481,7 +537,7 @@ def apply_quality_cut(
 
 def avg_over_entries(par_array: np.ndarray, time_array: np.ndarray):
     """
-    Evaluate the average among N entries in arrays.
+    Evaluate the average over N entries in arrays.
 
     Parameters
     ----------

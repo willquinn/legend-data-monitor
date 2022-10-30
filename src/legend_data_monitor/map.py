@@ -265,20 +265,26 @@ def spms_map(
 
     spms_ob_dict = {}
     spms_ib_dict = {}
+
+    # If you want to put SiPM name in spms label
     for k1, v1 in det_dict.items():
         for k2, v2 in v1.items():
+            if k2 == "det": det_name = v2
             if k2 == "daq":
                 for k3, v3 in v2.items():
                     if k3 == "card":
                         if k1 in string_entries[0] or k1 in string_entries[1]:
-                            spms_ob_dict[k1] = f"\n{k1}\n{v3}-"
+                            spms_ob_dict[k1] = f"\n{det_name}\n{v3}-"
                         else:
-                            spms_ib_dict[k1] = f"\n{k1}\n{v3}-"
+                            print("eccommiiii")
+                            print(det_name)
+                            spms_ib_dict[k1] = f"\n{det_name}\n{v3}-"
                     if k3 == "ch_orca":
                         if k1 in string_entries[0] or k1 in string_entries[1]:
                             spms_ob_dict[k1] += f"{v3}"
                         else:
                             spms_ib_dict[k1] += f"{v3}"
+
 
     labels_ob = df_ob.replace(spms_ob_dict)
     labels_ib = df_ib.replace(spms_ib_dict)
@@ -304,7 +310,7 @@ def spms_map(
     y_lab = ["top", "bottom"]
 
     # outer barrel
-    fig_ob = plt.figure(num=None, figsize=(20, 5), dpi=80, facecolor="w", edgecolor="k")
+    fig_ob = plt.figure(num=None, figsize=(38, 5), dpi=80, facecolor="w", edgecolor="k")
     sns.set(font_scale=1.2)
 
     #                blue        red        grey       white
@@ -321,7 +327,7 @@ def spms_map(
         cbar=True,
         linewidths=10,
         linecolor="white",
-        square=False,
+        square=True,
     )
 
     colorbar = status_map.collections[0].colorbar
@@ -347,8 +353,6 @@ def spms_map(
     fig_ib = plt.figure(num=None, figsize=(18, 5), dpi=80, facecolor="w", edgecolor="k")
     sns.set(font_scale=1.2)
 
-    #                blue        red        grey       white
-    custom_cmap = ["#318CE7", "#CC0000", "#A9A9A9"]
     status_map = sns.heatmap(
         data=df_ib,
         annot=labels_ib,
@@ -361,7 +365,7 @@ def spms_map(
         cbar=True,
         linewidths=10,
         linecolor="white",
-        square=False,
+        square=True,
     )
 
     colorbar = status_map.collections[0].colorbar

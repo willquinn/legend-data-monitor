@@ -374,18 +374,18 @@ def dump_all_plots_together(
                                                 f"\t...no {par} plots for spms - {string}!"
                                             )
                                 # maps are disabled!
-                                # if det_status_dict != []:
-                                #    map.spms_map(
-                                #        par,
-                                #        spms_dict,
-                                #        spms_merged,
-                                #        spms_name_merged,
-                                #        det_status_dict,
-                                #        time_cut,
-                                #        map_path,
-                                #        start_code,
-                                #        pdf_map,
-                                #    )
+                                if det_status_dict != []:
+                                   map.spms_map(
+                                       par,
+                                       spms_dict,
+                                       spms_merged,
+                                       spms_name_merged,
+                                       det_status_dict,
+                                       time_cut,
+                                       map_path,
+                                       start_code,
+                                       pdf_map,
+                                   )
 
             # ch000 plots
             if det_type["ch000"] is True:
