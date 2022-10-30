@@ -276,8 +276,6 @@ def spms_map(
                         if k1 in string_entries[0] or k1 in string_entries[1]:
                             spms_ob_dict[k1] = f"\n{det_name}\n{v3}-"
                         else:
-                            print("eccommiiii")
-                            print(det_name)
                             spms_ib_dict[k1] = f"\n{det_name}\n{v3}-"
                     if k3 == "ch_orca":
                         if k1 in string_entries[0] or k1 in string_entries[1]:
