@@ -1268,7 +1268,7 @@ def plot_ch_par_vs_time(
         # line at 0%
         ax_list[ax_idx].axhline(y=0, color="k", linestyle="--", linewidth=1)
 
-        #ax_list[ax_idx].set(xlabel="time (UTC)")
+        # ax_list[ax_idx].set(xlabel="time (UTC)")
         ax_list[ax_idx].set_xticks(locs)
         ax_list[ax_idx].set_xticklabels(labels)
         plt.setp(ax_list[ax_idx].get_xticklabels(), rotation=0, ha="center")
