@@ -60,6 +60,7 @@ def plot_parameters(
     parameter
                   Parameter to plot
     """
+
     # rebinning
     if plot_style["par_average"] is True and parameter != "K_lines":
         par_array, utime_array = analysis.avg_over_entries(par_array, utime_array)
@@ -189,12 +190,10 @@ def plot_par_vs_time(
             string_no = det_dict[detector]["string"]["number"]
             string_pos = det_dict[detector]["string"]["position"]
             lab = f"s{string_no}-p{string_pos}-{detector}-{name}"
+            col = j_plot[3][detector]
         if det_type == "spms":
             lab = f"{detector} - {card},{ch_orca}"
-        if det_type == "spms":
             col = j_plot[2][str(detector)]
-        if det_type == "geds":
-            col = j_plot[3][detector]
         handle_list.append(
             mpatches.Patch(
                 color=col,
@@ -323,7 +322,7 @@ def plot_par_vs_time(
 
     # define name of pkl file (with info about time cut if present)
     if len(time_cut) != 0:
-        start, end = timecut.time_dates(time_cut)
+        start, end = timecut.time_dates(time_cut, start_code)
         if det_type == "geds":
             pkl_name = (
                 exp

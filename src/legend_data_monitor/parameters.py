@@ -79,7 +79,6 @@ def load_parameter(
         par_array = bl_difference(dsp_files, detector)
     elif parameter == "AoE":
         par_array = aoe(dsp_files, detector)
-
     elif parameter == "AoE_Classifier":
         par_array = lh5.load_nda(hit_files, ["AoE_Classifier"], detector + "/hit")[
             "AoE_Classifier"
@@ -111,6 +110,7 @@ def load_parameter(
         )
     else:
         par_array = lh5.load_nda(dsp_files, [parameter], detector + "/dsp")[parameter]
+    
         if parameter == "wf_max" and det_type == "ch000":
             baseline = lh5.load_nda(dsp_files, ["baseline"], "ch000/dsp")["baseline"]
             par_array = np.subtract(par_array, baseline)
@@ -123,9 +123,8 @@ def load_parameter(
             if parameter != "K_lines":
                 par_array = par_array[det_only_index]
 
-    # Applying Quality Cuts, removing ch010 and ch024 because they are missing in hit tier (why?)
-    # if detector not in ['ch010', 'ch024']:
-    #     par_array, utime_array_cut = analysis.apply_quality_cut(hit_files, par_array, utime_array_cut, detector, puls_only_index)
+    # Applying Quality Cuts
+    # par_array, utime_array_cut = analysis.apply_quality_cut(hit_files, par_array, utime_array_cut, detector, puls_only_index)
 
     # cutting time array according to time selection
     no_timecut_pars = ["event_rate", "K_lines"]
