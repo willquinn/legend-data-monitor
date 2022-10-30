@@ -500,10 +500,57 @@ def avg_over_entries(par_array: np.ndarray, time_array: np.ndarray):
         total = 0
         tot_time = 0
         for entry in range(i * step, (i + 1) * step):
-            total = total + par_array[entry]
-            tot_time = tot_time + time_array[entry]
+            total += par_array[entry]
+            tot_time += time_array[entry]
         par_avg.append(total / step)
-        time_avg.append(tot_time / step)
+        if i==0: time_avg.append(time_array[0])
+        else: time_avg.append(tot_time / step)
+        i += 1
+    time_avg[-1] = time_array[-1]
+
+    return par_avg, time_avg
+
+
+def avg_over_minutes(par_array: np.ndarray, time_array: np.ndarray):
+    """
+    Evaluate the average over N minutes.
+
+    Parameters
+    ----------
+    par_array
+                 Array with parameter values
+    time_array
+                 Array with time values
+    """
+    par_avg = []
+    time_avg = []
+
+    dt = j_config[6]["avg_interval"]*60 # minutes in seconds
+    start = time_array[0]
+    end = time_array[-1]
+
+    t = start
+    while t <= end:
+        time_avg.append(t)
+        tot = 0
+        j = 0
+        for idx,entry in enumerate(par_array):
+            if time_array[idx]>=t and time_array[idx]<t+dt:
+                tot += entry
+                j += 1
+        if j!=0: par_avg.append(tot/j)
+        else: par_avg.append(np.nan)
+        t += dt
+
+    iniz = 0
+    i = 0
+    while i < len(time_array)-1:
+        if t-dt>=time_array[i] and t-dt<=time_array[i+1]:
+            iniz = i
         i += 1
 
+    time_avg.append(end)
+    par_avg.append(np.mean(par_array[iniz:-1]))
+
+    #par_avg, time_avg = remove_nan(par_avg, time_avg)
     return par_avg, time_avg
