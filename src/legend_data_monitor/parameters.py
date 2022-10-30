@@ -110,7 +110,7 @@ def load_parameter(
         )
     else:
         par_array = lh5.load_nda(dsp_files, [parameter], detector + "/dsp")[parameter]
-    
+
         if parameter == "wf_max" and det_type == "ch000":
             baseline = lh5.load_nda(dsp_files, ["baseline"], "ch000/dsp")["baseline"]
             par_array = np.subtract(par_array, baseline)
