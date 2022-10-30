@@ -266,8 +266,8 @@ def read_spms(spms_dict: dict):
 
     # loop over spms channels (i.e. channels w/ crate=2)
     for ch in list(spms_dict.keys()):
-        card = spms_dict[ch]["daq"]["card"]
-        ch_orca = spms_dict[ch]["daq"]["ch_orca"]
+        #card = spms_dict[ch]["daq"]["card"]
+        #ch_orca = spms_dict[ch]["daq"]["ch_orca"]
         
         spms_type = spms_dict[ch]["barrel"]
         det_name_int = int(spms_dict[ch]["det"].split("S")[1])
@@ -382,7 +382,6 @@ def build_utime_array(dsp_files: list[str], detector: str, det_type: str):
     det_type
                    Type of detector (geds/spms/pulser)
     """
-
     utime_array = lh5.load_nda(dsp_files, ["timestamp"], detector + "/dsp")["timestamp"]
 
     return utime_array

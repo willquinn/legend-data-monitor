@@ -60,7 +60,6 @@ def plot_parameters(
     parameter
                   Parameter to plot
     """
-
     # rebinning
     if plot_style["par_average"] is True and parameter != "K_lines":
         par_array, utime_array = analysis.avg_over_entries(par_array, utime_array)
