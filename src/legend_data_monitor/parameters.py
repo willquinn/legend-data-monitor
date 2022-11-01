@@ -13,7 +13,6 @@ keep_phys_pars = j_config[5]["pulser"]["keep_phys_pars"]
 no_variation_pars = j_config[5]["plot_values"]["no_variation_pars"]
 
 
-
 def load_parameter(
     parameter: str,
     dsp_files: list[str],
