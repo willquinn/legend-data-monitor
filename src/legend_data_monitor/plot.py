@@ -92,7 +92,9 @@ def plot_parameters(
     else:
         if det_type == "ch000" or parameter == "K_lines":
             ax.plot(times, par_array, color=col, linewidth=0, marker=".", markersize=10)
-            plt.plot(times, par_array, color=col, linewidth=0, marker=".", markersize=10)
+            plt.plot(
+                times, par_array, color=col, linewidth=0, marker=".", markersize=10
+            )
         else:
             ax.plot(times, par_array, color=col, linewidth=2)
             plt.plot(times, par_array, color=col, linewidth=2)
@@ -679,7 +681,9 @@ def plot_par_vs_time_2d(
         utime_array = analysis.build_utime_array(
             dsp_files, detector, "spms"
         )  # shifted timestamps (pulser events are not removed)
-        utime_array, wf_array = analysis.time_analysis(utime_array, wf_array, time_cut, start_code)
+        utime_array, wf_array = analysis.time_analysis(
+            utime_array, wf_array, time_cut, start_code
+        )
         par_array = parameters.spms_gain(wf_array)
 
         # define x-axis
@@ -1231,8 +1235,8 @@ def plot_ch_par_vs_time(
                 + j_par[0][parameter]["units"]
                 + "]"
             )
-            
-            # rebinning 
+
+            # rebinning
             if parameter != "event_rate":
                 axes.plot(times, par_list, color="silver", linewidth=1, label=lbl)
                 par_avg, utime_avg = analysis.avg_over_minutes(
@@ -1250,7 +1254,7 @@ def plot_ch_par_vs_time(
                 handletextpad=0,
                 frameon=False,
             )
-            
+
             # line at 0%
             axes.axhline(y=0, color="k", linestyle="--", linewidth=1)
 
@@ -1273,8 +1277,8 @@ def plot_ch_par_vs_time(
                 continue
             start_times.append(start_time)
             end_times.append(end_time)
-    
-    #local_timezone = datetime.now(timezone.utc).astimezone().tzinfo
+
+    # local_timezone = datetime.now(timezone.utc).astimezone().tzinfo
     locs = np.linspace(
         dates.date2num(min(start_times)), dates.date2num(max(end_times)), 10
     )

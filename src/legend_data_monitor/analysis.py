@@ -391,8 +391,11 @@ def add_offset_to_timestamp(tmp_array: np.ndarray, dsp_file: list[str]):
     return utime_array
 
 
-from datetime import timedelta
-def time_analysis(utime_array: np.ndarray, par_array: np.ndarray, time_cut: list[str], start_code: str):
+
+
+def time_analysis(
+    utime_array: np.ndarray, par_array: np.ndarray, time_cut: list[str], start_code: str
+):
     """
     Return the timestamp & parameter lists after the time cuts.
 
@@ -425,8 +428,12 @@ def time_analysis(utime_array: np.ndarray, par_array: np.ndarray, time_cut: list
             par_array = timecut.cut_array_in_min_max(par_array, start_index, end_index)
     # last X hours analysis
     if len(time_cut) == 3:
-        start_index = timecut.min_timestamp_thr(utime_array.tolist(), time_cut, start_code)
-        end_index = timecut.max_timestamp_thr(utime_array.tolist(), time_cut, start_code)
+        start_index = timecut.min_timestamp_thr(
+            utime_array.tolist(), time_cut, start_code
+        )
+        end_index = timecut.max_timestamp_thr(
+            utime_array.tolist(), time_cut, start_code
+        )
         if len(utime_array) != 0:
             utime_array = utime_array[start_index:end_index]
         if len(par_array) != 0:
@@ -457,13 +464,13 @@ def get_puls_ievt(dsp_files: list[str]):
     for idx, entry in enumerate(wf_max):
         puls_ievt.append(idx)
         # high energy
-        if entry > high_thr: 
+        if entry > high_thr:
             pulser_highen_entry.append(idx)
         # low energy
-        if entry < low_thr:  
+        if entry < low_thr:
             not_pulser_entry.append(idx)
         # intermediate energy
-        if entry > low_thr and entry < high_thr:  
+        if entry > low_thr and entry < high_thr:
             baseline_entry.append(idx)
 
     # pulser+physical events
