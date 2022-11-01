@@ -61,7 +61,11 @@ def plot_parameters(
                   Parameter to plot
     """
     # rebinning
-    if plot_style["par_average"] is True and parameter != "K_lines" and det_type!="ch000":
+    if (
+        plot_style["par_average"] is True
+        and parameter != "K_lines"
+        and det_type != "ch000"
+    ):
         par_array, utime_array = analysis.avg_over_entries(par_array, utime_array)
 
     # function to check if par values are outside some pre-defined limits
@@ -1228,7 +1232,7 @@ def plot_ch_par_vs_time(
                 col = "r"
 
             # plot detector
-            if parameter not in no_variation_pars: 
+            if parameter not in no_variation_pars:
                 lbl += (
                     "\nmean = "
                     + f"{par_array_mean:.2f}"
@@ -1246,8 +1250,16 @@ def plot_ch_par_vs_time(
                 times_avg = [datetime.fromtimestamp(t) for t in utime_avg]
                 axes.plot(times_avg, par_avg, color=col, linewidth=2)
             else:
-                if parameter=="event_rate":
-                    axes.plot(times, par_list, color=col, linewidth=0, marker=".", markersize=10, label=lbl)
+                if parameter == "event_rate":
+                    axes.plot(
+                        times,
+                        par_list,
+                        color=col,
+                        linewidth=0,
+                        marker=".",
+                        markersize=10,
+                        label=lbl,
+                    )
                 else:
                     axes.plot(times, par_list, color=col, linewidth=1, label=lbl)
             axes.legend(
@@ -1260,7 +1272,7 @@ def plot_ch_par_vs_time(
             )
 
             # line at 0%
-            if parameter not in no_variation_pars: 
+            if parameter not in no_variation_pars:
                 axes.axhline(y=0, color="k", linestyle="--", linewidth=1)
 
             yticks = ticker.MaxNLocator(3)

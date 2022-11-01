@@ -12,7 +12,8 @@ keep_puls_pars = j_config[5]["pulser"]["keep_puls_pars"]
 keep_phys_pars = j_config[5]["pulser"]["keep_phys_pars"]
 no_variation_pars = j_config[5]["plot_values"]["no_variation_pars"]
 
-import sys
+
+
 def load_parameter(
     parameter: str,
     dsp_files: list[str],
@@ -61,7 +62,7 @@ def load_parameter(
 
     # cutting time array according to time selection
     utime_array_cut, _ = analysis.time_analysis(utime_array, [], time_cut, start_code)
-    
+
     # to handle particular cases where the timestamp array is outside the time window:
     if len(utime_array_cut) == 0:
         return [], [], []
@@ -141,7 +142,9 @@ def load_parameter(
     # Enable following lines to get the % variation of a parameter wrt to its mean value
     if (parameter not in no_variation_pars) and (det_type != "ch000"):
         cut = int(0.05 * len(par_array))
-        par_array_mean = np.mean(par_array[:cut]) # to change with the mean over first X files
+        par_array_mean = np.mean(
+            par_array[:cut]
+        )  # to change with the mean over first X files
         par_array = np.subtract(par_array, par_array_mean)
         par_array = np.divide(par_array, par_array_mean) * 100
     else:
