@@ -453,11 +453,11 @@ def get_puls_ievt(dsp_files: list[str]):
     baseline = lh5.load_nda(dsp_files, ["baseline"], "ch000/dsp")["baseline"]
     wf_max = np.subtract(wf_max, baseline)
     puls_ievt = []
-    baseline_entry = []
+    #baseline_entry = []
     pulser_entry = []
     not_pulser_entry = []
     high_thr = 12500
-    low_thr = 2500
+    #low_thr = 2500
 
     for idx, entry in enumerate(wf_max):
         puls_ievt.append(idx)
