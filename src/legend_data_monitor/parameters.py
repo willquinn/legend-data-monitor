@@ -100,7 +100,9 @@ def load_parameter(
         if all_ievt != [] and puls_only_ievt != [] and not_puls_ievt != []:
             par_array = par_array[det_only_index]
         # temporal cut
-        _, par_array = analysis.time_analysis(utime_array, par_array, time_cut, start_code)
+        _, par_array = analysis.time_analysis(
+            utime_array, par_array, time_cut, start_code
+        )
         par_array, utime_array_cut = energy_potassium_lines(par_array, utime_array_cut)
     elif parameter == "AoE_Classifier":
         hit_files = [dsp_file.replace("dsp", "hit") for dsp_file in dsp_files]

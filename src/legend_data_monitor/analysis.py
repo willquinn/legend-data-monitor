@@ -391,8 +391,6 @@ def add_offset_to_timestamp(tmp_array: np.ndarray, dsp_file: list[str]):
     return utime_array
 
 
-
-
 def time_analysis(
     utime_array: np.ndarray, par_array: np.ndarray, time_cut: list[str], start_code: str
 ):
