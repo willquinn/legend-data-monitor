@@ -288,7 +288,6 @@ def min_max_timestamp_thr(timestamp: list, start_time: str, end_time: str):
     end_time
                 End time to include events (in %d/%m/%Y %H:%M:%S format)
     """
-
     start_time = start_time + "+0000"
     end_time = end_time + "+0000"
     start_timestamp = (datetime.strptime(start_time, "%d/%m/%Y %H:%M:%S%z")).timestamp()
