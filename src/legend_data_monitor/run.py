@@ -31,9 +31,7 @@ verbose = j_config[11]
 
 
 def main():
-    start_code = (datetime.utcnow()).strftime(
-        "%d/%m/%Y %H:%M:%S"
-    )  # common starting time
+    start_code = (datetime.now()).strftime("%d/%m/%Y %H:%M:%S")  # common starting time
     path = files_path + version + "/generated/tier"
     out_path = os.path.join(output_path, "out/")
 
@@ -152,12 +150,14 @@ def select_and_plot_run(
 
     # apply time cut to lh5 filenames
     if len(time_cut) == 3:
-        runs = timecut.cut_below_threshold_filelist(runs, time_cut)
+        runs = timecut.cut_below_threshold_filelist(full_path, runs, time_cut, start_code)
     elif len(time_cut) == 4:
-        runs = timecut.cut_min_max_filelist(runs, time_cut)
+        runs = timecut.cut_min_max_filelist(full_path, runs, time_cut)
 
     # get full file paths
     runs = [os.path.join(full_path, run_file) for run_file in runs]
+    #print(runs)
+    #sys.exit(1)
 
     dump_all_plots_together(runs, time_cut, path, json_path, map_path, start_code)
 
@@ -232,7 +232,7 @@ def dump_all_plots_together(
                     for par in geds_par:
                         det_status_dict = {}
                         for (det_list, string) in zip(string_geds, string_geds_name):
-                            # if (det_list == string_geds[0]):  # keep 1 string (per far prima)
+                            #if (det_list == string_geds[0]):  # keep 1 string (per far prima)
 
                             if len(det_list) == 0:
                                 continue
@@ -253,24 +253,42 @@ def dump_all_plots_together(
                                     pdf,
                                 )
                             else:
-                                # string_mean_dict, map_dict = plot.plot_par_vs_time( # plot style
-                                (
+                                if par == "K_lines":
+                                    (
                                     string_mean_dict,
                                     map_dict,
-                                ) = plot.plot_ch_par_vs_time(  # subplot style
-                                    dsp_files,
-                                    det_list,
-                                    par,
-                                    time_cut,
-                                    "geds",
-                                    string,
-                                    geds_dict,
-                                    all_ievt,
-                                    puls_only_ievt,
-                                    not_puls_ievt,
-                                    start_code,
-                                    pdf,
-                                )
+                                    ) = plot.plot_par_vs_time( 
+                                        dsp_files,
+                                        det_list,
+                                        par,
+                                        time_cut,
+                                        "geds",
+                                        string,
+                                        geds_dict,
+                                        all_ievt,
+                                        puls_only_ievt,
+                                        not_puls_ievt,
+                                        start_code,
+                                        pdf,
+                                    )
+                                else:
+                                    (
+                                        string_mean_dict,
+                                        map_dict,
+                                    ) = plot.plot_ch_par_vs_time( 
+                                        dsp_files,
+                                        det_list,
+                                        par,
+                                        time_cut,
+                                        "geds",
+                                        string,
+                                        geds_dict,
+                                        all_ievt,
+                                        puls_only_ievt,
+                                        not_puls_ievt,
+                                        start_code,
+                                        pdf,
+                                    )
                             if map_dict is not None:
                                 for det, status in map_dict.items():
                                     det_status_dict[det] = status
@@ -332,6 +350,7 @@ def dump_all_plots_together(
                                         "spms",
                                         string,
                                         spms_dict,
+                                        start_code,
                                         pdf,
                                     )
                                     if verbose is True:

@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import sys
 from datetime import datetime, timedelta
+import pygama.lgdo.lh5_store as lh5
 
 import numpy as np
 
@@ -46,7 +47,7 @@ def time_dates(time_cut: list, start_code: str):
     Parameters
     ----------
     time_cut
-               List with info about time cuts
+                List with info about time cuts
     start_code
                 Starting time of the code
     """
@@ -76,16 +77,17 @@ def time_dates(time_cut: list, start_code: str):
             + "Z"
         )
     if len(time_cut) == 3:
-        end = start_code.strftime("%Y%m%dT%H%M%SZ")
+        end = datetime.strptime(start_code, "%d/%m/%Y %H:%M:%S")
         start = (
-            start_code
+            end
             - timedelta(days=time_cut[0], hours=time_cut[1], minutes=time_cut[2])
         ).strftime("%Y%m%dT%H%M%SZ")
+        end = end.strftime("%Y%m%dT%H%M%SZ")
 
     return start, end
 
 
-def min_timestamp_thr(timestamp: list, prod_time: list):
+def min_timestamp_thr(timestamp: list, time_cut: list, start_code: str):
     """
     Return the first timestamp within the selected time window after the time cut.
 
@@ -93,39 +95,54 @@ def min_timestamp_thr(timestamp: list, prod_time: list):
     ----------
     timestamp
                 Timestamps evaluated in seconds
-    prod_time
+    time_cut
                 List with info about time cuts
+    start_code
+                Starting time of the code
     """
+    end = datetime.strptime(start_code, "%d/%m/%Y %H:%M:%S")
     thr_timestamp = (
-        datetime.now()
-        - timedelta(days=prod_time[0], hours=prod_time[1], minutes=prod_time[2])
+        end - timedelta(days=time_cut[0], hours=time_cut[1], minutes=time_cut[2]) + timedelta(days=0, hours=2, minutes=0)
     ).timestamp()
     start_t = 0
+
     for t in timestamp:
         if t < thr_timestamp:
             continue
-        if t > thr_timestamp:
+        if t >= thr_timestamp:
             start_t = t
             break
     return timestamp.index(start_t)
 
 
-def cut_array_below_min(val_array: np.ndarray, start_index: int):
+def max_timestamp_thr(timestamp: list, time_cut: list, start_code: str):
     """
-    Cut an array above a given index.
+    Return the first timestamp within the selected time window after its end.
 
     Parameters
     ----------
-    val_array
-                 Array filled with values of a given parameter
-    start_index
-                 Starting index
+    timestamp
+                Timestamps evaluated in seconds
+    time_cut
+                List with info about time cuts
+    start_code
+                Starting time of the code
     """
-    val_list = val_array.tolist()
-    val_list = val_list[start_index:]
-    val_array = []
-    val_array = np.array(val_list)
-    return val_array
+    end = datetime.strptime(start_code, "%d/%m/%Y %H:%M:%S")
+    thr_timestamp = (end + timedelta(days=0, hours=2, minutes=0)).timestamp()
+    end_t = 0
+    
+    for t in timestamp:
+        if t < thr_timestamp:
+            continue
+        if t >= thr_timestamp:
+            end_t = t
+            break
+
+    if end_t==0:
+        return -1
+
+    return timestamp.index(end_t)
 
 
 def date_string_formatting(date):
@@ -138,12 +155,14 @@ def hour_string_formatting(hour):
     return hour
 
 
-def cut_min_max_filelist(runs: list[str], time_cut: list[str]):
+def cut_min_max_filelist(full_path: str, runs: list[str], time_cut: list[str]):
     """
     Select files for analysis in a specified time interval using file name.
 
     Parameters
     ----------
+    full_path
+                path to lh5 files
     runs
                 list of all files for a given run
     time_cut
@@ -160,37 +179,62 @@ def cut_min_max_filelist(runs: list[str], time_cut: list[str]):
     timecut_high = np.int64(
         int(date_string_formatting(time_cut[2]) + hour_string_formatting(time_cut[3]))
     )
+    if timecut_low > timecut_high:
+        logging.error("Start and stop are switched, retry!")
+        sys.exit(1)
 
     lowcut_list = np.where(day > timecut_low)[0]
     highcut_list = np.where(day < timecut_high)[0]
 
-    if len(lowcut_list) == 0 or len(highcut_list) == 0:
+    # special case: external window (in the past)
+    if len(lowcut_list)==len(runs) and len(highcut_list)==0:
         logging.error("No entries in the selected time window, retry!")
         sys.exit(1)
-
-    files_index = np.arange(lowcut_list[0] - 1, highcut_list[-1] + 2, 1)
+    # special case: one file (the first one) survives the cut OR first X files survive the cut
+    elif len(lowcut_list)==len(runs) and len(highcut_list)!=0:
+        lowcut_list = [1]
+    elif len(lowcut_list)==0 and len(highcut_list)==len(runs):
+        last_file = full_path+"/"+runs[-1]
+        last_timestamp = (lh5.load_nda(last_file, ["timestamp"], "ch000/dsp/")["timestamp"])[-1]
+        timecut_low = int(datetime.strptime(str(timecut_low), '%Y%m%d%H%M%S').strftime("%s"))
+        # special case: external window (in the future)
+        if timecut_low > last_timestamp:
+            logging.error("No entries in the selected time window, retry!")
+            sys.exit(1)
+        # special case: one file (the first one) survives the cut
+        else:
+            lowcut_list = [len(runs)]
+            highcut_list = [len(runs)-1]
+    
+    files_index = np.arange(lowcut_list[0] - 1, highcut_list[-1] + 1, 1)
     runs = np.array(runs)
 
     return runs[files_index]
 
 
-def cut_below_threshold_filelist(runs: list[str], time_cut: list[str]):
+def cut_below_threshold_filelist(full_path: str, runs: list[str], time_cut: list[str], start_code: str):
     """
     Select files for analysis below time threshold using file name.
 
     Parameters
     ----------
+    full_path
+                path to lh5 files
     runs
                 list of all files for a given run
     time_cut
                 list with day and hour for timecut as strings
+    start_code
+                Starting time of the code
     """
     day = np.array([((run.split("-")[4]).split("Z")[0]).split("T")[0] for run in runs])
     hour = np.array([((run.split("-")[4]).split("Z")[0]).split("T")[1] for run in runs])
     day = np.core.defchararray.add(day, hour)
     day = np.array([int(single_day) for single_day in day])
 
-    time_difference = datetime.now() - timedelta(
+    end = datetime.strptime(start_code, "%d/%m/%Y %H:%M:%S")
+
+    time_difference = end - timedelta(
         days=time_cut[0], hours=time_cut[1], minutes=time_cut[2]
     )
     threshold_lowcut = int(
@@ -198,18 +242,34 @@ def cut_below_threshold_filelist(runs: list[str], time_cut: list[str]):
         + time_difference.time().strftime("%H%M%S")
     )
     threshold_highcut = int(
-        datetime.now().date().strftime("%Y%m%d")
-        + datetime.now().time().strftime("%H%M%S")
+        end.date().strftime("%Y%m%d")
+        + end.time().strftime("%H%M%S")
     )
 
     lowcut_list = np.where(day > threshold_lowcut)[0]
     highcut_list = np.where(day < threshold_highcut)[0]
-
-    if len(lowcut_list) == 0:
+    
+    # special case: external window (in the past)
+    if len(lowcut_list)==len(runs) and len(highcut_list)==0:
         logging.error("No entries in the selected time window, retry!")
         sys.exit(1)
+    # special case: one file (the first one) survives the cut OR first X files survive the cut
+    elif len(lowcut_list)==len(runs) and len(highcut_list)!=0:
+        lowcut_list = [1]
+    elif len(lowcut_list)==0 and len(highcut_list)==len(runs):
+        last_file = full_path+"/"+runs[-1]
+        last_timestamp = (lh5.load_nda(last_file, ["timestamp"], "ch000/dsp/")["timestamp"])[-1]
+        threshold_lowcut = int(datetime.strptime(str(threshold_lowcut), '%Y%m%d%H%M%S').strftime("%s"))
+        # special case: external window (in the future)
+        if threshold_lowcut > last_timestamp:
+            logging.error("No entries in the selected time window, retry!")
+            sys.exit(1)
+        # special case: one file (the first one) survives the cut
+        else:
+            lowcut_list = [len(runs)]
+            highcut_list = [len(runs)-1]
 
-    files_index = np.arange(lowcut_list[0] - 1, highcut_list[-1], 1)
+    files_index = np.arange(lowcut_list[0] - 1, highcut_list[-1] + 1, 1)
     runs = np.array(runs)
 
     return runs[files_index]
@@ -228,6 +288,7 @@ def min_max_timestamp_thr(timestamp: list, start_time: str, end_time: str):
     end_time
                 End time to include events (in %d/%m/%Y %H:%M:%S format)
     """
+
     start_time = start_time + "+0000"
     end_time = end_time + "+0000"
     start_timestamp = (datetime.strptime(start_time, "%d/%m/%Y %H:%M:%S%z")).timestamp()

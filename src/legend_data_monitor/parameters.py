@@ -22,6 +22,7 @@ def load_parameter(
     all_ievt: np.ndarray,
     puls_only_ievt: np.ndarray,
     not_puls_ievt: np.ndarray,
+    start_code: str,
 ):
     """
     Load parameters from files.
@@ -46,7 +47,9 @@ def load_parameter(
                     Event number for physical events
     """
     par_array = np.array([])
-    utime_array = analysis.build_utime_array(dsp_files, detector, det_type)
+    utime_array = lh5.load_nda(dsp_files, ["timestamp"], detector + "/dsp")["timestamp"]
+    #print("file:", dsp_files)
+    #print("timestamps:", [datetime.fromtimestamp(t) for t in utime_array[:5]])
     hit_files = [dsp_file.replace("dsp", "hit") for dsp_file in dsp_files]
 
     if all_ievt != [] and puls_only_ievt != [] and not_puls_ievt != []:
@@ -59,11 +62,11 @@ def load_parameter(
             utime_array = utime_array[det_only_index]
 
     # cutting time array according to time selection
-    utime_array_cut, _ = analysis.time_analysis(utime_array, [], time_cut)
+    utime_array_cut, _ = analysis.time_analysis(utime_array, [], time_cut, start_code)
 
     # to handle particular cases where the timestamp array is outside the time window:
     if len(utime_array_cut) == 0:
-        return [], []
+        return [], [], []
 
     if parameter == "lc":
         par_array = leakage_current(dsp_files, detector, det_type)
@@ -99,7 +102,7 @@ def load_parameter(
         if all_ievt != [] and puls_only_ievt != [] and not_puls_ievt != []:
             par_array = par_array[det_only_index]
         # temporal cut
-        _, par_array = analysis.time_analysis(utime_array, par_array, time_cut)
+        _, par_array = analysis.time_analysis(utime_array, par_array, time_cu, start_codet)
         par_array, utime_array_cut = energy_potassium_lines(par_array, utime_array_cut)
     elif parameter == "AoE_Classifier":
         hit_files = [dsp_file.replace("dsp", "hit") for dsp_file in dsp_files]
@@ -129,7 +132,7 @@ def load_parameter(
     # cutting time array according to time selection
     no_timecut_pars = ["event_rate", "K_lines"]
     if parameter not in no_timecut_pars:
-        _, par_array = analysis.time_analysis(utime_array, par_array, time_cut)
+        _, par_array = analysis.time_analysis(utime_array, par_array, time_cut, start_code)
 
     # check if there are 'nan' values in par_array; if 'yes', remove them
     if np.isnan(par_array).any():
@@ -141,29 +144,11 @@ def load_parameter(
         par_array_mean = np.mean(par_array[:cut])
         par_array = np.subtract(par_array, par_array_mean)
         par_array = np.divide(par_array, par_array_mean) * 100
-
-    # logging.warning(f'{parameter} mean for {detector}: {par_array_mean} [{j_par[0][parameter]["units"]}]' )
+    else:
+        par_array_mean = []
 
     return par_array_mean, par_array, utime_array_cut
 
-
-def bl_difference(dsp_files: list[str], detector: str):
-    """
-    Return the difference between offline reconstructed baseline (dsp/bl_mean) and baseline from FPGA (dsp/baseline).
-
-    Parameters
-    ----------
-    dsp_files
-               lh5 dsp files
-    detector
-               Channel of the detector
-    """
-    fpga_baseline = lh5.load_nda(dsp_files, ["baseline"], detector + "/dsp")["baseline"]
-    reconstructed_bl = lh5.load_nda(dsp_files, ["bl_mean"], detector + "/dsp")[
-        "bl_mean"
-    ]
-
-    return reconstructed_bl - fpga_baseline
 
 
 def aoe(dsp_files: list[str], detector: str):

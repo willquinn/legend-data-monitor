@@ -91,8 +91,8 @@ def plot_parameters(
     # plot everything independently of the detector's status
     else:
         if det_type == "ch000" or parameter == "K_lines":
-            ax.plot(times, par_array, color=col, linewidth=0, marker=".", markersize=1)
-            plt.plot(times, par_array, color=col, linewidth=0, marker=".", markersize=1)
+            ax.plot(times, par_array, color=col, linewidth=0, marker=".", markersize=10)
+            plt.plot(times, par_array, color=col, linewidth=0, marker=".", markersize=10)
         else:
             ax.plot(times, par_array, color=col, linewidth=2)
             plt.plot(times, par_array, color=col, linewidth=2)
@@ -211,6 +211,7 @@ def plot_par_vs_time(
             all_ievt,
             puls_only_ievt,
             not_puls_ievt,
+            start_code,
         )
         if len(par_np_array) == 0:
             continue
@@ -456,6 +457,7 @@ def plot_par_vs_time_ch000(
         all_ievt,
         puls_only_ievt,
         not_puls_ievt,
+        start_code,
     )
 
     # plot detector and get its status
@@ -537,7 +539,7 @@ def plot_par_vs_time_ch000(
 
     # define name of pkl file (with info about time cut if present)
     if len(time_cut) != 0:
-        start, end = timecut.time_dates(time_cut)
+        start, end = timecut.time_dates(time_cut, start_code)
         pkl_name = (
             exp
             + "-"
@@ -584,6 +586,7 @@ def plot_par_vs_time_2d(
     det_type: str,
     string_number: str,
     det_dict: dict,
+    start_code: str,
     pdf=None,
 ) -> None:
     """
@@ -676,7 +679,7 @@ def plot_par_vs_time_2d(
         utime_array = analysis.build_utime_array(
             dsp_files, detector, "spms"
         )  # shifted timestamps (pulser events are not removed)
-        utime_array, wf_array = analysis.time_analysis(utime_array, wf_array, time_cut)
+        utime_array, wf_array = analysis.time_analysis(utime_array, wf_array, time_cut, start_code)
         par_array = parameters.spms_gain(wf_array)
 
         # define x-axis
@@ -924,6 +927,7 @@ def plot_wtrfll(
             all_ievt,
             puls_only_ievt,
             not_puls_ievt,
+            start_code,
         )
         if len(par_np_array) == 0:
             continue
@@ -1164,7 +1168,6 @@ def plot_ch_par_vs_time(
 
             if (
                 parameter == "cal_puls"
-                or parameter == "K_lines"
                 or parameter == "AoE_Classifier"
                 or parameter == "AoE_Corrected"
             ):
@@ -1198,6 +1201,7 @@ def plot_ch_par_vs_time(
                 all_ievt,
                 puls_only_ievt,
                 not_puls_ievt,
+                start_code,
             )
             if len(par_np_array) == 0:
                 continue
@@ -1208,7 +1212,7 @@ def plot_ch_par_vs_time(
             status = analysis.check_par_values(
                 utime_list, par_list, parameter, detector, det_type
             )
-            times = [datetime.utcfromtimestamp(t) for t in utime_list]
+            times = [datetime.fromtimestamp(t) for t in utime_list]
             start_time = times[0]
             end_time = times[-1]
 
@@ -1227,14 +1231,17 @@ def plot_ch_par_vs_time(
                 + j_par[0][parameter]["units"]
                 + "]"
             )
-            axes.plot(times, par_list, color="gainsboro", linewidth=1, label=lbl)
-            # rebinning (always)
-            if parameter != "K_lines":
+            
+            # rebinning 
+            if parameter != "event_rate":
+                axes.plot(times, par_list, color="silver", linewidth=1, label=lbl)
                 par_avg, utime_avg = analysis.avg_over_minutes(
                     par_np_array, utime_array
                 )
-                times_avg = [datetime.utcfromtimestamp(t) for t in utime_avg]
+                times_avg = [datetime.fromtimestamp(t) for t in utime_avg]
                 axes.plot(times_avg, par_avg, color=col, linewidth=2)
+            else:
+                axes.plot(times, par_list, color=col, linewidth=1, label=lbl)
             axes.legend(
                 bbox_to_anchor=(1.01, 1.0),
                 loc="upper left",
@@ -1243,25 +1250,10 @@ def plot_ch_par_vs_time(
                 handletextpad=0,
                 frameon=False,
             )
-
-            local_timezone = datetime.now(timezone.utc).astimezone().tzinfo
-            locs = np.linspace(dates.date2num(start_time), dates.date2num(end_time), 10)
-            xlab = "%d/%m"
-            if j_config[10]["frmt"] == "day/month-time":
-                xlab = "%d/%m\n%H:%M"
-            if j_config[10]["frmt"] == "time":
-                xlab = "%H:%M"
-            labels = [
-                dates.num2date(loc, tz=local_timezone).strftime(xlab) for loc in locs
-            ]
-
+            
             # line at 0%
             axes.axhline(y=0, color="k", linestyle="--", linewidth=1)
 
-            # axes.set(xlabel="time (UTC)")
-            axes.set_xticks(locs)
-            axes.set_xticklabels(labels)
-            plt.setp(axes.get_xticklabels(), rotation=0, ha="center")
             yticks = ticker.MaxNLocator(3)
             axes.yaxis.set_major_locator(yticks)
 
@@ -1281,6 +1273,21 @@ def plot_ch_par_vs_time(
                 continue
             start_times.append(start_time)
             end_times.append(end_time)
+    
+    #local_timezone = datetime.now(timezone.utc).astimezone().tzinfo
+    locs = np.linspace(
+        dates.date2num(min(start_times)), dates.date2num(max(end_times)), 10
+    )
+    xlab = "%d/%m"
+    if j_config[10]["frmt"] == "day/month-time":
+        xlab = "%d/%m\n%H:%M"
+    if j_config[10]["frmt"] == "time":
+        xlab = "%H:%M"
+    labels = [dates.num2date(loc).strftime(xlab) for loc in locs]
+
+    [ax.set_xticks(locs) for axs in ax_array for ax in axs]
+    [ax.set_xticklabels(labels) for axs in ax_array for ax in axs]
+    plt.xticks(locs, labels)
 
     # no data were found at all
     if len(start_times) == 0 and len(end_times) == 0:
