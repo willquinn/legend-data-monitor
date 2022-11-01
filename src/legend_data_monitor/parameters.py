@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import numpy as np
 import pygama.lgdo.lh5_store as lh5
@@ -12,7 +12,7 @@ keep_puls_pars = j_config[5]["pulser"]["keep_puls_pars"]
 keep_phys_pars = j_config[5]["pulser"]["keep_phys_pars"]
 no_variation_pars = j_config[5]["plot_values"]["no_variation_pars"]
 
-
+import sys
 def load_parameter(
     parameter: str,
     dsp_files: list[str],
@@ -48,8 +48,6 @@ def load_parameter(
     """
     par_array = np.array([])
     utime_array = lh5.load_nda(dsp_files, ["timestamp"], detector + "/dsp")["timestamp"]
-    # print("file:", dsp_files)
-    # print("timestamps:", [datetime.fromtimestamp(t) for t in utime_array[:5]])
     hit_files = [dsp_file.replace("dsp", "hit") for dsp_file in dsp_files]
 
     if all_ievt != [] and puls_only_ievt != [] and not_puls_ievt != []:
@@ -63,7 +61,7 @@ def load_parameter(
 
     # cutting time array according to time selection
     utime_array_cut, _ = analysis.time_analysis(utime_array, [], time_cut, start_code)
-
+    
     # to handle particular cases where the timestamp array is outside the time window:
     if len(utime_array_cut) == 0:
         return [], [], []
@@ -71,7 +69,7 @@ def load_parameter(
     if parameter == "lc":
         par_array = leakage_current(dsp_files, detector, det_type)
     elif parameter == "event_rate":
-        par_array, utime_array_cut = event_rate(dsp_files, utime_array_cut, det_type)
+        par_array, utime_array_cut = event_rate(dsp_files[0], utime_array_cut, det_type)
     elif parameter == "uncal_puls":
         par_array = lh5.load_nda(dsp_files, ["trapTmax"], detector + "/dsp")["trapTmax"]
     elif parameter == "cal_puls":
@@ -123,7 +121,7 @@ def load_parameter(
             if parameter != "K_lines" and parameter != "event_rate":
                 par_array = par_array[puls_only_index]
         if parameter in keep_phys_pars:
-            if parameter != "K_lines":
+            if parameter != "K_lines" and parameter != "event_rate":
                 par_array = par_array[det_only_index]
 
     # Applying Quality Cuts
@@ -140,10 +138,10 @@ def load_parameter(
     if np.isnan(par_array).any():
         par_array, utime_array_cut = analysis.remove_nan(par_array, utime_array_cut)
 
-    # Enable following lines to get the delta of a parameter
+    # Enable following lines to get the % variation of a parameter wrt to its mean value
     if (parameter not in no_variation_pars) and (det_type != "ch000"):
         cut = int(0.05 * len(par_array))
-        par_array_mean = np.mean(par_array[:cut])
+        par_array_mean = np.mean(par_array[:cut]) # to change with the mean over first X files
         par_array = np.subtract(par_array, par_array_mean)
         par_array = np.divide(par_array, par_array_mean) * 100
     else:
@@ -193,14 +191,14 @@ def leakage_current(dsp_files: list[str], detector: str, det_type: str):
     )  # using old GERDA (baseline -> lc) conversion factor
 
 
-def event_rate(dsp_files: list[str], timestamp: list, det_type: str):
+def event_rate(dsp_file: list[str], timestamp: list, det_type: str):
     """
     Return the event rate (as cts/dt).
 
     Parameters
     ----------
-    dsp_files
-                lh5 dsp files
+    dsp_file
+                First lh5 dsp file
     timestamp
                 List of shifted UTC timestamps
     det_type
@@ -209,26 +207,23 @@ def event_rate(dsp_files: list[str], timestamp: list, det_type: str):
     rate = []
     times = []
 
-    for dsp_file in dsp_files:
-        date_time = (((dsp_file.split("/")[-1]).split("-")[4]).split("Z")[0]).split("T")
-        run_start = datetime.strptime(date_time[0] + date_time[1], "%Y%m%d%H%M%S")
-        run_start = datetime.timestamp(
-            run_start
-        )  # in the future, this will be replaced by timestamp[0]
+    date_time = (((dsp_file.split("/")[-1]).split("-")[4]).split("Z")[0]).split("T")
+    run_start = datetime.strptime(date_time[0] + date_time[1], "%Y%m%d%H%M%S")
+    run_start = datetime.strptime(str(run_start), "%Y-%m-%d %H:%M:%S")
 
-        i = 0
-        j = run_start
-        dt = j_config[5]["Available-par"]["Other-par"]["event_rate"]["dt"][det_type]
+    i = 0
+    j = datetime.timestamp(run_start + timedelta(days=0, hours=2, minutes=0))
+    dt = j_config[5]["Available-par"]["Other-par"]["event_rate"]["dt"][det_type]
 
-        while j + dt <= timestamp[-1]:
-            num = 0
-            while timestamp[i] < (j + dt):
-                num += 1
-                i += 1
-            if j != run_start and num != 0:
-                rate.append(num / dt)
-                times.append(j)
-            j += dt
+    while j + dt <= timestamp[-1]:
+        num = 0
+        while timestamp[i] < (j + dt):
+            num += 1
+            i += 1
+        if j != run_start:
+            rate.append(num / dt)
+            times.append(j)
+        j += dt
 
     units = j_config[5]["Available-par"]["Other-par"]["event_rate"]["units"][det_type]
     if units == "mHz":

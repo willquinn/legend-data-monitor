@@ -24,7 +24,7 @@ run = j_config[2]
 datatype = j_config[3]
 det_type = j_config[4]
 par_to_plot = j_config[5]
-two_dim_pars = j_config[6]["two_dim_pars"]
+three_dim_pars = j_config[6]["three_dim_pars"]
 time_window = j_config[7]
 last_hours = j_config[8]
 verbose = j_config[11]
@@ -158,8 +158,7 @@ def select_and_plot_run(
 
     # get full file paths
     runs = [os.path.join(full_path, run_file) for run_file in runs]
-    # print(runs)
-    # sys.exit(1)
+    runs = runs[:1]
 
     dump_all_plots_together(runs, time_cut, path, json_path, map_path, start_code)
 
@@ -234,12 +233,12 @@ def dump_all_plots_together(
                     for par in geds_par:
                         det_status_dict = {}
                         for (det_list, string) in zip(string_geds, string_geds_name):
-                            # if (det_list == string_geds[0]):  # keep 1 string (per far prima)
+                          if (det_list == string_geds[0]):  # keep 1 string (per far prima)
 
                             if len(det_list) == 0:
                                 continue
 
-                            if par not in two_dim_pars:
+                            if par in three_dim_pars:
                                 string_mean_dict, map_dict = plot.plot_wtrfll(
                                     dsp_files,
                                     det_list,
