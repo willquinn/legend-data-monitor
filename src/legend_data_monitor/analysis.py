@@ -371,24 +371,6 @@ def check_par_values(
     return thr_flag
 
 
-def build_utime_array(dsp_files: list[str], detector: str, det_type: str):
-    """
-    Return an array with shifted time arrays for spms detectors.
-
-    Parameters
-    ----------
-    dsp_files
-                   lh5 dsp files
-    detector
-                   Name of the detector
-    det_type
-                   Type of detector (geds/spms/pulser)
-    """
-    utime_array = lh5.load_nda(dsp_files, ["timestamp"], detector + "/dsp")["timestamp"]
-
-    return utime_array
-
-
 def add_offset_to_timestamp(tmp_array: np.ndarray, dsp_file: list[str]):
     """
     Add a time shift to the filename given by the time shown in 'runtime'.
@@ -409,18 +391,22 @@ def add_offset_to_timestamp(tmp_array: np.ndarray, dsp_file: list[str]):
     return utime_array
 
 
-def time_analysis(utime_array: np.ndarray, par_array: np.ndarray, time_cut: list[str]):
+def time_analysis(
+    utime_array: np.ndarray, par_array: np.ndarray, time_cut: list[str], start_code: str
+):
     """
     Return the timestamp & parameter lists after the time cuts.
 
     Parameters
     ----------
     utime_array
-                  Array of (already shifted) timestamps
+                Array of (already shifted) timestamps
     par_array
-                  Array with parameter values
+                Array with parameter values
     time_cut
-                  List with info about time cuts
+                List with info about time cuts
+    start_code
+                Starting time of the code
     """
     # time window analysis
     if len(time_cut) == 4:
@@ -440,11 +426,16 @@ def time_analysis(utime_array: np.ndarray, par_array: np.ndarray, time_cut: list
             par_array = timecut.cut_array_in_min_max(par_array, start_index, end_index)
     # last X hours analysis
     if len(time_cut) == 3:
-        start_index = timecut.min_timestamp_thr(utime_array.tolist(), time_cut)
+        start_index = timecut.min_timestamp_thr(
+            utime_array.tolist(), time_cut, start_code
+        )
+        end_index = timecut.max_timestamp_thr(
+            utime_array.tolist(), time_cut, start_code
+        )
         if len(utime_array) != 0:
-            utime_array = timecut.cut_array_below_min(utime_array, start_index)
+            utime_array = utime_array[start_index:end_index]
         if len(par_array) != 0:
-            par_array = timecut.cut_array_below_min(par_array, start_index)
+            par_array = par_array[start_index:end_index]
 
     return utime_array, par_array
 
@@ -465,15 +456,19 @@ def get_puls_ievt(dsp_files: list[str]):
     baseline_entry = []
     pulser_highen_entry = []
     not_pulser_entry = []
+    high_thr = 12500
+    low_thr = 2500
 
     for idx, entry in enumerate(wf_max):
         puls_ievt.append(idx)
-        if entry > 12500:  # high energy
-            # if entry > 17500:
+        # high energy
+        if entry > high_thr:
             pulser_highen_entry.append(idx)
-        if entry < 2500:  # low energy
+        # low energy
+        if entry < low_thr:
             not_pulser_entry.append(idx)
-        else:  # intermediate energy
+        # intermediate energy
+        if entry > low_thr and entry < high_thr:
             baseline_entry.append(idx)
 
     # pulser+physical events
