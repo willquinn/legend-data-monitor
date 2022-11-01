@@ -48,8 +48,8 @@ def load_parameter(
     """
     par_array = np.array([])
     utime_array = lh5.load_nda(dsp_files, ["timestamp"], detector + "/dsp")["timestamp"]
-    #print("file:", dsp_files)
-    #print("timestamps:", [datetime.fromtimestamp(t) for t in utime_array[:5]])
+    # print("file:", dsp_files)
+    # print("timestamps:", [datetime.fromtimestamp(t) for t in utime_array[:5]])
     hit_files = [dsp_file.replace("dsp", "hit") for dsp_file in dsp_files]
 
     if all_ievt != [] and puls_only_ievt != [] and not_puls_ievt != []:
@@ -102,7 +102,9 @@ def load_parameter(
         if all_ievt != [] and puls_only_ievt != [] and not_puls_ievt != []:
             par_array = par_array[det_only_index]
         # temporal cut
-        _, par_array = analysis.time_analysis(utime_array, par_array, time_cu, start_codet)
+        _, par_array = analysis.time_analysis(
+            utime_array, par_array, time_cu, start_codet
+        )
         par_array, utime_array_cut = energy_potassium_lines(par_array, utime_array_cut)
     elif parameter == "AoE_Classifier":
         hit_files = [dsp_file.replace("dsp", "hit") for dsp_file in dsp_files]
@@ -132,7 +134,9 @@ def load_parameter(
     # cutting time array according to time selection
     no_timecut_pars = ["event_rate", "K_lines"]
     if parameter not in no_timecut_pars:
-        _, par_array = analysis.time_analysis(utime_array, par_array, time_cut, start_code)
+        _, par_array = analysis.time_analysis(
+            utime_array, par_array, time_cut, start_code
+        )
 
     # check if there are 'nan' values in par_array; if 'yes', remove them
     if np.isnan(par_array).any():
@@ -148,7 +152,6 @@ def load_parameter(
         par_array_mean = []
 
     return par_array_mean, par_array, utime_array_cut
-
 
 
 def aoe(dsp_files: list[str], detector: str):
