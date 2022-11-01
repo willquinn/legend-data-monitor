@@ -453,28 +453,23 @@ def get_puls_ievt(dsp_files: list[str]):
     baseline = lh5.load_nda(dsp_files, ["baseline"], "ch000/dsp")["baseline"]
     wf_max = np.subtract(wf_max, baseline)
     puls_ievt = []
-    baseline_entry = []
-    pulser_highen_entry = []
+    # baseline_entry = []
+    pulser_entry = []
     not_pulser_entry = []
     high_thr = 12500
-    low_thr = 2500
+    # low_thr = 2500
 
     for idx, entry in enumerate(wf_max):
         puls_ievt.append(idx)
-        # high energy
         if entry > high_thr:
-            pulser_highen_entry.append(idx)
-        # low energy
-        if entry < low_thr:
+            pulser_entry.append(idx)
+        else:
             not_pulser_entry.append(idx)
-        # intermediate energy
-        if entry > low_thr and entry < high_thr:
-            baseline_entry.append(idx)
 
     # pulser+physical events
     puls_ievt = np.array(puls_ievt)
-    # pulser entries (high E)
-    puls_only_ievt = puls_ievt[np.isin(puls_ievt, pulser_highen_entry)]
+    # HW pulser+FC entries
+    puls_only_ievt = puls_ievt[np.isin(puls_ievt, pulser_entry)]
     # physical entries
     not_puls_ievt = puls_ievt[np.isin(puls_ievt, not_pulser_entry)]
 

@@ -24,7 +24,7 @@ run = j_config[2]
 datatype = j_config[3]
 det_type = j_config[4]
 par_to_plot = j_config[5]
-two_dim_pars = j_config[6]["two_dim_pars"]
+three_dim_pars = j_config[6]["three_dim_pars"]
 time_window = j_config[7]
 last_hours = j_config[8]
 verbose = j_config[11]
@@ -158,8 +158,7 @@ def select_and_plot_run(
 
     # get full file paths
     runs = [os.path.join(full_path, run_file) for run_file in runs]
-    # print(runs)
-    # sys.exit(1)
+    runs = runs[:1]
 
     dump_all_plots_together(runs, time_cut, path, json_path, map_path, start_code)
 
@@ -234,32 +233,15 @@ def dump_all_plots_together(
                     for par in geds_par:
                         det_status_dict = {}
                         for (det_list, string) in zip(string_geds, string_geds_name):
-                            # if (det_list == string_geds[0]):  # keep 1 string (per far prima)
+                            if (
+                                det_list == string_geds[0]
+                            ):  # keep 1 string (per far prima)
 
-                            if len(det_list) == 0:
-                                continue
+                                if len(det_list) == 0:
+                                    continue
 
-                            if par not in two_dim_pars:
-                                string_mean_dict, map_dict = plot.plot_wtrfll(
-                                    dsp_files,
-                                    det_list,
-                                    par,
-                                    time_cut,
-                                    "geds",
-                                    string,
-                                    geds_dict,
-                                    all_ievt,
-                                    puls_only_ievt,
-                                    not_puls_ievt,
-                                    start_code,
-                                    pdf,
-                                )
-                            else:
-                                if par == "K_lines":
-                                    (
-                                        string_mean_dict,
-                                        map_dict,
-                                    ) = plot.plot_par_vs_time(
+                                if par in three_dim_pars:
+                                    string_mean_dict, map_dict = plot.plot_wtrfll(
                                         dsp_files,
                                         det_list,
                                         par,
@@ -274,43 +256,62 @@ def dump_all_plots_together(
                                         pdf,
                                     )
                                 else:
-                                    (
-                                        string_mean_dict,
-                                        map_dict,
-                                    ) = plot.plot_ch_par_vs_time(
-                                        dsp_files,
-                                        det_list,
-                                        par,
-                                        time_cut,
-                                        "geds",
-                                        string,
-                                        geds_dict,
-                                        all_ievt,
-                                        puls_only_ievt,
-                                        not_puls_ievt,
-                                        start_code,
-                                        pdf,
-                                    )
-                            if map_dict is not None:
-                                for det, status in map_dict.items():
-                                    det_status_dict[det] = status
-
-                            if string_mean_dict is not None:
-                                for k in string_mean_dict:
-                                    if k in mean_dict:
-                                        mean_dict[k].update(string_mean_dict[k])
+                                    if par == "K_lines":
+                                        (
+                                            string_mean_dict,
+                                            map_dict,
+                                        ) = plot.plot_par_vs_time(
+                                            dsp_files,
+                                            det_list,
+                                            par,
+                                            time_cut,
+                                            "geds",
+                                            string,
+                                            geds_dict,
+                                            all_ievt,
+                                            puls_only_ievt,
+                                            not_puls_ievt,
+                                            start_code,
+                                            pdf,
+                                        )
                                     else:
-                                        mean_dict[k] = string_mean_dict[k]
-
-                            if verbose is True:
+                                        (
+                                            string_mean_dict,
+                                            map_dict,
+                                        ) = plot.plot_ch_par_vs_time(
+                                            dsp_files,
+                                            det_list,
+                                            par,
+                                            time_cut,
+                                            "geds",
+                                            string,
+                                            geds_dict,
+                                            all_ievt,
+                                            puls_only_ievt,
+                                            not_puls_ievt,
+                                            start_code,
+                                            pdf,
+                                        )
                                 if map_dict is not None:
-                                    logging.error(
-                                        f"\t...{par} for geds (string #{string}) has been plotted!"
-                                    )
-                                else:
-                                    logging.error(
-                                        f"\t...no {par} plots for geds - string #{string}!"
-                                    )
+                                    for det, status in map_dict.items():
+                                        det_status_dict[det] = status
+
+                                if string_mean_dict is not None:
+                                    for k in string_mean_dict:
+                                        if k in mean_dict:
+                                            mean_dict[k].update(string_mean_dict[k])
+                                        else:
+                                            mean_dict[k] = string_mean_dict[k]
+
+                                if verbose is True:
+                                    if map_dict is not None:
+                                        logging.error(
+                                            f"\t...{par} for geds (string #{string}) has been plotted!"
+                                        )
+                                    else:
+                                        logging.error(
+                                            f"\t...no {par} plots for geds - string #{string}!"
+                                        )
                         if det_status_dict != []:
                             map.geds_map(
                                 par,
