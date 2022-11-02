@@ -1287,7 +1287,6 @@ def plot_ch_par_vs_time(
             start_times.append(start_time)
             end_times.append(end_time)
 
-    # local_timezone = datetime.now(timezone.utc).astimezone().tzinfo
     locs = np.linspace(
         dates.date2num(min(start_times)), dates.date2num(max(end_times)), 10
     )

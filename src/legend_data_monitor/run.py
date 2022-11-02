@@ -106,7 +106,7 @@ def select_and_plot_run(
     """
     full_path = os.path.join(path, "dsp", datatype, period, run)
 
-    # get list of lh5 files
+    # get list of lh5 files in cronological order
     lh5_files = os.listdir(full_path)
     lh5_files = sorted(
         lh5_files,
@@ -158,7 +158,6 @@ def select_and_plot_run(
 
     # get full file paths
     runs = [os.path.join(full_path, run_file) for run_file in runs]
-    # runs = runs[:1]
 
     dump_all_plots_together(runs, time_cut, path, json_path, map_path, start_code)
 
@@ -195,7 +194,6 @@ def dump_all_plots_together(
     # key selection (add it to the config file?)
     # dsp_files = dsp_files[17:] # remove data prior to 20220817T124844Z in run22
     # dsp_files = dsp_files[25:]
-    # dsp_files = dsp_files[17:50]  # keep only first data (to perform tests in a quick way)
 
     # exit if no dsp files are found
     if len(dsp_files) == 0:
@@ -233,9 +231,7 @@ def dump_all_plots_together(
                     for par in geds_par:
                         det_status_dict = {}
                         for (det_list, string) in zip(string_geds, string_geds_name):
-                            if (
-                                det_list == string_geds[0]
-                            ):  # keep 1 string (per far prima)
+                                #if (det_list == string_geds[0]):  # keep 1 string (per far prima)
 
                                 if len(det_list) == 0:
                                     continue
