@@ -60,6 +60,7 @@ datatype = j_config[3]
 keep_puls_pars = j_config[5]["pulser"]["keep_puls_pars"]
 keep_phys_pars = j_config[5]["pulser"]["keep_phys_pars"]
 
+
 def load_channels(raw_files: list[str]):
     """
     Load channel map.
@@ -628,20 +629,34 @@ def get_mean(parameter: str, detector: str):
     input_hit = files_path + version + "/inputs/config/tier_hit/"
     config_dsp = os.listdir(input_dsp)
     config_hit = os.listdir(input_hit)
-    config_dsp = [input_dsp+f for f in config_dsp if "ICPC" in f][0]
-    config_hit = [input_hit+f for f in config_hit if "ICPC" in f][0]
+    config_dsp = [input_dsp + f for f in config_dsp if "ICPC" in f][0]
+    config_hit = [input_hit + f for f in config_hit if "ICPC" in f][0]
     with open(config_dsp) as d:
         outputs_dsp = json.load(d)
     dsp_pars = outputs_dsp["outputs"]
     with open(config_hit) as h:
         outputs_hit = json.load(h)
     hit_pars = outputs_hit["outputs"]
-    # get the parameter's tier 
-    if parameter in dsp_pars: file_type = "dsp"
-    if parameter in hit_pars: file_type = "hit"
+    # get the parameter's tier
+    if parameter in dsp_pars:
+        file_type = "dsp"
+    if parameter in hit_pars:
+        file_type = "hit"
 
     # get the path of files for a given parameter, depending if it belongs to the dsp or hit tier
-    file_path = files_path + version + "/generated/tier/" + file_type + "/" +  datatype + "/" + period + "/" + run + "/"
+    file_path = (
+        files_path
+        + version
+        + "/generated/tier/"
+        + file_type
+        + "/"
+        + datatype
+        + "/"
+        + period
+        + "/"
+        + run
+        + "/"
+    )
 
     # get list of lh5 files in chronological order
     lh5_files = os.listdir(file_path)
@@ -652,13 +667,15 @@ def get_mean(parameter: str, detector: str):
             + ((file.split("-")[4]).split("Z")[0]).split("T")[1]
         ),
     )
-    lh5_files = [file_path+f for f in lh5_files]
+    lh5_files = [file_path + f for f in lh5_files]
     # need to get again the pulser/physical entries (over files that have no time cuts)
     all_ievt, puls_only_ievt, not_puls_ievt = get_puls_ievt(lh5_files)
     det_only_index = np.isin(all_ievt, not_puls_ievt)
     puls_only_index = np.isin(all_ievt, puls_only_ievt)
 
-    par_array = lh5.load_nda(lh5_files, [parameter], detector+"/"+file_type)[parameter]
+    par_array = lh5.load_nda(lh5_files, [parameter], detector + "/" + file_type)[
+        parameter
+    ]
     # apply selection of pulser/physical events
     if parameter in keep_puls_pars:
         par_array = par_array[puls_only_index]
@@ -666,7 +683,9 @@ def get_mean(parameter: str, detector: str):
         par_array = par_array[det_only_index]
 
     # use the first file (about 1h long) to compute the mean of a parameter
-    len_first = len(lh5.load_nda(lh5_files[0], [parameter], detector+"/"+file_type)[parameter])
+    len_first = len(
+        lh5.load_nda(lh5_files[0], [parameter], detector + "/" + file_type)[parameter]
+    )
     par_array_mean = np.mean(par_array[:len_first])
 
     return par_array_mean
