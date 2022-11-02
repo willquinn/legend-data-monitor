@@ -4,7 +4,6 @@ from datetime import datetime, timedelta
 
 import numpy as np
 import pygama.lgdo.lh5_store as lh5
-import sys
 
 from . import analysis
 
@@ -51,7 +50,7 @@ def load_parameter(
     par_array = np.array([])
     utime_array = lh5.load_nda(dsp_files, ["timestamp"], detector + "/dsp")["timestamp"]
     hit_files = [dsp_file.replace("dsp", "hit") for dsp_file in dsp_files]
-    
+
     if all_ievt != [] and puls_only_ievt != [] and not_puls_ievt != []:
         det_only_index = np.isin(all_ievt, not_puls_ievt)
         puls_only_index = np.isin(all_ievt, puls_only_ievt)
@@ -67,7 +66,7 @@ def load_parameter(
                 keep_evt_index = puls_only_index
             elif parameter in keep_phys_pars:
                 keep_evt_index = det_only_index
-            else: 
+            else:
                 keep_evt_index = []
         quality_index = analysis.get_qc_ievt(hit_files, detector, keep_evt_index)
         utime_array = utime_array[quality_index]
@@ -152,7 +151,7 @@ def load_parameter(
 
     # Enable following lines to get the % variation of a parameter wrt to its mean value
     if parameter not in no_variation_pars and det_type not in ["spms", "ch000"]:
-        #par_array_mean = np.mean(par_array[:int(0.05 * len(par_array))])
+        # par_array_mean = np.mean(par_array[:int(0.05 * len(par_array))])
         par_array_mean = analysis.get_mean(parameter, detector)
         par_array = np.subtract(par_array, par_array_mean)
         par_array = np.divide(par_array, par_array_mean) * 100

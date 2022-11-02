@@ -500,8 +500,10 @@ def get_qc_ievt(
     keep_evt_index
                 Event number for either high energy pulser or physical events
     """
-    quality_index = lh5.load_nda(hit_files, ["Quality_cuts"], detector + "/hit")["Quality_cuts"] 
-    
+    quality_index = lh5.load_nda(hit_files, ["Quality_cuts"], detector + "/hit")[
+        "Quality_cuts"
+    ]
+
     if keep_evt_index != []:
         quality_index = quality_index[keep_evt_index]
 

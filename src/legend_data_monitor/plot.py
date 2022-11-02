@@ -163,7 +163,12 @@ def plot_par_vs_time(
     for index, detector in enumerate(det_list):
         # if detector == "ch016" or detector=="ch010": # <<-- for quick tests
 
-        if parameter == "cal_puls" or parameter == "AoE_Classifier" or parameter == "AoE_Corrected" or qc_flag[det_type] is True:
+        if (
+            parameter == "cal_puls"
+            or parameter == "AoE_Classifier"
+            or parameter == "AoE_Corrected"
+            or qc_flag[det_type] is True
+        ):
             hit_files = [dsp_file.replace("dsp", "hit") for dsp_file in dsp_files]
             all_files = [dsp_file.replace("dsp", "hit") for dsp_file in dsp_files]
             for hit_file in hit_files:
@@ -893,7 +898,12 @@ def plot_wtrfll(
         if det_type == "geds":
             col = j_plot[3][detector]
 
-        if parameter == "cal_puls" or parameter == "AoE_Classifier" or parameter == "AoE_Corrected" or qc_flag[det_type] is True:
+        if (
+            parameter == "cal_puls"
+            or parameter == "AoE_Classifier"
+            or parameter == "AoE_Corrected"
+            or qc_flag[det_type] is True
+        ):
             hit_files = [dsp_file.replace("dsp", "hit") for dsp_file in dsp_files]
             all_files = [dsp_file.replace("dsp", "hit") for dsp_file in dsp_files]
             for hit_file in hit_files:
@@ -1157,7 +1167,12 @@ def plot_ch_par_vs_time(
             if det_type == "geds":
                 col = j_plot[3][detector]
 
-            if parameter == "cal_puls" or parameter == "AoE_Classifier" or parameter == "AoE_Corrected" or qc_flag[det_type] is True:
+            if (
+                parameter == "cal_puls"
+                or parameter == "AoE_Classifier"
+                or parameter == "AoE_Corrected"
+                or qc_flag[det_type] is True
+            ):
                 hit_files = [dsp_file.replace("dsp", "hit") for dsp_file in dsp_files]
                 all_files = [dsp_file.replace("dsp", "hit") for dsp_file in dsp_files]
                 for hit_file in hit_files:
@@ -1171,7 +1186,7 @@ def plot_ch_par_vs_time(
                         all_files.remove(hit_file)
                         logging.warning("hit file does not exist")
                 if len(all_files) == 0:
-                    continue # skip the detector
+                    continue  # skip the detector
                 hit_files = all_files
 
             # skip detectors that are not geds/spms
