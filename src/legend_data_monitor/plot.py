@@ -32,6 +32,7 @@ run = j_config[2]
 datatype = j_config[3]
 no_variation_pars = j_config[5]["plot_values"]["no_variation_pars"]
 plot_style = j_config[6]
+qc_flag = j_config[5]["quality_cuts"]
 
 
 def plot_parameters(
@@ -164,9 +165,9 @@ def plot_par_vs_time(
 
         if (
             parameter == "cal_puls"
-            or parameter == "K_lines"
             or parameter == "AoE_Classifier"
             or parameter == "AoE_Corrected"
+            or qc_flag[det_type] is True
         ):
             hit_files = [dsp_file.replace("dsp", "hit") for dsp_file in dsp_files]
             all_files = [dsp_file.replace("dsp", "hit") for dsp_file in dsp_files]
@@ -899,9 +900,9 @@ def plot_wtrfll(
 
         if (
             parameter == "cal_puls"
-            or parameter == "K_lines"
             or parameter == "AoE_Classifier"
             or parameter == "AoE_Corrected"
+            or qc_flag[det_type] is True
         ):
             hit_files = [dsp_file.replace("dsp", "hit") for dsp_file in dsp_files]
             all_files = [dsp_file.replace("dsp", "hit") for dsp_file in dsp_files]
@@ -1170,6 +1171,7 @@ def plot_ch_par_vs_time(
                 parameter == "cal_puls"
                 or parameter == "AoE_Classifier"
                 or parameter == "AoE_Corrected"
+                or qc_flag[det_type] is True
             ):
                 hit_files = [dsp_file.replace("dsp", "hit") for dsp_file in dsp_files]
                 all_files = [dsp_file.replace("dsp", "hit") for dsp_file in dsp_files]
@@ -1184,7 +1186,7 @@ def plot_ch_par_vs_time(
                         all_files.remove(hit_file)
                         logging.warning("hit file does not exist")
                 if len(all_files) == 0:
-                    continue
+                    continue  # skip the detector
                 hit_files = all_files
 
             # skip detectors that are not geds/spms

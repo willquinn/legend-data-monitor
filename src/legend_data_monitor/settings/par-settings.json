@@ -371,7 +371,7 @@
       }
     },
     "wf_max": {
-      "label": "wf_max",
+      "label": "wf_max - FPGA baseline",
       "units": "ADC",
       "facecol": "pink",
       "limit": {
