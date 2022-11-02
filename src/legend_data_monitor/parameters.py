@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 
 import numpy as np
 import pygama.lgdo.lh5_store as lh5
+import sys
 
 from . import analysis
 
@@ -11,6 +12,7 @@ j_config, j_par, _ = analysis.read_json_files()
 keep_puls_pars = j_config[5]["pulser"]["keep_puls_pars"]
 keep_phys_pars = j_config[5]["pulser"]["keep_phys_pars"]
 no_variation_pars = j_config[5]["plot_values"]["no_variation_pars"]
+qc_flag = j_config[5]["quality_cuts"]
 
 
 def load_parameter(
@@ -49,7 +51,7 @@ def load_parameter(
     par_array = np.array([])
     utime_array = lh5.load_nda(dsp_files, ["timestamp"], detector + "/dsp")["timestamp"]
     hit_files = [dsp_file.replace("dsp", "hit") for dsp_file in dsp_files]
-
+    
     if all_ievt != [] and puls_only_ievt != [] and not_puls_ievt != []:
         det_only_index = np.isin(all_ievt, not_puls_ievt)
         puls_only_index = np.isin(all_ievt, puls_only_ievt)
@@ -57,6 +59,18 @@ def load_parameter(
             utime_array = utime_array[puls_only_index]
         if parameter in keep_phys_pars:
             utime_array = utime_array[det_only_index]
+
+    # apply quality cuts to the time array
+    if qc_flag[det_type] is True:
+        if parameter not in ["K_lines", "event_rate"]:
+            if parameter in keep_puls_pars:
+                keep_evt_index = puls_only_index
+            elif parameter in keep_phys_pars:
+                keep_evt_index = det_only_index
+            else: 
+                keep_evt_index = []
+        quality_index = analysis.get_qc_ievt(hit_files, detector, keep_evt_index)
+        utime_array = utime_array[quality_index]
 
     # cutting time array according to time selection
     utime_array_cut, _ = analysis.time_analysis(utime_array, [], time_cut, start_code)
@@ -102,7 +116,6 @@ def load_parameter(
         )
         par_array, utime_array_cut = energy_potassium_lines(par_array, utime_array_cut)
     elif parameter == "AoE_Classifier":
-        hit_files = [dsp_file.replace("dsp", "hit") for dsp_file in dsp_files]
         par_array = np.array(
             lh5.load_nda(hit_files, ["AoE_Classifier"], detector + "/hit")[
                 "AoE_Classifier"
@@ -110,8 +123,7 @@ def load_parameter(
         )
     else:
         par_array = lh5.load_nda(dsp_files, [parameter], detector + "/dsp")[parameter]
-
-        if parameter == "wf_max":  # and det_type == "ch000":
+        if parameter == "wf_max":
             baseline = lh5.load_nda(dsp_files, ["baseline"], "ch000/dsp")["baseline"]
             par_array = np.subtract(par_array, baseline)
 
@@ -123,23 +135,24 @@ def load_parameter(
             if parameter != "K_lines" and parameter != "event_rate":
                 par_array = par_array[det_only_index]
 
-    # Applying Quality Cuts
-    # par_array, utime_array_cut = analysis.apply_quality_cut(hit_files, par_array, utime_array_cut, detector, puls_only_index)
+    # apply quality cuts to the parameter array
+    if qc_flag[det_type] is True:
+        par_array = par_array[quality_index]
 
-    # cutting time array according to time selection
+    # cutting parameter array according to time selection
     no_timecut_pars = ["event_rate", "K_lines"]
     if parameter not in no_timecut_pars:
         _, par_array = analysis.time_analysis(
             utime_array, par_array, time_cut, start_code
         )
 
-    # check if there are 'nan' values in par_array; if 'yes', remove them
+    # check if there are 'nan' values in par_array; if yes, remove them
     if np.isnan(par_array).any():
         par_array, utime_array_cut = analysis.remove_nan(par_array, utime_array_cut)
 
     # Enable following lines to get the % variation of a parameter wrt to its mean value
     if parameter not in no_variation_pars and det_type not in ["spms", "ch000"]:
-        # par_array_mean = np.mean(par_array[:int(0.05 * len(par_array))])
+        #par_array_mean = np.mean(par_array[:int(0.05 * len(par_array))])
         par_array_mean = analysis.get_mean(parameter, detector)
         par_array = np.subtract(par_array, par_array_mean)
         par_array = np.divide(par_array, par_array_mean) * 100

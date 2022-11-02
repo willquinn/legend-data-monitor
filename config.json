@@ -14,20 +14,20 @@
   "det_type": {
     "spms": false,
     "geds": true,
-    "ch000": true
+    "ch000": false
   },
   "par_to_plot": {
-    "README": "Select here the parameters you want to plot for spms and geds.",
+    "README": "Select here the parameters you want to plot for spms, geds and channel 0.",
     "spms": ["baseline"],
-    "geds": ["event_rate", "wf_max"],
+    "geds": ["baseline"],
     "ch000": ["wf_max"],
 
     "pulser": {
       "README": "Specify for which parameters you want to keep only HW pulser+FC trigger events (in 'keep_puls_pars') or only physical events, i.e. FC trigger and other events (in 'keep_phys_pars'), otherwise all events will be kept.",
       "keep_puls_pars": [
         "uncal_puls",
-        "baseline",
         "event_rate",
+        "baseline",
         "wf_max",
         "AoE",
         "bl_std",
@@ -37,7 +37,12 @@
       ],
       "keep_phys_pars": ["K_lines"]
     },
-
+    "quality_cuts": {
+      "README": "Specify for which detector you want to apply quality cuts.",
+      "spms": false,
+      "geds": false,
+      "ch000": false
+    },
     "plot_values": {
       "README": "Specify here the parameters for which you want the absolute value (and not the percentage variation wrt the mean value).",
       "no_variation_pars": [
@@ -48,7 +53,6 @@
         "AoE_Corrected"
       ]
     },
-
     "Available-par": {
       "README": "Most of dsp parameters are available for being plotted. Parameters that were taken into account are: dsp/bl_std (noise), dsp/baseline (leakage current), dsp/trapTmax (uncalibrated pulser), AoE_Corrected.",
       "Other-par": {
@@ -71,12 +75,12 @@
     "start_date": "14/09/2022",
     "start_hour": "08:00:00",
     "end_date": "14/09/2022",
-    "end_hour": "08:20:00"
+    "end_hour": "09:00:00"
   },
   "last_hours": {
     "enabled": false,
     "prod_time": {
-      "days": 39,
+      "days": 48,
       "hours": 0,
       "minutes": 0
     }

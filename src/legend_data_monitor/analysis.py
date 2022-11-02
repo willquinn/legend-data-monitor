@@ -483,6 +483,31 @@ def get_puls_ievt(dsp_files: list[str]):
     return puls_ievt, puls_only_ievt, not_puls_ievt
 
 
+def get_qc_ievt(
+    hit_files: list,
+    detector: str,
+    keep_evt_index: np.array,
+):
+    """
+    Apply quality cuts to parameter/time arrays.
+
+    Parameters
+    ----------
+    hit_files
+                lh5 hit files
+    detector
+                Name of the detector
+    keep_evt_index
+                Event number for either high energy pulser or physical events
+    """
+    quality_index = lh5.load_nda(hit_files, ["Quality_cuts"], detector + "/hit")["Quality_cuts"] 
+    
+    if keep_evt_index != []:
+        quality_index = quality_index[keep_evt_index]
+
+    return quality_index
+
+
 def remove_nan(par_array: np.ndarray, time_array: np.ndarray):
     """
     Remove NaN values from arrays.
@@ -498,39 +523,6 @@ def remove_nan(par_array: np.ndarray, time_array: np.ndarray):
     time_array_no_nan = time_array[~np.isnan(par_array)]
 
     return np.asarray(par_array_no_nan), np.asarray(time_array_no_nan)
-
-
-def apply_quality_cut(
-    hit_files: list,
-    par_array: np.array,
-    time_array: np.array,
-    detector: str,
-    puls_only_index: np.array,
-):
-    """
-    Apply quality cuts to parameter/time arrays.
-
-    Parameters
-    ----------
-    hit_files
-                 lh5 hit files
-    par_array
-                 Array with parameter values
-    time_array
-                 Array with time values
-    detector
-                 Name of the detector
-    puls_only_index
-                 Event number for high energy pulser events
-    """
-    quality_cut = lh5.load_nda(hit_files, ["Quality_cuts"], detector + "/hit")[
-        "Quality_cuts"
-    ]
-    quality_cut = quality_cut[puls_only_index]
-    par_array_qc = par_array[np.where(quality_cut is True)]
-    time_array_qc = time_array[np.where(quality_cut is True)]
-
-    return par_array_qc, time_array_qc
 
 
 def avg_over_entries(par_array: np.ndarray, time_array: np.ndarray):
@@ -668,19 +660,19 @@ def get_mean(parameter: str, detector: str):
         ),
     )
     lh5_files = [file_path + f for f in lh5_files]
-    # need to get again the pulser/physical entries (over files that have no time cuts)
-    all_ievt, puls_only_ievt, not_puls_ievt = get_puls_ievt(lh5_files)
-    det_only_index = np.isin(all_ievt, not_puls_ievt)
-    puls_only_index = np.isin(all_ievt, puls_only_ievt)
 
     par_array = lh5.load_nda(lh5_files, [parameter], detector + "/" + file_type)[
         parameter
     ]
     # apply selection of pulser/physical events
-    if parameter in keep_puls_pars:
-        par_array = par_array[puls_only_index]
-    if parameter in keep_phys_pars:
-        par_array = par_array[det_only_index]
+    all_ievt, puls_only_ievt, not_puls_ievt = get_puls_ievt(lh5_files)
+    if all_ievt != [] and puls_only_ievt != [] and not_puls_ievt != []:
+        det_only_index = np.isin(all_ievt, not_puls_ievt)
+        puls_only_index = np.isin(all_ievt, puls_only_ievt)
+        if parameter in keep_puls_pars:
+            par_array = par_array[puls_only_index]
+        if parameter in keep_phys_pars:
+            par_array = par_array[det_only_index]
 
     # use the first file (about 1h long) to compute the mean of a parameter
     len_first = len(
