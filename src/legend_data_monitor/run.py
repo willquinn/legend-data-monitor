@@ -106,7 +106,7 @@ def select_and_plot_run(
     """
     full_path = os.path.join(path, "dsp", datatype, period, run)
 
-    # get list of lh5 files in cronological order
+    # get list of lh5 files in chronological order
     lh5_files = os.listdir(full_path)
     lh5_files = sorted(
         lh5_files,

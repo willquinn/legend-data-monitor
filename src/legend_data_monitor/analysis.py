@@ -643,7 +643,7 @@ def get_mean(parameter: str, detector: str):
     # get the path of files for a given parameter, depending if it belongs to the dsp or hit tier
     file_path = files_path + version + "/generated/tier/" + file_type + "/" +  datatype + "/" + period + "/" + run + "/"
 
-    # get list of lh5 files in cronological order
+    # get list of lh5 files in chronological order
     lh5_files = os.listdir(file_path)
     lh5_files = sorted(
         lh5_files,
