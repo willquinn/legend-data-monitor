@@ -53,7 +53,6 @@ def load_parameter(
     if all_ievt != [] and puls_only_ievt != [] and not_puls_ievt != []:
         det_only_index = np.isin(all_ievt, not_puls_ievt)
         puls_only_index = np.isin(all_ievt, puls_only_ievt)
-
         if parameter in keep_puls_pars:
             utime_array = utime_array[puls_only_index]
         if parameter in keep_phys_pars:
@@ -139,11 +138,9 @@ def load_parameter(
         par_array, utime_array_cut = analysis.remove_nan(par_array, utime_array_cut)
 
     # Enable following lines to get the % variation of a parameter wrt to its mean value
-    if (parameter not in no_variation_pars) and (det_type != "ch000"):
-        cut = int(0.05 * len(par_array))
-        par_array_mean = np.mean(
-            par_array[:cut]
-        )  # to change with the mean over first X files
+    if parameter not in no_variation_pars and det_type not in ["spms", "ch000"]:
+        # par_array_mean = np.mean(par_array[:int(0.05 * len(par_array))])
+        par_array_mean = analysis.get_mean(parameter, detector)
         par_array = np.subtract(par_array, par_array_mean)
         par_array = np.divide(par_array, par_array_mean) * 100
     else:
