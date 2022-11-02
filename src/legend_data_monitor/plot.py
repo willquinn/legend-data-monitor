@@ -285,9 +285,7 @@ def plot_par_vs_time(
         if j_par[0][parameter]["units"] != "null":
             ylab += " [" + j_par[0][parameter]["units"] + "]"
         if parameter == "event_rate":
-            units = j_config[5]["Available-par"]["Other-par"]["event_rate"]["units"][
-                det_type
-            ]
+            units = j_config[5]["Available-par"]["Other-par"]["event_rate"]["units"]
             ylab += " [" + units + "]"
     else:
         ylab += ", %"
@@ -518,9 +516,7 @@ def plot_par_vs_time_ch000(
         if j_par[0][parameter]["units"] != "null":
             ylab += " [" + j_par[0][parameter]["units"] + "]"
         if parameter == "event_rate":
-            units = j_config[5]["Available-par"]["Other-par"]["event_rate"]["units"][
-                det_type
-            ]
+            units = j_config[5]["Available-par"]["Other-par"]["event_rate"]["units"]
             ylab += " [" + units + "]"
     else:
         ylab += ", %"
@@ -994,9 +990,7 @@ def plot_wtrfll(
         if j_par[0][parameter]["units"] != "null":
             zlab = zlab + " [" + j_par[0][parameter]["units"] + "]"
         if parameter == "event_rate":
-            units = j_config[5]["Available-par"]["Other-par"]["event_rate"]["units"][
-                det_type
-            ]
+            units = j_config[5]["Available-par"]["Other-par"]["event_rate"]["units"]
             zlab = zlab + " [" + units + "]"
     else:
         zlab += ", %"
@@ -1142,9 +1136,7 @@ def plot_ch_par_vs_time(
         if j_par[0][parameter]["units"] != "null":
             zlab = zlab + " [" + j_par[0][parameter]["units"] + "]"
         if parameter == "event_rate":
-            units = j_config[5]["Available-par"]["Other-par"]["event_rate"]["units"][
-                det_type
-            ]
+            units = j_config[5]["Available-par"]["Other-par"]["event_rate"]["units"]
             zlab = zlab + " [" + units + "]"
     else:
         zlab += ", %"

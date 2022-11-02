@@ -112,7 +112,7 @@ def load_parameter(
     else:
         par_array = lh5.load_nda(dsp_files, [parameter], detector + "/dsp")[parameter]
 
-        if parameter == "wf_max" and det_type == "ch000":
+        if parameter == "wf_max":# and det_type == "ch000":
             baseline = lh5.load_nda(dsp_files, ["baseline"], "ch000/dsp")["baseline"]
             par_array = np.subtract(par_array, baseline)
 
@@ -215,7 +215,7 @@ def event_rate(dsp_file: list[str], timestamp: list, det_type: str):
 
     i = 0
     j = datetime.timestamp(run_start + timedelta(days=0, hours=2, minutes=0))
-    dt = j_config[5]["Available-par"]["Other-par"]["event_rate"]["dt"][det_type]
+    dt = j_config[5]["Available-par"]["Other-par"]["event_rate"]["dt"]
 
     while j + dt <= timestamp[-1]:
         num = 0
@@ -227,7 +227,7 @@ def event_rate(dsp_file: list[str], timestamp: list, det_type: str):
             times.append(j)
         j += dt
 
-    units = j_config[5]["Available-par"]["Other-par"]["event_rate"]["units"][det_type]
+    units = j_config[5]["Available-par"]["Other-par"]["event_rate"]["units"]
     if units == "mHz":
         fact = 1000
     if units == "Hz":

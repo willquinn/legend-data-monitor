@@ -158,7 +158,7 @@ def select_and_plot_run(
 
     # get full file paths
     runs = [os.path.join(full_path, run_file) for run_file in runs]
-    runs = runs[:1]
+    #runs = runs[:1]
 
     dump_all_plots_together(runs, time_cut, path, json_path, map_path, start_code)
 
@@ -233,9 +233,7 @@ def dump_all_plots_together(
                     for par in geds_par:
                         det_status_dict = {}
                         for (det_list, string) in zip(string_geds, string_geds_name):
-                            if (
-                                det_list == string_geds[0]
-                            ):  # keep 1 string (per far prima)
+                            if (det_list == string_geds[0]):  # keep 1 string (per far prima)
 
                                 if len(det_list) == 0:
                                     continue
