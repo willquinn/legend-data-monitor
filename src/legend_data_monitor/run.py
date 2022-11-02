@@ -158,7 +158,7 @@ def select_and_plot_run(
 
     # get full file paths
     runs = [os.path.join(full_path, run_file) for run_file in runs]
-    runs = runs[:1]
+    # runs = runs[:1]
 
     dump_all_plots_together(runs, time_cut, path, json_path, map_path, start_code)
 
