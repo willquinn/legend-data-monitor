@@ -61,7 +61,6 @@ keep_puls_pars = j_config[5]["pulser"]["keep_puls_pars"]
 keep_phys_pars = j_config[5]["pulser"]["keep_phys_pars"]
 
 
-
 def load_geds():
     """Load channel map for geds."""
     config_path = j_config[0]["path"]["config-path"]

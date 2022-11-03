@@ -534,8 +534,6 @@ def plot_par_vs_time_ch000(
     return map_dict
 
 
-
-
 def plot_par_vs_time_2d(
     dsp_files: list[str],
     det_list: list[str],
