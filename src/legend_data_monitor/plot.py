@@ -4,7 +4,7 @@ import logging
 import os
 import pickle as pkl
 from copy import copy
-from datetime import datetime, timezone
+from datetime import datetime
 
 import matplotlib as mpl
 import matplotlib.patches as mpatches
@@ -188,10 +188,10 @@ def plot_par_vs_time(
             continue
 
         # add entries for the legend
-        card = det_dict[detector]["daq"]["card"]
-        ch_orca = det_dict[detector]["daq"]["ch_orca"]
+        card = det_dict[detector]["daq"]["board_slot"]
+        ch_orca = det_dict[detector]["daq"]["board_ch"]
         if det_type == "geds":
-            name = det_dict[detector]["det"]
+            name = det_dict[detector]["det_id"]
             if "V0" in name:
                 name = name[2:]
             string_no = det_dict[detector]["string"]["number"]
@@ -331,75 +331,27 @@ def plot_par_vs_time(
     # define name of pkl file (with info about time cut if present)
     if len(time_cut) != 0:
         start, end = timecut.time_dates(time_cut, start_code)
-        if det_type == "geds":
-            pkl_name = (
-                exp
-                + "-"
-                + period
-                + "-"
-                + run
-                + "-"
-                + datatype
-                + "-"
-                + start
-                + "_"
-                + end
-                + "-"
-                + parameter
-                + "-string"
-                + string_number
-                + ".pkl"
-            )
-        if det_type == "spms":
-            pkl_name = (
-                exp
-                + "-"
-                + period
-                + "-"
-                + run
-                + "-"
-                + datatype
-                + "-"
-                + start
-                + "_"
-                + end
-                + "-"
-                + parameter
-                + "-"
-                + string_number
-                + ".pkl"
-            )
+        pkl_name = (
+            exp
+            + "-"
+            + period
+            + "-"
+            + run
+            + "-"
+            + datatype
+            + "-"
+            + start
+            + "_"
+            + end
+            + "-"
+            + parameter
+        )
     else:
-        if det_type == "geds":
-            pkl_name = (
-                exp
-                + "-"
-                + period
-                + "-"
-                + run
-                + "-"
-                + datatype
-                + "-"
-                + parameter
-                + "-string"
-                + string_number
-                + ".pkl"
-            )
-        if det_type == "spms":
-            pkl_name = (
-                exp
-                + "-"
-                + period
-                + "-"
-                + run
-                + "-"
-                + datatype
-                + "-"
-                + parameter
-                + "-"
-                + string_number
-                + ".pkl"
-            )
+        pkl_name = exp + "-" + period + "-" + run + "-" + datatype + "-" + parameter
+    if det_type == "geds":
+        pkl_name += "-string" + string_number + ".pkl"
+    if det_type == "spms":
+        pkl_name += "-" + string_number + ".pkl"
 
     pkl.dump(ax, open(f"out/pkl-files/par-vs-time/{pkl_name}", "wb"))
     pdf.savefig(bbox_inches="tight")
@@ -593,236 +545,159 @@ def plot_par_vs_time_2d(
     pdf=None,
 ) -> None:
     """
-    Plot for gain parameter.
+    Plot spms parameters.
 
     Parameters
     ----------
     dsp_files
-                    lh5 dsp files
+                lh5 dsp files
     det_list
-                    List of detectors present in a string
-    det_list
-                    Detector channel numbers
+                List of detectors present in a string
     time_cut
-                    List with info about time cuts
-    string_number
-                    Number of the string under study
+                List with info about time cuts
     det_type
-                    Type of detector (geds or spms)
+                Type of detector (geds or spms)
+    string_number
+                Number of the string under study
     det_dict
-                    Contains info (crate, card, ch_orca) for geds/spms/other
+                Contains info (crate, card, ch_orca) for geds/spms/other
+    start_code
+                Starting time of the code
     """
     parameter = "gain"
-    handle_list = []
-    plt.rcParams["font.size"] = 6
+    start_times = []
+    end_times = []
+    plt.rcParams["font.size"] = 8
+
+    # creation of subplots for an arbitrary number of detectors
     if "OB" in string_number:
-        fig, (
-            (ax1, ax2, ax3, ax4, ax5),
-            (ax6, ax7, ax8, ax9, ax10),
-            (ax11, ax12, ax13, ax14, ax15),
-            (ax16, ax17, ax18, ax19, ax20),
-        ) = plt.subplots(4, 5, sharex=True, sharey=True)
-        ax_list = [
-            ax1,
-            ax2,
-            ax3,
-            ax4,
-            ax5,
-            ax6,
-            ax7,
-            ax8,
-            ax9,
-            ax10,
-            ax11,
-            ax12,
-            ax13,
-            ax14,
-            ax15,
-            ax16,
-            ax17,
-            ax18,
-            ax19,
-            ax20,
-        ]
+        columns = 5
+        rows = 4
     if "IB" in string_number:
-        fig, ((ax1, ax2, ax3), (ax4, ax5, ax6), (ax7, ax8, ax9)) = plt.subplots(
-            3, 3, sharex=True, sharey=True
-        )
-        ax_list = [ax1, ax2, ax3, ax4, ax5, ax6, ax7, ax8, ax9]
-
-    ax_idx = 0
-    fig.patch.set_facecolor(j_par[0][parameter]["facecol"])
-    fig.suptitle(f"spms - {string_number}", fontsize=8)
-
-    for detector in det_list:
-        if det_dict[detector]["system"] == "--":
-            continue
-
-        wf_array = lh5.load_nda(dsp_files, ["wf_max"], detector + "/dsp/")["wf_max"]
-
-        # add entries for the legend
-        card = det_dict[detector]["daq"]["card"]
-        ch_orca = det_dict[detector]["daq"]["ch_orca"]
-        if det_type == "spms":
-            handle_list.append(
-                mpatches.Patch(
-                    color=j_plot[2][str(detector)],
-                    label=f"{detector} - {card},{ch_orca}",
-                )
-            )
-        if det_type == "geds":
-            handle_list.append(
-                mpatches.Patch(
-                    color=j_plot[3][detector],
-                    label=f"{detector} - {card},{ch_orca}",
-                )
-            )
-
-        # select the channel
-        utime_array = analysis.build_utime_array(
-            dsp_files, detector, "spms"
-        )  # shifted timestamps (pulser events are not removed)
-        utime_array, wf_array = analysis.time_analysis(
-            utime_array, wf_array, time_cut, start_code
-        )
-        par_array = parameters.spms_gain(wf_array)
-
-        # define x-axis
-        start_time = datetime.fromtimestamp(utime_array[0])
-        end_time = datetime.fromtimestamp(utime_array[-1])
-        local_timezone = datetime.now(timezone.utc).astimezone().tzinfo
-        locs = np.linspace(dates.date2num(start_time), dates.date2num(end_time), 3)
-        xlab = "%d/%m"
-        if j_config[10]["frmt"] == "day/month-time":
-            xlab = "%d/%m\n%H:%M"
-        if j_config[10]["frmt"] == "time":
-            xlab = "%H:%M"
-        labels = [dates.num2date(loc, tz=local_timezone).strftime(xlab) for loc in locs]
-
-        # 2D-plot
-        h, xedges, yedges = np.histogram2d(
-            utime_array,
-            par_array,
-            bins=[200, 200],
-            range=[[utime_array[0], utime_array[-1]], [0, 300]],
-        )
-        to_datetime = np.vectorize(datetime.fromtimestamp)
-        xedges_datetime = to_datetime(xedges)
-        cmap = copy(plt.get_cmap("hot"))
-        cmap.set_bad(cmap(0))
-
-        ylab = j_par[0][parameter]["label"]
+        columns = 3
+        rows = 3
+    fig, ax_array = plt.subplots(rows, columns, squeeze=False, sharex=True, sharey=True)
+    # fig.patch.set_facecolor(j_par[0][parameter]["facecol"])
+    fig.suptitle(f"{det_type} - {string_number}", fontsize=12)
+    ylab = j_par[0][parameter]["label"]
+    if parameter in no_variation_pars:
         if j_par[0][parameter]["units"] != "null":
             ylab = ylab + " [" + j_par[0][parameter]["units"] + "]"
+        if parameter == "event_rate":
+            units = j_config[5]["Available-par"]["Other-par"]["event_rate"]["units"]
+            ylab = ylab + " [" + units + "]"
+    else:
+        ylab += ", %"
+    fig.supylabel(ylab, fontsize=12, x=0.005)
+    xlab = j_config[10]["frmt"]
+    fig.supxlabel(f"{xlab} (UTC)", fontsize=12)
 
-        ax_list[ax_idx].pcolor(
-            xedges_datetime, yedges, h.T, norm=mpl.colors.LogNorm(), cmap="magma"
-        )
-        x_lab = j_config[10]["frmt"]
-        if "OB" in string_number:
-            ax_list[ax_idx].set_title(
-                f"{detector} - {card},{ch_orca}", fontsize=7, y=0.93
-            )
-            if ax_idx == 0 or ax_idx == 5 or ax_idx == 10 or ax_idx == 15:
-                ax_list[ax_idx].set(ylabel="Gain [ADC]")
-            if (
-                ax_idx == 15
-                or ax_idx == 16
-                or ax_idx == 17
-                or ax_idx == 18
-                or ax_idx == 19
-            ):
-                ax_list[ax_idx].set(xlabel=f"{x_lab} (UTC)")
-        if "IB" in string_number:
-            ax_list[ax_idx].set_title(
-                f"{detector} - {card},{ch_orca}", fontsize=7, y=0.95
-            )
-            if ax_idx == 0 or ax_idx == 3 or ax_idx == 6:
-                ax_list[ax_idx].set(ylabel="Gain [ADC]")
-            if ax_idx == 6 or ax_idx == 7 or ax_idx == 8:
-                ax_list[ax_idx].set(xlabel=f"{x_lab} (UTC)")
-        ax_list[ax_idx].set_xticks(locs)
-        ax_list[ax_idx].set_xticklabels(labels)
-        plt.setp(ax_list[ax_idx].get_xticklabels(), rotation=0, ha="center")
+    det_idx = 0
+    for ax_row in ax_array:
+        for axes in ax_row:
+            detector = det_list[det_idx]
+            if det_dict[detector]["system"] == "--":
+                continue
 
-        ax_idx += 1
-        handle_list = []
-        start_time = end_time = 0
+            # add entries for the legend
+            if det_type == "geds":
+                name = det_dict[detector]["det_id"]
+                string_no = det_dict[detector]["string"]["number"]
+                string_pos = det_dict[detector]["string"]["position"]
+                lbl = f"{name}\ns{string_no}-p{string_pos}-{detector}"
+            else:
+                lbl = f"{detector}"
+
+            # CHANGE FROM HERE....
+            raw_files = [dsp_file.replace("dsp", "raw") for dsp_file in dsp_files]
+            wfs = lh5.load_nda(raw_files, ["values"], detector + "/raw/waveform")[
+                "values"
+            ]
+            wfs = np.array(wfs)
+            bl_mean = np.array([np.mean(wf[:50]) for wf in wfs])
+            bl_removed_wf = [wf - bl for (wf, bl) in zip(wfs, bl_mean)]
+            wf_array = np.array([np.max(wf) for wf in bl_removed_wf])
+
+            utime_array = lh5.load_nda(dsp_files, ["timestamp"], detector + "/dsp")[
+                "timestamp"
+            ]  # shifted timestamps (pulser events are not removed)
+            utime_array, wf_array = analysis.time_analysis(
+                utime_array, wf_array, time_cut, start_code
+            )
+            par_array = wf_array
+            # ....TO HERE
+
+            times = [datetime.fromtimestamp(t) for t in utime_array]
+            start_time = times[0]
+            end_time = times[-1]
+
+            # plot
+            h, xedges, yedges = np.histogram2d(
+                utime_array,
+                par_array,
+                bins=[200, 200],
+                range=[[utime_array[0], utime_array[-1]], [0, 300]],
+            )
+            to_datetime = np.vectorize(datetime.fromtimestamp)
+            xedges_datetime = to_datetime(xedges)
+            cmap = copy(plt.get_cmap("hot"))
+            cmap.set_bad(cmap(0))
+
+            axes.pcolor(
+                xedges_datetime, yedges, h.T, norm=mpl.colors.LogNorm(), cmap="inferno"
+            )
+            axes.set_title(f"{lbl}", fontsize=9, y=0.98)
+            axes.locator_params(axis="y", nbins=3)
+
+            det_idx += 1
+
+            # skip those detectors that are not within the time window
+            if start_time == 0 and end_time == 0:
+                continue
+            start_times.append(start_time)
+            end_times.append(end_time)
+
+    locs = np.linspace(
+        dates.date2num(min(start_times)), dates.date2num(max(end_times)), 3
+    )
+    xlab = "%d/%m"
+    if j_config[10]["frmt"] == "day/month-time":
+        xlab = "%d/%m\n%H:%M"
+    if j_config[10]["frmt"] == "time":
+        xlab = "%H:%M"
+    labels = [dates.num2date(loc).strftime(xlab) for loc in locs]
+
+    [ax.set_xticks(locs) for axs in ax_array for ax in axs]
+    [ax.set_xticklabels(labels) for axs in ax_array for ax in axs]
+    plt.xticks(locs, labels)
 
     # define name of pkl file (with info about time cut if present)
     if len(time_cut) != 0:
-        start, end = timecut.time_dates(time_cut)
-        if det_type == "geds":
-            pkl_name = (
-                exp
-                + "-"
-                + period
-                + "-"
-                + run
-                + "-"
-                + datatype
-                + "-"
-                + start
-                + "_"
-                + end
-                + "-"
-                + parameter
-                + "-string"
-                + string_number
-                + ".pkl"
-            )
-        if det_type == "spms":
-            pkl_name = (
-                exp
-                + "-"
-                + period
-                + "-"
-                + run
-                + "-"
-                + datatype
-                + "-"
-                + start
-                + "_"
-                + end
-                + "-"
-                + parameter
-                + "-"
-                + string_number
-                + ".pkl"
-            )
+        start, end = timecut.time_dates(time_cut, start_code)
+        pkl_name = (
+            exp
+            + "-"
+            + period
+            + "-"
+            + run
+            + "-"
+            + datatype
+            + "-"
+            + start
+            + "_"
+            + end
+            + "-"
+            + parameter
+        )
     else:
-        if det_type == "geds":
-            pkl_name = (
-                exp
-                + "-"
-                + period
-                + "-"
-                + run
-                + "-"
-                + datatype
-                + "-"
-                + parameter
-                + "-string"
-                + string_number
-                + ".pkl"
-            )
-        if det_type == "spms":
-            pkl_name = (
-                exp
-                + "-"
-                + period
-                + "-"
-                + run
-                + "-"
-                + datatype
-                + "-"
-                + parameter
-                + "-"
-                + string_number
-                + ".pkl"
-            )
+        pkl_name = exp + "-" + period + "-" + run + "-" + datatype + "-" + parameter
+    if det_type == "geds":
+        pkl_name += "-string" + string_number + ".pkl"
+    if det_type == "spms":
+        pkl_name += "-" + string_number + ".pkl"
 
-    pkl.dump(ax_list, open(f"out/pkl-files/par-vs-time/{pkl_name}", "wb"))
+    fig.tight_layout()
+    pkl.dump(ax_array, open(f"out/pkl-files/par-vs-time/{pkl_name}", "wb"))
     pdf.savefig(bbox_inches="tight")
     plt.close()
 
@@ -871,7 +746,6 @@ def plot_wtrfll(
     start_code
                 Starting time of the code
     """
-    # fig = plt.subplot(projection='3d')
     fig = plt.figure(figsize=(20, 16))
     ax = fig.add_subplot(111, projection="3d")
     y_values = []
@@ -884,7 +758,7 @@ def plot_wtrfll(
 
         # add entries for the legend
         if det_type == "geds":
-            name = det_dict[detector]["det"]
+            name = det_dict[detector]["det_id"]
             if "V0" in name:
                 name = name[2:]
             string_no = det_dict[detector]["string"]["number"]
@@ -1008,75 +882,28 @@ def plot_wtrfll(
     # define name of pkl file (with info about time cut if present)
     if len(time_cut) != 0:
         start, end = timecut.time_dates(time_cut, start_code)
-        if det_type == "geds":
-            pkl_name = (
-                exp
-                + "-"
-                + period
-                + "-"
-                + run
-                + "-"
-                + datatype
-                + "-"
-                + start
-                + "_"
-                + end
-                + "-"
-                + parameter
-                + "-string"
-                + string_number
-                + ".pkl"
-            )
-        if det_type == "spms":
-            pkl_name = (
-                exp
-                + "-"
-                + period
-                + "-"
-                + run
-                + "-"
-                + datatype
-                + "-"
-                + start
-                + "_"
-                + end
-                + "-"
-                + parameter
-                + "-"
-                + string_number
-                + ".pkl"
-            )
+        pkl_name = (
+            exp
+            + "-"
+            + period
+            + "-"
+            + run
+            + "-"
+            + datatype
+            + "-"
+            + start
+            + "_"
+            + end
+            + "-"
+            + parameter
+        )
     else:
-        if det_type == "geds":
-            pkl_name = (
-                exp
-                + "-"
-                + period
-                + "-"
-                + run
-                + "-"
-                + datatype
-                + "-"
-                + parameter
-                + "-string"
-                + string_number
-                + ".pkl"
-            )
-        if det_type == "spms":
-            pkl_name = (
-                exp
-                + "-"
-                + period
-                + "-"
-                + run
-                + "-"
-                + datatype
-                + "-"
-                + parameter
-                + "-"
-                + string_number
-                + ".pkl"
-            )
+        pkl_name = exp + "-" + period + "-" + run + "-" + datatype + "-" + parameter
+    if det_type == "geds":
+        pkl_name += "-string" + string_number + ".pkl"
+    if det_type == "spms":
+        pkl_name += "-" + string_number + ".pkl"
+
     pkl.dump(ax, open(f"out/pkl-files/par-vs-time/{pkl_name}", "wb"))
     pdf.savefig(bbox_inches="tight")
     plt.close()
@@ -1132,16 +959,18 @@ def plot_ch_par_vs_time(
     )
     # fig.patch.set_facecolor(j_par[0][parameter]["facecol"])
     fig.suptitle(f"{det_type} - S{string_number}")
-    zlab = j_par[0][parameter]["label"]
+    ylab = j_par[0][parameter]["label"]
     if parameter in no_variation_pars:
         if j_par[0][parameter]["units"] != "null":
-            zlab = zlab + " [" + j_par[0][parameter]["units"] + "]"
+            ylab = ylab + " [" + j_par[0][parameter]["units"] + "]"
         if parameter == "event_rate":
             units = j_config[5]["Available-par"]["Other-par"]["event_rate"]["units"]
-            zlab = zlab + " [" + units + "]"
+            ylab = ylab + " [" + units + "]"
     else:
-        zlab += ", %"
-    fig.supylabel(zlab, x=0.005)
+        ylab += ", %"
+    fig.supylabel(ylab, x=0.005)
+    xlab = j_config[10]["frmt"]
+    fig.supxlabel(f"{xlab} (UTC)")
     start_times = []
     end_times = []
     map_dict = {}
@@ -1156,7 +985,7 @@ def plot_ch_par_vs_time(
                 continue
 
             if det_type == "geds":
-                name = det_dict[detector]["det"]
+                name = det_dict[detector]["det_id"]
                 string_no = det_dict[detector]["string"]["number"]
                 string_pos = det_dict[detector]["string"]["position"]
                 lbl = f"{name}\ns{string_no}-p{string_pos}-{detector}"
@@ -1310,75 +1139,27 @@ def plot_ch_par_vs_time(
     # define name of pkl file (with info about time cut if present)
     if len(time_cut) != 0:
         start, end = timecut.time_dates(time_cut, start_code)
-        if det_type == "geds":
-            pkl_name = (
-                exp
-                + "-"
-                + period
-                + "-"
-                + run
-                + "-"
-                + datatype
-                + "-"
-                + start
-                + "_"
-                + end
-                + "-"
-                + parameter
-                + "-string"
-                + string_number
-                + ".pkl"
-            )
-        if det_type == "spms":
-            pkl_name = (
-                exp
-                + "-"
-                + period
-                + "-"
-                + run
-                + "-"
-                + datatype
-                + "-"
-                + start
-                + "_"
-                + end
-                + "-"
-                + parameter
-                + "-"
-                + string_number
-                + ".pkl"
-            )
+        pkl_name = (
+            exp
+            + "-"
+            + period
+            + "-"
+            + run
+            + "-"
+            + datatype
+            + "-"
+            + start
+            + "_"
+            + end
+            + "-"
+            + parameter
+        )
     else:
-        if det_type == "geds":
-            pkl_name = (
-                exp
-                + "-"
-                + period
-                + "-"
-                + run
-                + "-"
-                + datatype
-                + "-"
-                + parameter
-                + "-string"
-                + string_number
-                + ".pkl"
-            )
-        if det_type == "spms":
-            pkl_name = (
-                exp
-                + "-"
-                + period
-                + "-"
-                + run
-                + "-"
-                + datatype
-                + "-"
-                + parameter
-                + "-"
-                + string_number
-                + ".pkl"
-            )
+        pkl_name = exp + "-" + period + "-" + run + "-" + datatype + "-" + parameter
+    if det_type == "geds":
+        pkl_name += "-string" + string_number + ".pkl"
+    if det_type == "spms":
+        pkl_name += "-" + string_number + ".pkl"
 
     fig.tight_layout()
     pkl.dump(ax_array, open(f"out/pkl-files/par-vs-time/{pkl_name}", "wb"))
