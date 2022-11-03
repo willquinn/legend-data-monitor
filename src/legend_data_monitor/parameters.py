@@ -35,7 +35,7 @@ def load_parameter(
     dsp_files
                     lh5 dsp files
     detector
-                    Name of the detector
+                    Name of the aoe
     det_type
                     Type of detector (geds or spms)
     time_cut
@@ -88,8 +88,6 @@ def load_parameter(
         par_array = lh5.load_nda(hit_files, ["cuspEmax_ctc_cal"], detector + "/hit")[
             "cuspEmax_ctc_cal"
         ]
-    elif parameter == "AoE":
-        par_array = aoe(dsp_files, detector)
     elif parameter == "AoE_Classifier":
         par_array = lh5.load_nda(hit_files, ["AoE_Classifier"], detector + "/hit")[
             "AoE_Classifier"

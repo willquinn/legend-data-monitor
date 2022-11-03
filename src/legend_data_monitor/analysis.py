@@ -62,9 +62,7 @@ keep_phys_pars = j_config[5]["pulser"]["keep_phys_pars"]
 
 import sys
 def load_geds():
-    """
-    Load channel map for geds.
-    """
+    """Load channel map for geds."""
     config_path = j_config[0]["path"]["config-path"]
     with open(config_path) as d:
         channel_map = json.load(d)
