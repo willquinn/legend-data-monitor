@@ -4,7 +4,7 @@ import logging
 import os
 import pickle as pkl
 from copy import copy
-from datetime import datetime, timezone
+from datetime import datetime
 
 import matplotlib as mpl
 import matplotlib.patches as mpatches
@@ -347,17 +347,7 @@ def plot_par_vs_time(
             + parameter
         )
     else:
-        pkl_name = (
-            exp
-            + "-"
-            + period
-            + "-"
-            + run
-            + "-"
-            + datatype
-            + "-"
-            + parameter
-        )
+        pkl_name = exp + "-" + period + "-" + run + "-" + datatype + "-" + parameter
     if det_type == "geds":
         pkl_name += "-string" + string_number + ".pkl"
     if det_type == "spms":
@@ -543,7 +533,9 @@ def plot_par_vs_time_ch000(
 
     return map_dict
 
-import sys
+
+
+
 def plot_par_vs_time_2d(
     dsp_files: list[str],
     det_list: list[str],
@@ -586,10 +578,8 @@ def plot_par_vs_time_2d(
     if "IB" in string_number:
         columns = 3
         rows = 3
-    fig, ax_array = plt.subplots(
-        rows, columns, squeeze=False, sharex=True, sharey=True
-    )
-    #fig.patch.set_facecolor(j_par[0][parameter]["facecol"])
+    fig, ax_array = plt.subplots(rows, columns, squeeze=False, sharex=True, sharey=True)
+    # fig.patch.set_facecolor(j_par[0][parameter]["facecol"])
     fig.suptitle(f"{det_type} - {string_number}", fontsize=12)
     ylab = j_par[0][parameter]["label"]
     if parameter in no_variation_pars:
@@ -607,7 +597,7 @@ def plot_par_vs_time_2d(
     det_idx = 0
     for ax_row in ax_array:
         for axes in ax_row:
-            detector = det_list[det_idx] 
+            detector = det_list[det_idx]
             if det_dict[detector]["system"] == "--":
                 continue
 
@@ -622,13 +612,17 @@ def plot_par_vs_time_2d(
 
             # CHANGE FROM HERE....
             raw_files = [dsp_file.replace("dsp", "raw") for dsp_file in dsp_files]
-            wfs = lh5.load_nda(raw_files, ["values"], detector + "/raw/waveform")["values"]
+            wfs = lh5.load_nda(raw_files, ["values"], detector + "/raw/waveform")[
+                "values"
+            ]
             wfs = np.array(wfs)
             bl_mean = np.array([np.mean(wf[:50]) for wf in wfs])
             bl_removed_wf = [wf - bl for (wf, bl) in zip(wfs, bl_mean)]
             wf_array = np.array([np.max(wf) for wf in bl_removed_wf])
 
-            utime_array = lh5.load_nda(dsp_files, ["timestamp"], detector + "/dsp")["timestamp"] # shifted timestamps (pulser events are not removed)
+            utime_array = lh5.load_nda(dsp_files, ["timestamp"], detector + "/dsp")[
+                "timestamp"
+            ]  # shifted timestamps (pulser events are not removed)
             utime_array, wf_array = analysis.time_analysis(
                 utime_array, wf_array, time_cut, start_code
             )
@@ -655,8 +649,8 @@ def plot_par_vs_time_2d(
                 xedges_datetime, yedges, h.T, norm=mpl.colors.LogNorm(), cmap="inferno"
             )
             axes.set_title(f"{lbl}", fontsize=9, y=0.98)
-            axes.locator_params(axis='y', nbins=3)
-             
+            axes.locator_params(axis="y", nbins=3)
+
             det_idx += 1
 
             # skip those detectors that are not within the time window
@@ -698,17 +692,7 @@ def plot_par_vs_time_2d(
             + parameter
         )
     else:
-        pkl_name = (
-            exp
-            + "-"
-            + period
-            + "-"
-            + run
-            + "-"
-            + datatype
-            + "-"
-            + parameter
-        )
+        pkl_name = exp + "-" + period + "-" + run + "-" + datatype + "-" + parameter
     if det_type == "geds":
         pkl_name += "-string" + string_number + ".pkl"
     if det_type == "spms":
@@ -916,17 +900,7 @@ def plot_wtrfll(
             + parameter
         )
     else:
-        pkl_name = (
-            exp
-            + "-"
-            + period
-            + "-"
-            + run
-            + "-"
-            + datatype
-            + "-"
-            + parameter
-        )
+        pkl_name = exp + "-" + period + "-" + run + "-" + datatype + "-" + parameter
     if det_type == "geds":
         pkl_name += "-string" + string_number + ".pkl"
     if det_type == "spms":
@@ -1183,17 +1157,7 @@ def plot_ch_par_vs_time(
             + parameter
         )
     else:
-        pkl_name = (
-            exp
-            + "-"
-            + period
-            + "-"
-            + run
-            + "-"
-            + datatype
-            + "-"
-            + parameter
-        )
+        pkl_name = exp + "-" + period + "-" + run + "-" + datatype + "-" + parameter
     if det_type == "geds":
         pkl_name += "-string" + string_number + ".pkl"
     if det_type == "spms":
