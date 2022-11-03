@@ -202,7 +202,8 @@ def dump_all_plots_together(
 
     # create channel maps from orca+raw files
     raw_files = [dsp_file.replace("dsp", "raw") for dsp_file in dsp_files]
-    geds_dict, spms_dict, _ = analysis.load_channels(raw_files)
+    geds_dict = analysis.load_geds()
+    spms_dict = analysis.load_spms(raw_files)
     mean_dict = {}
 
     # get pulser-events indices
@@ -231,7 +232,7 @@ def dump_all_plots_together(
                     for par in geds_par:
                         det_status_dict = {}
                         for (det_list, string) in zip(string_geds, string_geds_name):
-                            # if (det_list == string_geds[0]):  # keep 1 string (per far prima)
+                          if (det_list == string_geds[0]):  # keep 1 string (per far prima)
 
                             if len(det_list) == 0:
                                 continue
@@ -391,7 +392,7 @@ def dump_all_plots_together(
                                             logging.error(
                                                 f"\t...no {par} plots for spms - {string}!"
                                             )
-                                # maps are disabled!
+                                """
                                 if det_status_dict != []:
                                     map.spms_map(
                                         par,
@@ -404,6 +405,7 @@ def dump_all_plots_together(
                                         start_code,
                                         pdf_map,
                                     )
+                                """
 
             # ch000 plots
             if det_type["ch000"] is True:

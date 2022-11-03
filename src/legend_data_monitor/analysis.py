@@ -60,10 +60,22 @@ datatype = j_config[3]
 keep_puls_pars = j_config[5]["pulser"]["keep_puls_pars"]
 keep_phys_pars = j_config[5]["pulser"]["keep_phys_pars"]
 
-
-def load_channels(raw_files: list[str]):
+import sys
+def load_geds():
     """
-    Load channel map.
+    Load channel map for geds.
+    """
+    config_path = j_config[0]["path"]["config-path"]
+    with open(config_path) as d:
+        channel_map = json.load(d)
+    geds_dict = channel_map["hardware_configuration"]["channel_map"]
+
+    return geds_dict
+
+
+def load_spms(raw_files: list[str]):
+    """
+    Load channel map for spms.
 
     Parameters
     ----------
@@ -83,15 +95,10 @@ def load_channels(raw_files: list[str]):
     orca_file = f"{orca_path}{data_type}/{period}/{run}/{orca_name}"
     orstr = orca_streamer.OrcaStreamer()
     orstr.open_stream(orca_file)
-    channel_map_geds = json.loads(
-        orstr.header["ObjectInfo"]["ORL200Model"]["DetectorMap"]
-    )
     channel_map_spms = json.loads(orstr.header["ObjectInfo"]["ORL200Model"]["SiPMMap"])
     store = LH5Store()
 
-    geds_dict = {}
     spms_dict = {}
-    other_dict = {}
 
     for ch in channels:
         crate = store.read_object(f"{ch}/raw/crate", raw_files[0])[0].nda[0]
@@ -99,33 +106,9 @@ def load_channels(raw_files: list[str]):
         ch_orca = store.read_object(f"{ch}/raw/ch_orca", raw_files[0])[0].nda[0]
         daq_dict = {}
         daq_dict["crate"] = crate
-        daq_dict["card"] = card
-        daq_dict["ch_orca"] = ch_orca
+        daq_dict["board_slot"] = card
+        daq_dict["board_ch"] = ch_orca
 
-        if crate == 0:
-            for det, entry in channel_map_geds.items():
-                if (
-                    entry["daq"]["crate"] == f"{crate}"
-                    and entry["daq"]["board_slot"] == f"{card}"
-                    and entry["daq"]["board_ch"] == f"{ch_orca}"
-                ):
-                    string_dict = {}
-                    hv_dict = {}
-                    string_dict["number"] = entry["string"]["number"]
-                    string_dict["position"] = entry["string"]["position"]
-                    hv_dict["board_chan"] = entry["high_voltage"]["board_chan"]
-                    hv_dict["flange_id"] = entry["high_voltage"]["flange_id"]
-
-                    geds_dict[ch] = {
-                        "system": "ged",
-                        "det": det,
-                        "string": string_dict,
-                        "daq": daq_dict,
-                        "high_voltage": hv_dict,
-                    }
-
-        if crate == 1:
-            other_dict[ch] = {"system": "--", "daq": daq_dict}
         if crate == 2:
             for det, entry in channel_map_spms.items():
                 if (
@@ -140,14 +123,14 @@ def load_channels(raw_files: list[str]):
 
                     spms_dict[ch] = {
                         "system": "spm",
-                        "det": det,
+                        "det_id": det,
                         "barrel": entry["det_type"],
                         "daq": daq_dict
                         # "high_voltage": hv_dict,
                     }
             # spms_dict[ch] = {"system": "spm", "daq": daq_dict}
 
-    return geds_dict, spms_dict, other_dict
+    return spms_dict
 
 
 def read_geds(geds_dict: dict):
@@ -278,7 +261,7 @@ def read_spms(spms_dict: dict):
         # card = spms_dict[ch]["daq"]["card"]
         # ch_orca = spms_dict[ch]["daq"]["ch_orca"]
         spms_type = spms_dict[ch]["barrel"]
-        det_name_int = int(spms_dict[ch]["det"].split("S")[1])
+        det_name_int = int(spms_dict[ch]["det_id"].split("S")[1])
 
         if spms_type == "OB" and det_name_int % 2 != 0:
             top_ob.append(ch)

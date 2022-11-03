@@ -151,32 +151,14 @@ def load_parameter(
 
     # Enable following lines to get the % variation of a parameter wrt to its mean value
     if parameter not in no_variation_pars and det_type not in ["spms", "ch000"]:
-        # par_array_mean = np.mean(par_array[:int(0.05 * len(par_array))])
-        par_array_mean = analysis.get_mean(parameter, detector)
+        par_array_mean = np.mean(par_array[:int(0.05 * len(par_array))])
+        #par_array_mean = analysis.get_mean(parameter, detector)
         par_array = np.subtract(par_array, par_array_mean)
         par_array = np.divide(par_array, par_array_mean) * 100
     else:
         par_array_mean = []
 
     return par_array_mean, par_array, utime_array_cut
-
-
-def aoe(dsp_files: list[str], detector: str):
-    """
-    Return the A/E ratio (dsp/A_max divided by dsp/cuspEmax).
-
-    Parameters
-    ----------
-    dsp_files
-               lh5 dsp files
-    detector
-               Channel of the detector
-    """
-    a_max = lh5.load_nda(dsp_files, ["A_max"], detector + "/dsp")["A_max"]
-    cusp_e_max = lh5.load_nda(dsp_files, ["cuspEmax"], detector + "/dsp")["cuspEmax"]
-    aoe = np.divide(a_max, cusp_e_max)
-
-    return aoe
 
 
 def leakage_current(dsp_files: list[str], detector: str, det_type: str):
@@ -245,22 +227,6 @@ def event_rate(dsp_file: list[str], timestamp: list, det_type: str):
         fact = 0.001
 
     return np.array(rate) * fact, np.array(times)
-
-
-def spms_gain(wf_array: np.ndarray):
-    """
-    Return the spms gain.
-
-    Parameters
-    ----------
-    wf_array
-               Array of arrays, i.e. waveforms
-    """
-    bl_mean = np.array([np.mean(wf[:100]) for wf in wf_array])
-    bl_removed_wf = [wf - bl for (wf, bl) in zip(wf_array, bl_mean)]
-    gain = np.array([np.max(wf) for wf in bl_removed_wf])
-
-    return gain
 
 
 def energy_potassium_lines(par_array: list, timestamp: list):
