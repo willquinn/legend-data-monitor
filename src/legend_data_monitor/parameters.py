@@ -83,7 +83,18 @@ def load_parameter(
     if parameter == "lc":
         par_array = leakage_current(dsp_files, detector, det_type)
     elif parameter == "event_rate":
-        par_array, utime_array_cut = event_rate(dsp_files, utime_array, utime_array_cut, detector, det_type, all_ievt, puls_only_ievt, not_puls_ievt, time_cut, start_code)
+        par_array, utime_array_cut = event_rate(
+            dsp_files,
+            utime_array,
+            utime_array_cut,
+            detector,
+            det_type,
+            all_ievt,
+            puls_only_ievt,
+            not_puls_ievt,
+            time_cut,
+            start_code,
+        )
     elif parameter == "uncal_puls":
         par_array = lh5.load_nda(dsp_files, ["trapTmax"], detector + "/dsp")["trapTmax"]
     elif parameter == "cal_puls":
@@ -183,7 +194,18 @@ def leakage_current(dsp_files: list[str], detector: str, det_type: str):
     )  # using old GERDA (baseline -> lc) conversion factor
 
 
-def event_rate(dsp_files: list[str], utime_array: list, timestamp: list, detector: str, det_type: str, all_ievt: np.ndarray, puls_only_ievt: np.ndarray, not_puls_ievt: np.ndarray, time_cut: list[str], start_code: str):
+def event_rate(
+    dsp_files: list[str],
+    utime_array: list,
+    timestamp: list,
+    detector: str,
+    det_type: str,
+    all_ievt: np.ndarray,
+    puls_only_ievt: np.ndarray,
+    not_puls_ievt: np.ndarray,
+    time_cut: list[str],
+    start_code: str,
+):
     """
     Return the event rate (as cts/dt).
 
@@ -206,27 +228,27 @@ def event_rate(dsp_files: list[str], utime_array: list, timestamp: list, detecto
     not_puls_ievt
                 Event number for physical events
     time_cut
-                List with info about time cuts    
+                List with info about time cuts
     start_code
                 Starting time of the code
     """
     rate = []
     times = []
 
-    # for spms, we keep timestamp entries only if there's a non-null energy release 
-    if det_type=="spms":
-        energies = lh5.load_nda(dsp_files, ["energies"], detector+"/dsp")["energies"]
+    # for spms, we keep timestamp entries only if there's a non-null energy release
+    if det_type == "spms":
+        energies = lh5.load_nda(dsp_files, ["energies"], detector + "/dsp")["energies"]
 
         # remove nan entries
-        energies = [entry[~np.isnan(entry)] for entry in energies] 
-        new_energies=[]
+        energies = [entry[~np.isnan(entry)] for entry in energies]
+        new_energies = []
         for entry in energies:
-            if np.size(entry)==0:
+            if np.size(entry) == 0:
                 new_energies.append(False)
             else:
                 new_energies.append(True)
         energies = np.array(new_energies)
-        if len(energies)==0:
+        if len(energies) == 0:
             return np.zeros(len(timestamp)), np.array(timestamp)
 
         # apply pulser cut
@@ -237,7 +259,7 @@ def event_rate(dsp_files: list[str], utime_array: list, timestamp: list, detecto
                 energies = energies[puls_only_index]
             if "event_rate" in keep_phys_pars:
                 energies = energies[det_only_index]
-        if len(energies)==0:
+        if len(energies) == 0:
             return np.zeros(len(timestamp)), np.array(timestamp)
 
         # apply quality cuts
@@ -251,16 +273,18 @@ def event_rate(dsp_files: list[str], utime_array: list, timestamp: list, detecto
             hit_files = [dsp_file.replace("dsp", "hit") for dsp_file in dsp_files]
             quality_index = analysis.get_qc_ievt(hit_files, detector, keep_evt_index)
             energies = energies[quality_index]
-            if len(energies)==0:
+            if len(energies) == 0:
                 return np.zeros(len(timestamp)), np.array(timestamp)
 
         # apply time cut
-        timestamp, energies = analysis.time_analysis(utime_array, energies, time_cut, start_code)
-        if len(energies)==0:
+        timestamp, energies = analysis.time_analysis(
+            utime_array, energies, time_cut, start_code
+        )
+        if len(energies) == 0:
             return np.zeros(len(timestamp)), np.array(timestamp)
-        
+
         timestamp = timestamp[energies]
-        if len(timestamp)==0:
+        if len(timestamp) == 0:
             return np.array([]), np.array([])
 
     date_time = (((dsp_files[0].split("/")[-1]).split("-")[4]).split("Z")[0]).split("T")
