@@ -10,6 +10,16 @@
         "ch000": ["null", "null"]
       }
     },
+    "cuspEmax_ctc_cal": {
+      "label": "cuspEmax_ctc_cal",
+      "units": "keV",
+      "facecol": [0.98, 0.91, 0.71],
+      "limit": {
+        "spms": ["null", "null"],
+        "geds": ["null", "null"],
+        "ch000": ["null", "null"]
+      }
+    },
     "card": {
       "label": "card",
       "units": "null",

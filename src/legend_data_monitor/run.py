@@ -126,12 +126,22 @@ def select_and_plot_run(
         if verbose is True:
             logging.error("Phys files have been loaded")
 
-    mpl.use("pdf")
-
     # get time cuts info
     time_cut = timecut.build_timecut_list(time_window, last_hours)
 
+    # apply time cut to lh5 filenames
+    if len(time_cut) == 3:
+        runs = timecut.cut_below_threshold_filelist(
+            full_path, runs, time_cut, start_code
+        )
+    elif len(time_cut) == 4:
+        runs = timecut.cut_min_max_filelist(full_path, runs, time_cut)
+
+    # get full file paths
+    runs = [os.path.join(full_path, run_file) for run_file in runs]
+
     # time analysis: set output-pdf filenames
+    mpl.use("pdf")
     if len(time_cut) != 0:  # time cuts
         start, end = timecut.time_dates(time_cut, start_code)
         path = os.path.join(
@@ -147,17 +157,6 @@ def select_and_plot_run(
         path = os.path.join(plot_path, f"{exp}-{period}-{run}-{datatype}.pdf")
         json_path = os.path.join(json_path, f"{exp}-{period}-{run}-{datatype}.json")
         map_path = os.path.join(map_path, f"{exp}-{period}-{run}-{datatype}.pdf")
-
-    # apply time cut to lh5 filenames
-    if len(time_cut) == 3:
-        runs = timecut.cut_below_threshold_filelist(
-            full_path, runs, time_cut, start_code
-        )
-    elif len(time_cut) == 4:
-        runs = timecut.cut_min_max_filelist(full_path, runs, time_cut)
-
-    # get full file paths
-    runs = [os.path.join(full_path, run_file) for run_file in runs]
 
     dump_all_plots_together(runs, time_cut, path, json_path, map_path, start_code)
 
@@ -367,7 +366,10 @@ def dump_all_plots_together(
                                     if len(det_list) == 0:
                                         continue
                                     if len(string) != 0:
-                                        map_dict = plot.plot_par_vs_time(
+                                        (
+                                            string_mean_dict,
+                                            map_dict,
+                                        ) = plot.plot_ch_par_vs_time(
                                             dsp_files,
                                             det_list,
                                             par,
@@ -375,9 +377,9 @@ def dump_all_plots_together(
                                             "spms",
                                             string,
                                             spms_dict,
-                                            None,
-                                            None,
-                                            None,
+                                            all_ievt,
+                                            puls_only_ievt,
+                                            not_puls_ievt,
                                             start_code,
                                             pdf,
                                         )
