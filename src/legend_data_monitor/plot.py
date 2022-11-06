@@ -950,7 +950,7 @@ def plot_ch_par_vs_time(
     not_puls_ievt
                     Event number for physical events
     start_code
-                Starting time of the code
+                    Starting time of the code
     """
     columns = 1
     rows = len(det_list)
