@@ -190,10 +190,6 @@ def dump_all_plots_together(
     if isinstance(dsp_files, str):
         dsp_files = [dsp_files]
 
-    # key selection (add it to the config file?)
-    # dsp_files = dsp_files[17:] # remove data prior to 20220817T124844Z in run22
-    # dsp_files = dsp_files[25:]
-
     # exit if no dsp files are found
     if len(dsp_files) == 0:
         logging.warning("There are no files to inspect!")
@@ -231,9 +227,7 @@ def dump_all_plots_together(
                     for par in geds_par:
                         det_status_dict = {}
                         for (det_list, string) in zip(string_geds, string_geds_name):
-                            if (
-                                det_list == string_geds[0]
-                            ):  # keep 1 string (per far prima)
+                                #if (det_list == string_geds[0]):  # keep 1 string (per far prima)
 
                                 if len(det_list) == 0:
                                     continue
@@ -340,17 +334,23 @@ def dump_all_plots_together(
                     else:
                         logging.error("Spms will be plotted...")
                         for par in spms_par:
-                            if par == "gain":
+                            if par in ["energy_in_pe", "trigger_pos"]:
                                 for (det_list, string) in zip(
                                     spms_merged, spms_name_merged
                                 ):
+                                    #if string=="top_IB":
+                                    print(det_list)
                                     plot.plot_par_vs_time_2d(
                                         dsp_files,
                                         det_list,
+                                        par,
                                         time_cut,
                                         "spms",
                                         string,
                                         spms_dict,
+                                        all_ievt,
+                                        puls_only_ievt,
+                                        not_puls_ievt,
                                         start_code,
                                         pdf,
                                     )
