@@ -4,6 +4,7 @@ import importlib.resources
 import json
 import logging
 import os
+import sys
 from datetime import datetime
 
 import numpy as np
@@ -63,7 +64,7 @@ keep_phys_pars = j_config[5]["pulser"]["keep_phys_pars"]
 
 def load_geds():
     """Load channel map for geds."""
-    config_path = j_config[0]["path"]["config-path"]
+    config_path = j_config[0]["path"]["geds-config"]
     with open(config_path) as d:
         channel_map = json.load(d)
     geds_dict = channel_map["hardware_configuration"]["channel_map"]
@@ -73,61 +74,12 @@ def load_geds():
 
 def load_spms(raw_files: list[str]):
     """
-    Load channel map for spms.
-
-    Parameters
-    ----------
-    raw_files
-                Strings of lh5 raw files
-    """
-    channels = lh5.ls(raw_files[0], "")
-    filename = os.path.basename(raw_files[0])
-    fn_split = filename.split("-")
-    orca_name = (
-        f"{fn_split[0]}-{fn_split[1]}-{fn_split[2]}-{fn_split[3]}-{fn_split[4]}.orca"
-    )
-    data_type = fn_split[3]
-    orca_path = j_config[0]["path"]["orca-files"]
-    period = j_config[1]
-    run = j_config[2]
-    orca_file = f"{orca_path}{data_type}/{period}/{run}/{orca_name}"
-    orstr = orca_streamer.OrcaStreamer()
-    orstr.open_stream(orca_file)
-    channel_map_spms = json.loads(orstr.header["ObjectInfo"]["ORL200Model"]["SiPMMap"])
-    store = LH5Store()
-
-    spms_dict = {}
-
-    for ch in channels:
-        crate = store.read_object(f"{ch}/raw/crate", raw_files[0])[0].nda[0]
-        card = store.read_object(f"{ch}/raw/card", raw_files[0])[0].nda[0]
-        ch_orca = store.read_object(f"{ch}/raw/ch_orca", raw_files[0])[0].nda[0]
-        daq_dict = {}
-        daq_dict["crate"] = crate
-        daq_dict["board_slot"] = card
-        daq_dict["board_ch"] = ch_orca
-
-        if crate == 2:
-            for det, entry in channel_map_spms.items():
-                if (
-                    entry["daq"]["crate"] == f"{crate}"
-                    and entry["daq"]["board_slot"] == f"{card}"
-                    and entry["daq"]["board_ch"] == f"{ch_orca}"
-                ):
-                    # Do we need such an information?
-                    # hv_dict = {}
-                    # hv_dict["board_chan"] = entry["low_voltage"]["board_chan"]
-                    # hv_dict["flange_id"] = entry["low_voltage"]["flange_id"]
-
-                    spms_dict[ch] = {
-                        "system": "spm",
-                        "det_id": det,
-                        "barrel": entry["det_type"],
-                        "daq": daq_dict
-                        # "high_voltage": hv_dict,
-                    }
-            # spms_dict[ch] = {"system": "spm", "daq": daq_dict}
-
+    Load channel map for spms."""
+    config_path = j_config[0]["path"]["spms-config"]
+    with open(config_path) as d:
+        channel_map = json.load(d)
+    spms_dict = channel_map
+    
     return spms_dict
 
 

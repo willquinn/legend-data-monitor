@@ -6,7 +6,8 @@
       "version": "v06.00",
       "orca-files": "/data1/shared/l60/l60-daq/daq-v01/",
       "output-path": "/data1/users/calgaro/legend-data-monitor/",
-      "config-path": "/data1/users/calgaro/L60-p01-r022-T%-all-config.json"
+      "geds-config": "/data1/users/calgaro/legend-data-monitor/src/legend_data_monitor/settings/L60-p01-r022-T%-all-config.json",
+      "spms-config": "/data1/users/calgaro/legend-data-monitor/src/legend_data_monitor/settings/SiPM-config.json"
     }
   },
   "period": "p01",
@@ -81,7 +82,7 @@
     "start_date": "13/09/2022",
     "start_hour": "12:00:00",
     "end_date": "13/09/2022",
-    "end_hour": "16:00:00"
+    "end_hour": "13:00:00"
   },
   "last_hours": {
     "enabled": false,
