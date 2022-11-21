@@ -10,16 +10,6 @@
         "ch000": ["null", "null"]
       }
     },
-    "cuspEmax_ctc_cal": {
-      "label": "cuspEmax_ctc_cal",
-      "units": "keV",
-      "facecol": [0.98, 0.91, 0.71],
-      "limit": {
-        "spms": ["null", "null"],
-        "geds": ["null", "null"],
-        "ch000": ["null", "null"]
-      }
-    },
     "card": {
       "label": "card",
       "units": "null",
@@ -524,6 +514,26 @@
       "label": "Energy",
       "units": "keV",
       "facecol": [0.94, 0.87, 0.8],
+      "limit": {
+        "spms": ["null", "null"],
+        "geds": ["null", "null"],
+        "ch000": ["null", "null"]
+      }
+    },
+    "energy_in_pe": {
+      "label": "Energy",
+      "units": "P.E.",
+      "facecol": [0.74, 0.87, 0.9],
+      "limit": {
+        "spms": ["null", "null"],
+        "geds": ["null", "null"],
+        "ch000": ["null", "null"]
+      }
+    },
+    "trigger_pos": {
+      "label": "Trigger Position",
+      "units": "?",
+      "facecol": [0.74, 0.77, 0.87],
       "limit": {
         "spms": ["null", "null"],
         "geds": ["null", "null"],

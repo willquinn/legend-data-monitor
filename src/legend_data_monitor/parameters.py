@@ -82,6 +82,15 @@ def load_parameter(
 
     if parameter == "lc":
         par_array = leakage_current(dsp_files, detector, det_type)
+    elif parameter == "energy_in_pe" and det_type == "spms":
+        par_array = lh5.load_nda(hit_files, ["energy_in_pe"], detector + "/hit")[
+            "energy_in_pe"
+        ]
+        # par_array = lh5.load_nda(dsp_files, ["energies"], detector+"/dsp")["energies"]
+    elif parameter == "trigger_pos" and det_type == "spms":
+        par_array = lh5.load_nda(hit_files, ["trigger_pos"], detector + "/hit")[
+            "trigger_pos"
+        ]
     elif parameter == "event_rate":
         par_array, utime_array_cut = event_rate(
             dsp_files,
@@ -155,8 +164,16 @@ def load_parameter(
             utime_array, par_array, time_cut, start_code
         )
 
+    if parameter in ["energy_in_pe", "trigger_pos"] and det_type == "spms":
+        a = utime_array_cut
+        b = par_array
+        len_par = [len(sub_array) for sub_array in b]
+        utime_array_cut = [t for i, t in enumerate(a) for _ in range(len_par[i])]
+        # convert list of array to just list of values
+        par_array = np.ravel(b).tolist()
+
     # check if there are 'nan' values in par_array; if yes, remove them
-    if np.isnan(par_array).any():
+    if np.isnan(par_array).any() and parameter not in ["energy_in_pe", "trigger_pos"]:
         par_array, utime_array_cut = analysis.remove_nan(par_array, utime_array_cut)
 
     # Enable following lines to get the % variation of a parameter wrt to its mean value
@@ -241,15 +258,17 @@ def event_rate(
 
         # remove nan entries
         energies = [entry[~np.isnan(entry)] for entry in energies]
-        new_energies = []
+        new_energies = []  # array with True (=energy deposition) or False entries
+        no_hits = []  # array with number of hits per each timestamp
         for entry in energies:
             if np.size(entry) == 0:
                 new_energies.append(False)
+                no_hits.append(np.size(entry))
             else:
                 new_energies.append(True)
+                no_hits.append(np.size(entry))
         energies = np.array(new_energies)
-        if len(energies) == 0:
-            return np.zeros(len(timestamp)), np.array(timestamp)
+        no_hits = np.array(no_hits)
 
         # apply pulser cut
         if all_ievt != [] and puls_only_ievt != [] and not_puls_ievt != []:
@@ -257,8 +276,10 @@ def event_rate(
             puls_only_index = np.isin(all_ievt, puls_only_ievt)
             if "event_rate" in keep_puls_pars:
                 energies = energies[puls_only_index]
+                no_hits = no_hits[puls_only_index]
             if "event_rate" in keep_phys_pars:
                 energies = energies[det_only_index]
+                no_hits = no_hits[det_only_index]
         if len(energies) == 0:
             return np.zeros(len(timestamp)), np.array(timestamp)
 
@@ -273,6 +294,7 @@ def event_rate(
             hit_files = [dsp_file.replace("dsp", "hit") for dsp_file in dsp_files]
             quality_index = analysis.get_qc_ievt(hit_files, detector, keep_evt_index)
             energies = energies[quality_index]
+            no_hits = no_hits[quality_index]
             if len(energies) == 0:
                 return np.zeros(len(timestamp)), np.array(timestamp)
 
@@ -280,12 +302,18 @@ def event_rate(
         timestamp, energies = analysis.time_analysis(
             utime_array, energies, time_cut, start_code
         )
+        _, no_hits = analysis.time_analysis(utime_array, no_hits, time_cut, start_code)
         if len(energies) == 0:
             return np.zeros(len(timestamp)), np.array(timestamp)
 
+        # keep timestamps that correspond to an energy deposition
         timestamp = timestamp[energies]
+        no_hits = no_hits[energies]
         if len(timestamp) == 0:
             return np.array([]), np.array([])
+
+        len_par = [no for no in no_hits]
+        timestamp = [t for i, t in enumerate(timestamp) for _ in range(len_par[i])]
 
     date_time = (((dsp_files[0].split("/")[-1]).split("-")[4]).split("Z")[0]).split("T")
     run_start = datetime.strptime(date_time[0] + date_time[1], "%Y%m%d%H%M%S")
