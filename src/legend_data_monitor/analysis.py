@@ -8,8 +8,6 @@ from datetime import datetime
 
 import numpy as np
 import pygama.lgdo.lh5_store as lh5
-from pygama.lgdo import LH5Store
-from pygama.raw.orca import orca_streamer
 
 from . import timecut
 
@@ -78,7 +76,7 @@ def load_spms(raw_files: list[str]):
     with open(config_path) as d:
         channel_map = json.load(d)
     spms_dict = channel_map
-    
+
     return spms_dict
 
 
@@ -543,7 +541,7 @@ def avg_over_minutes(par_array: np.ndarray, time_array: np.ndarray):
 
 def get_mean(parameter: str, detector: str):
     """
-    Evaluate the average over first files/hours. 
+    Evaluate the average over first files/hours.
     It is used when we want to show the percentage variation of a parameter with respect to its average value.
 
     Parameters
@@ -618,7 +616,10 @@ def get_mean(parameter: str, detector: str):
 
     return par_array_mean
 
-def set_pkl_name(exp, period, run, datatype, det_type, string_number, parameter, time_cut, start_code):
+
+def set_pkl_name(
+    exp, period, run, datatype, det_type, string_number, parameter, time_cut, start_code
+):
     """
     Set the pkl filename.
 
