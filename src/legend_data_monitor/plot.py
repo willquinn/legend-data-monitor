@@ -480,7 +480,7 @@ def plot_par_vs_time_ch000(
         run,
         datatype,
         det_type,
-        string_number,
+        "",
         parameter,
         time_cut,
         start_code,
