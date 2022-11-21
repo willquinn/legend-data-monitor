@@ -338,7 +338,7 @@ def dump_all_plots_together(
                                 for (det_list, string) in zip(
                                     spms_merged, spms_name_merged
                                 ):
-                                    #if string=="top_IB":
+                                    # if string=="top_IB":
                                     plot.plot_par_vs_time_2d(
                                         dsp_files,
                                         det_list,
