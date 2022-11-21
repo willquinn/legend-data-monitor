@@ -82,11 +82,15 @@ def load_parameter(
 
     if parameter == "lc":
         par_array = leakage_current(dsp_files, detector, det_type)
-    elif parameter == "energy_in_pe" and det_type=="spms":
-        par_array = lh5.load_nda(hit_files, ["energy_in_pe"], detector+"/hit")["energy_in_pe"]
-        #par_array = lh5.load_nda(dsp_files, ["energies"], detector+"/dsp")["energies"]
-    elif parameter == "trigger_pos" and det_type=="spms":
-        par_array = lh5.load_nda(hit_files, ["trigger_pos"], detector+"/hit")["trigger_pos"]
+    elif parameter == "energy_in_pe" and det_type == "spms":
+        par_array = lh5.load_nda(hit_files, ["energy_in_pe"], detector + "/hit")[
+            "energy_in_pe"
+        ]
+        # par_array = lh5.load_nda(dsp_files, ["energies"], detector+"/dsp")["energies"]
+    elif parameter == "trigger_pos" and det_type == "spms":
+        par_array = lh5.load_nda(hit_files, ["trigger_pos"], detector + "/hit")[
+            "trigger_pos"
+        ]
     elif parameter == "event_rate":
         par_array, utime_array_cut = event_rate(
             dsp_files,
@@ -149,7 +153,7 @@ def load_parameter(
         if parameter in keep_phys_pars:
             if parameter not in no_cut_pars:
                 par_array = par_array[det_only_index]
-    
+
     # apply quality cuts to the parameter array
     if qc_flag[det_type] is True and parameter not in no_cut_pars:
         par_array = par_array[quality_index]
@@ -160,11 +164,11 @@ def load_parameter(
             utime_array, par_array, time_cut, start_code
         )
 
-    if parameter in ["energy_in_pe", "trigger_pos"] and det_type=="spms":
+    if parameter in ["energy_in_pe", "trigger_pos"] and det_type == "spms":
         a = utime_array_cut
         b = par_array
         len_par = [len(sub_array) for sub_array in b]
-        utime_array_cut = [t for i,t in enumerate(a) for _ in range(len_par[i])]
+        utime_array_cut = [t for i, t in enumerate(a) for _ in range(len_par[i])]
         # convert list of array to just list of values
         par_array = np.ravel(b).tolist()
 
@@ -175,7 +179,7 @@ def load_parameter(
     # Enable following lines to get the % variation of a parameter wrt to its mean value
     if parameter not in no_variation_pars and det_type not in ["spms", "ch000"]:
         par_array_mean = np.mean(par_array[: int(0.05 * len(par_array))])
-        #par_array_mean = analysis.get_mean(parameter, detector)
+        # par_array_mean = analysis.get_mean(parameter, detector)
         par_array = np.subtract(par_array, par_array_mean)
         par_array = np.divide(par_array, par_array_mean) * 100
     else:
@@ -254,8 +258,8 @@ def event_rate(
 
         # remove nan entries
         energies = [entry[~np.isnan(entry)] for entry in energies]
-        new_energies = [] # array with True (=energy deposition) or False entries
-        no_hits = [] # array with number of hits per each timestamp
+        new_energies = []  # array with True (=energy deposition) or False entries
+        no_hits = []  # array with number of hits per each timestamp
         for entry in energies:
             if np.size(entry) == 0:
                 new_energies.append(False)
@@ -278,7 +282,7 @@ def event_rate(
                 no_hits = no_hits[det_only_index]
         if len(energies) == 0:
             return np.zeros(len(timestamp)), np.array(timestamp)
-        
+
         # apply quality cuts
         if qc_flag[det_type] is True:
             if "event_rate" in keep_puls_pars:
@@ -298,9 +302,7 @@ def event_rate(
         timestamp, energies = analysis.time_analysis(
             utime_array, energies, time_cut, start_code
         )
-        _, no_hits = analysis.time_analysis(
-            utime_array, no_hits, time_cut, start_code
-        )
+        _, no_hits = analysis.time_analysis(utime_array, no_hits, time_cut, start_code)
         if len(energies) == 0:
             return np.zeros(len(timestamp)), np.array(timestamp)
 
@@ -311,7 +313,7 @@ def event_rate(
             return np.array([]), np.array([])
 
         len_par = [no for no in no_hits]
-        timestamp = [t for i,t in enumerate(timestamp) for _ in range(len_par[i])]
+        timestamp = [t for i, t in enumerate(timestamp) for _ in range(len_par[i])]
 
     date_time = (((dsp_files[0].split("/")[-1]).split("-")[4]).split("Z")[0]).split("T")
     run_start = datetime.strptime(date_time[0] + date_time[1], "%Y%m%d%H%M%S")

@@ -36,7 +36,7 @@
         "AoE_Classifier",
         "AoE_Corrected",
         "trapTmax",
-	      "energy_in_pe",
+        "energy_in_pe",
         "trigger_pos"
       ],
       "keep_phys_pars": ["K_lines"]
@@ -51,7 +51,7 @@
       "README": "Specify here the parameters for which you want the absolute value (and not the percentage variation wrt the mean value).",
       "no_variation_pars": [
         "event_rate",
-	      "bl_std",
+        "bl_std",
         "K_lines",
         "AoE_Classifier",
         "AoE_Corrected",

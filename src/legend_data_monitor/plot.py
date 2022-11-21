@@ -3,7 +3,6 @@ from __future__ import annotations
 import logging
 import os
 import pickle as pkl
-import time
 from copy import copy
 from datetime import datetime
 
@@ -14,7 +13,7 @@ import numpy as np
 import pygama.lgdo.lh5_store as lh5
 from matplotlib import dates, ticker
 
-from . import analysis, parameters, timecut
+from . import analysis, parameters
 
 plt.rcParams.update({"figure.max_open_warning": 0})
 plt.rcParams["figure.figsize"] = (15, 10)
@@ -323,7 +322,17 @@ def plot_par_vs_time(
     plt.axhline(y=0, color="r", linestyle="--", linewidth=1)
 
     # define name of pkl file (with info about time cut if present)
-    pkl_name = analysis.set_pkl_name(exp, period, run, datatype, det_type, string_number, parameter, time_cut, start_code)
+    pkl_name = analysis.set_pkl_name(
+        exp,
+        period,
+        run,
+        datatype,
+        det_type,
+        string_number,
+        parameter,
+        time_cut,
+        start_code,
+    )
 
     pkl.dump(ax, open(f"out/pkl-files/par-vs-time/{pkl_name}", "wb"))
     pdf.savefig(bbox_inches="tight")
@@ -465,7 +474,17 @@ def plot_par_vs_time_ch000(
         plt.axhline(y=upp_lim, color="r", linestyle="--", linewidth=2)
 
     # define name of pkl file (with info about time cut if present)
-    pkl_name = analysis.set_pkl_name(exp, period, run, datatype, det_type, string_number, parameter, time_cut, start_code)
+    pkl_name = analysis.set_pkl_name(
+        exp,
+        period,
+        run,
+        datatype,
+        det_type,
+        string_number,
+        parameter,
+        time_cut,
+        start_code,
+    )
     pkl.dump(ax, open(f"out/pkl-files/par-vs-time/{pkl_name}", "wb"))
     pdf.savefig(bbox_inches="tight")
     plt.close()
@@ -556,16 +575,14 @@ def plot_par_vs_time_2d(
                 if os.path.isfile(hit_file):
                     if detector not in lh5.ls(hit_file, ""):
                         all_files.remove(dsp_files[idx])
-                        logging.warning(
-                            f'No "{detector}" branch in file {hit_file}'
-                        )
+                        logging.warning(f'No "{detector}" branch in file {hit_file}')
                 else:
                     all_files.remove(dsp_files[idx])
                     logging.warning("hit file does not exist")
             if len(all_files) == 0:
                 det_idx += 1
                 continue  # skip the detector
-            
+
             # skip detectors that are not geds/spms
             if det_dict[detector]["system"] == "--":
                 det_idx += 1
@@ -598,13 +615,13 @@ def plot_par_vs_time_2d(
             start_time = times[0]
             end_time = times[-1]
 
-            xbin = int ( ( (utime_array[-1]-utime_array[0])*1.5) / 1e3 )
-            if parameter == "energy_in_pe": 
+            xbin = int(((utime_array[-1] - utime_array[0]) * 1.5) / 1e3)
+            if parameter == "energy_in_pe":
                 col_map = "magma"
                 ymin = 0
                 ymax = 10
                 ybin = 100
-            if parameter == "trigger_pos": 
+            if parameter == "trigger_pos":
                 col_map = "viridis"
                 ymin = -200
                 ymax = 10000
@@ -654,7 +671,17 @@ def plot_par_vs_time_2d(
     plt.xticks(locs, labels)
 
     # define name of pkl file (with info about time cut if present)
-    pkl_name = analysis.set_pkl_name(exp, period, run, datatype, det_type, string_number, parameter, time_cut, start_code)
+    pkl_name = analysis.set_pkl_name(
+        exp,
+        period,
+        run,
+        datatype,
+        det_type,
+        string_number,
+        parameter,
+        time_cut,
+        start_code,
+    )
     fig.tight_layout()
     pkl.dump(ax_array, open(f"out/pkl-files/par-vs-time/{pkl_name}", "wb"))
     pdf.savefig(bbox_inches="tight")
@@ -843,7 +870,17 @@ def plot_wtrfll(
     fig.subplots_adjust(left=-0.21)  # to move the plot towards the left
 
     # define name of pkl file (with info about time cut if present)
-    pkl_name = analysis.set_pkl_name(exp, period, run, datatype, det_type, string_number, parameter, time_cut, start_code)
+    pkl_name = analysis.set_pkl_name(
+        exp,
+        period,
+        run,
+        datatype,
+        det_type,
+        string_number,
+        parameter,
+        time_cut,
+        start_code,
+    )
     pkl.dump(ax, open(f"out/pkl-files/par-vs-time/{pkl_name}", "wb"))
     pdf.savefig(bbox_inches="tight")
     plt.close()
@@ -1077,7 +1114,17 @@ def plot_ch_par_vs_time(
     plt.xticks(locs, labels)
 
     # define name of pkl file (with info about time cut if present)
-    pkl_name = analysis.set_pkl_name(exp, period, run, datatype, det_type, string_number, parameter, time_cut, start_code)
+    pkl_name = analysis.set_pkl_name(
+        exp,
+        period,
+        run,
+        datatype,
+        det_type,
+        string_number,
+        parameter,
+        time_cut,
+        start_code,
+    )
     fig.tight_layout()
     pkl.dump(ax_array, open(f"out/pkl-files/par-vs-time/{pkl_name}", "wb"))
     pdf.savefig(bbox_inches="tight")
