@@ -323,29 +323,7 @@ def plot_par_vs_time(
     plt.axhline(y=0, color="r", linestyle="--", linewidth=1)
 
     # define name of pkl file (with info about time cut if present)
-    if len(time_cut) != 0:
-        start, end = timecut.time_dates(time_cut, start_code)
-        pkl_name = (
-            exp
-            + "-"
-            + period
-            + "-"
-            + run
-            + "-"
-            + datatype
-            + "-"
-            + start
-            + "_"
-            + end
-            + "-"
-            + parameter
-        )
-    else:
-        pkl_name = exp + "-" + period + "-" + run + "-" + datatype + "-" + parameter
-    if det_type == "geds":
-        pkl_name += "-string" + string_number + ".pkl"
-    if det_type == "spms":
-        pkl_name += "-" + string_number + ".pkl"
+    pkl_name = analysis.set_pkl_name(exp, period, run, datatype, det_type, string_number, parameter, time_cut, start_code)
 
     pkl.dump(ax, open(f"out/pkl-files/par-vs-time/{pkl_name}", "wb"))
     pdf.savefig(bbox_inches="tight")
@@ -487,38 +465,7 @@ def plot_par_vs_time_ch000(
         plt.axhline(y=upp_lim, color="r", linestyle="--", linewidth=2)
 
     # define name of pkl file (with info about time cut if present)
-    if len(time_cut) != 0:
-        start, end = timecut.time_dates(time_cut, start_code)
-        pkl_name = (
-            exp
-            + "-"
-            + period
-            + "-"
-            + run
-            + "-"
-            + datatype
-            + "-"
-            + start
-            + "_"
-            + end
-            + "-"
-            + parameter
-            + "-pulser.pkl"
-        )
-    else:
-        pkl_name = (
-            exp
-            + "-"
-            + period
-            + "-"
-            + run
-            + "-"
-            + datatype
-            + "-"
-            + parameter
-            + "-pulser.pkl"
-        )
-
+    pkl_name = analysis.set_pkl_name(exp, period, run, datatype, det_type, string_number, parameter, time_cut, start_code)
     pkl.dump(ax, open(f"out/pkl-files/par-vs-time/{pkl_name}", "wb"))
     pdf.savefig(bbox_inches="tight")
     plt.close()
@@ -528,7 +475,6 @@ def plot_par_vs_time_ch000(
     return map_dict
 
 
-import sys
 def plot_par_vs_time_2d(
     dsp_files: list[str],
     det_list: list[str],
@@ -601,9 +547,7 @@ def plot_par_vs_time_2d(
     det_idx = 0
     for ax_row in ax_array:
         for axes in ax_row:
-            start_clock = time.time()
             detector = det_list[det_idx]
-            print(detector)
 
             hit_files = [dsp_file.replace("dsp", "hit") for dsp_file in dsp_files]
             all_files = [hit_file.replace("hit", "dsp") for hit_file in hit_files]
@@ -685,8 +629,6 @@ def plot_par_vs_time_2d(
             axes.locator_params(axis="y", nbins=5)
 
             det_idx += 1
-            end_clock = time.time()
-            print("--->", end_clock-start_clock)
             # skip those detectors that are not within the time window
             if start_time == 0 and end_time == 0:
                 continue
@@ -712,30 +654,7 @@ def plot_par_vs_time_2d(
     plt.xticks(locs, labels)
 
     # define name of pkl file (with info about time cut if present)
-    if len(time_cut) != 0:
-        start, end = timecut.time_dates(time_cut, start_code)
-        pkl_name = (
-            exp
-            + "-"
-            + period
-            + "-"
-            + run
-            + "-"
-            + datatype
-            + "-"
-            + start
-            + "_"
-            + end
-            + "-"
-            + parameter
-        )
-    else:
-        pkl_name = exp + "-" + period + "-" + run + "-" + datatype + "-" + parameter
-    if det_type == "geds":
-        pkl_name += "-string" + string_number + ".pkl"
-    if det_type == "spms":
-        pkl_name += "-" + string_number + ".pkl"
-
+    pkl_name = analysis.set_pkl_name(exp, period, run, datatype, det_type, string_number, parameter, time_cut, start_code)
     fig.tight_layout()
     pkl.dump(ax_array, open(f"out/pkl-files/par-vs-time/{pkl_name}", "wb"))
     pdf.savefig(bbox_inches="tight")
@@ -924,30 +843,7 @@ def plot_wtrfll(
     fig.subplots_adjust(left=-0.21)  # to move the plot towards the left
 
     # define name of pkl file (with info about time cut if present)
-    if len(time_cut) != 0:
-        start, end = timecut.time_dates(time_cut, start_code)
-        pkl_name = (
-            exp
-            + "-"
-            + period
-            + "-"
-            + run
-            + "-"
-            + datatype
-            + "-"
-            + start
-            + "_"
-            + end
-            + "-"
-            + parameter
-        )
-    else:
-        pkl_name = exp + "-" + period + "-" + run + "-" + datatype + "-" + parameter
-    if det_type == "geds":
-        pkl_name += "-string" + string_number + ".pkl"
-    if det_type == "spms":
-        pkl_name += "-" + string_number + ".pkl"
-
+    pkl_name = analysis.set_pkl_name(exp, period, run, datatype, det_type, string_number, parameter, time_cut, start_code)
     pkl.dump(ax, open(f"out/pkl-files/par-vs-time/{pkl_name}", "wb"))
     pdf.savefig(bbox_inches="tight")
     plt.close()
@@ -1181,30 +1077,7 @@ def plot_ch_par_vs_time(
     plt.xticks(locs, labels)
 
     # define name of pkl file (with info about time cut if present)
-    if len(time_cut) != 0:
-        start, end = timecut.time_dates(time_cut, start_code)
-        pkl_name = (
-            exp
-            + "-"
-            + period
-            + "-"
-            + run
-            + "-"
-            + datatype
-            + "-"
-            + start
-            + "_"
-            + end
-            + "-"
-            + parameter
-        )
-    else:
-        pkl_name = exp + "-" + period + "-" + run + "-" + datatype + "-" + parameter
-    if det_type == "geds":
-        pkl_name += "-string" + string_number + ".pkl"
-    if det_type == "spms":
-        pkl_name += "-" + string_number + ".pkl"
-
+    pkl_name = analysis.set_pkl_name(exp, period, run, datatype, det_type, string_number, parameter, time_cut, start_code)
     fig.tight_layout()
     pkl.dump(ax_array, open(f"out/pkl-files/par-vs-time/{pkl_name}", "wb"))
     pdf.savefig(bbox_inches="tight")

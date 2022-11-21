@@ -4,7 +4,6 @@ import importlib.resources
 import json
 import logging
 import os
-import sys
 from datetime import datetime
 
 import numpy as np
@@ -497,6 +496,7 @@ def avg_over_entries(par_array: np.ndarray, time_array: np.ndarray):
 def avg_over_minutes(par_array: np.ndarray, time_array: np.ndarray):
     """
     Evaluate the average over N minutes.
+    It is used in plots, together with all entries for spotting potential trends in data.
 
     Parameters
     ----------
@@ -534,16 +534,17 @@ def avg_over_minutes(par_array: np.ndarray, time_array: np.ndarray):
             iniz = i
         i += 1
 
+    # add last point at the end of the selected time window
     time_avg.append(end)
     par_avg.append(np.mean(par_array[iniz:-1]))
 
-    # par_avg, time_avg = remove_nan(par_avg, time_avg)
     return par_avg, time_avg
 
 
 def get_mean(parameter: str, detector: str):
     """
-    Evaluate the average over first files/hours.
+    Evaluate the average over first files/hours. 
+    It is used when we want to show the percentage variation of a parameter with respect to its average value.
 
     Parameters
     ----------
@@ -616,3 +617,56 @@ def get_mean(parameter: str, detector: str):
     par_array_mean = np.mean(par_array[:len_first])
 
     return par_array_mean
+
+def set_pkl_name(exp, period, run, datatype, det_type, string_number, parameter, time_cut, start_code):
+    """
+    Set the pkl filename.
+
+    Parameters
+    ----------
+    exp
+            Experiment info (eg. l60)
+    period
+            Period info (eg. p01)
+    run
+            Run number
+    datatype
+            Either 'cal' or 'phy'
+    det_type
+            Type of detector (geds or spms)
+    string_number
+            Number of the string under study
+    parameter
+            Parameter to plot
+    time_cut
+            List with info about time cuts
+    start_code
+            Starting time of the code
+    """
+    if len(time_cut) != 0:
+        start, end = timecut.time_dates(time_cut, start_code)
+        pkl_name = (
+            exp
+            + "-"
+            + period
+            + "-"
+            + run
+            + "-"
+            + datatype
+            + "-"
+            + start
+            + "_"
+            + end
+            + "-"
+            + parameter
+        )
+    else:
+        pkl_name = exp + "-" + period + "-" + run + "-" + datatype + "-" + parameter
+    if det_type == "geds":
+        pkl_name += "-string" + string_number + ".pkl"
+    if det_type == "spms":
+        pkl_name += "-" + string_number + ".pkl"
+    if det_type == "ch000":
+        pkl_name += "-pulser.pkl"
+
+    return pkl_name

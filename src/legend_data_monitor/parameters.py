@@ -4,7 +4,6 @@ from datetime import datetime, timedelta
 
 import numpy as np
 import pygama.lgdo.lh5_store as lh5
-import sys
 
 from . import analysis
 
@@ -175,8 +174,8 @@ def load_parameter(
 
     # Enable following lines to get the % variation of a parameter wrt to its mean value
     if parameter not in no_variation_pars and det_type not in ["spms", "ch000"]:
-        #par_array_mean = np.mean(par_array[: int(0.05 * len(par_array))])
-        par_array_mean = analysis.get_mean(parameter, detector)
+        par_array_mean = np.mean(par_array[: int(0.05 * len(par_array))])
+        #par_array_mean = analysis.get_mean(parameter, detector)
         par_array = np.subtract(par_array, par_array_mean)
         par_array = np.divide(par_array, par_array_mean) * 100
     else:
