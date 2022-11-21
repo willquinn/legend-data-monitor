@@ -72,8 +72,7 @@ def load_geds():
 
 
 def load_spms(raw_files: list[str]):
-    """
-    Load channel map for spms."""
+    """Load channel map for spms."""
     config_path = j_config[0]["path"]["spms-config"]
     with open(config_path) as d:
         channel_map = json.load(d)
@@ -495,8 +494,7 @@ def avg_over_entries(par_array: np.ndarray, time_array: np.ndarray):
 
 def avg_over_minutes(par_array: np.ndarray, time_array: np.ndarray):
     """
-    Evaluate the average over N minutes.
-    It is used in plots, together with all entries for spotting potential trends in data.
+    Evaluate the average over N minutes. It is used in plots, together with all entries for spotting potential trends in data.
 
     Parameters
     ----------
@@ -543,8 +541,7 @@ def avg_over_minutes(par_array: np.ndarray, time_array: np.ndarray):
 
 def get_mean(parameter: str, detector: str):
     """
-    Evaluate the average over first files/hours. 
-    It is used when we want to show the percentage variation of a parameter with respect to its average value.
+    Evaluate the average over first files/hours. It is used when we want to show the percentage variation of a parameter with respect to its average value.
 
     Parameters
     ----------
