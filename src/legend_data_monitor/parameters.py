@@ -4,19 +4,20 @@ from datetime import datetime, timedelta
 
 import numpy as np
 import pygama.lgdo.lh5_store as lh5
+import pandas as pd
 
 from . import analysis
 
 j_config, j_par, _ = analysis.read_json_files()
-keep_puls_pars = j_config[5]["pulser"]["keep_puls_pars"]
-keep_phys_pars = j_config[5]["pulser"]["keep_phys_pars"]
-no_variation_pars = j_config[5]["plot_values"]["no_variation_pars"]
-qc_flag = j_config[5]["quality_cuts"]
+keep_puls_pars = j_config[6]["pulser"]["keep_puls_pars"]
+keep_phys_pars = j_config[6]["pulser"]["keep_phys_pars"]
+no_variation_pars = j_config[6]["plot_values"]["no_variation_pars"]
+qc_flag = j_config[6]["quality_cuts"]
 
 
 def load_parameter(
+    data: pd.DataFrame,
     parameter: str,
-    dsp_files: list[str],
     detector: str,
     det_type: str,
     time_cut: list[str],
@@ -47,15 +48,17 @@ def load_parameter(
     not_puls_ievt
                     Event number for physical events
     """
-    par_array = np.array([])
-    utime_array = lh5.load_nda(dsp_files, ["timestamp"], detector + "/dsp")["timestamp"]
-    hit_files = [dsp_file.replace("dsp", "hit") for dsp_file in dsp_files]
+
+    utime_array = data["timestamp"]
 
     if all_ievt != [] and puls_only_ievt != [] and not_puls_ievt != []:
+        
         det_only_index = np.isin(all_ievt, not_puls_ievt)
         puls_only_index = np.isin(all_ievt, puls_only_ievt)
+        
         if parameter in keep_puls_pars:
             utime_array = utime_array[puls_only_index]
+        
         if parameter in keep_phys_pars:
             utime_array = utime_array[det_only_index]
 
@@ -83,7 +86,7 @@ def load_parameter(
     elif parameter == "event_rate":
         par_array, utime_array_cut = event_rate(dsp_files[0], utime_array_cut, det_type)
     elif parameter == "uncal_puls":
-        par_array = lh5.load_nda(dsp_files, ["trapTmax"], detector + "/dsp")["trapTmax"]
+        par_array = data["trapTmax"]
     elif parameter == "cal_puls":
         par_array = lh5.load_nda(hit_files, ["cuspEmax_ctc_cal"], detector + "/hit")[
             "cuspEmax_ctc_cal"
@@ -92,12 +95,6 @@ def load_parameter(
         par_array = lh5.load_nda(hit_files, ["AoE_Classifier"], detector + "/hit")[
             "AoE_Classifier"
         ]
-    elif parameter == "AoE_Corrected":
-        par_array = np.array(
-            lh5.load_nda(hit_files, ["AoE_Corrected"], detector + "/hit")[
-                "AoE_Corrected"
-            ]
-        )
     elif parameter == "K_lines":
         par_array = np.array(
             lh5.load_nda(hit_files, ["cuspEmax_ctc_cal"], detector + "/hit")[
@@ -112,17 +109,8 @@ def load_parameter(
             utime_array, par_array, time_cut, start_code
         )
         par_array, utime_array_cut = energy_potassium_lines(par_array, utime_array_cut)
-    elif parameter == "AoE_Classifier":
-        par_array = np.array(
-            lh5.load_nda(hit_files, ["AoE_Classifier"], detector + "/hit")[
-                "AoE_Classifier"
-            ]
-        )
     else:
-        par_array = lh5.load_nda(dsp_files, [parameter], detector + "/dsp")[parameter]
-        if parameter == "wf_max":
-            baseline = lh5.load_nda(dsp_files, ["baseline"], "ch000/dsp")["baseline"]
-            par_array = np.subtract(par_array, baseline)
+        par_array = data[parameter]
 
     if all_ievt != [] and puls_only_ievt != [] and not_puls_ievt != []:
         if parameter in keep_puls_pars:
@@ -155,6 +143,12 @@ def load_parameter(
         par_array = np.divide(par_array, par_array_mean) * 100
     else:
         par_array_mean = []
+
+    # convert pandas series to numpy array
+    if isinstance(par_array, pd.core.series.Series):
+        par_array = par_array.to_numpy()
+    if isinstance(utime_array_cut, pd.core.series.Series):
+        utime_array_cut = utime_array_cut.to_numpy()
 
     return par_array_mean, par_array, utime_array_cut
 

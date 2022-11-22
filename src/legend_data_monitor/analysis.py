@@ -4,12 +4,14 @@ import importlib.resources
 import json
 import logging
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import numpy as np
+import pandas as pd
 import pygama.lgdo.lh5_store as lh5
 from pygama.lgdo import LH5Store
 from pygama.raw.orca import orca_streamer
+from pygama.flow import DataLoader, FileDB
 
 from . import timecut
 
@@ -28,25 +30,26 @@ def read_json_files():
     j_par = []
     j_plot = []
 
-    j_config.append(data_config["run_info"])  # 0
-    j_config.append(data_config["period"])  # 1
-    j_config.append(data_config["run"])  # 2
-    j_config.append(data_config["datatype"])  # 3
-    j_config.append(data_config["det_type"])  # 4
-    j_config.append(data_config["par_to_plot"])  # 5
-    j_config.append(data_config["plot_style"])  # 6
-    j_config.append(data_config["time_window"])  # 7
-    j_config.append(data_config["last_hours"])  # 8
-    j_config.append(data_config["status"])  # 9
-    j_config.append(data_config["time-format"])  # 10
-    j_config.append(data_config["verbose"])  # 11
+    j_config.append(data_config["run_info"])    # 0
+    j_config.append(data_config["period"])      # 1
+    j_config.append(data_config["run"])         # 2
+    j_config.append(data_config["file_list"])   # 3
+    j_config.append(data_config["datatype"])    # 4
+    j_config.append(data_config["det_type"])    # 5
+    j_config.append(data_config["par_to_plot"]) # 6
+    j_config.append(data_config["plot_style"])  # 7
+    j_config.append(data_config["time_window"]) # 8
+    j_config.append(data_config["last_hours"])  # 9
+    j_config.append(data_config["status"])      # 10
+    j_config.append(data_config["time-format"]) # 11
+    j_config.append(data_config["verbose"])     # 12
 
     j_par.append(data_par["par_to_plot"])  # 0
 
     j_plot.append(data_plot["spms_name_dict"])  # 0
     j_plot.append(data_plot["geds_name_dict"])  # 1
-    j_plot.append(data_plot["spms_col_dict"])  # 2
-    j_plot.append(data_plot["geds_col_dict"])  # 3
+    j_plot.append(data_plot["spms_col_dict"])   # 2
+    j_plot.append(data_plot["geds_col_dict"])   # 3
 
     return j_config, j_par, j_plot
 
@@ -56,9 +59,156 @@ files_path = j_config[0]["path"]["lh5-files"]
 version = j_config[0]["path"]["version"]
 period = j_config[1]
 run = j_config[2]
-datatype = j_config[3]
-keep_puls_pars = j_config[5]["pulser"]["keep_puls_pars"]
-keep_phys_pars = j_config[5]["pulser"]["keep_phys_pars"]
+filelist = j_config[3]
+datatype = j_config[4]
+keep_puls_pars = j_config[6]["pulser"]["keep_puls_pars"]
+keep_phys_pars = j_config[6]["pulser"]["keep_phys_pars"]
+
+
+def write_config(files_path: str, version: str, det_map: list[list[str]], parameters: list[str], det_type: str):
+
+    if '0' in det_type: 
+        det_list = [0]
+        dict_dbconfig = {
+            "data_dir" : files_path + version + "/generated/tier",
+            "tier_dirs": {
+                "dsp": "/dsp"
+            },
+            "file_format": {
+                "dsp": "/phy/{period}/{run}/{exp}-{period}-{run}-phy-{timestamp}-tier_dsp.lh5"
+            },
+            "table_format": {
+                "dsp": "ch{ch:03d}/dsp"
+            },
+            "tables": {
+                "dsp": det_list
+            },
+            "columns": {
+            "dsp": parameters
+            }
+        }
+        dict_dlconfig = {
+            "levels": {
+                "dsp":{
+                    "tiers": ["dsp"]    
+                }
+            },
+            "channel_map": {}
+        }
+    else:
+        # flattening list[list[str]] to list[str]
+        flat_list = [subl for l in det_map for subl in l]
+
+        # converting channel number to int to give array as input to FileDB
+        det_list = [int(l.split("ch0")[-1]) for l in flat_list]
+    
+        dsp_list = det_list.copy()
+        hit_list = det_list.copy()
+        
+        # removing channels having no hit data
+        for ch in [24, 10, 41]:
+            hit_list.remove(ch)
+
+        dict_dbconfig = {
+            "data_dir" : files_path + version + "/generated/tier",
+            "tier_dirs": {
+                "dsp": "/dsp",
+                "hit": "/hit"
+            },
+            "file_format": {
+                "dsp": "/phy/{period}/{run}/{exp}-{period}-{run}-phy-{timestamp}-tier_dsp.lh5",
+                "hit": "/phy/{period}/{run}/{exp}-{period}-{run}-phy-{timestamp}-tier_hit.lh5"
+            },
+            "table_format": {
+                "dsp": "ch{ch:03d}/dsp",
+                "hit": "ch{ch:03d}/hit"
+            },
+            "tables": {
+                "dsp": dsp_list,
+                "hit": hit_list
+            },
+            "columns": {
+            "dsp": parameters,
+            "hit": parameters
+            }
+        }
+        dict_dlconfig = {
+            "levels": {
+                "hit":{
+                    "tiers": ["dsp","hit"]    
+                }
+            },
+            "channel_map": {}
+        }
+
+    # Serializing json
+    json_dbconfig = json.dumps(dict_dbconfig, indent=4)
+    json_dlconfig = json.dumps(dict_dlconfig, indent=4)
+
+    # Writing to sample.json
+    dbconfig_filename = "dbconfig_" + det_type + ".json"
+    dlconfig_filename = "dlconfig_" + det_type + ".json"
+
+    # Writing FileDB config file 
+    with open(dbconfig_filename, "w") as outfile:
+        outfile.write(json_dbconfig)
+
+    # Writing DataLoader config file
+    with open(dlconfig_filename, "w") as outfile:
+        outfile.write(json_dlconfig)
+
+    return dbconfig_filename, dlconfig_filename
+
+
+def read_from_dataloader(
+    dbconfig: str,
+    dlconfig: str,
+    query: str | list[str],
+    parameters: list[str]
+    ):
+
+    dl = DataLoader(dlconfig, dbconfig)
+    dl.set_files(query)
+    dl.set_output(fmt="pd.DataFrame", columns = parameters)
+    
+    return dl.load()
+
+
+def set_query(time_cut: list, start_code: str, run: str|list[str]):
+    
+    query = ""
+
+    # Reading from file
+    if filelist:
+        with open(filelist) as f:
+            lines = f.readlines()
+        lines = [line.strip('\n') for line in lines]
+        query = lines
+
+    # Applying time cut
+    if len(time_cut) > 0:
+        start, stop = timecut.time_dates(time_cut, start_code)
+        start_datetime = datetime.strptime(start, "%Y%m%dT%H%M%SZ")
+        start_datetime = start_datetime - timedelta(minutes = 120)
+        start = start_datetime.strftime("%Y%m%dT%H%M%SZ")
+        query = query + f"timestamp > '{start}' and timestamp < '{stop}'"
+
+    # Applying run cut
+    if run:
+        query = query + " and "
+        if isinstance(run, str):
+            query = query + f"run == '{run}'"
+        elif isinstance(run, list):
+            for r in run:
+                query = query + f"run == '{r}' or "     
+            # Just the remove the final 'or'
+            query = query[:-4]
+
+    if query == "" :
+        logging.error(
+        'Empty query.\nProvide at least a run name, a time interval of a list of files to open.'
+    )
+    return query
 
 
 def load_geds():
@@ -407,9 +557,7 @@ def time_analysis(
         if end_index != end_index or start_index != start_index:
             return [], []
         if len(utime_array) != 0:
-            utime_array = timecut.cut_array_in_min_max(
-                utime_array, start_index, end_index
-            )
+            utime_array = timecut.cut_array_in_min_max(utime_array, start_index, end_index)
         if len(par_array) != 0:
             par_array = timecut.cut_array_in_min_max(par_array, start_index, end_index)
     # last X hours analysis
@@ -428,7 +576,7 @@ def time_analysis(
     return utime_array, par_array
 
 
-def get_puls_ievt(dsp_files: list[str]):
+def get_puls_ievt(query: str):
     """
     Select pulser events.
 
@@ -437,15 +585,19 @@ def get_puls_ievt(dsp_files: list[str]):
     dsp_files
                lh5 dsp file
     """
-    wf_max = lh5.load_nda(dsp_files, ["wf_max"], "ch000/dsp/")["wf_max"]
-    baseline = lh5.load_nda(dsp_files, ["baseline"], "ch000/dsp")["baseline"]
+    
+    parameters = ["wf_max", "baseline"]
+    dbconfig_filename, dlconfig_filename = write_config(files_path, version,[["ch00"]], parameters, "ch00")
+    ch0_data = read_from_dataloader(dbconfig_filename, dlconfig_filename, query, parameters)
+    
+    wf_max = ch0_data["wf_max"]
+    baseline = ch0_data["baseline"]
+
     wf_max = np.subtract(wf_max, baseline)
     puls_ievt = []
-    # baseline_entry = []
     pulser_entry = []
     not_pulser_entry = []
     high_thr = 12500
-    # low_thr = 2500
 
     for idx, entry in enumerate(wf_max):
         puls_ievt.append(idx)
@@ -502,10 +654,12 @@ def remove_nan(par_array: np.ndarray, time_array: np.ndarray):
     time_array
                  Array with time values
     """
+    print("Inizio: ", type(par_array))
     par_array_no_nan = par_array[~np.isnan(par_array)]
     time_array_no_nan = time_array[~np.isnan(par_array)]
-
-    return np.asarray(par_array_no_nan), np.asarray(time_array_no_nan)
+    print("Fine: ", type(par_array))
+    return par_array_no_nan, time_array_no_nan
+    # return np.asarray(par_array_no_nan), np.asarray(time_array_no_nan)
 
 
 def avg_over_entries(par_array: np.ndarray, time_array: np.ndarray):
@@ -556,7 +710,7 @@ def avg_over_minutes(par_array: np.ndarray, time_array: np.ndarray):
     par_avg = []
     time_avg = []
 
-    dt = j_config[6]["avg_interval"] * 60  # minutes in seconds
+    dt = j_config[7]["avg_interval"] * 60  # minutes in seconds
     start = time_array[0]
     end = time_array[-1]
 
@@ -648,7 +802,7 @@ def get_mean(parameter: str, detector: str):
         parameter
     ]
     # apply selection of pulser/physical events
-    all_ievt, puls_only_ievt, not_puls_ievt = get_puls_ievt(lh5_files)
+    all_ievt, puls_only_ievt, not_puls_ievt = get_puls_ievt()
     if all_ievt != [] and puls_only_ievt != [] and not_puls_ievt != []:
         det_only_index = np.isin(all_ievt, not_puls_ievt)
         puls_only_index = np.isin(all_ievt, puls_only_ievt)

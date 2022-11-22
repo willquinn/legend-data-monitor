@@ -21,13 +21,14 @@ version = j_config[0]["path"]["version"]
 output_path = j_config[0]["path"]["output-path"]
 period = j_config[1]
 run = j_config[2]
-datatype = j_config[3]
-det_type = j_config[4]
-par_to_plot = j_config[5]
-three_dim_pars = j_config[6]["three_dim_pars"]
-time_window = j_config[7]
-last_hours = j_config[8]
-verbose = j_config[11]
+filelist = j_config[3]
+datatype = j_config[4]
+det_type = j_config[5]
+par_to_plot = j_config[6]
+three_dim_pars = j_config[7]["three_dim_pars"]
+time_window = j_config[8]
+last_hours = j_config[9]
+verbose = j_config[12]
 
 
 def main():
@@ -104,66 +105,59 @@ def select_and_plot_run(
     start_code
                 Starting time of the code
     """
-    full_path = os.path.join(path, "dsp", datatype, period, run)
-
-    # get list of lh5 files in chronological order
-    lh5_files = os.listdir(full_path)
-    lh5_files = sorted(
-        lh5_files,
-        key=lambda file: int(
-            ((file.split("-")[4]).split("Z")[0]).split("T")[0]
-            + ((file.split("-")[4]).split("Z")[0]).split("T")[1]
-        ),
-    )
-
-    # keep 'cal' or 'phy' data
-    if datatype == "cal":
-        runs = [file for file in lh5_files if "cal" in file]
-        if verbose is True:
-            logging.error("Calib files have been loaded")
-    if datatype == "phy":
-        runs = [file for file in lh5_files if "phy" in file]
-        if verbose is True:
-            logging.error("Phys files have been loaded")
 
     mpl.use("pdf")
 
     # get time cuts info
     time_cut = timecut.build_timecut_list(time_window, last_hours)
 
-    # time analysis: set output-pdf filenames
-    if len(time_cut) != 0:  # time cuts
-        start, end = timecut.time_dates(time_cut, start_code)
-        path = os.path.join(
-            plot_path, f"{exp}-{period}-{run}-{datatype}_{start}_{end}.pdf"
-        )
-        json_path = os.path.join(
-            json_path, f"{exp}-{period}-{run}-{datatype}_{start}_{end}.json"
-        )
-        map_path = os.path.join(
-            map_path, f"{exp}-{period}-{run}-{datatype}_{start}_{end}.pdf"
-        )
-    else:  # no time cuts
-        path = os.path.join(plot_path, f"{exp}-{period}-{run}-{datatype}.pdf")
-        json_path = os.path.join(json_path, f"{exp}-{period}-{run}-{datatype}.json")
-        map_path = os.path.join(map_path, f"{exp}-{period}-{run}-{datatype}.pdf")
+    run_name = ""
+    if isinstance(run, str):
+        run_name = run
+    elif isinstance(run, list):
+        for r in run:
+            run_name = run_name + r + "-"
+        run_name = run_name[:-1]
 
-    # apply time cut to lh5 filenames
-    if len(time_cut) == 3:
-        runs = timecut.cut_below_threshold_filelist(
-            full_path, runs, time_cut, start_code
-        )
-    elif len(time_cut) == 4:
-        runs = timecut.cut_min_max_filelist(full_path, runs, time_cut)
+    if run:
+        # time analysis: set output-pdf filenames
+        if len(time_cut) != 0:  # time cuts
+            start, end = timecut.time_dates(time_cut, start_code)
+            path = os.path.join(
+                plot_path, f"{exp}-{period}-{run_name}-{datatype}_{start}_{end}.pdf"
+            )
+            json_path = os.path.join(
+                json_path, f"{exp}-{period}-{run_name}-{datatype}_{start}_{end}.json"
+            )
+            map_path = os.path.join(
+                map_path, f"{exp}-{period}-{run_name}-{datatype}_{start}_{end}.pdf"
+            )
+        else:  # no time cuts
+            path = os.path.join(plot_path, f"{exp}-{period}-{run_name}-{datatype}.pdf")
+            json_path = os.path.join(json_path, f"{exp}-{period}-{run_name}-{datatype}.json")
+            map_path = os.path.join(map_path, f"{exp}-{period}-{run_name}-{datatype}.pdf")
+    else:
+        # time analysis: set output-pdf filenames
+        if len(time_cut) != 0:  # time cuts
+            start, end = timecut.time_dates(time_cut, start_code)
+            path = os.path.join(
+                plot_path, f"{exp}-{period}-{datatype}_{start}_{end}.pdf"
+            )
+            json_path = os.path.join(
+                json_path, f"{exp}-{period}-{datatype}_{start}_{end}.json"
+            )
+            map_path = os.path.join(
+                map_path, f"{exp}-{period}-{datatype}_{start}_{end}.pdf"
+            )
+        else:  # no time cuts
+            path = os.path.join(plot_path, f"{exp}-{period}-{datatype}.pdf")
+            json_path = os.path.join(json_path, f"{exp}-{period}-{datatype}.json")
+            map_path = os.path.join(map_path, f"{exp}-{period}-{datatype}.pdf")
 
-    # get full file paths
-    runs = [os.path.join(full_path, run_file) for run_file in runs]
-
-    dump_all_plots_together(runs, time_cut, path, json_path, map_path, start_code)
+    dump_all_plots_together(time_cut, path, json_path, map_path, start_code)
 
 
 def dump_all_plots_together(
-    dsp_files: list[str],
     time_cut: list[str],
     path: str,
     json_path: str,
@@ -188,26 +182,14 @@ def dump_all_plots_together(
     start_code
                 Starting time of the code
     """
-    if isinstance(dsp_files, str):
-        dsp_files = [dsp_files]
-
-    # key selection (add it to the config file?)
-    # dsp_files = dsp_files[17:] # remove data prior to 20220817T124844Z in run22
-    # dsp_files = dsp_files[25:]
-
-    # exit if no dsp files are found
-    if len(dsp_files) == 0:
-        logging.warning("There are no files to inspect!")
-        sys.exit(1)
-
-    # create channel maps from orca+raw files
-    raw_files = [dsp_file.replace("dsp", "raw") for dsp_file in dsp_files]
+    
     geds_dict = analysis.load_geds()
-    spms_dict = analysis.load_spms(raw_files)
     mean_dict = {}
 
+    query = analysis.set_query(time_cut, start_code, run)
+
     # get pulser-events indices
-    all_ievt, puls_only_ievt, not_puls_ievt = analysis.get_puls_ievt(dsp_files)
+    all_ievt, puls_only_ievt, not_puls_ievt = analysis.get_puls_ievt(query)
 
     with PdfPages(path) as pdf:
         with PdfPages(map_path) as pdf_map:
@@ -224,42 +206,33 @@ def dump_all_plots_together(
             # geds plots
             if det_type["geds"] is True:
                 string_geds, string_geds_name = analysis.read_geds(geds_dict)
+
+                db_parameters = par_to_plot["geds"].copy()
+
+                if "uncal_puls" in db_parameters:
+                    db_parameters.remove("uncal_puls")
+                    db_parameters.append("trapTmax")
+                
+                db_parameters.append("timestamp")
+                dbconfig_filename, dlconfig_filename = analysis.write_config(files_path, version, string_geds, db_parameters, "geds")
+                data = analysis.read_from_dataloader(dbconfig_filename, dlconfig_filename, query, db_parameters)
+
                 geds_par = par_to_plot["geds"]
+
                 if len(geds_par) == 0:
                     logging.error("Geds: NO parameters have been enabled!")
                 else:
                     logging.error("Geds will be plotted...")
                     for par in geds_par:
                         det_status_dict = {}
-                        for (det_list, string) in zip(string_geds, string_geds_name):
-                            if (
-                                det_list == string_geds[0]
-                            ):  # keep 1 string (per far prima)
+                        if par != "timestamp":
+                            for (det_list, string) in zip(string_geds, string_geds_name):
 
-                                if len(det_list) == 0:
-                                    continue
+                                    if len(det_list) == 0:
+                                        continue
 
-                                if par in three_dim_pars:
-                                    string_mean_dict, map_dict = plot.plot_wtrfll(
-                                        dsp_files,
-                                        det_list,
-                                        par,
-                                        time_cut,
-                                        "geds",
-                                        string,
-                                        geds_dict,
-                                        all_ievt,
-                                        puls_only_ievt,
-                                        not_puls_ievt,
-                                        start_code,
-                                        pdf,
-                                    )
-                                else:
-                                    if par == "K_lines":
-                                        (
-                                            string_mean_dict,
-                                            map_dict,
-                                        ) = plot.plot_par_vs_time(
+                                    if par in three_dim_pars:
+                                        string_mean_dict, map_dict = plot.plot_wtrfll(
                                             dsp_files,
                                             det_list,
                                             par,
@@ -274,55 +247,75 @@ def dump_all_plots_together(
                                             pdf,
                                         )
                                     else:
-                                        (
-                                            string_mean_dict,
-                                            map_dict,
-                                        ) = plot.plot_ch_par_vs_time(
-                                            dsp_files,
-                                            det_list,
-                                            par,
-                                            time_cut,
-                                            "geds",
-                                            string,
-                                            geds_dict,
-                                            all_ievt,
-                                            puls_only_ievt,
-                                            not_puls_ievt,
-                                            start_code,
-                                            pdf,
-                                        )
-                                if map_dict is not None:
-                                    for det, status in map_dict.items():
-                                        det_status_dict[det] = status
-
-                                if string_mean_dict is not None:
-                                    for k in string_mean_dict:
-                                        if k in mean_dict:
-                                            mean_dict[k].update(string_mean_dict[k])
+                                        if par == "K_lines":
+                                            (
+                                                string_mean_dict,
+                                                map_dict,
+                                            ) = plot.plot_par_vs_time(
+                                                dsp_files,
+                                                det_list,
+                                                par,
+                                                time_cut,
+                                                "geds",
+                                                string,
+                                                geds_dict,
+                                                all_ievt,
+                                                puls_only_ievt,
+                                                not_puls_ievt,
+                                                start_code,
+                                                pdf,
+                                            )
                                         else:
-                                            mean_dict[k] = string_mean_dict[k]
-
-                                if verbose is True:
+                                            (
+                                                string_mean_dict,
+                                                map_dict,
+                                            ) = plot.plot_ch_par_vs_time(
+                                                data,
+                                                det_list,
+                                                par,
+                                                time_cut,
+                                                "geds",
+                                                string,
+                                                geds_dict,
+                                                all_ievt,
+                                                puls_only_ievt,
+                                                not_puls_ievt,
+                                                start_code,
+                                                pdf,
+                                            )
+                                            if string_mean_dict == 0: continue
                                     if map_dict is not None:
-                                        logging.error(
-                                            f"\t...{par} for geds (string #{string}) has been plotted!"
-                                        )
-                                    else:
-                                        logging.error(
-                                            f"\t...no {par} plots for geds - string #{string}!"
-                                        )
-                        if det_status_dict != []:
-                            map.geds_map(
-                                par,
-                                geds_dict,
-                                string_geds,
-                                string_geds_name,
-                                det_status_dict,
-                                time_cut,
-                                map_path,
-                                start_code,
-                                pdf_map,
-                            )
+                                        for det, status in map_dict.items():
+                                            det_status_dict[det] = status
+
+                                    if string_mean_dict is not None:
+                                        for k in string_mean_dict:
+                                            if k in mean_dict:
+                                                mean_dict[k].update(string_mean_dict[k])
+                                            else:
+                                                mean_dict[k] = string_mean_dict[k]
+
+                                    if verbose is True:
+                                        if map_dict is not None:
+                                            logging.error(
+                                                f"\t...{par} for geds (string #{string}) has been plotted!"
+                                            )
+                                        else:
+                                            logging.error(
+                                                f"\t...no {par} plots for geds - string #{string}!"
+                                            )
+                            if det_status_dict != []:
+                                map.geds_map(
+                                    par,
+                                    geds_dict,
+                                    string_geds,
+                                    string_geds_name,
+                                    det_status_dict,
+                                    time_cut,
+                                    map_path,
+                                    start_code,
+                                    pdf_map,
+                                )
 
             # spms plots
             if det_type["spms"] is True:
@@ -336,6 +329,12 @@ def dump_all_plots_together(
                         string_spms_name,
                     ) = analysis.read_spms(spms_dict)
                     spms_par = par_to_plot["spms"]
+
+                    db_parameters = par_to_plot["spms"].copy()
+                    db_parameters.append("timestamp")
+                    dbconfig_filename, dlconfig_filename = analysis.write_config(files_path, version, string_geds, db_parameters, "geds")
+                    data = analysis.read_from_dataloader(dbconfig_filename, dlconfig_filename, query, db_parameters)
+
                     if len(spms_par) == 0:
                         logging.error("Spms: NO parameters have been enabled!")
                     else:

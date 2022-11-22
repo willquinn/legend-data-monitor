@@ -111,7 +111,7 @@
       }
     },
     "bl_std": {
-      "label": "Baseline Standard Deviation",
+      "label": "Noise",
       "units": "ADC",
       "facecol": [0.61, 0.87, 1.0],
       "limit": {
@@ -451,7 +451,7 @@
       }
     },
     "uncal_puls": {
-      "label": "Uncalibrated pulser",
+      "label": "Uncal Pulser Gain",
       "units": "ADC",
       "facecol": [0.27, 0.47, 0.9],
       "limit": {
@@ -461,7 +461,7 @@
       }
     },
     "cal_puls": {
-      "label": "Calibrated pulser",
+      "label": "Calibrated Pulser Gain",
       "units": "keV",
       "facecol": [0.27, 0.47, 0.9],
       "limit": {
