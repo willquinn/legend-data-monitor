@@ -106,8 +106,6 @@ def select_and_plot_run(
                 Starting time of the code
     """
 
-    mpl.use("pdf")
-
     # get time cuts info
     time_cut = timecut.build_timecut_list(time_window, last_hours)
 
@@ -283,6 +281,7 @@ def dump_all_plots_together(
                                                 start_code,
                                                 pdf,
                                             )
+                                            # perchè questa linea non c'era nella versione di Sofia?
                                             if string_mean_dict == 0: continue
                                     if map_dict is not None:
                                         for det, status in map_dict.items():
@@ -340,17 +339,22 @@ def dump_all_plots_together(
                     else:
                         logging.error("Spms will be plotted...")
                         for par in spms_par:
-                            if par == "gain":
+                            if par in ["energy_in_pe", "trigger_pos"]:
                                 for (det_list, string) in zip(
                                     spms_merged, spms_name_merged
                                 ):
+                                    # if string=="top_IB":
                                     plot.plot_par_vs_time_2d(
                                         dsp_files,
                                         det_list,
+                                        par,
                                         time_cut,
                                         "spms",
                                         string,
                                         spms_dict,
+                                        all_ievt,
+                                        puls_only_ievt,
+                                        not_puls_ievt,
                                         start_code,
                                         pdf,
                                     )
@@ -366,7 +370,10 @@ def dump_all_plots_together(
                                     if len(det_list) == 0:
                                         continue
                                     if len(string) != 0:
-                                        map_dict = plot.plot_par_vs_time(
+                                        (
+                                            string_mean_dict,
+                                            map_dict,
+                                        ) = plot.plot_ch_par_vs_time(
                                             dsp_files,
                                             det_list,
                                             par,
@@ -374,9 +381,9 @@ def dump_all_plots_together(
                                             "spms",
                                             string,
                                             spms_dict,
-                                            None,
-                                            None,
-                                            None,
+                                            all_ievt,
+                                            puls_only_ievt,
+                                            not_puls_ievt,
                                             start_code,
                                             pdf,
                                         )

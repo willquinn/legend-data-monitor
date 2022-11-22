@@ -6,7 +6,8 @@
          "version":      "v06.00",
          "orca-files":   "/data1/shared/l60/l60-daq/daq-v01/",
          "output-path":  "/data1/users/morella/legend-data-monitor/",
-         "config-path":  "/data1/users/morella/L60-p01-r022-T%-all-config.json"
+         "geds-config": "/data1/users/calgaro/legend-data-monitor/src/legend_data_monitor/settings/L60-p01-r022-T%-all-config.json",
+         "spms-config": "/data1/users/calgaro/legend-data-monitor/src/legend_data_monitor/settings/SiPM-config.json"
       }
    },
    "period":   "p01",
@@ -43,7 +44,7 @@
          ]
       },
       "quality_cuts": {
-         "README": "Specify for which detector you want to apply quality cuts.",
+         "README": "Specify for which detector type you want to apply quality cuts.",
          "spms":   false,
          "geds":   false,
          "ch000":  false

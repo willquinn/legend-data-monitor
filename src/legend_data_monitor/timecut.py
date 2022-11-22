@@ -338,11 +338,11 @@ def cut_array_in_min_max(
     Parameters
     ----------
     val_array
-                 Array filled with values of a given parameter
+                Array filled with values of a given parameter
     start_index
-                 Starting index
+                Starting index
     end_index
-                 Ending index
+                Ending index
     """
     val_list = val_array.tolist()
     if end_index == len(val_array) - 1:

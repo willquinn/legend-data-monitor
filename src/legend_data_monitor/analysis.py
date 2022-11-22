@@ -9,8 +9,6 @@ from datetime import datetime, timedelta
 import numpy as np
 import pandas as pd
 import pygama.lgdo.lh5_store as lh5
-from pygama.lgdo import LH5Store
-from pygama.raw.orca import orca_streamer
 from pygama.flow import DataLoader, FileDB
 
 from . import timecut
@@ -213,7 +211,7 @@ def set_query(time_cut: list, start_code: str, run: str|list[str]):
 
 def load_geds():
     """Load channel map for geds."""
-    config_path = j_config[0]["path"]["config-path"]
+    config_path = j_config[0]["path"]["geds-config"]
     with open(config_path) as d:
         channel_map = json.load(d)
     geds_dict = channel_map["hardware_configuration"]["channel_map"]
@@ -222,61 +220,11 @@ def load_geds():
 
 
 def load_spms(raw_files: list[str]):
-    """
-    Load channel map for spms.
-
-    Parameters
-    ----------
-    raw_files
-                Strings of lh5 raw files
-    """
-    channels = lh5.ls(raw_files[0], "")
-    filename = os.path.basename(raw_files[0])
-    fn_split = filename.split("-")
-    orca_name = (
-        f"{fn_split[0]}-{fn_split[1]}-{fn_split[2]}-{fn_split[3]}-{fn_split[4]}.orca"
-    )
-    data_type = fn_split[3]
-    orca_path = j_config[0]["path"]["orca-files"]
-    period = j_config[1]
-    run = j_config[2]
-    orca_file = f"{orca_path}{data_type}/{period}/{run}/{orca_name}"
-    orstr = orca_streamer.OrcaStreamer()
-    orstr.open_stream(orca_file)
-    channel_map_spms = json.loads(orstr.header["ObjectInfo"]["ORL200Model"]["SiPMMap"])
-    store = LH5Store()
-
-    spms_dict = {}
-
-    for ch in channels:
-        crate = store.read_object(f"{ch}/raw/crate", raw_files[0])[0].nda[0]
-        card = store.read_object(f"{ch}/raw/card", raw_files[0])[0].nda[0]
-        ch_orca = store.read_object(f"{ch}/raw/ch_orca", raw_files[0])[0].nda[0]
-        daq_dict = {}
-        daq_dict["crate"] = crate
-        daq_dict["board_slot"] = card
-        daq_dict["board_ch"] = ch_orca
-
-        if crate == 2:
-            for det, entry in channel_map_spms.items():
-                if (
-                    entry["daq"]["crate"] == f"{crate}"
-                    and entry["daq"]["board_slot"] == f"{card}"
-                    and entry["daq"]["board_ch"] == f"{ch_orca}"
-                ):
-                    # Do we need such an information?
-                    # hv_dict = {}
-                    # hv_dict["board_chan"] = entry["low_voltage"]["board_chan"]
-                    # hv_dict["flange_id"] = entry["low_voltage"]["flange_id"]
-
-                    spms_dict[ch] = {
-                        "system": "spm",
-                        "det_id": det,
-                        "barrel": entry["det_type"],
-                        "daq": daq_dict
-                        # "high_voltage": hv_dict,
-                    }
-            # spms_dict[ch] = {"system": "spm", "daq": daq_dict}
+    """Load channel map for spms."""
+    config_path = j_config[0]["path"]["spms-config"]
+    with open(config_path) as d:
+        channel_map = json.load(d)
+    spms_dict = channel_map
 
     return spms_dict
 
@@ -698,7 +646,7 @@ def avg_over_entries(par_array: np.ndarray, time_array: np.ndarray):
 
 def avg_over_minutes(par_array: np.ndarray, time_array: np.ndarray):
     """
-    Evaluate the average over N minutes.
+    Evaluate the average over N minutes. It is used in plots, together with all entries for spotting potential trends in data.
 
     Parameters
     ----------
@@ -736,16 +684,16 @@ def avg_over_minutes(par_array: np.ndarray, time_array: np.ndarray):
             iniz = i
         i += 1
 
+    # add last point at the end of the selected time window
     time_avg.append(end)
     par_avg.append(np.mean(par_array[iniz:-1]))
 
-    # par_avg, time_avg = remove_nan(par_avg, time_avg)
     return par_avg, time_avg
 
 
 def get_mean(parameter: str, detector: str):
     """
-    Evaluate the average over first files/hours.
+    Evaluate the average over first files/hours. It is used when we want to show the percentage variation of a parameter with respect to its average value.
 
     Parameters
     ----------
@@ -818,3 +766,67 @@ def get_mean(parameter: str, detector: str):
     par_array_mean = np.mean(par_array[:len_first])
 
     return par_array_mean
+
+
+def set_pkl_name(
+    exp, period, run, datatype, det_type, string_number, parameter, time_cut, start_code, start_name, end_name
+):
+    """
+    Set the pkl filename.
+
+    Parameters
+    ----------
+    exp
+            Experiment info (eg. l60)
+    period
+            Period info (eg. p01)
+    run
+            Run number
+    datatype
+            Either 'cal' or 'phy'
+    det_type
+            Type of detector (geds or spms)
+    string_number
+            Number of the string under study
+    parameter
+            Parameter to plot
+    time_cut
+            List with info about time cuts
+    start_code
+            Starting time of the code
+    start_name
+            String with timestamp of first event
+    end_name
+            String with timestamp of last event        
+    """
+    run_name = ""
+    if isinstance(run, str):
+        run_name = run
+    elif isinstance(run, list):
+        for r in run:
+            run_name = run_name + r + "-"
+    run_name = run_name[:-1]
+
+    if run:
+    # define name of pkl file (with info about time cut if present)
+        if len(time_cut) != 0:
+            start, end = timecut.time_dates(time_cut, start_code)
+            pkl_name = exp + "-" + period + "-" + run + "-" + datatype + "-" + start + "_" + end + "-" + parameter
+        else:
+            pkl_name = exp + "-" + period + "-" + run_name + "-" + start_name + "-" + end_name + "-" + datatype + "-" + parameter
+        if det_type == "geds":
+            pkl_name += "-string" + string_number + ".pkl"
+        if det_type == "spms":
+            pkl_name += "-" + string_number + ".pkl"
+    else:
+        if len(time_cut) != 0:
+            start, end = timecut.time_dates(time_cut, start_code)
+            pkl_name = exp + "-" + period + "-" + datatype + "-" + start + "_" + end + "-" + parameter
+        else:
+            pkl_name = exp + "-" + period + "-" + datatype + "-" + start_name + "-" + end_name + "-" + parameter
+        if det_type == "geds":
+            pkl_name += "-string" + string_number + ".pkl"
+        if det_type == "spms":
+            pkl_name += "-" + string_number + ".pkl"
+
+    return pkl_name
