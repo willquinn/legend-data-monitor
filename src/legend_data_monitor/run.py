@@ -30,6 +30,7 @@ verbose = j_config[12]
 
 pkg = importlib.resources.files("legend_data_monitor")
 
+
 def main():
     start_code = (datetime.now()).strftime("%d/%m/%Y %H:%M:%S")  # common starting time
     path = files_path + version + "/generated/tier"
@@ -209,11 +210,16 @@ def dump_all_plots_together(
                     logging.error("Geds: NO parameters have been enabled!")
                 else:
                     db_parameters = analysis.load_df_cols(geds_par, "geds")
-                    dbconfig_filename, dlconfig_filename = analysis.write_config(files_path, version, string_geds, db_parameters, "geds")
-                    data = analysis.read_from_dataloader(dbconfig_filename, dlconfig_filename, query, db_parameters)
+                    dbconfig_filename, dlconfig_filename = analysis.write_config(
+                        files_path, version, string_geds, db_parameters, "geds"
+                    )
+                    data = analysis.read_from_dataloader(
+                        dbconfig_filename, dlconfig_filename, query, db_parameters
+                    )
 
                     logging.error("Geds will be plotted...")
-                    if "timestamp" in geds_par: geds_par.remove("timestamp")
+                    if "timestamp" in geds_par:
+                        geds_par.remove("timestamp")
                     for par in geds_par:
                         det_status_dict = {}
                         if par != "timestamp":
@@ -326,11 +332,16 @@ def dump_all_plots_together(
                         logging.error("Spms: NO parameters have been enabled!")
                     else:
                         db_parameters = analysis.load_df_cols(spms_par, "spms")
-                        dbconfig_filename, dlconfig_filename = analysis.write_config(files_path, version, string_spms, db_parameters, "spms")
-                        data = analysis.read_from_dataloader(dbconfig_filename, dlconfig_filename, query, db_parameters)
+                        dbconfig_filename, dlconfig_filename = analysis.write_config(
+                            files_path, version, string_spms, db_parameters, "spms"
+                        )
+                        data = analysis.read_from_dataloader(
+                            dbconfig_filename, dlconfig_filename, query, db_parameters
+                        )
 
                         logging.error("Spms will be plotted...")
-                        if "timestamp" in spms_par: spms_par.remove("timestamp")
+                        if "timestamp" in spms_par:
+                            spms_par.remove("timestamp")
                         for par in spms_par:
                             if par in ["energy_in_pe", "trigger_pos"]:
                                 for (det_list, string) in zip(
@@ -415,11 +426,16 @@ def dump_all_plots_together(
                     logging.error("ch000: NO parameters have been enabled!")
                 else:
                     db_parameters = analysis.load_df_cols(ch000_par, "ch000")
-                    dbconfig_filename, dlconfig_filename = analysis.write_config(files_path, version, [['ch00']], db_parameters, "ch000")
-                    data = analysis.read_from_dataloader(dbconfig_filename, dlconfig_filename, query, db_parameters)
+                    dbconfig_filename, dlconfig_filename = analysis.write_config(
+                        files_path, version, [["ch00"]], db_parameters, "ch000"
+                    )
+                    data = analysis.read_from_dataloader(
+                        dbconfig_filename, dlconfig_filename, query, db_parameters
+                    )
 
                     logging.error("ch000 will be plotted...")
-                    if "timestamp" in ch000_par: ch000_par.remove("timestamp")
+                    if "timestamp" in ch000_par:
+                        ch000_par.remove("timestamp")
                     for par in ch000_par:
                         map_dict = plot.plot_par_vs_time_ch000(
                             data,

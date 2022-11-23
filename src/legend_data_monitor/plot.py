@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-import os
 import pickle as pkl
 from copy import copy
 from datetime import datetime, timezone
@@ -11,7 +10,6 @@ import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import pygama.lgdo.lh5_store as lh5
 from matplotlib import dates, ticker
 
 from . import analysis, parameters
@@ -35,6 +33,7 @@ datatype = j_config[4]
 no_variation_pars = j_config[6]["plot_values"]["no_variation_pars"]
 plot_style = j_config[7]
 qc_flag = j_config[6]["quality_cuts"]
+
 
 def plot_parameters(
     ax,
@@ -367,13 +366,13 @@ def plot_par_vs_time_ch000(
     ax.set_facecolor("w")
     ax.grid(axis="both", which="major")
     plt.grid(axis="both", which="major")
-    #plt.figure().patch.set_facecolor(j_par[0][parameter]["facecol"])
+    # plt.figure().patch.set_facecolor(j_par[0][parameter]["facecol"])
     start_times = []
     end_times = []
     map_dict = {}
 
     # keep entries for the selected detector (note: no hit table for ch000)
-    new_data = data[data["dsp_table"] == 0] 
+    new_data = data[data["dsp_table"] == 0]
 
     # det parameter and time arrays for a given detector
     _, par_np_array, utime_array = parameters.load_parameter(
@@ -859,7 +858,7 @@ def plot_wtrfll(
         start_name,
         end_name,
     )
-    
+
     pkl.dump(ax, open(f"out/pkl-files/par-vs-time/{pkl_name}", "wb"))
     pdf.savefig(bbox_inches="tight")
     plt.close()
