@@ -66,7 +66,7 @@ qc_flag = j_config[6]["quality_cuts"]
 
 def write_config(files_path: str, version: str, det_map: list[list[str]], parameters: list[str], det_type: str):
     """
-    Write DataLoader config file
+    Write DataLoader config file.
     
     Parameters
     ----------
