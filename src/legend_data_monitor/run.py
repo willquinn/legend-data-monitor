@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib.resources
 import json
 import logging
 import os
@@ -16,7 +17,6 @@ j_config, j_par, _ = analysis.read_json_files()
 exp = j_config[0]["exp"]
 files_path = j_config[0]["path"]["lh5-files"]
 version = j_config[0]["path"]["version"]
-output_path = j_config[0]["path"]["output-path"]
 period = j_config[1]
 run = j_config[2]
 filelist = j_config[3]
@@ -28,11 +28,13 @@ time_window = j_config[8]
 last_hours = j_config[9]
 verbose = j_config[12]
 
+pkg = importlib.resources.files("legend_data_monitor")
+
 
 def main():
     start_code = (datetime.now()).strftime("%d/%m/%Y %H:%M:%S")  # common starting time
     path = files_path + version + "/generated/tier"
-    out_path = os.path.join(output_path, "out/")
+    out_path = str(pkg / ".." / ".." / "out")
 
     # output folders
     if os.path.isdir(out_path) is False:
@@ -42,11 +44,11 @@ def main():
     json_path = os.path.join(out_path, "json-files")
     for out_dir in ["log-files", "pdf-files", "pkl-files", "json-files"]:
         if out_dir not in os.listdir(out_path):
-            os.mkdir(out_path + out_dir)
+            os.mkdir(os.path.join(out_path, out_dir))
         if out_dir in ["pdf-files", "pkl-files"]:
             for out_subdir in ["par-vs-time", "heatmaps"]:
-                if os.path.isdir(f"{out_path}{out_dir}/{out_subdir}") is False:
-                    os.mkdir(f"{out_path}{out_dir}/{out_subdir}")
+                if os.path.isdir(f"{out_path}/{out_dir}/{out_subdir}") is False:
+                    os.mkdir(f"{out_path}/{out_dir}/{out_subdir}")
     plot_path = pdf_path + "/par-vs-time"
     map_path = pdf_path + "/heatmaps"
 
@@ -103,7 +105,6 @@ def select_and_plot_run(
     start_code
                 Starting time of the code
     """
-
     # get time cuts info
     time_cut = timecut.build_timecut_list(time_window, last_hours)
 
@@ -169,8 +170,6 @@ def dump_all_plots_together(
 
     Parameters
     ----------
-    dsp_files
-                Strings of lh5 dsp files
     time_cut
                 List with info about time cuts
     path
@@ -182,8 +181,8 @@ def dump_all_plots_together(
     start_code
                 Starting time of the code
     """
-
     geds_dict = analysis.load_geds()
+    spms_dict = analysis.load_spms()
     mean_dict = {}
 
     query = analysis.set_query(time_cut, start_code, run)
@@ -206,27 +205,21 @@ def dump_all_plots_together(
             # geds plots
             if det_type["geds"] is True:
                 string_geds, string_geds_name = analysis.read_geds(geds_dict)
-
-                db_parameters = par_to_plot["geds"].copy()
-
-                if "uncal_puls" in db_parameters:
-                    db_parameters.remove("uncal_puls")
-                    db_parameters.append("trapTmax")
-
-                db_parameters.append("timestamp")
-                dbconfig_filename, dlconfig_filename = analysis.write_config(
-                    files_path, version, string_geds, db_parameters, "geds"
-                )
-                data = analysis.read_from_dataloader(
-                    dbconfig_filename, dlconfig_filename, query, db_parameters
-                )
-
                 geds_par = par_to_plot["geds"]
-
                 if len(geds_par) == 0:
                     logging.error("Geds: NO parameters have been enabled!")
                 else:
+                    db_parameters = analysis.load_df_cols(geds_par, "geds")
+                    dbconfig_filename, dlconfig_filename = analysis.write_config(
+                        files_path, version, string_geds, db_parameters, "geds"
+                    )
+                    data = analysis.read_from_dataloader(
+                        dbconfig_filename, dlconfig_filename, query, db_parameters
+                    )
+
                     logging.error("Geds will be plotted...")
+                    if "timestamp" in geds_par:
+                        geds_par.remove("timestamp")
                     for par in geds_par:
                         det_status_dict = {}
                         if par != "timestamp":
@@ -239,7 +232,7 @@ def dump_all_plots_together(
 
                                 if par in three_dim_pars:
                                     string_mean_dict, map_dict = plot.plot_wtrfll(
-                                        dsp_files,
+                                        data,
                                         det_list,
                                         par,
                                         time_cut,
@@ -258,7 +251,7 @@ def dump_all_plots_together(
                                             string_mean_dict,
                                             map_dict,
                                         ) = plot.plot_par_vs_time(
-                                            dsp_files,
+                                            data,
                                             det_list,
                                             par,
                                             time_cut,
@@ -289,9 +282,6 @@ def dump_all_plots_together(
                                             start_code,
                                             pdf,
                                         )
-                                        # perchè questa linea non c'era nella versione di Sofia?
-                                        if string_mean_dict == 0:
-                                            continue
                                 if map_dict is not None:
                                     for det, status in map_dict.items():
                                         det_status_dict[det] = status
@@ -336,21 +326,22 @@ def dump_all_plots_together(
                         string_spms,
                         string_spms_name,
                     ) = analysis.read_spms(spms_dict)
+
                     spms_par = par_to_plot["spms"]
-
-                    db_parameters = par_to_plot["spms"].copy()
-                    db_parameters.append("timestamp")
-                    dbconfig_filename, dlconfig_filename = analysis.write_config(
-                        files_path, version, string_geds, db_parameters, "geds"
-                    )
-                    data = analysis.read_from_dataloader(
-                        dbconfig_filename, dlconfig_filename, query, db_parameters
-                    )
-
                     if len(spms_par) == 0:
                         logging.error("Spms: NO parameters have been enabled!")
                     else:
+                        db_parameters = analysis.load_df_cols(spms_par, "spms")
+                        dbconfig_filename, dlconfig_filename = analysis.write_config(
+                            files_path, version, string_spms, db_parameters, "spms"
+                        )
+                        data = analysis.read_from_dataloader(
+                            dbconfig_filename, dlconfig_filename, query, db_parameters
+                        )
+
                         logging.error("Spms will be plotted...")
+                        if "timestamp" in spms_par:
+                            spms_par.remove("timestamp")
                         for par in spms_par:
                             if par in ["energy_in_pe", "trigger_pos"]:
                                 for (det_list, string) in zip(
@@ -358,7 +349,7 @@ def dump_all_plots_together(
                                 ):
                                     # if string=="top_IB":
                                     plot.plot_par_vs_time_2d(
-                                        dsp_files,
+                                        data,
                                         det_list,
                                         par,
                                         time_cut,
@@ -387,7 +378,7 @@ def dump_all_plots_together(
                                             string_mean_dict,
                                             map_dict,
                                         ) = plot.plot_ch_par_vs_time(
-                                            dsp_files,
+                                            data,
                                             det_list,
                                             par,
                                             time_cut,
@@ -434,10 +425,20 @@ def dump_all_plots_together(
                 if len(ch000_par) == 0:
                     logging.error("ch000: NO parameters have been enabled!")
                 else:
+                    db_parameters = analysis.load_df_cols(ch000_par, "ch000")
+                    dbconfig_filename, dlconfig_filename = analysis.write_config(
+                        files_path, version, [["ch00"]], db_parameters, "ch000"
+                    )
+                    data = analysis.read_from_dataloader(
+                        dbconfig_filename, dlconfig_filename, query, db_parameters
+                    )
+
                     logging.error("ch000 will be plotted...")
+                    if "timestamp" in ch000_par:
+                        ch000_par.remove("timestamp")
                     for par in ch000_par:
                         map_dict = plot.plot_par_vs_time_ch000(
-                            dsp_files,
+                            data,
                             par,
                             time_cut,
                             "ch000",

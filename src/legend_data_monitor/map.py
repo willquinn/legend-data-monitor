@@ -29,7 +29,6 @@ def pkl_name(time_cut: list[str], parameter: str, start_code: str):
     start_code
                      Starting time of the code
     """
-
     run_name = ""
     if isinstance(run, str):
         run_name = run

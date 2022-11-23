@@ -60,6 +60,8 @@ filelist = j_config[3]
 datatype = j_config[4]
 keep_puls_pars = j_config[6]["pulser"]["keep_puls_pars"]
 keep_phys_pars = j_config[6]["pulser"]["keep_phys_pars"]
+keep_phys_pars = j_config[6]["pulser"]["keep_phys_pars"]
+qc_flag = j_config[6]["quality_cuts"]
 
 
 def write_config(
@@ -69,8 +71,25 @@ def write_config(
     parameters: list[str],
     det_type: str,
 ):
+    """
+    Write DataLoader config file.
 
+    Parameters
+    ----------
+    files_path
+                Path previous to generated files path
+    version
+                Version of processed data
+    det_map
+                Map of detectors
+    parameters
+                Parameters to plot
+    det_type
+                Type of detector (geds, spms or ch000)
+    """
     if "0" in det_type:
+        if det_type == "ch00":
+            det_type = "evts"
         det_list = [0]
         dict_dbconfig = {
             "data_dir": files_path + version + "/generated/tier",
@@ -85,17 +104,19 @@ def write_config(
         dict_dlconfig = {"levels": {"dsp": {"tiers": ["dsp"]}}, "channel_map": {}}
     else:
         # flattening list[list[str]] to list[str]
-        flat_list = [subl for l in det_map for subl in l]
+        flat_list = [ch for det in det_map for ch in det]
 
         # converting channel number to int to give array as input to FileDB
-        det_list = [int(l.split("ch0")[-1]) for l in flat_list]
+        det_list = [int(elem.split("ch0")[-1]) for elem in flat_list]
 
         dsp_list = det_list.copy()
         hit_list = det_list.copy()
 
         # removing channels having no hit data
-        for ch in [24, 10, 41]:
-            hit_list.remove(ch)
+        removed_chs = [24, 10, 41]
+        for ch in removed_chs:
+            if ch in hit_list:
+                hit_list.remove(ch)
 
         dict_dbconfig = {
             "data_dir": files_path + version + "/generated/tier",
@@ -117,9 +138,9 @@ def write_config(
     json_dbconfig = json.dumps(dict_dbconfig, indent=4)
     json_dlconfig = json.dumps(dict_dlconfig, indent=4)
 
-    # Writing to sample.json
-    dbconfig_filename = "dbconfig_" + det_type + ".json"
-    dlconfig_filename = "dlconfig_" + det_type + ".json"
+    # Writing to _.json
+    dbconfig_filename = str(pkg / "settings" / f"dbconfig_{det_type}.json")
+    dlconfig_filename = str(pkg / "settings" / f"dlconfig_{det_type}.json")
 
     # Writing FileDB config file
     with open(dbconfig_filename, "w") as outfile:
@@ -135,7 +156,20 @@ def write_config(
 def read_from_dataloader(
     dbconfig: str, dlconfig: str, query: str | list[str], parameters: list[str]
 ):
+    """
+    Return the loaded data as a pandas DataFrame.
 
+    Parameters
+    ----------
+    dbconfig
+                Database filename
+    dlconfig
+                Configuration filename
+    query
+                Cut over files
+    parameters
+                Parameters to load
+    """
     dl = DataLoader(dlconfig, dbconfig)
     dl.set_files(query)
     dl.set_output(fmt="pd.DataFrame", columns=parameters)
@@ -144,7 +178,18 @@ def read_from_dataloader(
 
 
 def set_query(time_cut: list, start_code: str, run: str | list[str]):
+    """
+    Load specific runs and/or files.
 
+    Parameters
+    ----------
+    time_cut
+                List with info about time cuts
+    start_code
+                Starting time of the code
+    run
+                Run(s) to load
+    """
     query = ""
 
     # Reading from file
@@ -180,6 +225,42 @@ def set_query(time_cut: list, start_code: str, run: str | list[str]):
     return query
 
 
+def load_df_cols(par_to_plot: list[str], det_type: str):
+    """
+    Load parameters to plot starting from config file input.
+
+    Parameters
+    ----------
+    par_to_plot
+                Parameters to load for a given type of detector.
+    det_type
+                Type of detector (geds or spms)
+    """
+    db_parameters = par_to_plot
+    if "uncal_puls" in db_parameters:
+        db_parameters = [db.replace("uncal_puls", "trapTmax") for db in db_parameters]
+    if "cal_puls" in db_parameters:
+        db_parameters = [
+            db.replace("cal_puls", "cuspEmax_ctc_cal") for db in db_parameters
+        ]
+    if "K_lines" in db_parameters:
+        db_parameters = [
+            db.replace("K_lines", "cuspEmax_ctc_cal") for db in db_parameters
+        ]
+    if "event_rate" in db_parameters:
+        if det_type == "spms":
+            db_parameters = [
+                db.replace("event_rate", "energies") for db in db_parameters
+            ]
+    # problems with QCs
+    # if qc_flag[det_type] is True:
+    #    db_parameters.append("Quality_cuts")
+
+    db_parameters.append("timestamp")
+
+    return db_parameters
+
+
 def load_geds():
     """Load channel map for geds."""
     config_path = j_config[0]["path"]["geds-config"]
@@ -190,7 +271,7 @@ def load_geds():
     return geds_dict
 
 
-def load_spms(raw_files: list[str]):
+def load_spms():
     """Load channel map for spms."""
     config_path = j_config[0]["path"]["spms-config"]
     with open(config_path) as d:
@@ -428,26 +509,6 @@ def check_par_values(
     return thr_flag
 
 
-def add_offset_to_timestamp(tmp_array: np.ndarray, dsp_file: list[str]):
-    """
-    Add a time shift to the filename given by the time shown in 'runtime'.
-
-    Parameters
-    ----------
-    tmp_array
-                Time since beginning of file
-    dsp_file
-                lh5 dsp file
-    """
-    date_time = (((dsp_file.split("/")[-1]).split("-")[4]).split("Z")[0]).split("T")
-    date = date_time[0]
-    time = date_time[1]
-    run_start = datetime.strptime(date + time, "%Y%m%d%H%M%S")
-    utime_array = tmp_array + np.full(tmp_array.size, run_start.timestamp())
-
-    return utime_array
-
-
 def time_analysis(
     utime_array: np.ndarray, par_array: np.ndarray, time_cut: list[str], start_code: str
 ):
@@ -503,10 +564,9 @@ def get_puls_ievt(query: str):
 
     Parameters
     ----------
-    dsp_files
-               lh5 dsp file
+    query
+            Cut over files
     """
-
     parameters = ["wf_max", "baseline"]
     dbconfig_filename, dlconfig_filename = write_config(
         files_path, version, [["ch00"]], parameters, "ch00"
@@ -542,8 +602,7 @@ def get_puls_ievt(query: str):
 
 
 def get_qc_ievt(
-    hit_files: list,
-    detector: str,
+    quality_index: np.array,
     keep_evt_index: np.array,
 ):
     """
@@ -551,17 +610,11 @@ def get_qc_ievt(
 
     Parameters
     ----------
-    hit_files
-                lh5 hit files
-    detector
-                Name of the detector
+    quality_index
+                    Quality cuts, event by event
     keep_evt_index
-                Event number for either high energy pulser or physical events
+                    Event number for either high energy pulser or physical events
     """
-    quality_index = lh5.load_nda(hit_files, ["Quality_cuts"], detector + "/hit")[
-        "Quality_cuts"
-    ]
-
     if keep_evt_index != []:
         quality_index = quality_index[keep_evt_index]
 
@@ -579,10 +632,8 @@ def remove_nan(par_array: np.ndarray, time_array: np.ndarray):
     time_array
                  Array with time values
     """
-    print("Inizio: ", type(par_array))
     par_array_no_nan = par_array[~np.isnan(par_array)]
     time_array_no_nan = time_array[~np.isnan(par_array)]
-    print("Fine: ", type(par_array))
     return par_array_no_nan, time_array_no_nan
     # return np.asarray(par_array_no_nan), np.asarray(time_array_no_nan)
 
