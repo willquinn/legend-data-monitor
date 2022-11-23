@@ -1,1 +1,350 @@
-{"ch046": {"system": "spm", "det_id": "S16", "barrel": "IB", "daq": {"crate": "2", "board_slot": "1", "board_ch": "2"}}, "ch047": {"system": "spm", "det_id": "S17", "barrel": "IB", "daq": {"crate": "2", "board_slot": "1", "board_ch": "3"}}, "ch048": {"system": "spm", "det_id": "S42", "barrel": "OB", "daq": {"crate": "2", "board_slot": "1", "board_ch": "4"}}, "ch049": {"system": "spm", "det_id": "S43", "barrel": "OB", "daq": {"crate": "2", "board_slot": "1", "board_ch": "5"}}, "ch050": {"system": "spm", "det_id": "S44", "barrel": "OB", "daq": {"crate": "2", "board_slot": "2", "board_ch": "0"}}, "ch051": {"system": "spm", "det_id": "S45", "barrel": "OB", "daq": {"crate": "2", "board_slot": "2", "board_ch": "1"}}, "ch052": {"system": "spm", "det_id": "S00", "barrel": "IB", "daq": {"crate": "2", "board_slot": "2", "board_ch": "2"}}, "ch053": {"system": "spm", "det_id": "S01", "barrel": "IB", "daq": {"crate": "2", "board_slot": "2", "board_ch": "3"}}, "ch054": {"system": "spm", "det_id": "S02", "barrel": "IB", "daq": {"crate": "2", "board_slot": "2", "board_ch": "4"}}, "ch055": {"system": "spm", "det_id": "S03", "barrel": "IB", "daq": {"crate": "2", "board_slot": "2", "board_ch": "5"}}, "ch056": {"system": "spm", "det_id": "S18", "barrel": "OB", "daq": {"crate": "2", "board_slot": "3", "board_ch": "0"}}, "ch057": {"system": "spm", "det_id": "S19", "barrel": "OB", "daq": {"crate": "2", "board_slot": "3", "board_ch": "1"}}, "ch058": {"system": "spm", "det_id": "S04", "barrel": "IB", "daq": {"crate": "2", "board_slot": "3", "board_ch": "2"}}, "ch059": {"system": "spm", "det_id": "S05", "barrel": "IB", "daq": {"crate": "2", "board_slot": "3", "board_ch": "3"}}, "ch060": {"system": "spm", "det_id": "S20", "barrel": "OB", "daq": {"crate": "2", "board_slot": "3", "board_ch": "4"}}, "ch061": {"system": "spm", "det_id": "S21", "barrel": "OB", "daq": {"crate": "2", "board_slot": "3", "board_ch": "5"}}, "ch062": {"system": "spm", "det_id": "S06", "barrel": "IB", "daq": {"crate": "2", "board_slot": "4", "board_ch": "0"}}, "ch063": {"system": "spm", "det_id": "S07", "barrel": "IB", "daq": {"crate": "2", "board_slot": "4", "board_ch": "1"}}, "ch064": {"system": "spm", "det_id": "S46", "barrel": "OB", "daq": {"crate": "2", "board_slot": "4", "board_ch": "2"}}, "ch065": {"system": "spm", "det_id": "S47", "barrel": "OB", "daq": {"crate": "2", "board_slot": "4", "board_ch": "3"}}, "ch066": {"system": "spm", "det_id": "S08", "barrel": "IB", "daq": {"crate": "2", "board_slot": "4", "board_ch": "4"}}, "ch067": {"system": "spm", "det_id": "S09", "barrel": "IB", "daq": {"crate": "2", "board_slot": "4", "board_ch": "5"}}, "ch068": {"system": "spm", "det_id": "S10", "barrel": "IB", "daq": {"crate": "2", "board_slot": "5", "board_ch": "0"}}, "ch069": {"system": "spm", "det_id": "S11", "barrel": "IB", "daq": {"crate": "2", "board_slot": "5", "board_ch": "1"}}, "ch070": {"system": "spm", "det_id": "S48", "barrel": "OB", "daq": {"crate": "2", "board_slot": "5", "board_ch": "2"}}, "ch071": {"system": "spm", "det_id": "S49", "barrel": "OB", "daq": {"crate": "2", "board_slot": "5", "board_ch": "3"}}, "ch072": {"system": "spm", "det_id": "S57", "barrel": "OB", "daq": {"crate": "2", "board_slot": "5", "board_ch": "4"}}, "ch073": {"system": "spm", "det_id": "S56", "barrel": "OB", "daq": {"crate": "2", "board_slot": "5", "board_ch": "5"}}, "ch074": {"system": "spm", "det_id": "S12", "barrel": "IB", "daq": {"crate": "2", "board_slot": "6", "board_ch": "0"}}, "ch075": {"system": "spm", "det_id": "S13", "barrel": "IB", "daq": {"crate": "2", "board_slot": "6", "board_ch": "1"}}, "ch076": {"system": "spm", "det_id": "S14", "barrel": "IB", "daq": {"crate": "2", "board_slot": "6", "board_ch": "2"}}, "ch077": {"system": "spm", "det_id": "S15", "barrel": "IB", "daq": {"crate": "2", "board_slot": "6", "board_ch": "3"}}, "ch078": {"system": "spm", "det_id": "S22", "barrel": "OB", "daq": {"crate": "2", "board_slot": "6", "board_ch": "4"}}, "ch079": {"system": "spm", "det_id": "S23", "barrel": "OB", "daq": {"crate": "2", "board_slot": "6", "board_ch": "5"}}, "ch080": {"system": "spm", "det_id": "S24", "barrel": "OB", "daq": {"crate": "2", "board_slot": "7", "board_ch": "0"}}, "ch081": {"system": "spm", "det_id": "S25", "barrel": "OB", "daq": {"crate": "2", "board_slot": "7", "board_ch": "1"}}, "ch082": {"system": "spm", "det_id": "S55", "barrel": "OB", "daq": {"crate": "2", "board_slot": "7", "board_ch": "2"}}, "ch083": {"system": "spm", "det_id": "S54", "barrel": "OB", "daq": {"crate": "2", "board_slot": "7", "board_ch": "3"}}, "ch084": {"system": "spm", "det_id": "S53", "barrel": "OB", "daq": {"crate": "2", "board_slot": "7", "board_ch": "4"}}, "ch085": {"system": "spm", "det_id": "S52", "barrel": "OB", "daq": {"crate": "2", "board_slot": "7", "board_ch": "5"}}, "ch086": {"system": "spm", "det_id": "S26", "barrel": "OB", "daq": {"crate": "2", "board_slot": "8", "board_ch": "0"}}, "ch087": {"system": "spm", "det_id": "S27", "barrel": "OB", "daq": {"crate": "2", "board_slot": "8", "board_ch": "1"}}, "ch088": {"system": "spm", "det_id": "S28", "barrel": "OB", "daq": {"crate": "2", "board_slot": "8", "board_ch": "2"}}, "ch089": {"system": "spm", "det_id": "S29", "barrel": "OB", "daq": {"crate": "2", "board_slot": "8", "board_ch": "3"}}, "ch090": {"system": "spm", "det_id": "S30", "barrel": "OB", "daq": {"crate": "2", "board_slot": "8", "board_ch": "4"}}, "ch091": {"system": "spm", "det_id": "S31", "barrel": "OB", "daq": {"crate": "2", "board_slot": "8", "board_ch": "5"}}, "ch092": {"system": "spm", "det_id": "S51", "barrel": "OB", "daq": {"crate": "2", "board_slot": "9", "board_ch": "0"}}, "ch093": {"system": "spm", "det_id": "S50", "barrel": "OB", "daq": {"crate": "2", "board_slot": "9", "board_ch": "1"}}, "ch094": {"system": "spm", "det_id": "S32", "barrel": "OB", "daq": {"crate": "2", "board_slot": "9", "board_ch": "2"}}, "ch095": {"system": "spm", "det_id": "S33", "barrel": "OB", "daq": {"crate": "2", "board_slot": "9", "board_ch": "3"}}, "ch096": {"system": "spm", "det_id": "S34", "barrel": "OB", "daq": {"crate": "2", "board_slot": "9", "board_ch": "4"}}, "ch097": {"system": "spm", "det_id": "S35", "barrel": "OB", "daq": {"crate": "2", "board_slot": "9", "board_ch": "5"}}, "ch098": {"system": "spm", "det_id": "S36", "barrel": "OB", "daq": {"crate": "2", "board_slot": "10", "board_ch": "0"}}, "ch099": {"system": "spm", "det_id": "S37", "barrel": "OB", "daq": {"crate": "2", "board_slot": "10", "board_ch": "1"}}, "ch100": {"system": "spm", "det_id": "S38", "barrel": "OB", "daq": {"crate": "2", "board_slot": "10", "board_ch": "2"}}, "ch101": {"system": "spm", "det_id": "S39", "barrel": "OB", "daq": {"crate": "2", "board_slot": "10", "board_ch": "3"}}, "ch102": {"system": "spm", "det_id": "S40", "barrel": "OB", "daq": {"crate": "2", "board_slot": "10", "board_ch": "4"}}, "ch103": {"system": "spm", "det_id": "S41", "barrel": "OB", "daq": {"crate": "2", "board_slot": "10", "board_ch": "5"}}}
+{
+  "ch046": {
+    "system": "spm",
+    "det_id": "S16",
+    "barrel": "IB",
+    "daq": { "crate": "2", "board_slot": "1", "board_ch": "2" }
+  },
+  "ch047": {
+    "system": "spm",
+    "det_id": "S17",
+    "barrel": "IB",
+    "daq": { "crate": "2", "board_slot": "1", "board_ch": "3" }
+  },
+  "ch048": {
+    "system": "spm",
+    "det_id": "S42",
+    "barrel": "OB",
+    "daq": { "crate": "2", "board_slot": "1", "board_ch": "4" }
+  },
+  "ch049": {
+    "system": "spm",
+    "det_id": "S43",
+    "barrel": "OB",
+    "daq": { "crate": "2", "board_slot": "1", "board_ch": "5" }
+  },
+  "ch050": {
+    "system": "spm",
+    "det_id": "S44",
+    "barrel": "OB",
+    "daq": { "crate": "2", "board_slot": "2", "board_ch": "0" }
+  },
+  "ch051": {
+    "system": "spm",
+    "det_id": "S45",
+    "barrel": "OB",
+    "daq": { "crate": "2", "board_slot": "2", "board_ch": "1" }
+  },
+  "ch052": {
+    "system": "spm",
+    "det_id": "S00",
+    "barrel": "IB",
+    "daq": { "crate": "2", "board_slot": "2", "board_ch": "2" }
+  },
+  "ch053": {
+    "system": "spm",
+    "det_id": "S01",
+    "barrel": "IB",
+    "daq": { "crate": "2", "board_slot": "2", "board_ch": "3" }
+  },
+  "ch054": {
+    "system": "spm",
+    "det_id": "S02",
+    "barrel": "IB",
+    "daq": { "crate": "2", "board_slot": "2", "board_ch": "4" }
+  },
+  "ch055": {
+    "system": "spm",
+    "det_id": "S03",
+    "barrel": "IB",
+    "daq": { "crate": "2", "board_slot": "2", "board_ch": "5" }
+  },
+  "ch056": {
+    "system": "spm",
+    "det_id": "S18",
+    "barrel": "OB",
+    "daq": { "crate": "2", "board_slot": "3", "board_ch": "0" }
+  },
+  "ch057": {
+    "system": "spm",
+    "det_id": "S19",
+    "barrel": "OB",
+    "daq": { "crate": "2", "board_slot": "3", "board_ch": "1" }
+  },
+  "ch058": {
+    "system": "spm",
+    "det_id": "S04",
+    "barrel": "IB",
+    "daq": { "crate": "2", "board_slot": "3", "board_ch": "2" }
+  },
+  "ch059": {
+    "system": "spm",
+    "det_id": "S05",
+    "barrel": "IB",
+    "daq": { "crate": "2", "board_slot": "3", "board_ch": "3" }
+  },
+  "ch060": {
+    "system": "spm",
+    "det_id": "S20",
+    "barrel": "OB",
+    "daq": { "crate": "2", "board_slot": "3", "board_ch": "4" }
+  },
+  "ch061": {
+    "system": "spm",
+    "det_id": "S21",
+    "barrel": "OB",
+    "daq": { "crate": "2", "board_slot": "3", "board_ch": "5" }
+  },
+  "ch062": {
+    "system": "spm",
+    "det_id": "S06",
+    "barrel": "IB",
+    "daq": { "crate": "2", "board_slot": "4", "board_ch": "0" }
+  },
+  "ch063": {
+    "system": "spm",
+    "det_id": "S07",
+    "barrel": "IB",
+    "daq": { "crate": "2", "board_slot": "4", "board_ch": "1" }
+  },
+  "ch064": {
+    "system": "spm",
+    "det_id": "S46",
+    "barrel": "OB",
+    "daq": { "crate": "2", "board_slot": "4", "board_ch": "2" }
+  },
+  "ch065": {
+    "system": "spm",
+    "det_id": "S47",
+    "barrel": "OB",
+    "daq": { "crate": "2", "board_slot": "4", "board_ch": "3" }
+  },
+  "ch066": {
+    "system": "spm",
+    "det_id": "S08",
+    "barrel": "IB",
+    "daq": { "crate": "2", "board_slot": "4", "board_ch": "4" }
+  },
+  "ch067": {
+    "system": "spm",
+    "det_id": "S09",
+    "barrel": "IB",
+    "daq": { "crate": "2", "board_slot": "4", "board_ch": "5" }
+  },
+  "ch068": {
+    "system": "spm",
+    "det_id": "S10",
+    "barrel": "IB",
+    "daq": { "crate": "2", "board_slot": "5", "board_ch": "0" }
+  },
+  "ch069": {
+    "system": "spm",
+    "det_id": "S11",
+    "barrel": "IB",
+    "daq": { "crate": "2", "board_slot": "5", "board_ch": "1" }
+  },
+  "ch070": {
+    "system": "spm",
+    "det_id": "S48",
+    "barrel": "OB",
+    "daq": { "crate": "2", "board_slot": "5", "board_ch": "2" }
+  },
+  "ch071": {
+    "system": "spm",
+    "det_id": "S49",
+    "barrel": "OB",
+    "daq": { "crate": "2", "board_slot": "5", "board_ch": "3" }
+  },
+  "ch072": {
+    "system": "spm",
+    "det_id": "S57",
+    "barrel": "OB",
+    "daq": { "crate": "2", "board_slot": "5", "board_ch": "4" }
+  },
+  "ch073": {
+    "system": "spm",
+    "det_id": "S56",
+    "barrel": "OB",
+    "daq": { "crate": "2", "board_slot": "5", "board_ch": "5" }
+  },
+  "ch074": {
+    "system": "spm",
+    "det_id": "S12",
+    "barrel": "IB",
+    "daq": { "crate": "2", "board_slot": "6", "board_ch": "0" }
+  },
+  "ch075": {
+    "system": "spm",
+    "det_id": "S13",
+    "barrel": "IB",
+    "daq": { "crate": "2", "board_slot": "6", "board_ch": "1" }
+  },
+  "ch076": {
+    "system": "spm",
+    "det_id": "S14",
+    "barrel": "IB",
+    "daq": { "crate": "2", "board_slot": "6", "board_ch": "2" }
+  },
+  "ch077": {
+    "system": "spm",
+    "det_id": "S15",
+    "barrel": "IB",
+    "daq": { "crate": "2", "board_slot": "6", "board_ch": "3" }
+  },
+  "ch078": {
+    "system": "spm",
+    "det_id": "S22",
+    "barrel": "OB",
+    "daq": { "crate": "2", "board_slot": "6", "board_ch": "4" }
+  },
+  "ch079": {
+    "system": "spm",
+    "det_id": "S23",
+    "barrel": "OB",
+    "daq": { "crate": "2", "board_slot": "6", "board_ch": "5" }
+  },
+  "ch080": {
+    "system": "spm",
+    "det_id": "S24",
+    "barrel": "OB",
+    "daq": { "crate": "2", "board_slot": "7", "board_ch": "0" }
+  },
+  "ch081": {
+    "system": "spm",
+    "det_id": "S25",
+    "barrel": "OB",
+    "daq": { "crate": "2", "board_slot": "7", "board_ch": "1" }
+  },
+  "ch082": {
+    "system": "spm",
+    "det_id": "S55",
+    "barrel": "OB",
+    "daq": { "crate": "2", "board_slot": "7", "board_ch": "2" }
+  },
+  "ch083": {
+    "system": "spm",
+    "det_id": "S54",
+    "barrel": "OB",
+    "daq": { "crate": "2", "board_slot": "7", "board_ch": "3" }
+  },
+  "ch084": {
+    "system": "spm",
+    "det_id": "S53",
+    "barrel": "OB",
+    "daq": { "crate": "2", "board_slot": "7", "board_ch": "4" }
+  },
+  "ch085": {
+    "system": "spm",
+    "det_id": "S52",
+    "barrel": "OB",
+    "daq": { "crate": "2", "board_slot": "7", "board_ch": "5" }
+  },
+  "ch086": {
+    "system": "spm",
+    "det_id": "S26",
+    "barrel": "OB",
+    "daq": { "crate": "2", "board_slot": "8", "board_ch": "0" }
+  },
+  "ch087": {
+    "system": "spm",
+    "det_id": "S27",
+    "barrel": "OB",
+    "daq": { "crate": "2", "board_slot": "8", "board_ch": "1" }
+  },
+  "ch088": {
+    "system": "spm",
+    "det_id": "S28",
+    "barrel": "OB",
+    "daq": { "crate": "2", "board_slot": "8", "board_ch": "2" }
+  },
+  "ch089": {
+    "system": "spm",
+    "det_id": "S29",
+    "barrel": "OB",
+    "daq": { "crate": "2", "board_slot": "8", "board_ch": "3" }
+  },
+  "ch090": {
+    "system": "spm",
+    "det_id": "S30",
+    "barrel": "OB",
+    "daq": { "crate": "2", "board_slot": "8", "board_ch": "4" }
+  },
+  "ch091": {
+    "system": "spm",
+    "det_id": "S31",
+    "barrel": "OB",
+    "daq": { "crate": "2", "board_slot": "8", "board_ch": "5" }
+  },
+  "ch092": {
+    "system": "spm",
+    "det_id": "S51",
+    "barrel": "OB",
+    "daq": { "crate": "2", "board_slot": "9", "board_ch": "0" }
+  },
+  "ch093": {
+    "system": "spm",
+    "det_id": "S50",
+    "barrel": "OB",
+    "daq": { "crate": "2", "board_slot": "9", "board_ch": "1" }
+  },
+  "ch094": {
+    "system": "spm",
+    "det_id": "S32",
+    "barrel": "OB",
+    "daq": { "crate": "2", "board_slot": "9", "board_ch": "2" }
+  },
+  "ch095": {
+    "system": "spm",
+    "det_id": "S33",
+    "barrel": "OB",
+    "daq": { "crate": "2", "board_slot": "9", "board_ch": "3" }
+  },
+  "ch096": {
+    "system": "spm",
+    "det_id": "S34",
+    "barrel": "OB",
+    "daq": { "crate": "2", "board_slot": "9", "board_ch": "4" }
+  },
+  "ch097": {
+    "system": "spm",
+    "det_id": "S35",
+    "barrel": "OB",
+    "daq": { "crate": "2", "board_slot": "9", "board_ch": "5" }
+  },
+  "ch098": {
+    "system": "spm",
+    "det_id": "S36",
+    "barrel": "OB",
+    "daq": { "crate": "2", "board_slot": "10", "board_ch": "0" }
+  },
+  "ch099": {
+    "system": "spm",
+    "det_id": "S37",
+    "barrel": "OB",
+    "daq": { "crate": "2", "board_slot": "10", "board_ch": "1" }
+  },
+  "ch100": {
+    "system": "spm",
+    "det_id": "S38",
+    "barrel": "OB",
+    "daq": { "crate": "2", "board_slot": "10", "board_ch": "2" }
+  },
+  "ch101": {
+    "system": "spm",
+    "det_id": "S39",
+    "barrel": "OB",
+    "daq": { "crate": "2", "board_slot": "10", "board_ch": "3" }
+  },
+  "ch102": {
+    "system": "spm",
+    "det_id": "S40",
+    "barrel": "OB",
+    "daq": { "crate": "2", "board_slot": "10", "board_ch": "4" }
+  },
+  "ch103": {
+    "system": "spm",
+    "det_id": "S41",
+    "barrel": "OB",
+    "daq": { "crate": "2", "board_slot": "10", "board_ch": "5" }
+  }
+}

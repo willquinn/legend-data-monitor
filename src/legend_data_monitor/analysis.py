@@ -7,9 +7,8 @@ import os
 from datetime import datetime, timedelta
 
 import numpy as np
-import pandas as pd
 import pygama.lgdo.lh5_store as lh5
-from pygama.flow import DataLoader, FileDB
+from pygama.flow import DataLoader
 
 from . import timecut
 
@@ -28,26 +27,26 @@ def read_json_files():
     j_par = []
     j_plot = []
 
-    j_config.append(data_config["run_info"])    # 0
-    j_config.append(data_config["period"])      # 1
-    j_config.append(data_config["run"])         # 2
-    j_config.append(data_config["file_list"])   # 3
-    j_config.append(data_config["datatype"])    # 4
-    j_config.append(data_config["det_type"])    # 5
-    j_config.append(data_config["par_to_plot"]) # 6
+    j_config.append(data_config["run_info"])  # 0
+    j_config.append(data_config["period"])  # 1
+    j_config.append(data_config["run"])  # 2
+    j_config.append(data_config["file_list"])  # 3
+    j_config.append(data_config["datatype"])  # 4
+    j_config.append(data_config["det_type"])  # 5
+    j_config.append(data_config["par_to_plot"])  # 6
     j_config.append(data_config["plot_style"])  # 7
-    j_config.append(data_config["time_window"]) # 8
+    j_config.append(data_config["time_window"])  # 8
     j_config.append(data_config["last_hours"])  # 9
-    j_config.append(data_config["status"])      # 10
-    j_config.append(data_config["time-format"]) # 11
-    j_config.append(data_config["verbose"])     # 12
+    j_config.append(data_config["status"])  # 10
+    j_config.append(data_config["time-format"])  # 11
+    j_config.append(data_config["verbose"])  # 12
 
     j_par.append(data_par["par_to_plot"])  # 0
 
     j_plot.append(data_plot["spms_name_dict"])  # 0
     j_plot.append(data_plot["geds_name_dict"])  # 1
-    j_plot.append(data_plot["spms_col_dict"])   # 2
-    j_plot.append(data_plot["geds_col_dict"])   # 3
+    j_plot.append(data_plot["spms_col_dict"])  # 2
+    j_plot.append(data_plot["geds_col_dict"])  # 3
 
     return j_config, j_par, j_plot
 
@@ -63,80 +62,55 @@ keep_puls_pars = j_config[6]["pulser"]["keep_puls_pars"]
 keep_phys_pars = j_config[6]["pulser"]["keep_phys_pars"]
 
 
-def write_config(files_path: str, version: str, det_map: list[list[str]], parameters: list[str], det_type: str):
+def write_config(
+    files_path: str,
+    version: str,
+    det_map: list[list[str]],
+    parameters: list[str],
+    det_type: str,
+):
 
-    if '0' in det_type: 
+    if "0" in det_type:
         det_list = [0]
         dict_dbconfig = {
-            "data_dir" : files_path + version + "/generated/tier",
-            "tier_dirs": {
-                "dsp": "/dsp"
-            },
+            "data_dir": files_path + version + "/generated/tier",
+            "tier_dirs": {"dsp": "/dsp"},
             "file_format": {
                 "dsp": "/phy/{period}/{run}/{exp}-{period}-{run}-phy-{timestamp}-tier_dsp.lh5"
             },
-            "table_format": {
-                "dsp": "ch{ch:03d}/dsp"
-            },
-            "tables": {
-                "dsp": det_list
-            },
-            "columns": {
-            "dsp": parameters
-            }
+            "table_format": {"dsp": "ch{ch:03d}/dsp"},
+            "tables": {"dsp": det_list},
+            "columns": {"dsp": parameters},
         }
-        dict_dlconfig = {
-            "levels": {
-                "dsp":{
-                    "tiers": ["dsp"]    
-                }
-            },
-            "channel_map": {}
-        }
+        dict_dlconfig = {"levels": {"dsp": {"tiers": ["dsp"]}}, "channel_map": {}}
     else:
         # flattening list[list[str]] to list[str]
         flat_list = [subl for l in det_map for subl in l]
 
         # converting channel number to int to give array as input to FileDB
         det_list = [int(l.split("ch0")[-1]) for l in flat_list]
-    
+
         dsp_list = det_list.copy()
         hit_list = det_list.copy()
-        
+
         # removing channels having no hit data
         for ch in [24, 10, 41]:
             hit_list.remove(ch)
 
         dict_dbconfig = {
-            "data_dir" : files_path + version + "/generated/tier",
-            "tier_dirs": {
-                "dsp": "/dsp",
-                "hit": "/hit"
-            },
+            "data_dir": files_path + version + "/generated/tier",
+            "tier_dirs": {"dsp": "/dsp", "hit": "/hit"},
             "file_format": {
                 "dsp": "/phy/{period}/{run}/{exp}-{period}-{run}-phy-{timestamp}-tier_dsp.lh5",
-                "hit": "/phy/{period}/{run}/{exp}-{period}-{run}-phy-{timestamp}-tier_hit.lh5"
+                "hit": "/phy/{period}/{run}/{exp}-{period}-{run}-phy-{timestamp}-tier_hit.lh5",
             },
-            "table_format": {
-                "dsp": "ch{ch:03d}/dsp",
-                "hit": "ch{ch:03d}/hit"
-            },
-            "tables": {
-                "dsp": dsp_list,
-                "hit": hit_list
-            },
-            "columns": {
-            "dsp": parameters,
-            "hit": parameters
-            }
+            "table_format": {"dsp": "ch{ch:03d}/dsp", "hit": "ch{ch:03d}/hit"},
+            "tables": {"dsp": dsp_list, "hit": hit_list},
+            "columns": {"dsp": parameters, "hit": parameters},
         }
         dict_dlconfig = {
-            "levels": {
-                "hit":{
-                    "tiers": ["dsp","hit"]    
-                }
-            },
-            "channel_map": {}
+            "levels": {"hit": {"tiers": ["dsp", "hit"]}},
+            "channel_map": {},
         }
 
     # Serializing json
@@ -147,7 +121,7 @@ def write_config(files_path: str, version: str, det_map: list[list[str]], parame
     dbconfig_filename = "dbconfig_" + det_type + ".json"
     dlconfig_filename = "dlconfig_" + det_type + ".json"
 
-    # Writing FileDB config file 
+    # Writing FileDB config file
     with open(dbconfig_filename, "w") as outfile:
         outfile.write(json_dbconfig)
 
@@ -159,35 +133,32 @@ def write_config(files_path: str, version: str, det_map: list[list[str]], parame
 
 
 def read_from_dataloader(
-    dbconfig: str,
-    dlconfig: str,
-    query: str | list[str],
-    parameters: list[str]
-    ):
+    dbconfig: str, dlconfig: str, query: str | list[str], parameters: list[str]
+):
 
     dl = DataLoader(dlconfig, dbconfig)
     dl.set_files(query)
-    dl.set_output(fmt="pd.DataFrame", columns = parameters)
-    
+    dl.set_output(fmt="pd.DataFrame", columns=parameters)
+
     return dl.load()
 
 
-def set_query(time_cut: list, start_code: str, run: str|list[str]):
-    
+def set_query(time_cut: list, start_code: str, run: str | list[str]):
+
     query = ""
 
     # Reading from file
     if filelist:
         with open(filelist) as f:
             lines = f.readlines()
-        lines = [line.strip('\n') for line in lines]
+        lines = [line.strip("\n") for line in lines]
         query = lines
 
     # Applying time cut
     if len(time_cut) > 0:
         start, stop = timecut.time_dates(time_cut, start_code)
         start_datetime = datetime.strptime(start, "%Y%m%dT%H%M%SZ")
-        start_datetime = start_datetime - timedelta(minutes = 120)
+        start_datetime = start_datetime - timedelta(minutes=120)
         start = start_datetime.strftime("%Y%m%dT%H%M%SZ")
         query = query + f"timestamp > '{start}' and timestamp < '{stop}'"
 
@@ -198,14 +169,14 @@ def set_query(time_cut: list, start_code: str, run: str|list[str]):
             query = query + f"run == '{run}'"
         elif isinstance(run, list):
             for r in run:
-                query = query + f"run == '{r}' or "     
+                query = query + f"run == '{r}' or "
             # Just the remove the final 'or'
             query = query[:-4]
 
-    if query == "" :
+    if query == "":
         logging.error(
-        'Empty query.\nProvide at least a run name, a time interval of a list of files to open.'
-    )
+            "Empty query.\nProvide at least a run name, a time interval of a list of files to open."
+        )
     return query
 
 
@@ -505,7 +476,9 @@ def time_analysis(
         if end_index != end_index or start_index != start_index:
             return [], []
         if len(utime_array) != 0:
-            utime_array = timecut.cut_array_in_min_max(utime_array, start_index, end_index)
+            utime_array = timecut.cut_array_in_min_max(
+                utime_array, start_index, end_index
+            )
         if len(par_array) != 0:
             par_array = timecut.cut_array_in_min_max(par_array, start_index, end_index)
     # last X hours analysis
@@ -533,11 +506,15 @@ def get_puls_ievt(query: str):
     dsp_files
                lh5 dsp file
     """
-    
+
     parameters = ["wf_max", "baseline"]
-    dbconfig_filename, dlconfig_filename = write_config(files_path, version,[["ch00"]], parameters, "ch00")
-    ch0_data = read_from_dataloader(dbconfig_filename, dlconfig_filename, query, parameters)
-    
+    dbconfig_filename, dlconfig_filename = write_config(
+        files_path, version, [["ch00"]], parameters, "ch00"
+    )
+    ch0_data = read_from_dataloader(
+        dbconfig_filename, dlconfig_filename, query, parameters
+    )
+
     wf_max = ch0_data["wf_max"]
     baseline = ch0_data["baseline"]
 
@@ -769,7 +746,17 @@ def get_mean(parameter: str, detector: str):
 
 
 def set_pkl_name(
-    exp, period, run, datatype, det_type, string_number, parameter, time_cut, start_code, start_name, end_name
+    exp,
+    period,
+    run,
+    datatype,
+    det_type,
+    string_number,
+    parameter,
+    time_cut,
+    start_code,
+    start_name,
+    end_name,
 ):
     """
     Set the pkl filename.
@@ -797,7 +784,7 @@ def set_pkl_name(
     start_name
             String with timestamp of first event
     end_name
-            String with timestamp of last event        
+            String with timestamp of last event
     """
     run_name = ""
     if isinstance(run, str):
@@ -808,12 +795,40 @@ def set_pkl_name(
     run_name = run_name[:-1]
 
     if run:
-    # define name of pkl file (with info about time cut if present)
+        # define name of pkl file (with info about time cut if present)
         if len(time_cut) != 0:
             start, end = timecut.time_dates(time_cut, start_code)
-            pkl_name = exp + "-" + period + "-" + run + "-" + datatype + "-" + start + "_" + end + "-" + parameter
+            pkl_name = (
+                exp
+                + "-"
+                + period
+                + "-"
+                + run
+                + "-"
+                + datatype
+                + "-"
+                + start
+                + "_"
+                + end
+                + "-"
+                + parameter
+            )
         else:
-            pkl_name = exp + "-" + period + "-" + run_name + "-" + start_name + "-" + end_name + "-" + datatype + "-" + parameter
+            pkl_name = (
+                exp
+                + "-"
+                + period
+                + "-"
+                + run_name
+                + "-"
+                + start_name
+                + "-"
+                + end_name
+                + "-"
+                + datatype
+                + "-"
+                + parameter
+            )
         if det_type == "geds":
             pkl_name += "-string" + string_number + ".pkl"
         if det_type == "spms":
@@ -821,9 +836,33 @@ def set_pkl_name(
     else:
         if len(time_cut) != 0:
             start, end = timecut.time_dates(time_cut, start_code)
-            pkl_name = exp + "-" + period + "-" + datatype + "-" + start + "_" + end + "-" + parameter
+            pkl_name = (
+                exp
+                + "-"
+                + period
+                + "-"
+                + datatype
+                + "-"
+                + start
+                + "_"
+                + end
+                + "-"
+                + parameter
+            )
         else:
-            pkl_name = exp + "-" + period + "-" + datatype + "-" + start_name + "-" + end_name + "-" + parameter
+            pkl_name = (
+                exp
+                + "-"
+                + period
+                + "-"
+                + datatype
+                + "-"
+                + start_name
+                + "-"
+                + end_name
+                + "-"
+                + parameter
+            )
         if det_type == "geds":
             pkl_name += "-string" + string_number + ".pkl"
         if det_type == "spms":
