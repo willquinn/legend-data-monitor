@@ -4,7 +4,6 @@ from datetime import datetime, timedelta
 
 import numpy as np
 import pandas as pd
-import pygama.lgdo.lh5_store as lh5
 
 from . import analysis
 
@@ -267,8 +266,11 @@ def event_rate(
         len_par = [no for no in no_hits]
         timestamp = [t for i, t in enumerate(timestamp) for _ in range(len_par[i])]
 
-    #first_entry = data["timestamp"][0]
-    date_time = ["20220914", "130000"] # TO FIX (((dsp_files[0].split("/")[-1]).split("-")[4]).split("Z")[0]).split("T")
+    # first_entry = data["timestamp"][0]
+    date_time = [
+        "20220914",
+        "130000",
+    ]  # TO FIX (((dsp_files[0].split("/")[-1]).split("-")[4]).split("Z")[0]).split("T")
     run_start = datetime.strptime(date_time[0] + date_time[1], "%Y%m%d%H%M%S")
     run_start = datetime.strptime(str(run_start), "%Y-%m-%d %H:%M:%S")
 

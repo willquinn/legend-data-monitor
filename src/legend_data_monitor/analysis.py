@@ -64,14 +64,20 @@ keep_phys_pars = j_config[6]["pulser"]["keep_phys_pars"]
 qc_flag = j_config[6]["quality_cuts"]
 
 
-def write_config(files_path: str, version: str, det_map: list[list[str]], parameters: list[str], det_type: str):
+def write_config(
+    files_path: str,
+    version: str,
+    det_map: list[list[str]],
+    parameters: list[str],
+    det_type: str,
+):
     """
     Write DataLoader config file.
-    
+
     Parameters
     ----------
     files_path
-                Path previous to generated files path 
+                Path previous to generated files path
     version
                 Version of processed data
     det_map
@@ -81,8 +87,9 @@ def write_config(files_path: str, version: str, det_map: list[list[str]], parame
     det_type
                 Type of detector (geds, spms or ch000)
     """
-    if "0" in det_type: 
-        if det_type == "ch00": det_type = "evts"
+    if "0" in det_type:
+        if det_type == "ch00":
+            det_type = "evts"
         det_list = [0]
         dict_dbconfig = {
             "data_dir": files_path + version + "/generated/tier",
@@ -147,14 +154,11 @@ def write_config(files_path: str, version: str, det_map: list[list[str]], parame
 
 
 def read_from_dataloader(
-    dbconfig: str,
-    dlconfig: str,
-    query: str | list[str],
-    parameters: list[str]
-    ):
+    dbconfig: str, dlconfig: str, query: str | list[str], parameters: list[str]
+):
     """
     Return the loaded data as a pandas DataFrame.
-    
+
     Parameters
     ----------
     dbconfig
@@ -173,10 +177,10 @@ def read_from_dataloader(
     return dl.load()
 
 
-def set_query(time_cut: list, start_code: str, run: str|list[str]):
+def set_query(time_cut: list, start_code: str, run: str | list[str]):
     """
     Load specific runs and/or files.
-    
+
     Parameters
     ----------
     time_cut
@@ -184,7 +188,7 @@ def set_query(time_cut: list, start_code: str, run: str|list[str]):
     start_code
                 Starting time of the code
     run
-                Run(s) to load    
+                Run(s) to load
     """
     query = ""
 
@@ -224,7 +228,7 @@ def set_query(time_cut: list, start_code: str, run: str|list[str]):
 def load_df_cols(par_to_plot: list[str], det_type: str):
     """
     Load parameters to plot starting from config file input.
-    
+
     Parameters
     ----------
     par_to_plot
@@ -236,17 +240,23 @@ def load_df_cols(par_to_plot: list[str], det_type: str):
     if "uncal_puls" in db_parameters:
         db_parameters = [db.replace("uncal_puls", "trapTmax") for db in db_parameters]
     if "cal_puls" in db_parameters:
-        db_parameters = [db.replace("cal_puls", "cuspEmax_ctc_cal") for db in db_parameters]
-    if "K_lines" in db_parameters: 
-        db_parameters = [db.replace("K_lines", "cuspEmax_ctc_cal") for db in db_parameters]
+        db_parameters = [
+            db.replace("cal_puls", "cuspEmax_ctc_cal") for db in db_parameters
+        ]
+    if "K_lines" in db_parameters:
+        db_parameters = [
+            db.replace("K_lines", "cuspEmax_ctc_cal") for db in db_parameters
+        ]
     if "event_rate" in db_parameters:
         if det_type == "spms":
-            db_parameters = [db.replace("event_rate", "energies") for db in db_parameters]
+            db_parameters = [
+                db.replace("event_rate", "energies") for db in db_parameters
+            ]
     # problems with QCs
-    #if qc_flag[det_type] is True:
-    #    db_parameters.append("Quality_cuts")       
+    # if qc_flag[det_type] is True:
+    #    db_parameters.append("Quality_cuts")
 
-    db_parameters.append("timestamp")   
+    db_parameters.append("timestamp")
 
     return db_parameters
 

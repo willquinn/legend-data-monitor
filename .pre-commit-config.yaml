@@ -24,7 +24,7 @@ repos:
   - id: trailing-whitespace
 
 - repo: https://github.com/asottile/setup-cfg-fmt
-  rev: "v2.0.0"
+  rev: "v2.2.0"
   hooks:
   - id: setup-cfg-fmt
 
@@ -34,25 +34,25 @@ repos:
   - id: isort
 
 - repo: https://github.com/asottile/pyupgrade
-  rev: "v2.38.2"
+  rev: "v3.2.2"
   hooks:
   - id: pyupgrade
     args: ["--py38-plus"]
 
 - repo: https://github.com/psf/black
-  rev: "22.8.0"
+  rev: "22.10.0"
   hooks:
-  - id: black
+  - id: black-jupyter
 
 - repo: https://github.com/pre-commit/mirrors-mypy
-  rev: "v0.981"
+  rev: "v0.991"
   hooks:
     - id: mypy
       files: src
       stages: [manual]
 
 - repo: https://github.com/hadialqattan/pycln
-  rev: "v2.1.1"
+  rev: "v2.1.2"
   hooks:
   - id: pycln
     args: ["--all"]
@@ -73,7 +73,7 @@ repos:
   rev: "0.6.1"
   hooks:
     - id: nbstripout
-      args: ["--drop-empty-cells", #strip-empty-cells",
+      args: ["--drop-empty-cells",
              "--extra-keys", "metadata.kernelspec metadata.language_info"]
 
 - repo: https://github.com/mgedmin/check-manifest
@@ -83,7 +83,7 @@ repos:
     stages: [manual]
 
 - repo: https://github.com/codespell-project/codespell
-  rev: "v2.2.1"
+  rev: "v2.2.2"
   hooks:
   - id: codespell
 
@@ -101,7 +101,7 @@ repos:
   - id: rst-inline-touching-normal
 
 - repo: https://github.com/pre-commit/mirrors-prettier
-  rev: "v3.0.0-alpha.0"
+  rev: "v3.0.0-alpha.4"
   hooks:
     - id: prettier
       types_or: [json]
