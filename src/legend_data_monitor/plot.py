@@ -10,12 +10,11 @@ import matplotlib as mpl
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import pygama.lgdo.lh5_store as lh5
 from matplotlib import dates, ticker
 
-import pandas as pd
-
-from . import analysis, parameters, timecut
+from . import analysis, parameters
 
 plt.rcParams.update({"figure.max_open_warning": 0})
 plt.rcParams["figure.figsize"] = (15, 10)
@@ -108,6 +107,7 @@ def plot_parameters(
             plt.plot(times, par_array, color=col, linewidth=2)
 
     return times[0], times[-1], status, ax
+
 
 # unused
 def plot_par_vs_time(
@@ -965,13 +965,13 @@ def plot_ch_par_vs_time(
             new_data = data[data["hit_table"] == int(detector.split("ch0")[-1])]
 
             # skip missing detector
-            if new_data.empty: 
+            if new_data.empty:
                 continue
-            
+
             # skip detectors that are not geds/spms
             if det_dict[detector]["system"] == "--":
                 continue
-            
+
             if det_type == "geds":
                 name = det_dict[detector]["det_id"]
                 string_no = det_dict[detector]["string"]["number"]
@@ -1101,13 +1101,13 @@ def plot_ch_par_vs_time(
     [ax.set_xticks(locs) for axs in ax_array for ax in axs]
     [ax.set_xticklabels(labels) for axs in ax_array for ax in axs]
     plt.xticks(locs, labels)
-    
+
     # no data were found at all
     if len(start_times) == 0 and len(end_times) == 0:
         return None, None
 
     start_name = start_times[0].astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    end_name   = end_times[-1].astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    end_name = end_times[-1].astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
 
     # define name of pkl file (with info about time cut if present)
     pkl_name = analysis.set_pkl_name(
@@ -1121,7 +1121,7 @@ def plot_ch_par_vs_time(
         time_cut,
         start_code,
         start_name,
-        end_name
+        end_name,
     )
 
     fig.tight_layout()

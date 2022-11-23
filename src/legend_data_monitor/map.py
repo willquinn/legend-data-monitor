@@ -29,7 +29,7 @@ def pkl_name(time_cut: list[str], parameter: str, start_code: str):
     start_code
                      Starting time of the code
     """
-    
+
     run_name = ""
     if isinstance(run, str):
         run_name = run
@@ -56,7 +56,9 @@ def pkl_name(time_cut: list[str], parameter: str, start_code: str):
                 + parameter
             )
         else:
-            pkl_filename = exp + "-" + period + "-" + run_name + "-" + datatype + "-" + parameter
+            pkl_filename = (
+                exp + "-" + period + "-" + run_name + "-" + datatype + "-" + parameter
+            )
     else:
         if len(time_cut) != 0:
             start, end = timecut.time_dates(time_cut, start_code)
