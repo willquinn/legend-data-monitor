@@ -81,7 +81,8 @@ def write_config(files_path: str, version: str, det_map: list[list[str]], parame
     det_type
                 Type of detector (geds, spms or ch000)
     """
-    if '0' in det_type: 
+    if "0" in det_type: 
+        if det_type == "ch00": det_type = "evts"
         det_list = [0]
         dict_dbconfig = {
             "data_dir": files_path + version + "/generated/tier",
@@ -105,8 +106,10 @@ def write_config(files_path: str, version: str, det_map: list[list[str]], parame
         hit_list = det_list.copy()
 
         # removing channels having no hit data
-        for ch in [24, 10, 41]:
-            hit_list.remove(ch)
+        removed_chs = [24, 10, 41]
+        for ch in removed_chs:
+            if ch in hit_list:
+                hit_list.remove(ch)
 
         dict_dbconfig = {
             "data_dir": files_path + version + "/generated/tier",

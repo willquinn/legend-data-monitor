@@ -5,7 +5,6 @@
          "lh5-files":    "/data1/shared/l60/l60-prodven-v1/prod-ref/",
          "version":      "v06.00",
          "orca-files":   "/data1/shared/l60/l60-daq/daq-v01/",
-         "output-path":  "/data1/users/calgaro/legend-data-monitor/",
          "geds-config": "/data1/users/calgaro/legend-data-monitor/src/legend_data_monitor/settings/L60-p01-r022-T%-all-config.json",
          "spms-config": "/data1/users/calgaro/legend-data-monitor/src/legend_data_monitor/settings/SiPM-config.json"
       }
@@ -17,12 +16,12 @@
    "det_type": {
       "spms": false,
       "geds": true,
-      "ch000": false
+      "ch000": true
    },
    "par_to_plot": {
       "README": "Select here the parameters you want to plot for spms, geds and channel 0.",
       "spms":   ["energy_in_pe", "energies"],
-      "geds":   ["K_lines"],
+      "geds":   ["baseline"],
       "ch000":  ["wf_max"],
       "pulser": {
          "README": "Specify for which parameters you want to keep only HW pulser+FC trigger events (in 'keep_puls_pars') or only physical events, i.e. FC trigger and other events (in 'keep_phys_pars'), otherwise all events will be kept.",

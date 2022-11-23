@@ -84,7 +84,7 @@ def plot_parameters(
         col = "k"
 
     # if we want to plot detectors that are only problematic
-    status_flag = j_config[9][det_type]
+    status_flag = j_config[10][det_type]
     if status_flag is True and status == 1:
         if det_type == "ch000" or parameter == "K_lines":
             ax.plot(times, par_array, color=col, linewidth=0, marker=".", markersize=10)
@@ -164,6 +164,9 @@ def plot_par_vs_time(
     for index, detector in enumerate(det_list):
         # if detector == "ch016" or detector=="ch010": # <<-- for quick tests
 
+        # keep entries for the selected detector
+        new_data = data[data["hit_table"] == int(detector.split("ch0")[-1])]
+
         # skip detectors that are not geds/spms
         if det_dict[detector]["system"] == "--":
             continue
@@ -173,8 +176,6 @@ def plot_par_vs_time(
         ch_orca = det_dict[detector]["daq"]["board_ch"]
         if det_type == "geds":
             name = det_dict[detector]["det_id"]
-            if "V0" in name:
-                name = name[2:]
             string_no = det_dict[detector]["string"]["number"]
             string_pos = det_dict[detector]["string"]["position"]
             lab = f"s{string_no}-p{string_pos}-{detector}-{name}"
@@ -191,8 +192,8 @@ def plot_par_vs_time(
 
         # det parameter and time arrays for a given detector
         par_array_mean, par_np_array, utime_array = parameters.load_parameter(
+            new_data,
             parameter,
-            data,
             detector,
             det_type,
             time_cut,
@@ -237,9 +238,9 @@ def plot_par_vs_time(
         dates.date2num(min(start_times)), dates.date2num(max(end_times)), 10
     )
     xlab = "%d/%m"
-    if j_config[10]["frmt"] == "day/month-time":
+    if j_config[11]["frmt"] == "day/month-time":
         xlab = "%d/%m\n%H:%M"
-    if j_config[10]["frmt"] == "time":
+    if j_config[11]["frmt"] == "time":
         xlab = "%H:%M"
     labels = [dates.num2date(loc).strftime(xlab) for loc in locs]
 
@@ -272,9 +273,9 @@ def plot_par_vs_time(
     else:
         ylab += ", %"
     ax.set_ylabel(ylab)
-    ax.set_xlabel(f'{j_config[10]["frmt"]} (UTC)')
+    ax.set_xlabel(f'{j_config[11]["frmt"]} (UTC)')
     plt.ylabel(ylab)
-    plt.xlabel(f'{j_config[10]["frmt"]} (UTC)')
+    plt.xlabel(f'{j_config[11]["frmt"]} (UTC)')
 
     # set title
     if det_type == "spms":
@@ -302,6 +303,9 @@ def plot_par_vs_time(
     ax.axhline(y=0, color="r", linestyle="--", linewidth=1)
     plt.axhline(y=0, color="r", linestyle="--", linewidth=1)
 
+    start_name = start_times[0].astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    end_name = end_times[-1].astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+
     # define name of pkl file (with info about time cut if present)
     pkl_name = analysis.set_pkl_name(
         exp,
@@ -313,6 +317,8 @@ def plot_par_vs_time(
         parameter,
         time_cut,
         start_code,
+        start_name,
+        end_name,
     )
 
     pkl.dump(ax, open(f"out/pkl-files/par-vs-time/{pkl_name}", "wb"))
@@ -361,15 +367,18 @@ def plot_par_vs_time_ch000(
     ax.set_facecolor("w")
     ax.grid(axis="both", which="major")
     plt.grid(axis="both", which="major")
-    plt.figure().patch.set_facecolor(j_par[0][parameter]["facecol"])
+    #plt.figure().patch.set_facecolor(j_par[0][parameter]["facecol"])
     start_times = []
     end_times = []
     map_dict = {}
 
+    # keep entries for the selected detector (note: no hit table for ch000)
+    new_data = data[data["dsp_table"] == 0] 
+
     # det parameter and time arrays for a given detector
     _, par_np_array, utime_array = parameters.load_parameter(
+        new_data,
         parameter,
-        data,
         "ch000",
         det_type,
         time_cut,
@@ -403,9 +412,9 @@ def plot_par_vs_time_ch000(
         dates.date2num(start_times[0]), dates.date2num(end_times[-1]), 10
     )
     xlab = "%d/%m"
-    if j_config[10]["frmt"] == "day/month-time":
+    if j_config[11]["frmt"] == "day/month-time":
         xlab = "%d/%m\n%H:%M"
-    if j_config[10]["frmt"] == "time":
+    if j_config[11]["frmt"] == "time":
         xlab = "%H:%M"
     labels = [dates.num2date(loc).strftime(xlab) for loc in locs]
     ax.set_xticks(locs)
@@ -425,7 +434,7 @@ def plot_par_vs_time_ch000(
         facecolor="white",
         framealpha=0,
     )
-    xlab = j_config[10]["frmt"]
+    xlab = j_config[11]["frmt"]
     ylab = j_par[0][parameter]["label"]
     if parameter in no_variation_pars:
         if j_par[0][parameter]["units"] != "null":
@@ -454,6 +463,9 @@ def plot_par_vs_time_ch000(
         ax.axhline(y=upp_lim, color="r", linestyle="--", linewidth=2)
         plt.axhline(y=upp_lim, color="r", linestyle="--", linewidth=2)
 
+    start_name = start_times[0].astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    end_name = end_times[-1].astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+
     # define name of pkl file (with info about time cut if present)
     pkl_name = analysis.set_pkl_name(
         exp,
@@ -465,7 +477,10 @@ def plot_par_vs_time_ch000(
         parameter,
         time_cut,
         start_code,
+        start_name,
+        end_name,
     )
+
     pkl.dump(ax, open(f"out/pkl-files/par-vs-time/{pkl_name}", "wb"))
     pdf.savefig(bbox_inches="tight")
     plt.close()
@@ -541,13 +556,15 @@ def plot_par_vs_time_2d(
     else:
         ylab += ", %"
     fig.supylabel(ylab, fontsize=12, x=0.005)
-    xlab = j_config[10]["frmt"]
+    xlab = j_config[11]["frmt"]
     fig.supxlabel(f"{xlab} (UTC)", fontsize=12)
 
     det_idx = 0
     for ax_row in ax_array:
         for axes in ax_row:
             detector = det_list[det_idx]
+            # keep entries for the selected detector
+            new_data = data[data["hit_table"] == int(detector.split("ch0")[-1])]
 
             # skip detectors that are not geds/spms
             if det_dict[detector]["system"] == "--":
@@ -564,8 +581,8 @@ def plot_par_vs_time_2d(
                 lbl = f"{detector}"
 
             _, par_array, utime_array = parameters.load_parameter(
+                new_data,
                 parameter,
-                data,
                 detector,
                 det_type,
                 time_cut,
@@ -626,15 +643,18 @@ def plot_par_vs_time_2d(
         dates.date2num(min(start_times)), dates.date2num(max(end_times)), 3
     )
     xlab = "%d/%m"
-    if j_config[10]["frmt"] == "day/month-time":
+    if j_config[11]["frmt"] == "day/month-time":
         xlab = "%d/%m\n%H:%M"
-    if j_config[10]["frmt"] == "time":
+    if j_config[11]["frmt"] == "time":
         xlab = "%H:%M"
     labels = [dates.num2date(loc).strftime(xlab) for loc in locs]
 
     [ax.set_xticks(locs) for axs in ax_array for ax in axs]
     [ax.set_xticklabels(labels) for axs in ax_array for ax in axs]
     plt.xticks(locs, labels)
+
+    start_name = start_times[0].astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    end_name = end_times[-1].astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
 
     # define name of pkl file (with info about time cut if present)
     pkl_name = analysis.set_pkl_name(
@@ -647,7 +667,10 @@ def plot_par_vs_time_2d(
         parameter,
         time_cut,
         start_code,
+        start_name,
+        end_name,
     )
+
     fig.tight_layout()
     pkl.dump(ax_array, open(f"out/pkl-files/par-vs-time/{pkl_name}", "wb"))
     pdf.savefig(bbox_inches="tight")
@@ -708,6 +731,9 @@ def plot_wtrfll(
 
     for index, detector in enumerate(det_list):
 
+        # keep entries for the selected detector
+        new_data = data[data["hit_table"] == int(detector.split("ch0")[-1])]
+
         # add entries for the legend
         if det_type == "geds":
             name = det_dict[detector]["det_id"]
@@ -730,8 +756,8 @@ def plot_wtrfll(
 
         # det parameter and time arrays for a given detector
         par_array_mean, par_np_array, utime_array = parameters.load_parameter(
+            new_data,
             parameter,
-            data,
             detector,
             det_type,
             time_cut,
@@ -783,9 +809,9 @@ def plot_wtrfll(
     # x-axis in dates
     locs = np.linspace(start_time.timestamp(), end_time.timestamp(), 10)
     xlab = "%d/%m"
-    if j_config[10]["frmt"] == "day/month-time":
+    if j_config[11]["frmt"] == "day/month-time":
         xlab = "%d/%m\n%H:%M"
-    if j_config[10]["frmt"] == "time":
+    if j_config[11]["frmt"] == "time":
         xlab = "%H:%M"
     labels = [datetime.fromtimestamp(loc).strftime(xlab) for loc in locs]
     ax.set_xticks(locs)
@@ -816,6 +842,10 @@ def plot_wtrfll(
     fig.subplots_adjust(left=-0.21)  # to move the plot towards the left
 
     # define name of pkl file (with info about time cut if present)
+    start_name = start_times[0].astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    end_name = end_times[-1].astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+
+    # define name of pkl file (with info about time cut if present)
     pkl_name = analysis.set_pkl_name(
         exp,
         period,
@@ -826,7 +856,10 @@ def plot_wtrfll(
         parameter,
         time_cut,
         start_code,
+        start_name,
+        end_name,
     )
+    
     pkl.dump(ax, open(f"out/pkl-files/par-vs-time/{pkl_name}", "wb"))
     pdf.savefig(bbox_inches="tight")
     plt.close()
@@ -903,6 +936,7 @@ def plot_ch_par_vs_time(
         for axes in ax_row:
 
             detector = det_list[i]
+            # keep entries for the selected detector
             new_data = data[data["hit_table"] == int(detector.split("ch0")[-1])]
 
             # skip missing detector
