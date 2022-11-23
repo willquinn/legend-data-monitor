@@ -3,8 +3,8 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 
 import numpy as np
-import pygama.lgdo.lh5_store as lh5
 import pandas as pd
+import pygama.lgdo.lh5_store as lh5
 
 from . import analysis
 
@@ -54,13 +54,13 @@ def load_parameter(
     utime_array = data["timestamp"]
 
     if all_ievt != [] and puls_only_ievt != [] and not_puls_ievt != []:
-        
+
         det_only_index = np.isin(all_ievt, not_puls_ievt)
         puls_only_index = np.isin(all_ievt, puls_only_ievt)
-        
+
         if parameter in keep_puls_pars:
             utime_array = utime_array[puls_only_index]
-        
+
         if parameter in keep_phys_pars:
             utime_array = utime_array[det_only_index]
 

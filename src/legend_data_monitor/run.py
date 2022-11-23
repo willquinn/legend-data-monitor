@@ -3,10 +3,8 @@ from __future__ import annotations
 import json
 import logging
 import os
-import sys
 from datetime import datetime
 
-import matplotlib as mpl
 from matplotlib.backends.backend_pdf import PdfPages
 
 from . import analysis, map, plot, timecut
@@ -131,8 +129,12 @@ def select_and_plot_run(
             )
         else:  # no time cuts
             path = os.path.join(plot_path, f"{exp}-{period}-{run_name}-{datatype}.pdf")
-            json_path = os.path.join(json_path, f"{exp}-{period}-{run_name}-{datatype}.json")
-            map_path = os.path.join(map_path, f"{exp}-{period}-{run_name}-{datatype}.pdf")
+            json_path = os.path.join(
+                json_path, f"{exp}-{period}-{run_name}-{datatype}.json"
+            )
+            map_path = os.path.join(
+                map_path, f"{exp}-{period}-{run_name}-{datatype}.pdf"
+            )
     else:
         # time analysis: set output-pdf filenames
         if len(time_cut) != 0:  # time cuts
@@ -215,13 +217,34 @@ def dump_all_plots_together(
                     for par in geds_par:
                         det_status_dict = {}
                         if par != "timestamp":
-                            for (det_list, string) in zip(string_geds, string_geds_name):
+                            for (det_list, string) in zip(
+                                string_geds, string_geds_name
+                            ):
 
-                                    if len(det_list) == 0:
-                                        continue
+                                if len(det_list) == 0:
+                                    continue
 
-                                    if par in three_dim_pars:
-                                        string_mean_dict, map_dict = plot.plot_wtrfll(
+                                if par in three_dim_pars:
+                                    string_mean_dict, map_dict = plot.plot_wtrfll(
+                                        data,
+                                        det_list,
+                                        par,
+                                        time_cut,
+                                        "geds",
+                                        string,
+                                        geds_dict,
+                                        all_ievt,
+                                        puls_only_ievt,
+                                        not_puls_ievt,
+                                        start_code,
+                                        pdf,
+                                    )
+                                else:
+                                    if par == "K_lines":
+                                        (
+                                            string_mean_dict,
+                                            map_dict,
+                                        ) = plot.plot_par_vs_time(
                                             data,
                                             det_list,
                                             par,
@@ -236,64 +259,45 @@ def dump_all_plots_together(
                                             pdf,
                                         )
                                     else:
-                                        if par == "K_lines":
-                                            (
-                                                string_mean_dict,
-                                                map_dict,
-                                            ) = plot.plot_par_vs_time(
-                                                data,
-                                                det_list,
-                                                par,
-                                                time_cut,
-                                                "geds",
-                                                string,
-                                                geds_dict,
-                                                all_ievt,
-                                                puls_only_ievt,
-                                                not_puls_ievt,
-                                                start_code,
-                                                pdf,
-                                            )
+                                        (
+                                            string_mean_dict,
+                                            map_dict,
+                                        ) = plot.plot_ch_par_vs_time(
+                                            data,
+                                            det_list,
+                                            par,
+                                            time_cut,
+                                            "geds",
+                                            string,
+                                            geds_dict,
+                                            all_ievt,
+                                            puls_only_ievt,
+                                            not_puls_ievt,
+                                            start_code,
+                                            pdf,
+                                        )
+                                        #if string_mean_dict == 0:
+                                        #    continue
+                                if map_dict is not None:
+                                    for det, status in map_dict.items():
+                                        det_status_dict[det] = status
+
+                                if string_mean_dict is not None:
+                                    for k in string_mean_dict:
+                                        if k in mean_dict:
+                                            mean_dict[k].update(string_mean_dict[k])
                                         else:
-                                            (
-                                                string_mean_dict,
-                                                map_dict,
-                                            ) = plot.plot_ch_par_vs_time(
-                                                data,
-                                                det_list,
-                                                par,
-                                                time_cut,
-                                                "geds",
-                                                string,
-                                                geds_dict,
-                                                all_ievt,
-                                                puls_only_ievt,
-                                                not_puls_ievt,
-                                                start_code,
-                                                pdf,
-                                            )
-                                            # perchè questa linea non c'era nella versione di Sofia?
-                                            if string_mean_dict == 0: continue
+                                            mean_dict[k] = string_mean_dict[k]
+
+                                if verbose is True:
                                     if map_dict is not None:
-                                        for det, status in map_dict.items():
-                                            det_status_dict[det] = status
-
-                                    if string_mean_dict is not None:
-                                        for k in string_mean_dict:
-                                            if k in mean_dict:
-                                                mean_dict[k].update(string_mean_dict[k])
-                                            else:
-                                                mean_dict[k] = string_mean_dict[k]
-
-                                    if verbose is True:
-                                        if map_dict is not None:
-                                            logging.error(
-                                                f"\t...{par} for geds (string #{string}) has been plotted!"
-                                            )
-                                        else:
-                                            logging.error(
-                                                f"\t...no {par} plots for geds - string #{string}!"
-                                            )
+                                        logging.error(
+                                            f"\t...{par} for geds (string #{string}) has been plotted!"
+                                        )
+                                    else:
+                                        logging.error(
+                                            f"\t...no {par} plots for geds - string #{string}!"
+                                        )
                             if det_status_dict != []:
                                 map.geds_map(
                                     par,
