@@ -105,7 +105,6 @@ def select_and_plot_run(
     start_code
                 Starting time of the code
     """
-
     # get time cuts info
     time_cut = timecut.build_timecut_list(time_window, last_hours)
 
@@ -167,8 +166,6 @@ def dump_all_plots_together(
 
     Parameters
     ----------
-    dsp_files
-                Strings of lh5 dsp files
     time_cut
                 List with info about time cuts
     path
@@ -180,8 +177,8 @@ def dump_all_plots_together(
     start_code
                 Starting time of the code
     """
-    
     geds_dict = analysis.load_geds()
+    spms_dict = analysis.load_spms()
     mean_dict = {}
 
     query = analysis.set_query(time_cut, start_code, run)
@@ -205,17 +202,11 @@ def dump_all_plots_together(
             if det_type["geds"] is True:
                 string_geds, string_geds_name = analysis.read_geds(geds_dict)
 
-                db_parameters = par_to_plot["geds"].copy()
-
-                if "uncal_puls" in db_parameters:
-                    db_parameters.remove("uncal_puls")
-                    db_parameters.append("trapTmax")
+                geds_par = par_to_plot["geds"]
+                db_parameters = analysis.load_df_cols(geds_par, "geds")
                 
-                db_parameters.append("timestamp")
                 dbconfig_filename, dlconfig_filename = analysis.write_config(files_path, version, string_geds, db_parameters, "geds")
                 data = analysis.read_from_dataloader(dbconfig_filename, dlconfig_filename, query, db_parameters)
-
-                geds_par = par_to_plot["geds"]
 
                 if len(geds_par) == 0:
                     logging.error("Geds: NO parameters have been enabled!")
@@ -231,7 +222,7 @@ def dump_all_plots_together(
 
                                     if par in three_dim_pars:
                                         string_mean_dict, map_dict = plot.plot_wtrfll(
-                                            dsp_files,
+                                            data,
                                             det_list,
                                             par,
                                             time_cut,
@@ -250,7 +241,7 @@ def dump_all_plots_together(
                                                 string_mean_dict,
                                                 map_dict,
                                             ) = plot.plot_par_vs_time(
-                                                dsp_files,
+                                                data,
                                                 det_list,
                                                 par,
                                                 time_cut,
@@ -327,11 +318,10 @@ def dump_all_plots_together(
                         string_spms,
                         string_spms_name,
                     ) = analysis.read_spms(spms_dict)
-                    spms_par = par_to_plot["spms"]
 
-                    db_parameters = par_to_plot["spms"].copy()
-                    db_parameters.append("timestamp")
-                    dbconfig_filename, dlconfig_filename = analysis.write_config(files_path, version, string_geds, db_parameters, "geds")
+                    spms_par = par_to_plot["spms"]
+                    db_parameters = analysis.load_df_cols(spms_par, "spms")
+                    dbconfig_filename, dlconfig_filename = analysis.write_config(files_path, version, string_geds, db_parameters, "spms")
                     data = analysis.read_from_dataloader(dbconfig_filename, dlconfig_filename, query, db_parameters)
 
                     if len(spms_par) == 0:
@@ -345,7 +335,7 @@ def dump_all_plots_together(
                                 ):
                                     # if string=="top_IB":
                                     plot.plot_par_vs_time_2d(
-                                        dsp_files,
+                                        data,
                                         det_list,
                                         par,
                                         time_cut,
@@ -374,7 +364,7 @@ def dump_all_plots_together(
                                             string_mean_dict,
                                             map_dict,
                                         ) = plot.plot_ch_par_vs_time(
-                                            dsp_files,
+                                            data,
                                             det_list,
                                             par,
                                             time_cut,
@@ -424,7 +414,7 @@ def dump_all_plots_together(
                     logging.error("ch000 will be plotted...")
                     for par in ch000_par:
                         map_dict = plot.plot_par_vs_time_ch000(
-                            dsp_files,
+                            data,
                             par,
                             time_cut,
                             "ch000",

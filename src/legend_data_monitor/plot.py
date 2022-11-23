@@ -12,7 +12,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pygama.lgdo.lh5_store as lh5
 from matplotlib import dates, ticker
-
 import pandas as pd
 
 from . import analysis, parameters, timecut
@@ -37,7 +36,6 @@ no_variation_pars = j_config[6]["plot_values"]["no_variation_pars"]
 plot_style = j_config[7]
 qc_flag = j_config[6]["quality_cuts"]
 
-# unused
 def plot_parameters(
     ax,
     par_array: np.ndarray,
@@ -109,9 +107,9 @@ def plot_parameters(
 
     return times[0], times[-1], status, ax
 
-# unused
+
 def plot_par_vs_time(
-    dsp_files: list[str],
+    data: pd.DataFrame,
     det_list: list[str],
     parameter: str,
     time_cut: list[str],
@@ -129,8 +127,8 @@ def plot_par_vs_time(
 
     Parameters
     ----------
-    dsp_files
-                    lh5 dsp files
+    data
+                    Pandas dataframes containing dsp/hit data
     det_list
                     List of detectors present in a string
     parameter
@@ -166,26 +164,6 @@ def plot_par_vs_time(
     for index, detector in enumerate(det_list):
         # if detector == "ch016" or detector=="ch010": # <<-- for quick tests
 
-        if (
-            parameter == "cal_puls"
-            or parameter == "AoE_Classifier"
-            or parameter == "AoE_Corrected"
-            or qc_flag[det_type] is True
-        ):
-            hit_files = [dsp_file.replace("dsp", "hit") for dsp_file in dsp_files]
-            all_files = [dsp_file.replace("dsp", "hit") for dsp_file in dsp_files]
-            for hit_file in hit_files:
-                if os.path.isfile(hit_file):
-                    if detector not in lh5.ls(hit_file, ""):
-                        all_files.remove(hit_file)
-                        logging.warning(f'No "{detector}" branch in file {hit_file}')
-                else:
-                    all_files.remove(hit_file)
-                    logging.warning("hit file does not exist")
-            if len(all_files) == 0:
-                continue
-            hit_files = all_files
-
         # skip detectors that are not geds/spms
         if det_dict[detector]["system"] == "--":
             continue
@@ -214,7 +192,7 @@ def plot_par_vs_time(
         # det parameter and time arrays for a given detector
         par_array_mean, par_np_array, utime_array = parameters.load_parameter(
             parameter,
-            dsp_files,
+            data,
             detector,
             det_type,
             time_cut,
@@ -289,7 +267,7 @@ def plot_par_vs_time(
         if j_par[0][parameter]["units"] != "null":
             ylab += " [" + j_par[0][parameter]["units"] + "]"
         if parameter == "event_rate":
-            units = j_config[5]["Available-par"]["Other-par"]["event_rate"]["units"]
+            units = j_config[6]["Available-par"]["Other-par"]["event_rate"]["units"]
             ylab += " [" + units + "]"
     else:
         ylab += ", %"
@@ -347,7 +325,7 @@ def plot_par_vs_time(
 
 
 def plot_par_vs_time_ch000(
-    dsp_files: list[str],
+    data: pd.DataFrame,
     parameter: str,
     time_cut: list[str],
     det_type: str,
@@ -362,8 +340,8 @@ def plot_par_vs_time_ch000(
 
     Parameters
     ----------
-    dsp_files
-                    Strings of lh5 dsp files
+    data
+                    Pandas dataframes containing dsp/hit data
     parameter
                     Parameter to plot
     time_cut
@@ -391,7 +369,7 @@ def plot_par_vs_time_ch000(
     # det parameter and time arrays for a given detector
     _, par_np_array, utime_array = parameters.load_parameter(
         parameter,
-        dsp_files,
+        data,
         "ch000",
         det_type,
         time_cut,
@@ -453,7 +431,7 @@ def plot_par_vs_time_ch000(
         if j_par[0][parameter]["units"] != "null":
             ylab += " [" + j_par[0][parameter]["units"] + "]"
         if parameter == "event_rate":
-            units = j_config[5]["Available-par"]["Other-par"]["event_rate"]["units"]
+            units = j_config[6]["Available-par"]["Other-par"]["event_rate"]["units"]
             ylab += " [" + units + "]"
     else:
         ylab += ", %"
@@ -498,7 +476,7 @@ def plot_par_vs_time_ch000(
 
 
 def plot_par_vs_time_2d(
-    dsp_files: list[str],
+    data: pd.DataFrame,
     det_list: list[str],
     parameter: str,
     time_cut: list[str],
@@ -516,8 +494,8 @@ def plot_par_vs_time_2d(
 
     Parameters
     ----------
-    dsp_files
-                lh5 dsp files
+    data
+                Pandas dataframes containing dsp/hit data
     det_list
                 List of detectors present in a string
     parameter
@@ -558,7 +536,7 @@ def plot_par_vs_time_2d(
         if j_par[0][parameter]["units"] != "null":
             ylab = ylab + " [" + j_par[0][parameter]["units"] + "]"
         if parameter == "event_rate":
-            units = j_config[5]["Available-par"]["Other-par"]["event_rate"]["units"]
+            units = j_config[6]["Available-par"]["Other-par"]["event_rate"]["units"]
             ylab = ylab + " [" + units + "]"
     else:
         ylab += ", %"
@@ -570,21 +548,6 @@ def plot_par_vs_time_2d(
     for ax_row in ax_array:
         for axes in ax_row:
             detector = det_list[det_idx]
-
-            hit_files = [dsp_file.replace("dsp", "hit") for dsp_file in dsp_files]
-            all_files = [hit_file.replace("hit", "dsp") for hit_file in hit_files]
-            # for hit files
-            for idx, hit_file in enumerate(hit_files):
-                if os.path.isfile(hit_file):
-                    if detector not in lh5.ls(hit_file, ""):
-                        all_files.remove(dsp_files[idx])
-                        logging.warning(f'No "{detector}" branch in file {hit_file}')
-                else:
-                    all_files.remove(dsp_files[idx])
-                    logging.warning("hit file does not exist")
-            if len(all_files) == 0:
-                det_idx += 1
-                continue  # skip the detector
 
             # skip detectors that are not geds/spms
             if det_dict[detector]["system"] == "--":
@@ -602,7 +565,7 @@ def plot_par_vs_time_2d(
 
             _, par_array, utime_array = parameters.load_parameter(
                 parameter,
-                dsp_files,
+                data,
                 detector,
                 det_type,
                 time_cut,
@@ -693,9 +656,8 @@ def plot_par_vs_time_2d(
     return
 
 
-# unused
 def plot_wtrfll(
-    dsp_files: list[str],
+    data: pd.DataFrame,
     det_list: list[str],
     parameter: str,
     time_cut: list[str],
@@ -713,8 +675,8 @@ def plot_wtrfll(
 
     Parameters
     ----------
-    dsp_files
-                    lh5 dsp files
+    data
+                    Pandas dataframes containing dsp/hit data
     det_list
                     List of detectors present in a string
     parameter
@@ -762,26 +724,6 @@ def plot_wtrfll(
         if det_type == "geds":
             col = j_plot[3][detector]
 
-        if (
-            parameter == "cal_puls"
-            or parameter == "AoE_Classifier"
-            or parameter == "AoE_Corrected"
-            or qc_flag[det_type] is True
-        ):
-            hit_files = [dsp_file.replace("dsp", "hit") for dsp_file in dsp_files]
-            all_files = [dsp_file.replace("dsp", "hit") for dsp_file in dsp_files]
-            for hit_file in hit_files:
-                if os.path.isfile(hit_file):
-                    if detector not in lh5.ls(hit_file, ""):
-                        all_files.remove(hit_file)
-                        logging.warning(f'No "{detector}" branch in file {hit_file}')
-                else:
-                    all_files.remove(hit_file)
-                    logging.warning("hit file does not exist")
-            if len(all_files) == 0:
-                continue
-            hit_files = all_files
-
         # skip detectors that are not geds/spms
         if det_dict[detector]["system"] == "--":
             continue
@@ -789,7 +731,7 @@ def plot_wtrfll(
         # det parameter and time arrays for a given detector
         par_array_mean, par_np_array, utime_array = parameters.load_parameter(
             parameter,
-            dsp_files,
+            data,
             detector,
             det_type,
             time_cut,
@@ -859,7 +801,7 @@ def plot_wtrfll(
         if j_par[0][parameter]["units"] != "null":
             zlab = zlab + " [" + j_par[0][parameter]["units"] + "]"
         if parameter == "event_rate":
-            units = j_config[5]["Available-par"]["Other-par"]["event_rate"]["units"]
+            units = j_config[6]["Available-par"]["Other-par"]["event_rate"]["units"]
             zlab = zlab + " [" + units + "]"
     else:
         zlab += ", %"
@@ -910,8 +852,8 @@ def plot_ch_par_vs_time(
 
     Parameters
     ----------
-    dsp_files
-                    lh5 dsp files
+    data
+                    Pandas dataframes containing dsp/hit data
     det_list
                     List of detectors present in a string
     parameter
@@ -945,7 +887,7 @@ def plot_ch_par_vs_time(
         if j_par[0][parameter]["units"] != "null":
             ylab = ylab + " [" + j_par[0][parameter]["units"] + "]"
         if parameter == "event_rate":
-            units = j_config[5]["Available-par"]["Other-par"]["event_rate"]["units"]
+            units = j_config[6]["Available-par"]["Other-par"]["event_rate"]["units"]
             ylab = ylab + " [" + units + "]"
     else:
         ylab += ", %"
@@ -957,7 +899,6 @@ def plot_ch_par_vs_time(
     map_dict = {}
     string_mean_dict = {}
 
-    # print(det_list)
     for i, ax_row in enumerate(ax_array):
         for axes in ax_row:
 
