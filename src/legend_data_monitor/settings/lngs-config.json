@@ -22,7 +22,7 @@
    "par_to_plot": {
       "README": "Select here the parameters you want to plot for spms, geds and channel 0.",
       "spms":   ["energy_in_pe", "energies"],
-      "geds":   ["uncal_puls"],
+      "geds":   ["K_lines"],
       "ch000":  ["wf_max"],
       "pulser": {
          "README": "Specify for which parameters you want to keep only HW pulser+FC trigger events (in 'keep_puls_pars') or only physical events, i.e. FC trigger and other events (in 'keep_phys_pars'), otherwise all events will be kept.",
