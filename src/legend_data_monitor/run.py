@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import importlib.resources
 import json
 import logging
 import os
@@ -27,7 +26,6 @@ three_dim_pars = j_config[7]["three_dim_pars"]
 time_window = j_config[8]
 last_hours = j_config[9]
 verbose = j_config[12]
-
 
 
 def main():

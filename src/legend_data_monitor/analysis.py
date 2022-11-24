@@ -114,9 +114,9 @@ def write_config(
 
         # removing channels having no hit data
         if det_type == "geds":
-            removed_chs = [24, 10, 41] # geds
+            removed_chs = [24, 10, 41]  # geds
         elif det_type == "spms":
-            removed_chs = [49, 71, 72, 81, 91, 50, 70, 73, 80, 83, 85, 47] #spms
+            removed_chs = [49, 71, 72, 81, 91, 50, 70, 73, 80, 83, 85, 47]  # spms
 
         for ch in removed_chs:
             if ch in hit_list:
