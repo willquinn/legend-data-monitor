@@ -107,13 +107,17 @@ def write_config(
         flat_list = [ch for det in det_map for ch in det]
 
         # converting channel number to int to give array as input to FileDB
-        det_list = [int(elem.split("ch0")[-1]) for elem in flat_list]
+        det_list = [int(elem.split("ch")[-1]) for elem in flat_list]
 
         dsp_list = det_list.copy()
         hit_list = det_list.copy()
 
         # removing channels having no hit data
-        removed_chs = [24, 10, 41]
+        if det_type == "geds":
+            removed_chs = [24, 10, 41]  # geds
+        elif det_type == "spms":
+            removed_chs = [49, 71, 72, 81, 91, 50, 70, 73, 80, 83, 85, 47]  # spms
+
         for ch in removed_chs:
             if ch in hit_list:
                 hit_list.remove(ch)
