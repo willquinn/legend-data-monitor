@@ -28,13 +28,12 @@ time_window = j_config[8]
 last_hours = j_config[9]
 verbose = j_config[12]
 
-pkg = importlib.resources.files("legend_data_monitor")
 
 
 def main():
     start_code = (datetime.now()).strftime("%d/%m/%Y %H:%M:%S")  # common starting time
     path = files_path + version + "/generated/tier"
-    out_path = str(pkg / ".." / ".." / "out")
+    out_path = "out/"
 
     # output folders
     if os.path.isdir(out_path) is False:
