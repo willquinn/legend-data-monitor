@@ -26,6 +26,7 @@ plt.rcParams["axes.grid.which"] = "major"
 
 j_config, j_par, j_plot = analysis.read_json_files()
 exp = j_config[0]["exp"]
+output = j_config[0]["path"]["output"]
 period = j_config[1]
 run = j_config[2]
 filelist = j_config[3]
@@ -320,7 +321,7 @@ def plot_par_vs_time(
         end_name,
     )
 
-    pkl.dump(ax, open(f"out/pkl-files/par-vs-time/{pkl_name}", "wb"))
+    pkl.dump(ax, open(f"{output}/pkl-files/par-vs-time/{pkl_name}", "wb"))
     pdf.savefig(bbox_inches="tight")
     plt.close()
 
@@ -480,7 +481,7 @@ def plot_par_vs_time_ch000(
         end_name,
     )
 
-    pkl.dump(ax, open(f"out/pkl-files/par-vs-time/{pkl_name}", "wb"))
+    pkl.dump(ax, open(f"{output}/pkl-files/par-vs-time/{pkl_name}", "wb"))
     pdf.savefig(bbox_inches="tight")
     plt.close()
 
@@ -671,7 +672,7 @@ def plot_par_vs_time_2d(
     )
 
     fig.tight_layout()
-    pkl.dump(ax_array, open(f"out/pkl-files/par-vs-time/{pkl_name}", "wb"))
+    pkl.dump(ax_array, open(f"{output}/pkl-files/par-vs-time/{pkl_name}", "wb"))
     pdf.savefig(bbox_inches="tight")
     plt.close()
 
@@ -859,7 +860,7 @@ def plot_wtrfll(
         end_name,
     )
 
-    pkl.dump(ax, open(f"out/pkl-files/par-vs-time/{pkl_name}", "wb"))
+    pkl.dump(ax, open(f"{output}/pkl-files/par-vs-time/{pkl_name}", "wb"))
     pdf.savefig(bbox_inches="tight")
     plt.close()
 
@@ -1099,7 +1100,7 @@ def plot_ch_par_vs_time(
     )
 
     fig.tight_layout()
-    pkl.dump(ax_array, open(f"out/pkl-files/par-vs-time/{pkl_name}", "wb"))
+    pkl.dump(ax_array, open(f"{output}/pkl-files/par-vs-time/{pkl_name}", "wb"))
     pdf.savefig(bbox_inches="tight")
     plt.close()
 

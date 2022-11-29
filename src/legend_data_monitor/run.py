@@ -16,6 +16,7 @@ j_config, j_par, _ = analysis.read_json_files()
 exp = j_config[0]["exp"]
 files_path = j_config[0]["path"]["lh5-files"]
 version = j_config[0]["path"]["version"]
+output = j_config[0]["path"]["output"]
 period = j_config[1]
 run = j_config[2]
 filelist = j_config[3]
@@ -31,7 +32,7 @@ verbose = j_config[12]
 def main():
     start_code = (datetime.now()).strftime("%d/%m/%Y %H:%M:%S")  # common starting time
     path = files_path + version + "/generated/tier"
-    out_path = "out/"
+    out_path = output
 
     # output folders
     if os.path.isdir(out_path) is False:
