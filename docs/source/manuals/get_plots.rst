@@ -9,10 +9,6 @@ need any modification containing a draft of the HPGe channel map (``L60-p01-r022
 a draft of the SiPM channel map (``SiPM-config.json``), style info for plots (``plot-settings.json``),
 and info, i.e. units/labels/thresholds/etc., for available parameters one can plot (``par-settings.json``).
 
-Available parameters
---------------------
-list here
-
 
 Configuration file
 ------------------
@@ -40,7 +36,7 @@ First of all, one can specify the type of run one wants to study, plus the absol
   "period": "p01",
   // ...
 
-.. code-block:: console
+.. code-block::
 
 A first selection of runs or files one wants to include in the time evolution plots can be done in (add examples!)
 
@@ -51,7 +47,7 @@ A first selection of runs or files one wants to include in the time evolution pl
   "datatype": "phy",
   // ...
 
-.. code-block:: console
+.. code-block::
 
 One can also decide which type of detector to plot (*spms*=SiPMs, *geds*=HPGe, *ch000*=channel that records HW pulser
 and FC trigger events):
@@ -65,7 +61,7 @@ and FC trigger events):
   },
   // ...
 
-.. code-block:: console
+.. code-block::
 
 Later, one can specify the parameter(s) they want to plot, separately for each type of detector:
 
@@ -78,7 +74,7 @@ Later, one can specify the parameter(s) they want to plot, separately for each t
     "ch000": ["wf_max"],
     // ...
 
-.. code-block:: console
+.. code-block::
 
 A cut over pulser/trigger events can be applied to either keep these events (``keep_puls_pars``) or discard those events
 and keep only the physical ones (``keep_phys_pars``). The selection is done per each parameter; if none of the two options
@@ -93,7 +89,7 @@ is applied, all events, i.e., both pulser/trigger and physical events, will be k
     },
     // ...
 
-.. code-block:: console
+.. code-block::
 
 Quality cuts, if available, can be enabled separately for each detector type (note: available only for HPGe diodes)
 by setting them to ``true``:
@@ -108,7 +104,7 @@ by setting them to ``true``:
     },
     // ...
 
-.. code-block:: console
+.. code-block::
 
 Since parameters can be plotted both as absolute values (e.g. A/E) or percentage variations with respect to an average -typically
 evaluated over the first entries of a run or a given time rangte- (e.g. baseline), there is the possibility to specify which parameter
@@ -122,7 +118,7 @@ one wants to plot in absolute value:
     },
     // ...
 
-.. code-block:: console
+.. code-block::
 
 The next entry is used to define additional parameters one can plot and that needs input:
 
@@ -136,9 +132,9 @@ The next entry is used to define additional parameters one can plot and that nee
       }
     }
   },
-// ...
+  // ...
 
-.. code-block:: console
+.. code-block::
 
 Two options are available for displaying the time evolution of some parameters: 2D or 3D plots (thus, specify
 here for which parameters you want to adopt a 3D representation).
@@ -156,7 +152,7 @@ together with the averaged entries (in colours).
   },
   // ...
 
-.. code-block:: console
+.. code-block::
 
 .. attention::
 
@@ -201,7 +197,7 @@ to an external file list or a run specification as already stated above).
   },
   // ...
 
-.. code-block:: console
+.. code-block::
 
 Going higher and higher in Ge mass means dealing with larger and larger number of HPGe channels.
 In order to reduce the final number of plots at which one has to look during shifts, we can set fixed
@@ -225,7 +221,7 @@ detectors that overcame/undercame the threshold set a priori.
   },
   // ...
 
-.. code-block:: console
+.. code-block::
 
 The time format shown in plots can be chosen among some available options.
 If verbose is 'true', `logging <https://docs.python.org/3/library/logging.html>`_ messages will be printed on terminal.
@@ -237,6 +233,6 @@ If verbose is 'true', `logging <https://docs.python.org/3/library/logging.html>`
     "frmt": "day/month-time"
   },
   "verbose": true
-}
+  }
 
-.. code-block:: console
+.. code-block::
