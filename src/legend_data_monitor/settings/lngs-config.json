@@ -54,7 +54,6 @@
       ]
     },
     "Available-par": {
-      "README": "Most of dsp parameters are available for being plotted. Parameters that were taken into account are: dsp/bl_std (noise), dsp/baseline (leakage current), dsp/trapTmax (uncalibrated pulser gain), AoE_Corrected.",
       "Other-par": {
         "event_rate": {
           "README": "Event rate. Change 'dt' and 'units' if needed. 'dt' is the time interval (in [s]) in which rate is evaluated: rate=cts/dt. 'units' can be chosen among: mHz, Hz, kHz.",
