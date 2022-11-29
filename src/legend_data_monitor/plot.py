@@ -15,7 +15,7 @@ from matplotlib import dates, ticker
 from . import analysis, parameters
 
 plt.rcParams.update({"figure.max_open_warning": 0})
-plt.rcParams["figure.figsize"] = (15, 10)
+plt.rcParams["figure.figsize"] = (14, 10)
 plt.rcParams["font.size"] = 12
 plt.rcParams["figure.facecolor"] = "w"
 plt.rcParams["grid.color"] = "b0b0b0"
@@ -77,9 +77,9 @@ def plot_parameters(
     times = [datetime.fromtimestamp(t) for t in utime_array]
 
     if det_type == "spms":
-        col = j_plot[2][str(detector)]
+        col = j_plot[0][str(detector)]
     if det_type == "geds":
-        col = j_plot[3][detector]
+        col = j_plot[1][detector]
     if det_type == "ch000":
         col = "k"
 
@@ -179,10 +179,10 @@ def plot_par_vs_time(
             string_no = det_dict[detector]["string"]["number"]
             string_pos = det_dict[detector]["string"]["position"]
             lab = f"s{string_no}-p{string_pos}-{detector}-{name}"
-            col = j_plot[3][detector]
+            col = j_plot[1][detector]
         if det_type == "spms":
             lab = f"{detector} - {card},{ch_orca}"
-            col = j_plot[2][str(detector)]
+            col = j_plot[0][str(detector)]
         handle_list.append(
             mpatches.Patch(
                 color=col,
@@ -746,9 +746,9 @@ def plot_wtrfll(
             name = f"{detector}"
         y_values.append(new_label)
         if det_type == "spms":
-            col = j_plot[2][str(detector)]
+            col = j_plot[0][str(detector)]
         if det_type == "geds":
-            col = j_plot[3][detector]
+            col = j_plot[1][detector]
 
         # skip detectors that are not geds/spms
         if det_dict[detector]["system"] == "--":
@@ -910,6 +910,7 @@ def plot_ch_par_vs_time(
     """
     columns = 1
     rows = len(det_list)
+    plt.rcParams["figure.figsize"] = (14, (9 / 5) * rows)
     fig, ax_array = plt.subplots(
         rows, columns, squeeze=False, sharex=True, sharey=False
     )
@@ -955,9 +956,9 @@ def plot_ch_par_vs_time(
             else:
                 lbl = f"{detector}"
             if det_type == "spms":
-                col = j_plot[2][str(detector)]
+                col = j_plot[0][str(detector)]
             if det_type == "geds":
-                col = j_plot[3][detector]
+                col = j_plot[1][detector]
 
             # det parameter and time arrays for a given detector
             par_array_mean, par_np_array, utime_array = parameters.load_parameter(
@@ -985,9 +986,9 @@ def plot_ch_par_vs_time(
             end_time = times[-1]
 
             if det_type == "spms":
-                col = j_plot[2][str(detector)]
+                col = j_plot[0][str(detector)]
             if det_type == "geds":
-                col = j_plot[3][detector]
+                col = j_plot[1][detector]
             if det_type == "ch000":
                 col = "r"
 
@@ -1003,7 +1004,7 @@ def plot_ch_par_vs_time(
 
             # rebinning
             if parameter != "event_rate":
-                axes.plot(times, par_list, color="silver", linewidth=1, label=lbl)
+                axes.plot(times, par_list, color="darkgray", linewidth=1, label=lbl)
                 par_avg, utime_avg = analysis.avg_over_minutes(
                     par_np_array, utime_array
                 )

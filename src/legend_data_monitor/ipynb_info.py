@@ -5,6 +5,7 @@ import pickle as pkl
 from datetime import datetime
 
 import ipywidgets as widget
+import matplotlib.pyplot as plt
 
 from . import analysis
 
@@ -211,7 +212,7 @@ def widgets(
     # par-vs-time
     geds_map_buttons = widget.ToggleButtons(
         options=geds_info[2],
-        description="String #:",
+        description="String:",
         disabled=False,
         button_style="",
         tooltips=[],
@@ -267,6 +268,7 @@ def plot_geds(
                     "rb",
                 )
             )
+        plt.show()
 
     out_geds = widget.interactive_output(
         get_geds,
@@ -316,6 +318,7 @@ def plot_spms(
                     "rb",
                 )
             )
+        plt.show()
 
     out_spms = widget.interactive_output(
         get_spms,
@@ -365,6 +368,7 @@ def plot_ch000(
                     "rb",
                 )
             )
+        plt.show()
 
     out_ch000 = widget.interactive_output(
         get_ch000,

@@ -43,10 +43,8 @@ def read_json_files():
 
     j_par.append(data_par["par_to_plot"])  # 0
 
-    j_plot.append(data_plot["spms_name_dict"])  # 0
-    j_plot.append(data_plot["geds_name_dict"])  # 1
-    j_plot.append(data_plot["spms_col_dict"])  # 2
-    j_plot.append(data_plot["geds_col_dict"])  # 3
+    j_plot.append(data_plot["spms_col_dict"])  # 0
+    j_plot.append(data_plot["geds_col_dict"])  # 1
 
     return j_config, j_par, j_plot
 
