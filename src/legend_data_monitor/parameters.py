@@ -276,7 +276,7 @@ def event_rate(
 
     i = 0
     j = datetime.timestamp(run_start + timedelta(days=0, hours=2, minutes=0))
-    dt = j_config[6]["Available-par"]["Other-par"]["event_rate"]["dt"]
+    dt = j_config[6]["Other-par"]["event_rate"]["dt"]
 
     while j + dt <= timestamp[-1]:
         num = 0
@@ -288,7 +288,7 @@ def event_rate(
             times.append(j)
         j += dt
 
-    units = j_config[6]["Available-par"]["Other-par"]["event_rate"]["units"]
+    units = j_config[6]["Other-par"]["event_rate"]["units"]
     if units == "mHz":
         fact = 1000
     if units == "Hz":
