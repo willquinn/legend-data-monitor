@@ -21,13 +21,18 @@ Getting started
 
    $ pip install legend-data-monitor@git+https://github.com/legend-exp/legend-data-monitor/main
 
-Before running it, make sure ``~/.local/bin`` (where you can find the legend-data-monitor executable) is appended to ``PATH``.
+.. code-block::
+
+.. attention::
+
+   Before running it, make sure ``~/.local/bin`` (where you can find the legend-data-monitor executable) is appended to ``PATH``.
+
+.. attention::
 
 .. attention::
 
    Heatmap plots are implemented within the source code but not included in the output.
-   They will be included later on once we are in a stable condition and we can fix thresholds
-   for each inspected parameter.
+   They will be included later on once we are in a stable condition and we can fix thresholds for each inspected parameter.
 
 .. attention::
 
