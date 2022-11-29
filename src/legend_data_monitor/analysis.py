@@ -874,8 +874,8 @@ def set_pkl_name(
                 + "-"
                 + period
                 + "-"
-                + run_name
-                + "-"
+                # + run_name
+                # + "-"
                 + start_name
                 + "-"
                 + end_name
@@ -885,9 +885,11 @@ def set_pkl_name(
                 + parameter
             )
         if det_type == "geds":
-            pkl_name += "-string" + string_number + ".pkl"
+            pkl_name += "-S" + string_number + ".pkl"
         if det_type == "spms":
             pkl_name += "-" + string_number + ".pkl"
+        if det_type == "ch000":
+            pkl_name += "-ch000.pkl"
     else:
         if len(time_cut) != 0:
             start, end = timecut.time_dates(time_cut, start_code)
@@ -919,8 +921,10 @@ def set_pkl_name(
                 + parameter
             )
         if det_type == "geds":
-            pkl_name += "-string" + string_number + ".pkl"
+            pkl_name += "-S" + string_number + ".pkl"
         if det_type == "spms":
             pkl_name += "-" + string_number + ".pkl"
+        if det_type == "ch000":
+            pkl_name += "-ch000.pkl"
 
     return pkl_name
