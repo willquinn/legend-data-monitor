@@ -17,11 +17,9 @@ Getting started
 ---------------
 *legend-data-monitor* can be installed with `pip <https://pip.pypa.io/en/stable/getting-started>`_:
 
-.. code-block:: console
+.. code-block::
 
    $ pip install legend-data-monitor@git+https://github.com/legend-exp/legend-data-monitor/main
-
-.. code-block::
 
 .. attention::
 
