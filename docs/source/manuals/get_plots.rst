@@ -1,5 +1,5 @@
 How to produce plots
-===================
+====================
 
 After the installation, a executable is available at ``~/.local/bin``.
 The instruction for plotting given parameters of given detector types and within a given time
@@ -45,8 +45,7 @@ A first selection of runs or files one wants to include in the time evolution pl
   "datatype": "phy",
   // ...
 
-One can also decide which type of detector to plot (*spms*=SiPMs, *geds*=HPGe, *ch000*=channel that records HW pulser
-and FC trigger events):
+One can also decide which type of detector to plot ('spms'=SiPMs, 'geds'=HPGe, ch000'=channel that records HW pulser and FC trigger events):
 
 .. code-block:: json
 
@@ -136,22 +135,24 @@ together with the averaged entries (in colours).
   },
   // ...
 
-.. attention::
+.. important::
 
-   Not all parameters can be plotted in 3D, e.g. the event rate or the time variation of energies around
-   K lines are difficult to inspect when plotted in 3D. In general, the 3D visualization helps in comparing
-   different channels of a given string, but it tends to be more difficult to inspect values on the z-axis.
-   Changing the rotation angles could help inspecting the 3D plot. In general, zooms over given ranges are not so trivial.
-
-.. attention::
+  3D plots always show the averaged entries of a given parameter, with the average being computed over ``avg_interval`` minutes.
+  Differently from 2D plots, we do not plot all entries together with averaged entries. If you want to look at all entries, you
+  must set ``"par_average": false``.
 
 .. attention::
 
-   The 3D option is available for all detector types but SiPMs. In general, maps are used to represent the
-   available SiPM parameters (e.g. energy or trigger position) as a function of time.
-   The event rate time evolution is better readable if plotted using the 2D option.
+  Not all parameters can be plotted in 3D, e.g. the event rate or the time variation of energies around
+  K lines are difficult to inspect when plotted in 3D. In general, the 3D visualization helps in comparing
+  different channels of a given string, but it tends to be more difficult to inspect values on the z-axis.
+  Changing the rotation angles could help inspecting the 3D plot. In general, zooms over given ranges are not so trivial.
 
 .. attention::
+
+  The 3D option is available for all detector types but SiPMs. In general, maps are used to represent the
+  available SiPM parameters (e.g. energy or trigger position) as a function of time.
+  The event rate time evolution is better readable if plotted using the 2D option.
 
 A time range can be selected in two ways (enable one by setting ``"enabled": true``): ``time_window`` let you
 choose the start time and stop time in which you want to inspect a given parameter; ``last_hours`` will print
@@ -186,10 +187,8 @@ detectors that overcame/undercame the threshold set a priori.
 
 .. attention::
 
-   At the moment, this is partially implemented. A full integration will be done in correspondence
-   of threshold determination and inclusion of statuses heatmaps.
-
-.. attention::
+  At the moment, this is partially implemented. A full integration will be done in correspondence
+  of threshold determination and inclusion of statuses heatmaps.
 
 .. code-block:: json
 

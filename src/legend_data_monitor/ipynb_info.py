@@ -232,6 +232,36 @@ def widgets(
     return geds_buttons, spms_buttons, ch000_buttons
 
 
+def widgets_3dim():
+    """Create a widget button for z-axis range and rotation angles."""
+    # minimum value for z-axis range
+    z_min = widget.FloatText(value=-10, description="z min:", disabled=False)
+    # maximum value for z-axis range
+    z_max = widget.FloatText(value=10, description="z max:", disabled=False)
+
+    # slider for 3D angle view
+    elevation_slider = widget.IntSlider(
+        min=-360,
+        max=360,
+        step=5,
+        value=20,
+        description="Elevation angle [°]:",
+        style={"description_width": "initial"},
+    )
+
+    azimuth_slider = widget.IntSlider(
+        min=-360,
+        max=360,
+        step=5,
+        value=-60,
+        description="Azimuth angle [°]:",
+        style={"description_width": "initial"},
+    )
+
+    widg_3dim = [z_min, z_max, elevation_slider, azimuth_slider]
+    return widg_3dim
+
+
 def plot_geds(
     pkl_name: str,
     output: str,
@@ -273,6 +303,75 @@ def plot_geds(
     out_geds = widget.interactive_output(
         get_geds,
         {
+            "time_select": geds_buttons[0],
+            "parameter": geds_buttons[1],
+            "string": geds_buttons[2],
+        },
+    )
+
+    return out_geds
+
+
+def plot_geds_3dim(
+    pkl_name: str,
+    output: str,
+    geds_info: list[list[str]],
+    geds_buttons,
+    range_button,
+):
+    """
+    Plot geds in 3D and return a function for widgets.
+
+    Parameters
+    ----------
+    pkl_name
+        String that contains info for reading pkl files. The format is: exp-period-datatype (ex. 'l60-p01-phy')
+    geds_info
+        Time/parameters/map info for geds
+    geds_buttons
+        Widget buttons for geds
+    range_button
+        Widget button for z-axis range and rotation angles
+    """
+    if geds_info[0] == []:
+        return None
+
+    def get_geds_3dim(
+        zmin: float,
+        zmax: float,
+        elevation: int,
+        azimuth: int,
+        time_select: str,
+        parameter: str,
+        string: str,
+    ):
+        if time_select == "no_time_cuts":
+            ax = pkl.load(
+                open(
+                    f"{output}pkl-files/par-vs-time/{pkl_name}-{parameter}-{string}.pkl",
+                    "rb",
+                )
+            )
+        else:
+            ax = pkl.load(
+                open(
+                    f"{output}pkl-files/par-vs-time/{pkl_name}-{time_select}-{parameter}-{string}.pkl",
+                    "rb",
+                )
+            )
+        ax.set_zlim3d(zmin, zmax)
+        plt.subplots_adjust(top=1.2, right=1.1)
+        # plt.subplots_adjust(top=1.2, right=1.2, bottom = -0.1)
+        ax.view_init(elevation, azimuth)
+        plt.show()
+
+    out_geds = widget.interactive_output(
+        get_geds_3dim,
+        {
+            "zmin": range_button[0],
+            "zmax": range_button[1],
+            "elevation": range_button[2],
+            "azimuth": range_button[3],
             "time_select": geds_buttons[0],
             "parameter": geds_buttons[1],
             "string": geds_buttons[2],

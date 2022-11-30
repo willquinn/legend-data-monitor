@@ -17,13 +17,13 @@
   "det_type": {
     "spms": false,
     "geds": true,
-    "ch000": true
+    "ch000": false
   },
   "par_to_plot": {
     "README": "Select here the parameters you want to plot for spms, geds and channel 0.",
     "spms": ["energy_in_pe", "energies"],
     "geds": ["baseline"],
-    "ch000": ["wf_max"],
+    "ch000": ["baseline"],
     "pulser": {
       "README": "Specify for which parameters you want to keep only HW pulser+FC trigger events (in 'keep_puls_pars') or only physical events, i.e. FC trigger and other events (in 'keep_phys_pars'), otherwise all events will be kept.",
       "keep_puls_pars": [
@@ -65,7 +65,7 @@
   },
   "plot_style": {
     "README": "Specify here which parameter you want to plot in 3D. The other parameters will be automatically plotted in 2D. Set to true 'par_average' if you want to average over 'step' entries, otherwise set it to false.",
-    "three_dim_pars": [],
+    "three_dim_pars": ["baseline"],
     "par_average": true,
     "avg_interval": 10
   },

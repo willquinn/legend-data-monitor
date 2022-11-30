@@ -27,18 +27,14 @@ Getting started
 
 .. attention::
 
-.. attention::
-
    Heatmap plots are implemented within the source code but not included in the output.
    They will be included later on once we are in a stable condition and we can fix thresholds for each inspected parameter.
-
-.. attention::
 
 Table of Contents
 -----------------
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
    manuals/index
-   Package API reference <generated/modules>
+   Package API reference <api/modules>
