@@ -28,20 +28,20 @@ for all germanium strings using L60 data):
 
 ::
 
-    out
-    ├── json-files
+    out/
+    ├── json-files/
     │   └── l60-p01-phy_20220922T093400Z_20220922T161000Z.json
-    ├── log-files
+    ├── log-files/
     │   └── l60-p01--phy_20220922T093400Z_20220922T161000Z.log
-    ├── pdf-files
-    │   ├── heatmaps
+    ├── pdf-files/
+    │   ├── heatmaps/
     │   │   └── l60-p01-phy_20220922T093400Z_20220922T161000Z.pdf
-    │   └── par-vs-time
+    │   └── par-vs-time/
     │       └── l60-p01-phy_20220922T093400Z_20220922T161000Z.pdf
-    └── pkl-files
-        ├── heatmaps
+    └── pkl-files/
+        ├── heatmaps/
         │   └── l60-p01--20220922T093400Z_20220922T161000Z-baseline.pkl
-        └── par-vs-time
+        └── par-vs-time/
             └── l60-p01-phy-20220922T093400Z_20220922T161000Z-baseline-S1.pkl
             └── l60-p01-phy-20220922T093400Z_20220922T161000Z-baseline-S2.pkl
             └── l60-p01-phy-20220922T093400Z_20220922T161000Z-baseline-S7.pkl
@@ -49,13 +49,11 @@ for all germanium strings using L60 data):
 
 In particular,
 
-* ``out/json-files/`` stores json files containing info about mean values for those parameters that were chosen
-to be plotted not in absolute value, but computing the percentage variations with respect to an average value evaluated
-over the first entries. The mean values are stored separately for each channel and parameter.
-The mean values listed in these files are the same ones that appear in the legend of plots.
+* ``out/json-files/`` stores json files containing info about mean values for those parameters that were chosen to be plotted not in absolute value, but computing the percentage variations with respect to an average value evaluated over the first entries. The mean values are stored separately for each channel and parameter. The mean values listed in these files are the same ones that appear in the legend of plots.
 * ``out/log-files/`` stores files with detailed info about the code compilation.
 * ``out/pdf-files/`` stores pdf files collecting plots for the plotted parameters and for the enabled detector types.
 * ``out/pkl-files/`` stores pkl files collecting plots for the plotted parameters and for the enabled detector types, separately for each parameter and string/barrel.
+* ``heatmaps/``  files store maps containing info about statuses of each HPGe/SiPM channel; ``par-vs-time/`` files store time evolutions of given parameters.
 
 .. note::
   Files are usually saved using the following format: ``exp-period-datatype-time_interval``:
@@ -63,8 +61,7 @@ The mean values listed in these files are the same ones that appear in the legen
   * ``exp`` identifies the experiment (e.g. *l60*)
   * ``period`` identifies a certain period of data taking
   * ``datatype`` denotes the run type (e.g. *phy*, *cal*, ...)
-  * ``time_interval``, if present, has the format ``start_stop`` where ``start`` is the initial timestamp in UTC+00 format (e.g. *20220922T093400Z*), while
-  ``stop`` is the final timestamp in UTC+00 format (e.g. *20220922T161000Z*)
+  * ``time_interval``, if present, has the format ``start_stop`` where ``start`` is the initial timestamp in UTC+00 format (e.g. *20220922T093400Z*), while ``stop`` is the final timestamp in UTC+00 format (e.g. *20220922T161000Z*)
 
 Inspect plots
 -------------
@@ -76,10 +73,7 @@ Jupyter Notebook
 
 In that folder, you find:
 
-* ``monitor-par-vs-time.ipynb`` that helps plotting separately *geds*, *spms* and *ch000*. Some widget buttons are present on top of plots that let you
-inspect different parameters and strings/barrels. A box containing info about applied time cuts is present too on the left side of widget buttons
-(e.g. *2022/09/22 09:34 -> 2022/09/22 16:10*); selecting a given time cut, you can inspect different time intervals. This notebook does not work if
-we use a 3D-plot representation.
+* ``monitor-par-vs-time.ipynb`` that helps plotting separately *geds*, *spms* and *ch000*. Some widget buttons are present on top of plots that let you inspect different parameters and strings/barrels. A box containing info about applied time cuts is present too on the left side of widget buttons (e.g. *2022/09/22 09:34 -> 2022/09/22 16:10*); selecting a given time cut, you can inspect different time intervals. This notebook does not work if we use a 3D-plot representation.
 * ``monitor-par-vs-time-3D.ipynb`` (*not present - under construction*)
 
 .. note::
