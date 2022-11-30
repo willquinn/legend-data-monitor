@@ -7,11 +7,11 @@ all: apidoc
 
 apidoc: clean-apidoc
 	sphinx-apidoc --private --module-first --force \
-      --output-dir "$(SOURCEDIR)/api" \
+      --output-dir "$(SOURCEDIR)/generated" \
       ../src/legend_data_monitor ../src/legend_data_monitor/_version.py
 
 clean-apidoc:
-	rm -rf "$(SOURCEDIR)/api"
+	rm -rf "$(SOURCEDIR)/generated"
 
 clean: clean-apidoc
 	rm -rf "$(BUILDDIR)"
