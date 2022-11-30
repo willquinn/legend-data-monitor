@@ -45,7 +45,7 @@ A first selection of runs or files one wants to include in the time evolution pl
   "datatype": "phy",
   // ...
 
-One can also decide which type of detector to plot (*spms*=SiPMs, *geds*=HPGe, *ch000*=channel that records HW pulser and FC trigger events):
+One can also decide which type of detector to plot ('spms'=SiPMs, 'geds'=HPGe, ch000'=channel that records HW pulser and FC trigger events):
 
 .. code-block:: json
 
