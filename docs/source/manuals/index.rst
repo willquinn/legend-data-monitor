@@ -2,7 +2,7 @@ User Manual
 -----------
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
 
    avail_pars
    get_plots
