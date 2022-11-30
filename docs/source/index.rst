@@ -37,4 +37,4 @@ Table of Contents
    :maxdepth: 2
 
    manuals/index
-   Package API reference <api/modules>
+   Package API reference <generated/modules>
