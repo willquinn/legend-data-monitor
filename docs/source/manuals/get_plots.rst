@@ -135,6 +135,12 @@ together with the averaged entries (in colours).
   },
   // ...
 
+.. important::
+
+  3D plots always show the averaged entries of a given parameter, with the average being computed over ``avg_interval`` minutes.
+  Differently from 2D plots, we do not plot all entries together with averaged entries. If you want to look at all entries, you
+  must set ``"par_average": false``.
+
 .. attention::
 
   Not all parameters can be plotted in 3D, e.g. the event rate or the time variation of energies around
