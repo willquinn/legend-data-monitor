@@ -191,7 +191,7 @@ def plot_par_vs_time(
         )
 
         # det parameter and time arrays for a given detector
-        par_array_mean, par_np_array, utime_array = parameters.load_parameter(
+        par_array_mean, par_array, utime_array = parameters.load_parameter(
             new_data,
             parameter,
             detector,
@@ -202,15 +202,15 @@ def plot_par_vs_time(
             not_puls_ievt,
             start_code,
         )
-        if len(par_np_array) == 0:
+        if len(par_array) == 0:
             continue
 
         offset = 15 * (0 + index)
-        par_np_array = np.add(par_np_array, offset)
+        par_array = np.add(par_array, offset)
 
         # plot detector and get its status
         start_time, end_time, status, ax = plot_parameters(
-            ax, par_np_array, utime_array, detector, det_type, parameter
+            ax, par_array, utime_array, detector, det_type, parameter
         )
 
         # fill the map with status flags
@@ -376,7 +376,7 @@ def plot_par_vs_time_ch000(
     new_data = data[data["dsp_table"] == 0]
 
     # det parameter and time arrays for a given detector
-    _, par_np_array, utime_array = parameters.load_parameter(
+    _, par_array, utime_array = parameters.load_parameter(
         new_data,
         parameter,
         "ch000",
@@ -390,7 +390,7 @@ def plot_par_vs_time_ch000(
 
     # plot detector and get its status
     start_time, end_time, status, ax = plot_parameters(
-        ax, par_np_array, utime_array, "ch000", det_type, parameter
+        ax, par_array, utime_array, "ch000", det_type, parameter
     )
 
     # fill the map with status flags
@@ -721,7 +721,7 @@ def plot_wtrfll(
     start_code
                 Starting time of the code
     """
-    fig = plt.figure(figsize=(20, 16))
+    fig = plt.figure(figsize=(12, 10))
     ax = fig.add_subplot(111, projection="3d")
     y_values = []
     start_times = []
@@ -730,98 +730,103 @@ def plot_wtrfll(
     string_mean_dict = {}
 
     for index, detector in enumerate(det_list):
+        if string_number == "1":
 
-        # keep entries for the selected detector
-        new_data = data[data["hit_table"] == int(detector.split("ch0")[-1])]
+            # keep entries for the selected detector
+            new_data = data[data["hit_table"] == int(detector.split("ch0")[-1])]
 
-        # add entries for the legend
-        if det_type == "geds":
-            name = det_dict[detector]["det_id"]
-            if "V0" in name:
-                name = name[2:]
-            string_no = det_dict[detector]["string"]["number"]
-            string_pos = det_dict[detector]["string"]["position"]
-            new_label = f"s{string_no}-p{string_pos}-{detector}-{name}"
-        else:
-            name = f"{detector}"
-        y_values.append(new_label)
-        if det_type == "spms":
-            col = j_plot[0][str(detector)]
-        if det_type == "geds":
-            col = j_plot[1][detector]
+            # add entries for the legend
+            if det_type == "geds":
+                name = det_dict[detector]["det_id"]
+                string_no = det_dict[detector]["string"]["number"]
+                string_pos = det_dict[detector]["string"]["position"]
+                new_label = f"s{string_no}-p{string_pos}-{detector}-{name}"
+            else:
+                name = f"{detector}"
+            y_values.append(new_label)
+            if det_type == "spms":
+                col = j_plot[0][str(detector)]
+            if det_type == "geds":
+                col = j_plot[1][detector]
 
-        # skip detectors that are not geds/spms
-        if det_dict[detector]["system"] == "--":
-            continue
+            # skip detectors that are not geds/spms
+            if det_dict[detector]["system"] == "--":
+                continue
 
-        # det parameter and time arrays for a given detector
-        par_array_mean, par_np_array, utime_array = parameters.load_parameter(
-            new_data,
-            parameter,
-            detector,
-            det_type,
-            time_cut,
-            all_ievt,
-            puls_only_ievt,
-            not_puls_ievt,
-            start_code,
-        )
-        if len(par_np_array) == 0:
-            continue
+            # det parameter and time arrays for a given detector
+            par_array_mean, par_array, utime_array = parameters.load_parameter(
+                new_data,
+                parameter,
+                detector,
+                det_type,
+                time_cut,
+                all_ievt,
+                puls_only_ievt,
+                not_puls_ievt,
+                start_code,
+            )
+            if len(par_array) == 0:
+                continue
 
-        # rebinning
-        if plot_style["par_average"] is True and parameter != "K_lines":
-            par_list, utime_list = analysis.avg_over_entries(par_np_array, utime_array)
+            # rebinning
+            utime_list = utime_array.tolist()
+            par_list = par_array.tolist()
+            if plot_style["par_average"] is True and parameter != "K_lines":
+                par_list, utime_list = analysis.avg_over_entries(par_array, utime_array)
 
-        # function to check if par values are outside some pre-defined limits
-        status = analysis.check_par_values(
-            utime_list, par_list, parameter, detector, det_type
-        )
-        times = [datetime.utcfromtimestamp(t) for t in utime_list]
-        start_time = times[0]
-        end_time = times[-1]
+            # function to check if par values are outside some pre-defined limits
+            status = analysis.check_par_values(
+                utime_list, par_list, parameter, detector, det_type
+            )
+            times = [datetime.utcfromtimestamp(t) for t in utime_list]
+            utime_list = [
+                (datetime.utcfromtimestamp(t)).timestamp() for t in utime_list
+            ]
+            start_time = times[0]
+            end_time = times[-1]
 
-        y_list = [index for i in range(0, len(utime_list))]
-        ax.plot3D(utime_list, y_list, par_list, color=col, zorder=-index, alpha=0.9)
-        ax.set_xlim3d(utime_list[0], utime_list[-1])
+            y_list = [index for i in range(0, len(utime_list))]
+            ax.plot3D(utime_list, y_list, par_list, color=col, zorder=-index, alpha=0.9)
+            ax.set_xlim3d(utime_list[0], utime_list[-1])
 
-        # fill the map with status flags
-        if det_type == "spms":
-            detector = str(detector)
-        if detector not in map_dict:
-            map_dict[detector] = status
-        else:
-            if map_dict[detector] == 0:
+            # fill the map with status flags
+            if det_type == "spms":
+                detector = str(detector)
+            if detector not in map_dict:
                 map_dict[detector] = status
-        # save mean over first entries
-        string_mean_dict[detector] = {parameter: str(par_array_mean)}
+            else:
+                if map_dict[detector] == 0:
+                    map_dict[detector] = status
+            # save mean over first entries
+            string_mean_dict[detector] = {parameter: str(par_array_mean)}
 
-        # skip those detectors that are not within the time window
-        if start_time == 0 and end_time == 0:
-            continue
-        start_times.append(start_time)
-        end_times.append(end_time)
+            # skip those detectors that are not within the time window
+            if start_time == 0 and end_time == 0:
+                continue
+            start_times.append(start_time)
+            end_times.append(end_time)
 
     # no data were found at all
     if len(start_times) == 0 and len(end_times) == 0:
         return None, None
 
     # x-axis in dates
-    locs = np.linspace(start_time.timestamp(), end_time.timestamp(), 10)
+    locs = np.linspace(min(start_times).timestamp(), max(end_times).timestamp(), 10)
     xlab = "%d/%m"
     if j_config[11]["frmt"] == "day/month-time":
         xlab = "%d/%m\n%H:%M"
     if j_config[11]["frmt"] == "time":
         xlab = "%H:%M"
     labels = [datetime.fromtimestamp(loc).strftime(xlab) for loc in locs]
+
     ax.set_xticks(locs)
     ax.set_xticklabels(labels)
     plt.xticks(locs, labels)
 
     # plot features
     ax.set_box_aspect(aspect=(1, 1, 0.5))  # aspect ratio for axes
-
-    ax.set_xlabel("Time (UTC)", labelpad=20)  # axes labels
+    xlab = j_config[11]["frmt"]
+    ax.set_xlabel(f"{xlab} (UTC)", labelpad=20)
     zlab = j_par[0][parameter]["label"]
     if parameter in no_variation_pars:
         if j_par[0][parameter]["units"] != "null":
@@ -834,7 +839,7 @@ def plot_wtrfll(
     ax.set_zlabel(zlab, labelpad=15)
 
     # define new y-axis values
-    yticks_loc = [i for i in range(0, len(det_list))]  # y_values))]
+    yticks_loc = [i for i in range(0, len(det_list))]
     ax.set_yticks(yticks_loc)
     ax.set_yticklabels(y_values, ha="left")  # change number into name
 
@@ -961,7 +966,7 @@ def plot_ch_par_vs_time(
                 col = j_plot[1][detector]
 
             # det parameter and time arrays for a given detector
-            par_array_mean, par_np_array, utime_array = parameters.load_parameter(
+            par_array_mean, par_array, utime_array = parameters.load_parameter(
                 new_data,
                 parameter,
                 detector,
@@ -972,12 +977,12 @@ def plot_ch_par_vs_time(
                 not_puls_ievt,
                 start_code,
             )
-            if len(par_np_array) == 0:
+            if len(par_array) == 0:
                 continue
-            utime_list = utime_array.tolist()
-            par_list = par_np_array.tolist()
 
             # function to check if par values are outside some pre-defined limits
+            utime_list = utime_array.tolist()
+            par_list = par_array.tolist()
             status = analysis.check_par_values(
                 utime_list, par_list, parameter, detector, det_type
             )
@@ -992,7 +997,7 @@ def plot_ch_par_vs_time(
             if det_type == "ch000":
                 col = "r"
 
-            # plot detector
+            # legend
             if parameter not in no_variation_pars:
                 lbl += (
                     "\nmean = "
@@ -1002,12 +1007,10 @@ def plot_ch_par_vs_time(
                     + "]"
                 )
 
-            # rebinning
+            # plot (+rebinning)
             if parameter != "event_rate":
                 axes.plot(times, par_list, color="darkgray", linewidth=1, label=lbl)
-                par_avg, utime_avg = analysis.avg_over_minutes(
-                    par_np_array, utime_array
-                )
+                par_avg, utime_avg = analysis.avg_over_minutes(par_array, utime_array)
                 times_avg = [datetime.fromtimestamp(t) for t in utime_avg]
                 axes.plot(times_avg, par_avg, color=col, linewidth=2)
                 # axes.set_ylim(-5,5)

@@ -59,7 +59,7 @@ In particular,
   Files are usually saved using the following format: ``exp-period-datatype-time_interval``:
 
   * ``exp`` identifies the experiment (e.g. *l60*)
-  * ``period`` identifies a certain period of data taking
+  * ``period`` identifies a certain period of data taking (e.g. *p01*)
   * ``datatype`` denotes the run type (e.g. *phy*, *cal*, ...)
   * ``time_interval``, if present, has the format ``start_stop`` where ``start`` is the initial timestamp in UTC+00 format (e.g. *20220922T093400Z*), while ``stop`` is the final timestamp in UTC+00 format (e.g. *20220922T161000Z*)
 
@@ -73,12 +73,18 @@ Jupyter Notebook
 
 In that folder, you find:
 
-* ``monitor-par-vs-time.ipynb`` that helps plotting separately *geds*, *spms* and *ch000*. Some widget buttons are present on top of plots that let you inspect different parameters and strings/barrels. A box containing info about applied time cuts is present too on the left side of widget buttons (e.g. *2022/09/22 09:34 -> 2022/09/22 16:10*); selecting a given time cut, you can inspect different time intervals. This notebook does not work if we use a 3D-plot representation.
-* ``monitor-par-vs-time-3D.ipynb`` (*not present - under construction*)
+* ``monitor-par-vs-time-2D.ipynb`` that helps plotting separately *geds*, *spms* and *ch000*. Some widget buttons are present on top of plots that let you inspect different parameters and strings/barrels. A box containing info about applied time cuts is present too on the left side of widget buttons (e.g. *2022/09/22 09:34 -> 2022/09/22 16:10*); selecting a given time cut, you can inspect different time intervals. This notebook does not work if we use a 3D-plot representation.
+* ``monitor-par-vs-time-3D.ipynb`` that helps plotting *geds*. This notebook does not visualize SiPMs parameter plots since their parameters (e.g. energy in PE, trigger position) are plotted as maps. Even ch000 is left out from this notebook since there is not advantage in plotting the channel in 3D. If necessary, it can be implemented in the future.
+
+New notebooks can be simply implemented by the users themselves, based on the already available ones. The main functions used to define widgets and plot results are in ``src/legend_data_monitor/ipynb_info.py``.
 
 .. note::
   The plots are interactive: you can perform zooms (x-axis is shared among different channels, while y-axis is not shared) and
   separately save each canvas to your local environment.
+
+.. attention::
+  During normal data taking, the offline monitoring is performed on 2D plots only.
+  The option of having 3D plots too was left for a personal usage.
 
 
 Heroku + Panel
