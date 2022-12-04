@@ -21,11 +21,11 @@ Available parameters
   * - hit variables
     - all
     - all
-    - ?
+    - x
   * - ``event_rate``
     - ✓
     - ✓
-    - ?
+    - ✓
   * - ``K_lines``
     - ✓
     - x
