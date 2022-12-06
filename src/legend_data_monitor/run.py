@@ -114,6 +114,8 @@ def select_and_plot_run(
             run_name = run_name + r + "-"
         run_name = run_name[:-1]
 
+    json_path = os.path.join(json_path, f"{exp}-{period}-{run_name}-{datatype}.json")
+
     if run:
         # time analysis: set output-pdf filenames
         if len(time_cut) != 0:  # time cuts
@@ -121,17 +123,11 @@ def select_and_plot_run(
             path = os.path.join(
                 plot_path, f"{exp}-{period}-{run_name}-{datatype}_{start}_{end}.pdf"
             )
-            json_path = os.path.join(
-                json_path, f"{exp}-{period}-{run_name}-{datatype}_{start}_{end}.json"
-            )
             map_path = os.path.join(
                 map_path, f"{exp}-{period}-{run_name}-{datatype}_{start}_{end}.pdf"
             )
         else:  # no time cuts
             path = os.path.join(plot_path, f"{exp}-{period}-{run_name}-{datatype}.pdf")
-            json_path = os.path.join(
-                json_path, f"{exp}-{period}-{run_name}-{datatype}.json"
-            )
             map_path = os.path.join(
                 map_path, f"{exp}-{period}-{run_name}-{datatype}.pdf"
             )
@@ -142,15 +138,11 @@ def select_and_plot_run(
             path = os.path.join(
                 plot_path, f"{exp}-{period}-{datatype}_{start}_{end}.pdf"
             )
-            json_path = os.path.join(
-                json_path, f"{exp}-{period}-{datatype}_{start}_{end}.json"
-            )
             map_path = os.path.join(
                 map_path, f"{exp}-{period}-{datatype}_{start}_{end}.pdf"
             )
         else:  # no time cuts
             path = os.path.join(plot_path, f"{exp}-{period}-{datatype}.pdf")
-            json_path = os.path.join(json_path, f"{exp}-{period}-{datatype}.json")
             map_path = os.path.join(map_path, f"{exp}-{period}-{datatype}.pdf")
 
     dump_all_plots_together(time_cut, path, json_path, map_path, start_code)
@@ -452,8 +444,26 @@ def dump_all_plots_together(
                             else:
                                 logging.error(f"\t...no {par} plots for ch000!")
 
-    with open(json_path, "w") as f:
-        json.dump(mean_dict, f)
+    # list with all the files already saved in out/json_files directory
+    file_list = os.listdir(output + "json-files")
+
+    # defining json file name for this run
+    run_name = ""
+    if isinstance(run, str):
+        run_name = run
+    elif isinstance(run, list):
+        for r in run:
+            run_name = run_name + r + "-"
+        run_name = run_name[:-1]
+
+    jsonfile_name = f"{exp}-{period}-{run_name}-{datatype}.json"
+
+    # if there is no mean_dict.json for this run, create a new one
+    if jsonfile_name not in file_list:
+        jsonfile_name = str(output + "json-files/" + jsonfile_name)
+        json_mean_dict = json.dumps(mean_dict, indent=4)
+        with open(jsonfile_name, "w") as f:
+            f.write(json_mean_dict)
 
     if verbose is True:
         logging.error(f"Means are saved in {json_path}")
