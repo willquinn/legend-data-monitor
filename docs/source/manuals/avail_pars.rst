@@ -7,35 +7,34 @@ Available parameters
 
 
 .. list-table::
-   :widths: 30 25 25 25
-   :header-rows: 1
+  :widths: 30 25 25 25
+  :header-rows: 1
 
-   * - Available parameters
-     - HPGe
-     - SiPM
-     - ch000
-   * - dsp variables
-     - all
-     - x
-     - all
-   * - hit variables
-     - all
-     - all
-     - ?
-   * - ``event_rate``
-     - ✓
-     - ✓
-     - ?
-   * - ``K_lines``
-     - ✓
-     - x
-     - x
-   * - ``uncal_puls``
-     - ✓
-     - x
-     - ✓
-   * - ``cal_puls``
-     - ✓
-     - x
-     - ✓
-.. list-table::
+  * - Available parameters
+    - HPGe
+    - SiPM
+    - ch000
+  * - dsp variables
+    - all
+    - x
+    - all
+  * - hit variables
+    - all
+    - all
+    - x
+  * - ``event_rate``
+    - ✓
+    - ✓
+    - ✓
+  * - ``K_lines``
+    - ✓
+    - x
+    - x
+  * - ``uncal_puls``
+    - ✓
+    - x
+    - ✓
+  * - ``cal_puls``
+    - ✓
+    - x
+    - ✓
