@@ -7,7 +7,7 @@ import os
 from datetime import datetime, timedelta
 
 import numpy as np
-import pygama.lgdo.lh5_store as lh5
+import pandas as pd
 from pygama.flow import DataLoader
 
 from . import timecut
@@ -50,8 +50,10 @@ def read_json_files():
 
 
 j_config, j_par, j_plot = read_json_files()
+exp = j_config[0]["exp"]
 files_path = j_config[0]["path"]["lh5-files"]
 version = j_config[0]["path"]["version"]
+output = j_config[0]["path"]["output"]
 period = j_config[1]
 run = j_config[2]
 filelist = j_config[3]
@@ -211,7 +213,8 @@ def set_query(time_cut: list, start_code: str, run: str | list[str]):
 
     # Applying run cut
     if run:
-        query = query + " and "
+        if query != "":
+            query = query + " and "
         if isinstance(run, str):
             query = query + f"run == '{run}'"
         elif isinstance(run, list):
@@ -721,7 +724,12 @@ def avg_over_minutes(par_array: np.ndarray, time_array: np.ndarray):
     return par_avg, time_avg
 
 
-def get_mean(parameter: str, detector: str):
+def get_mean(
+    par_array: np.ndarray | pd.core.series.Series,
+    time_array: np.ndarray | pd.core.series.Series,
+    parameter: str,
+    detector: str,
+):
     """
     Evaluate the average over first files/hours. It is used when we want to show the percentage variation of a parameter with respect to its average value.
 
@@ -732,70 +740,37 @@ def get_mean(parameter: str, detector: str):
     detector
                 Name of the detector
     """
-    input_dsp = files_path + version + "/inputs/config/tier_dsp/"
-    input_hit = files_path + version + "/inputs/config/tier_hit/"
-    config_dsp = os.listdir(input_dsp)
-    config_hit = os.listdir(input_hit)
-    config_dsp = [input_dsp + f for f in config_dsp if "ICPC" in f][0]
-    config_hit = [input_hit + f for f in config_hit if "ICPC" in f][0]
-    with open(config_dsp) as d:
-        outputs_dsp = json.load(d)
-    dsp_pars = outputs_dsp["outputs"]
-    with open(config_hit) as h:
-        outputs_hit = json.load(h)
-    hit_pars = outputs_hit["outputs"]
-    # get the parameter's tier
-    if parameter in dsp_pars:
-        file_type = "dsp"
-    if parameter in hit_pars:
-        file_type = "hit"
+    # output path with json files
+    out_path = output
+    json_path = os.path.join(out_path, "json-files")
 
-    # get the path of files for a given parameter, depending if it belongs to the dsp or hit tier
-    file_path = (
-        files_path
-        + version
-        + "/generated/tier/"
-        + file_type
-        + "/"
-        + datatype
-        + "/"
-        + period
-        + "/"
-        + run
-        + "/"
-    )
+    # defining json file name for this run
+    run_name = ""
+    if isinstance(run, str):
+        run_name = run
+    elif isinstance(run, list):
+        for r in run:
+            run_name = run_name + r + "-"
+        run_name = run_name[:-1]
 
-    # get list of lh5 files in chronological order
-    lh5_files = os.listdir(file_path)
-    lh5_files = sorted(
-        lh5_files,
-        key=lambda file: int(
-            ((file.split("-")[4]).split("Z")[0]).split("T")[0]
-            + ((file.split("-")[4]).split("Z")[0]).split("T")[1]
-        ),
-    )
-    lh5_files = [file_path + f for f in lh5_files]
+    jsonfile_name = f"{exp}-{period}-{run_name}-{datatype}.json"
 
-    par_array = lh5.load_nda(lh5_files, [parameter], detector + "/" + file_type)[
-        parameter
-    ]
-    # apply selection of pulser/physical events
-    all_ievt, puls_only_ievt, not_puls_ievt = get_puls_ievt()
-    if all_ievt != [] and puls_only_ievt != [] and not_puls_ievt != []:
-        det_only_index = np.isin(all_ievt, not_puls_ievt)
-        puls_only_index = np.isin(all_ievt, puls_only_ievt)
-        if parameter in keep_puls_pars:
-            par_array = par_array[puls_only_index]
-        if parameter in keep_phys_pars:
-            par_array = par_array[det_only_index]
+    # list with all the files already saved in out/json_files directory
+    file_list = os.listdir(json_path)
 
-    # use the first file (about 1h long) to compute the mean of a parameter
-    len_first = len(
-        lh5.load_nda(lh5_files[0], [parameter], detector + "/" + file_type)[parameter]
-    )
-    par_array_mean = np.mean(par_array[:len_first])
+    # if file already exists, open it and get mean for detector/parameter
+    if jsonfile_name in file_list:
+        with open(json_path + "/" + jsonfile_name) as file:
+            mydict = json.load(file)
+            mean = mydict[detector][parameter]
+            mean = float(mean)
+    else:
+        # whatever the time length, compute mean over 1h of data
+        first_hour_indices = np.where(time_array < time_array[0] + 3600)
+        par_array = par_array[first_hour_indices]
+        mean = np.mean(par_array)
 
-    return par_array_mean
+    return mean
 
 
 def set_pkl_name(

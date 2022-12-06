@@ -145,20 +145,22 @@ def load_parameter(
     if np.isnan(par_array).any() and parameter not in ["energy_in_pe", "trigger_pos"]:
         par_array, utime_array_cut = analysis.remove_nan(par_array, utime_array_cut)
 
-    # Enable following lines to get the % variation of a parameter wrt to its mean value
-    if parameter not in no_variation_pars and det_type not in ["spms", "ch000"]:
-        par_array_mean = np.mean(par_array[: int(0.05 * len(par_array))])
-        # par_array_mean = analysis.get_mean(parameter, detector)
-        par_array = np.subtract(par_array, par_array_mean)
-        par_array = np.divide(par_array, par_array_mean) * 100
-    else:
-        par_array_mean = []
-
     # convert pandas series to numpy array
     if isinstance(par_array, pd.core.series.Series):
         par_array = par_array.to_numpy()
     if isinstance(utime_array_cut, pd.core.series.Series):
         utime_array_cut = utime_array_cut.to_numpy()
+
+    # Enable following lines to get the % variation of a parameter wrt to its mean value
+    if parameter not in no_variation_pars and det_type not in ["spms", "ch000"]:
+        # par_array_mean = np.mean(par_array[: int(0.05 * len(par_array))])
+        par_array_mean = analysis.get_mean(
+            par_array, utime_array_cut, parameter, detector
+        )
+        par_array = np.subtract(par_array, par_array_mean)
+        par_array = np.divide(par_array, par_array_mean) * 100
+    else:
+        par_array_mean = []
 
     return par_array_mean, par_array, utime_array_cut
 
