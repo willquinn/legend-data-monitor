@@ -34,6 +34,7 @@ datatype = j_config[4]
 no_variation_pars = j_config[6]["plot_values"]["no_variation_pars"]
 plot_style = j_config[7]
 qc_flag = j_config[6]["quality_cuts"]
+verbose = j_config[12]
 
 
 def plot_parameters(
@@ -491,7 +492,7 @@ def plot_par_vs_time_ch000(
 
 
 def plot_par_vs_time_2d(
-    data: pd.DataFrame,
+    data: pd.DataFrame | list[str],
     det_list: list[str],
     parameter: str,
     time_cut: list[str],
@@ -510,7 +511,7 @@ def plot_par_vs_time_2d(
     Parameters
     ----------
     data
-                Pandas dataframes containing dsp/hit data
+                Pandas dataframes containing dsp/hit data or list of dsp files
     det_list
                 List of detectors present in a string
     parameter
@@ -563,8 +564,15 @@ def plot_par_vs_time_2d(
     for ax_row in ax_array:
         for axes in ax_row:
             detector = det_list[det_idx]
+
             # keep entries for the selected detector
-            new_data = data[data["hit_table"] == int(detector.split("ch0")[-1])]
+            # new_data = data[data["hit_table"] == int(detector.split("ch0")[-1])] # <-- use it when DataLoader is working for spms!
+            # remove the following block when DataLoader is working for spms
+            if detector.split("ch0")[-1] in str(
+                j_config[13][det_type]
+            ) or detector.split("ch")[-1] in str(j_config[13][det_type]):
+                det_idx += 1
+                continue
 
             # skip detectors that are not geds/spms
             if det_dict[detector]["system"] == "--":
@@ -581,7 +589,7 @@ def plot_par_vs_time_2d(
                 lbl = f"{detector}"
 
             _, par_array, utime_array = parameters.load_parameter(
-                new_data,
+                data,  # use 'new_data' when DataLoader is working for spms
                 parameter,
                 detector,
                 det_type,
@@ -637,7 +645,16 @@ def plot_par_vs_time_2d(
 
     # no data were found at all
     if len(start_times) == 0 and len(end_times) == 0:
+        if verbose is True:
+            logging.error(
+                f"\t...no {parameter} for spms ({string_number}) has been plotted!"
+            )
         return None, None
+    else:
+        if verbose is True:
+            logging.error(
+                f"\t...{parameter} for spms ({string_number}) has been plotted!"
+            )
 
     locs = np.linspace(
         dates.date2num(min(start_times)), dates.date2num(max(end_times)), 3

@@ -316,6 +316,45 @@ def dump_all_plots_together(
                         string_spms,
                         string_spms_name,
                     ) = analysis.read_spms(spms_dict)
+                    spms_par = par_to_plot["spms"]
+                    if len(spms_par) == 0:
+                        logging.error("Spms: NO parameters have been enabled!")
+                    else:
+                        logging.error("Spms will be plotted...")
+
+                        data = analysis.load_dsp_files(time_cut, start_code)
+                        for par in spms_par:
+                            if par in ["energy_in_pe", "trigger_pos"]:
+                                for (det_list, string) in zip(
+                                    spms_merged, spms_name_merged
+                                ):
+                                    # if string == "top_IB": # <- for quick checks
+                                    plot.plot_par_vs_time_2d(
+                                        data,
+                                        det_list,
+                                        par,
+                                        time_cut,
+                                        "spms",
+                                        string,
+                                        spms_dict,
+                                        all_ievt,
+                                        puls_only_ievt,
+                                        not_puls_ievt,
+                                        start_code,
+                                        pdf,
+                                    )
+            """
+            # enable the following block when the DataLoader works for spms too...
+            if det_type["spms"] is True:
+                if datatype == "cal":
+                    logging.error("No SiPMs for calibration data!")
+                else:
+                    (
+                        spms_merged,
+                        spms_name_merged,
+                        string_spms,
+                        string_spms_name,
+                    ) = analysis.read_spms(spms_dict)
 
                     spms_par = par_to_plot["spms"]
                     if len(spms_par) == 0:
@@ -394,20 +433,19 @@ def dump_all_plots_together(
                                             logging.error(
                                                 f"\t...no {par} plots for spms - {string}!"
                                             )
-                                """
-                                if det_status_dict != []:
-                                    map.spms_map(
-                                        par,
-                                        spms_dict,
-                                        spms_merged,
-                                        spms_name_merged,
-                                        det_status_dict,
-                                        time_cut,
-                                        map_path,
-                                        start_code,
-                                        pdf_map,
-                                    )
-                                """
+                                #if det_status_dict != []:
+                                #    map.spms_map(
+                                #        par,
+                                #        spms_dict,
+                                #        spms_merged,
+                                #        spms_name_merged,
+                                #        det_status_dict,
+                                #        time_cut,
+                                #       map_path,
+                                #        start_code,
+                                #        pdf_map,
+                                #    )
+            """
 
             # ch000 plots
             if det_type["ch000"] is True:

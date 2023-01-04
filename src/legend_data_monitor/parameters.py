@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 
 import numpy as np
 import pandas as pd
+import pygama.lgdo.lh5_store as lh5
 
 from . import analysis
 
@@ -15,7 +16,7 @@ qc_flag = j_config[6]["quality_cuts"]
 
 
 def load_parameter(
-    data: pd.DataFrame,
+    data: pd.DataFrame | list[str],
     parameter: str,
     detector: str,
     det_type: str,
@@ -31,7 +32,7 @@ def load_parameter(
     Parameters
     ----------
     data
-                    Pandas dataframes containing dsp/hit data
+                    Pandas dataframes containing dsp/hit data or list of dsp files
     parameter
                     Parameter to plot
     detector
@@ -50,7 +51,12 @@ def load_parameter(
                     Starting time of the code
     """
     no_cut_pars = ["event_rate", "K_lines"]
-    utime_array = data["timestamp"]
+    if det_type == "spms":
+        utime_array = lh5.load_nda(data, ["timestamp"], detector + "/dsp")[
+            "timestamp"
+        ]  # <_ remove it when DataLoader is working for spms too!
+    else:
+        utime_array = data["timestamp"]
 
     if all_ievt != [] and puls_only_ievt != [] and not_puls_ievt != []:
 
@@ -82,9 +88,17 @@ def load_parameter(
         return [], [], []
 
     if parameter == "energy_in_pe" and det_type == "spms":
-        par_array = data["energy_in_pe"]
+        hit_files = [dsp_file.replace("dsp", "hit") for dsp_file in data]
+        par_array = lh5.load_nda(hit_files, ["energy_in_pe"], detector + "/hit")[
+            "energy_in_pe"
+        ]
+        # par_array = data["energy_in_pe"] # <-- use it when DataLoader is working for spms
     elif parameter == "trigger_pos" and det_type == "spms":
-        par_array = data["trigger_pos"]
+        hit_files = [dsp_file.replace("dsp", "hit") for dsp_file in data]
+        par_array = lh5.load_nda(hit_files, ["trigger_pos"], detector + "/hit")[
+            "trigger_pos"
+        ]
+        # par_array = data["trigger_pos"]  # <-- use it when DataLoader is working for spms
     elif parameter == "event_rate":
         par_array, utime_array_cut = event_rate(
             data,

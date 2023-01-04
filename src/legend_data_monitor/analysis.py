@@ -40,6 +40,7 @@ def read_json_files():
     j_config.append(data_config["status"])  # 10
     j_config.append(data_config["time-format"])  # 11
     j_config.append(data_config["verbose"])  # 12
+    j_config.append(data_config["no_avail_chs"])  # 13
 
     j_par.append(data_par["par_to_plot"])  # 0
 
@@ -62,6 +63,9 @@ keep_puls_pars = j_config[6]["pulser"]["keep_puls_pars"]
 keep_phys_pars = j_config[6]["pulser"]["keep_phys_pars"]
 keep_phys_pars = j_config[6]["pulser"]["keep_phys_pars"]
 qc_flag = j_config[6]["quality_cuts"]
+time_window = j_config[8]
+last_hours = j_config[9]
+verbose = j_config[12]
 
 
 def write_config(
@@ -429,6 +433,76 @@ def read_spms(spms_dict: dict):
     string_name = ["top_OB", "bot_OB", "top_IB", "bot_IB"]
 
     return string_tot, string_name, string_tot, string_name
+
+
+def load_dsp_files(time_cut: list[str], start_code: str):
+    """
+    Load dsp files applying the time cut over filenames.
+
+    Parameters
+    ----------
+    time_cut
+                List with info about time cuts
+    start_code
+                Starting time of the code
+    """
+    path = files_path + version + "/generated/tier"
+    avail_runs = os.listdir(path + "/dsp/" + datatype + "/" + period)
+
+    full_paths = []
+    if run == "":
+        for avail_run in avail_runs:
+            full_paths.append(os.path.join(path, "dsp", datatype, period, avail_run))
+    else:
+        full_paths.append(os.path.join(path, "dsp", datatype, period, run))
+
+    # get list of lh5 files in chronological order
+    lh5_files = []
+    for full_path in full_paths:
+        for lh5_file in os.listdir(full_path):
+            lh5_files.append(lh5_file)
+
+    lh5_files = sorted(
+        lh5_files,
+        key=lambda file: int(
+            ((file.split("-")[4]).split("Z")[0]).split("T")[0]
+            + ((file.split("-")[4]).split("Z")[0]).split("T")[1]
+        ),
+    )
+
+    # keep 'cal' or 'phy' data
+    if datatype == "cal":
+        runs = [file for file in lh5_files if "cal" in file]
+        if verbose is True:
+            logging.error("Calib files have been loaded")
+    if datatype == "phy":
+        runs = [file for file in lh5_files if "phy" in file]
+        if verbose is True:
+            logging.error("Phys files have been loaded")
+
+    # get time cuts info
+    time_cut = timecut.build_timecut_list(time_window, last_hours)
+
+    # apply time cut to lh5 filenames
+    if len(time_cut) == 3:
+        runs = timecut.cut_below_threshold_filelist(
+            full_path, runs, time_cut, start_code
+        )
+    elif len(time_cut) == 4:
+        runs = timecut.cut_min_max_filelist(full_path, runs, time_cut)
+
+    # get full file paths
+    lh5_files = []
+    for lh5_file in runs:
+        run_no = lh5_file.split("-")[-4]
+        lh5_files.append(os.path.join(path, "dsp", datatype, period, run_no, lh5_file))
+
+    dsp_files = []
+    for lh5_file in lh5_files:
+        if os.path.isfile(lh5_file.replace("dsp", "hit")):
+            dsp_files.append(lh5_file)
+
+    return dsp_files
 
 
 def check_par_values(

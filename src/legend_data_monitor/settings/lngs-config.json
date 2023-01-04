@@ -15,13 +15,13 @@
   "file_list": "",
   "datatype": "phy",
   "det_type": {
-    "spms": false,
-    "geds": true,
+    "spms": true,
+    "geds": false,
     "ch000": false
   },
   "par_to_plot": {
     "README": "Select here the parameters you want to plot for spms, geds and channel 0.",
-    "spms": ["energy_in_pe", "energies"],
+    "spms": ["energy_in_pe"],
     "geds": ["baseline"],
     "ch000": ["baseline"],
     "pulser": {
@@ -65,7 +65,7 @@
   },
   "plot_style": {
     "README": "Specify here which parameter you want to plot in 3D. The other parameters will be automatically plotted in 2D. Set to true 'par_average' if you want to average over 'step' entries, otherwise set it to false.",
-    "three_dim_pars": ["baseline"],
+    "three_dim_pars": [],
     "par_average": true,
     "avg_interval": 10
   },
@@ -94,5 +94,9 @@
     "README": "Choose the time format of your plots: day/month-time, day/month, time",
     "frmt": "day/month-time"
   },
-  "verbose": true
+  "verbose": true,
+  "no_avail_chs": {
+    "geds": [24, 10, 41],
+    "spms": [49, 71, 72, 81, 91, 50, 70, 73, 80, 83, 85, 47]
+  }
 }
