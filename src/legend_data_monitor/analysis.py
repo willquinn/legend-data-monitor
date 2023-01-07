@@ -4,6 +4,7 @@ import importlib.resources
 import json
 import logging
 import os
+import sys
 from datetime import datetime, timedelta
 
 import numpy as np
@@ -31,7 +32,7 @@ def read_json_files():
     j_config.append(data_config["run_info"])  # 0
     j_config.append(data_config["period"])  # 1
     j_config.append(data_config["run"])  # 2
-    j_config.append(data_config["file_list"])  # 3
+    j_config.append(data_config["file_keys"])  # 3
     j_config.append(data_config["datatype"])  # 4
     j_config.append(data_config["det_type"])  # 5
     j_config.append(data_config["par_to_plot"])  # 6
@@ -58,7 +59,7 @@ version = j_config[0]["path"]["version"]
 output = j_config[0]["path"]["output"]
 period = j_config[1]
 run = j_config[2]
-filelist = j_config[3]
+file_keys = j_config[3]
 datatype = j_config[4]
 keep_puls_pars = j_config[6]["pulser"]["keep_puls_pars"]
 keep_phys_pars = j_config[6]["pulser"]["keep_phys_pars"]
@@ -201,12 +202,15 @@ def set_query(time_cut: list, start_code: str, run: str | list[str]):
     """
     query = ""
 
-    # Reading from file
-    if filelist:
-        with open(filelist) as f:
-            lines = f.readlines()
-        lines = [line.strip("\n") for line in lines]
-        query = lines
+    # Reading from file or list of keys
+    if file_keys != "":
+        if isinstance(file_keys, list):
+            query = file_keys
+        else:
+            with open(file_keys) as f:
+                lines = f.readlines()
+            lines = [line.strip("\n") for line in lines]
+            query = lines
 
     # Applying time cut
     if len(time_cut) > 0:
@@ -214,24 +218,28 @@ def set_query(time_cut: list, start_code: str, run: str | list[str]):
         start_datetime = datetime.strptime(start, "%Y%m%dT%H%M%SZ")
         start_datetime = start_datetime - timedelta(minutes=120)
         start = start_datetime.strftime("%Y%m%dT%H%M%SZ")
-        query = query + f"timestamp > '{start}' and timestamp < '{stop}'"
+        if query != "":
+            query += " and "
+        query += f"timestamp > '{start}' and timestamp < '{stop}'"
 
     # Applying run cut
     if run:
         if query != "":
-            query = query + " and "
+            query += " and "
         if isinstance(run, str):
-            query = query + f"run == '{run}'"
+            query += f"run == '{run}'"
         elif isinstance(run, list):
             for r in run:
-                query = query + f"run == '{r}' or "
+                query += f"run == '{r}' or "
             # Just the remove the final 'or'
             query = query[:-4]
 
     if query == "":
         logging.error(
-            "Empty query.\nProvide at least a run name, a time interval of a list of files to open."
+            "Empty query: provide at least a run, a time interval or a list of files to open, try again!"
         )
+        sys.exit(1)
+
     return query
 
 
@@ -498,6 +506,11 @@ def load_dsp_files(time_cut: list[str], start_code: str):
     for lh5_file in lh5_files:
         if os.path.isfile(lh5_file.replace("dsp", "hit")):
             dsp_files.append(lh5_file)
+
+    if len(dsp_files) == 0:
+        if verbose is True:
+            logging.error("There are no files to inspect!")
+            sys.exit(1)
 
     return dsp_files
 

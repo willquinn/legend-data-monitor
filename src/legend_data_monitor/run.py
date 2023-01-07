@@ -524,14 +524,15 @@ def dump_all_plots_together(
 
     # defining json file name for this run
     run_name = ""
-    if isinstance(run, str):
-        run_name = run
-    elif isinstance(run, list):
-        for r in run:
-            run_name = run_name + r + "-"
-        run_name = run_name[:-1]
+    if run_name != "":
+        if isinstance(run, str):
+            run_name = run + "-"
+        elif isinstance(run, list):
+            for r in run:
+                run_name += r + "-"
+            run_name = run_name[:-1]
 
-    jsonfile_name = f"{exp}-{period}-{run_name}-{datatype}.json"
+    jsonfile_name = f"{exp}-{period}-{run_name}{datatype}.json"
 
     # if there is no mean_dict.json for this run, create a new one
     if jsonfile_name not in file_list:

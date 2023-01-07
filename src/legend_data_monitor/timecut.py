@@ -218,7 +218,7 @@ def cut_min_max_filelist(full_path: str, runs: list[str], time_cut: list[str]):
 
 
 def cut_below_threshold_filelist(
-    full_path: str, runs: list[str], time_cut: list[str], start_code: str
+    full_path: str | list[str], runs: list[str], time_cut: list[str], start_code: str
 ):
     """
     Select files for analysis below time threshold using file name.
@@ -263,7 +263,15 @@ def cut_below_threshold_filelist(
     elif len(lowcut_list) == len(runs) and len(highcut_list) != 0:
         lowcut_list = [1]
     elif len(lowcut_list) == 0 and len(highcut_list) == len(runs):
-        last_file = full_path + "/" + runs[-1]
+        last_file = ""
+        if isinstance(full_path, list):
+            last_file = [
+                full_p + "/" + runs[-1]
+                for full_p in full_path
+                if (full_p.split("/"))[-1] == (runs.split("-"))[-4]
+            ][0]
+        if isinstance(full_path, str):
+            last_file = full_path + "/" + runs[-1]
         last_timestamp = (
             lh5.load_nda(last_file, ["timestamp"], "ch000/dsp/")["timestamp"]
         )[-1]

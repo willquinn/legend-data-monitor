@@ -12,7 +12,7 @@
   },
   "period": "p01",
   "run": "",
-  "file_list": "",
+  "file_keys": "",
   "datatype": "phy",
   "det_type": {
     "spms": true,
