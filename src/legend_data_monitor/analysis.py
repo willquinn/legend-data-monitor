@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 
 import numpy as np
 import pandas as pd
+import pygama.lgdo.lh5_store as lh5
 from pygama.flow import DataLoader
 
 from . import timecut
@@ -473,12 +474,8 @@ def load_dsp_files(time_cut: list[str], start_code: str):
     # keep 'cal' or 'phy' data
     if datatype == "cal":
         runs = [file for file in lh5_files if "cal" in file]
-        if verbose is True:
-            logging.error("Calib files have been loaded")
     if datatype == "phy":
         runs = [file for file in lh5_files if "phy" in file]
-        if verbose is True:
-            logging.error("Phys files have been loaded")
 
     # get time cuts info
     time_cut = timecut.build_timecut_list(time_window, last_hours)
@@ -667,7 +664,41 @@ def get_puls_ievt(query: str):
         puls_ievt.append(idx)
         if entry > high_thr:
             pulser_entry.append(idx)
-        else:
+        if entry < high_thr:
+            not_pulser_entry.append(idx)
+
+    # pulser+physical events
+    puls_ievt = np.array(puls_ievt)
+    # HW pulser+FC entries
+    puls_only_ievt = puls_ievt[np.isin(puls_ievt, pulser_entry)]
+    # physical entries
+    not_puls_ievt = puls_ievt[np.isin(puls_ievt, not_pulser_entry)]
+
+    return puls_ievt, puls_only_ievt, not_puls_ievt
+
+
+def get_puls_ievt_spms(dsp_files: list[str]):
+    """
+    Select pulser events for spms only.
+
+    Parameters
+    ----------
+    dsp_files
+            List of dsp files
+    """
+    wf_max = lh5.load_nda(dsp_files, ["wf_max"], "ch000/dsp/")["wf_max"]
+    baseline = lh5.load_nda(dsp_files, ["baseline"], "ch000/dsp")["baseline"]
+    wf_max = np.subtract(wf_max, baseline)
+    puls_ievt = []
+    pulser_entry = []
+    not_pulser_entry = []
+    high_thr = 12500
+
+    for idx, entry in enumerate(wf_max):
+        puls_ievt.append(idx)
+        if entry > high_thr:
+            pulser_entry.append(idx)
+        if entry < high_thr:
             not_pulser_entry.append(idx)
 
     # pulser+physical events

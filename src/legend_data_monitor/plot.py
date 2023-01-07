@@ -269,7 +269,7 @@ def plot_par_vs_time(
         if j_par[0][parameter]["units"] != "null":
             ylab += " [" + j_par[0][parameter]["units"] + "]"
         if parameter == "event_rate":
-            units = j_config[6]["Other-par"]["event_rate"]["units"]
+            units = j_config[6]["par-info"]["event_rate"]["units"]
             ylab += " [" + units + "]"
     else:
         ylab += ", %"
@@ -441,7 +441,7 @@ def plot_par_vs_time_ch000(
         if j_par[0][parameter]["units"] != "null":
             ylab += " [" + j_par[0][parameter]["units"] + "]"
         if parameter == "event_rate":
-            units = j_config[6]["Other-par"]["event_rate"]["units"]
+            units = j_config[6]["par-info"]["event_rate"]["units"]
             ylab += " [" + units + "]"
     else:
         ylab += ", %"
@@ -552,7 +552,7 @@ def plot_par_vs_time_2d(
         if j_par[0][parameter]["units"] != "null":
             ylab = ylab + " [" + j_par[0][parameter]["units"] + "]"
         if parameter == "event_rate":
-            units = j_config[6]["Other-par"]["event_rate"]["units"]
+            units = j_config[6]["par-info"]["event_rate"]["units"]
             ylab = ylab + " [" + units + "]"
     else:
         ylab += ", %"
@@ -849,7 +849,7 @@ def plot_wtrfll(
         if j_par[0][parameter]["units"] != "null":
             zlab = zlab + " [" + j_par[0][parameter]["units"] + "]"
         if parameter == "event_rate":
-            units = j_config[6]["Other-par"]["event_rate"]["units"]
+            units = j_config[6]["par-info"]["event_rate"]["units"]
             zlab = zlab + " [" + units + "]"
     else:
         zlab += ", %"
@@ -937,13 +937,17 @@ def plot_ch_par_vs_time(
         rows, columns, squeeze=False, sharex=True, sharey=False
     )
     # fig.patch.set_facecolor(j_par[0][parameter]["facecol"])
-    fig.suptitle(f"{det_type} - S{string_number}")
+    # to fix the title position for OB spms
+    if "OB" in string_number:
+        fig.suptitle(f"{det_type} - {string_number}", y=0.99)
+    else:
+        fig.suptitle(f"{det_type} - {string_number}")
     ylab = j_par[0][parameter]["label"]
     if parameter in no_variation_pars:
         if j_par[0][parameter]["units"] != "null":
             ylab = ylab + " [" + j_par[0][parameter]["units"] + "]"
         if parameter == "event_rate":
-            units = j_config[6]["Other-par"]["event_rate"]["units"]
+            units = j_config[6]["par-info"]["event_rate"]["units"]
             ylab = ylab + " [" + units + "]"
     else:
         ylab += ", %"
@@ -960,11 +964,22 @@ def plot_ch_par_vs_time(
 
             detector = det_list[i]
             # keep entries for the selected detector
-            new_data = data[data["hit_table"] == int(detector.split("ch0")[-1])]
+            if (
+                det_type == "spms"
+            ):  # remove the following block when DataLoader is working for spms
+                new_data = data
+            else:
+                new_data = data[data["hit_table"] == int(detector.split("ch0")[-1])]
 
             # skip missing detector
-            if new_data.empty:
-                continue
+            if (
+                det_type == "spms"
+            ):  # remove the following block when DataLoader is working for spms
+                if len(new_data) == 0:
+                    continue
+            else:
+                if new_data.empty:
+                    continue
 
             # skip detectors that are not geds/spms
             if det_dict[detector]["system"] == "--":

@@ -21,7 +21,7 @@
   },
   "par_to_plot": {
     "README": "Select here the parameters you want to plot for spms, geds and channel 0.",
-    "spms": ["energy_in_pe"],
+    "spms": ["event_rate"],
     "geds": ["baseline"],
     "ch000": ["baseline"],
     "pulser": {
@@ -53,13 +53,11 @@
         "AoE_Corrected"
       ]
     },
-    "Available-par": {
-      "Other-par": {
-        "event_rate": {
-          "README": "Event rate. Change 'dt' and 'units' if needed. 'dt' is the time interval (in [s]) in which rate is evaluated: rate=cts/dt. 'units' can be chosen among: mHz, Hz, kHz.",
-          "dt": 600,
-          "units": "Hz"
-        }
+    "par-info": {
+      "event_rate": {
+        "README": "Event rate. Change 'dt' and 'units' if needed. 'dt' is the time interval (in [s]) in which rate is evaluated: rate=cts/dt. 'units' can be chosen among: mHz, Hz, kHz.",
+        "dt": 600,
+        "units": "Hz"
       }
     }
   },

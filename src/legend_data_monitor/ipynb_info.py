@@ -66,11 +66,8 @@ def get_dates_pars():
         geds_date = sorted(
             list(dict.fromkeys([file.split("-")[-3] for file in geds_list]))
         )
-        # print("\ngeds strings:", geds_map)
-        # print("geds parameters:", geds_par)
     else:
         geds_map = geds_par = geds_date = []
-        # print("\n-> NO data for geds were found")
 
     geds_date_formatted = [get_day_hour(date) for date in geds_date]
     geds_time_option = [
@@ -103,11 +100,8 @@ def get_dates_pars():
         spms_date = sorted(
             list(dict.fromkeys([file.split("-")[-3] for file in spms_list]))
         )
-        # print("\nspms barrels:", spms_map)
-        # print("spms parameters:", spms_par)
     else:
         spms_map = spms_par = spms_date = []
-        # print("\n-> NO data for spms were found")
 
     spms_date_formatted = [get_day_hour(date) for date in spms_date]
     spms_time_option = [
@@ -136,10 +130,8 @@ def get_dates_pars():
         ch000_date = sorted(
             list(dict.fromkeys([file.split("-")[-3] for file in ch000_list]))
         )
-        # print("\nch000 parameters:", ch000_par)
     else:
         ch000_par = ch000_date = []
-        # print("\n-> NO data for ch000 were found")
 
     ch000_date_formatted = [get_day_hour(date) for date in ch000_date]
     ch000_time_option = [

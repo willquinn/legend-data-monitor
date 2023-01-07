@@ -177,8 +177,10 @@ def dump_all_plots_together(
 
     query = analysis.set_query(time_cut, start_code, run)
 
-    # get pulser-events indices
+    """
+    # get pulser-events indices (will be put here in common for geds&spms once DataLoader works for spms too)
     all_ievt, puls_only_ievt, not_puls_ievt = analysis.get_puls_ievt(query)
+    """
 
     with PdfPages(path) as pdf:
         with PdfPages(map_path) as pdf_map:
@@ -194,6 +196,9 @@ def dump_all_plots_together(
 
             # geds plots
             if det_type["geds"] is True:
+                # get pulser-events indices
+                all_ievt, puls_only_ievt, not_puls_ievt = analysis.get_puls_ievt(query)
+
                 string_geds, string_geds_name = analysis.read_geds(geds_dict)
                 geds_par = par_to_plot["geds"]
                 if len(geds_par) == 0:
@@ -323,6 +328,12 @@ def dump_all_plots_together(
                         logging.error("Spms will be plotted...")
 
                         data = analysis.load_dsp_files(time_cut, start_code)
+                        # get pulser-events indices
+                        (
+                            all_ievt,
+                            puls_only_ievt,
+                            not_puls_ievt,
+                        ) = analysis.get_puls_ievt_spms(data)
                         for par in spms_par:
                             if par in ["energy_in_pe", "trigger_pos"]:
                                 for (det_list, string) in zip(
@@ -343,6 +354,32 @@ def dump_all_plots_together(
                                         start_code,
                                         pdf,
                                     )
+                            else:
+                                for (det_list, string) in zip(
+                                    spms_merged, spms_name_merged
+                                ):
+                                    # if string == "top_IB": # <- for quick checks
+                                    (
+                                        string_mean_dict,
+                                        map_dict,
+                                    ) = plot.plot_ch_par_vs_time(
+                                        data,
+                                        det_list,
+                                        par,
+                                        time_cut,
+                                        "spms",
+                                        string,
+                                        spms_dict,
+                                        all_ievt,
+                                        puls_only_ievt,
+                                        not_puls_ievt,
+                                        start_code,
+                                        pdf,
+                                    )
+                                    if verbose is True:
+                                        logging.error(
+                                            f"\t...{par} for spms ({string}) has been plotted!"
+                                        )
             """
             # enable the following block when the DataLoader works for spms too...
             if det_type["spms"] is True:
