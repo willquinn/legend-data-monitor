@@ -15,8 +15,8 @@
   "file_keys": "",
   "datatype": "phy",
   "det_type": {
-    "spms": false,
-    "geds": true,
+    "spms": true,
+    "geds": false,
     "ch000": false
   },
   "par_to_plot": {
