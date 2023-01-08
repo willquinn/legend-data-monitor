@@ -50,13 +50,13 @@ def main():
     plot_path = pdf_path + "/par-vs-time"
     map_path = pdf_path + "/heatmaps"
 
-    # output log-filenames
+    # time selection info
     time_cut = timecut.build_timecut_list(time_window, last_hours)
-    if len(time_cut) != 0:
-        start, end = timecut.time_dates(time_cut, start_code)
-        log_name = f"{log_path}/{exp}-{period}-{run}-{datatype}_{start}_{end}.log"
-    else:
-        log_name = f"{log_path}/{exp}-{period}-{run}-{datatype}.log"
+
+    # get start and stop for the time range of interest
+    time_range = analysis.get_files_timestamps(time_cut, start_code)
+    # output log-filenames
+    log_name = f"{log_path}/{exp}-{period}-{run}-{datatype}-{time_range[0]}_{time_range[1]}.log"
 
     # set up logging to file
     logging.basicConfig(
@@ -77,7 +77,9 @@ def main():
     )
 
     # start analysis
-    select_and_plot_run(path, json_path, plot_path, map_path, start_code)
+    select_and_plot_run(
+        path, json_path, plot_path, map_path, start_code, time_cut, time_range
+    )
 
     logging.error(
         f'Finished compiling at {(datetime.now()).strftime("%d/%m/%Y %H:%M:%S")}'
@@ -85,7 +87,13 @@ def main():
 
 
 def select_and_plot_run(
-    path: str, json_path: str, plot_path: str, map_path: str, start_code: str
+    path: str,
+    json_path: str,
+    plot_path: str,
+    map_path: str,
+    start_code: str,
+    time_cut: list[str],
+    time_range: list[str],
 ) -> None:
     """
     Select run and call dump_all_plots_together().
@@ -102,75 +110,20 @@ def select_and_plot_run(
                 Path where to save output heatmaps
     start_code
                 Starting time of the code
-    """
-    # get time cuts info
-    time_cut = timecut.build_timecut_list(time_window, last_hours)
-
-    run_name = ""
-    if isinstance(run, str):
-        run_name = run
-    elif isinstance(run, list):
-        for r in run:
-            run_name = run_name + r + "-"
-        run_name = run_name[:-1]
-
-    json_path = os.path.join(json_path, f"{exp}-{period}-{run_name}-{datatype}.json")
-
-    if run:
-        # time analysis: set output-pdf filenames
-        if len(time_cut) != 0:  # time cuts
-            start, end = timecut.time_dates(time_cut, start_code)
-            path = os.path.join(
-                plot_path, f"{exp}-{period}-{run_name}-{datatype}_{start}_{end}.pdf"
-            )
-            map_path = os.path.join(
-                map_path, f"{exp}-{period}-{run_name}-{datatype}_{start}_{end}.pdf"
-            )
-        else:  # no time cuts
-            path = os.path.join(plot_path, f"{exp}-{period}-{run_name}-{datatype}.pdf")
-            map_path = os.path.join(
-                map_path, f"{exp}-{period}-{run_name}-{datatype}.pdf"
-            )
-    else:
-        # time analysis: set output-pdf filenames
-        if len(time_cut) != 0:  # time cuts
-            start, end = timecut.time_dates(time_cut, start_code)
-            path = os.path.join(
-                plot_path, f"{exp}-{period}-{datatype}_{start}_{end}.pdf"
-            )
-            map_path = os.path.join(
-                map_path, f"{exp}-{period}-{datatype}_{start}_{end}.pdf"
-            )
-        else:  # no time cuts
-            path = os.path.join(plot_path, f"{exp}-{period}-{datatype}.pdf")
-            map_path = os.path.join(map_path, f"{exp}-{period}-{datatype}.pdf")
-
-    dump_all_plots_together(time_cut, path, json_path, map_path, start_code)
-
-
-def dump_all_plots_together(
-    time_cut: list[str],
-    path: str,
-    json_path: str,
-    map_path: str,
-    start_code: str,
-) -> None:
-    """
-    Create and fill plots in a single pdf and multiple pkl files.
-
-    Parameters
-    ----------
     time_cut
                 List with info about time cuts
-    path
-                Path where to save output files
-    json_path
-                Path where to save mean of perentage variations plots
-    map_path
-                Path where to save output heatmaps
-    start_code
-                Starting time of the code
+    time_range
+                First and last timestamps of the time range of interest
     """
+    # define output paths
+    path = os.path.join(
+        plot_path, f"{exp}-{period}-{datatype}-{time_range[0]}_{time_range[1]}.pdf"
+    )
+    map_path = os.path.join(
+        map_path, f"{exp}-{period}-{datatype}-{time_range[0]}_{time_range[1]}.pdf"
+    )
+
+    # detector dictionaries
     geds_dict = analysis.load_geds()
     spms_dict = analysis.load_spms()
     mean_dict = {}
@@ -238,6 +191,7 @@ def dump_all_plots_together(
                                         puls_only_ievt,
                                         not_puls_ievt,
                                         start_code,
+                                        time_range,
                                         pdf,
                                     )
                                 else:
@@ -257,6 +211,7 @@ def dump_all_plots_together(
                                             puls_only_ievt,
                                             not_puls_ievt,
                                             start_code,
+                                            time_range,
                                             pdf,
                                         )
                                     else:
@@ -275,6 +230,7 @@ def dump_all_plots_together(
                                             puls_only_ievt,
                                             not_puls_ievt,
                                             start_code,
+                                            time_range,
                                             pdf,
                                         )
                                 if map_dict is not None:
@@ -307,6 +263,7 @@ def dump_all_plots_together(
                                     time_cut,
                                     map_path,
                                     start_code,
+                                    time_range,
                                     pdf_map,
                                 )
 
@@ -352,6 +309,7 @@ def dump_all_plots_together(
                                         puls_only_ievt,
                                         not_puls_ievt,
                                         start_code,
+                                        time_range,
                                         pdf,
                                     )
                             else:
@@ -359,10 +317,7 @@ def dump_all_plots_together(
                                     spms_merged, spms_name_merged
                                 ):
                                     # if string == "top_IB": # <- for quick checks
-                                    (
-                                        string_mean_dict,
-                                        map_dict,
-                                    ) = plot.plot_ch_par_vs_time(
+                                    (_, map_dict,) = plot.plot_ch_par_vs_time(
                                         data,
                                         det_list,
                                         par,
@@ -374,6 +329,7 @@ def dump_all_plots_together(
                                         puls_only_ievt,
                                         not_puls_ievt,
                                         start_code,
+                                        time_range,
                                         pdf,
                                     )
                                     if verbose is True:
@@ -426,6 +382,7 @@ def dump_all_plots_together(
                                         puls_only_ievt,
                                         not_puls_ievt,
                                         start_code,
+                                        time_range,
                                         pdf,
                                     )
                                     if verbose is True:
@@ -441,7 +398,7 @@ def dump_all_plots_together(
                                         continue
                                     if len(string) != 0:
                                         (
-                                            string_mean_dict,
+                                            _,
                                             map_dict,
                                         ) = plot.plot_ch_par_vs_time(
                                             data,
@@ -455,6 +412,7 @@ def dump_all_plots_together(
                                             puls_only_ievt,
                                             not_puls_ievt,
                                             start_code,
+                                            time_range,
                                             pdf,
                                         )
                                     if map_dict is not None:
@@ -478,8 +436,9 @@ def dump_all_plots_together(
                                 #        spms_name_merged,
                                 #        det_status_dict,
                                 #        time_cut,
-                                #       map_path,
+                                #        map_path,
                                 #        start_code,
+                                #        time_ramge,
                                 #        pdf_map,
                                 #    )
             """
@@ -511,6 +470,7 @@ def dump_all_plots_together(
                             puls_only_ievt,
                             not_puls_ievt,
                             start_code,
+                            time_range,
                             pdf,
                         )
                         if verbose is True:
@@ -519,29 +479,23 @@ def dump_all_plots_together(
                             else:
                                 logging.error(f"\t...no {par} plots for ch000!")
 
-    # list with all the files already saved in out/json_files directory
-    file_list = os.listdir(output + "json-files")
+    # defining json file name (not for spms; there, we do not have parameters for which we evaluate averages)
+    if det_type["geds"] is True or det_type["ch000"] is True:
+        jsonfile_name = (
+            f"{exp}-{period}-{datatype}-{time_range[0]}_{time_range[1]}.json"
+        )
 
-    # defining json file name for this run
-    run_name = ""
-    if run_name != "":
-        if isinstance(run, str):
-            run_name = run + "-"
-        elif isinstance(run, list):
-            for r in run:
-                run_name += r + "-"
-            run_name = run_name[:-1]
-
-    jsonfile_name = f"{exp}-{period}-{run_name}{datatype}.json"
-
-    # if there is no mean_dict.json for this run, create a new one
-    if jsonfile_name not in file_list:
-        jsonfile_name = str(output + "json-files/" + jsonfile_name)
-        json_mean_dict = json.dumps(mean_dict, indent=4)
-        with open(jsonfile_name, "w") as f:
-            f.write(json_mean_dict)
+        # list with all the files already saved in out/json_files directory
+        file_list = os.listdir(output + "json-files")
+        # if there is no mean_dict.json for this run, create a new one
+        if jsonfile_name not in file_list:
+            jsonfile_name = str(output + "json-files/" + jsonfile_name)
+            json_mean_dict = json.dumps(mean_dict, indent=4)
+            with open(jsonfile_name, "w") as f:
+                f.write(json_mean_dict)
+        if verbose is True:
+            logging.error(f"Means are saved in {json_path}")
 
     if verbose is True:
-        logging.error(f"Means are saved in {json_path}")
         logging.error(f"Plots are saved in {path}")
         logging.error(f"Heatmaps are saved in {map_path}")

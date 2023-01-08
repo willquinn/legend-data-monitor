@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import pickle as pkl
 from copy import copy
-from datetime import datetime, timezone
+from datetime import datetime
 
 import matplotlib as mpl
 import matplotlib.patches as mpatches
@@ -121,6 +121,7 @@ def plot_par_vs_time(
     puls_only_ievt: np.ndarray,
     not_puls_ievt: np.ndarray,
     start_code: str,
+    time_range: list[str],
     pdf=None,
 ) -> dict:
     """
@@ -149,7 +150,9 @@ def plot_par_vs_time(
     not_puls_ievt
                     Event number for physical events
     start_code
-                Starting time of the code
+                    Starting time of the code
+    time_range
+                    First and last timestamps of the time range of interest
     """
     fig, ax = plt.subplots(1, 1)
     ax.set_facecolor("w")
@@ -304,22 +307,18 @@ def plot_par_vs_time(
     ax.axhline(y=0, color="r", linestyle="--", linewidth=1)
     plt.axhline(y=0, color="r", linestyle="--", linewidth=1)
 
-    start_name = start_times[0].astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    end_name = end_times[-1].astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    # start_name = start_times[0].astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    # end_name = end_times[-1].astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
 
     # define name of pkl file (with info about time cut if present)
     pkl_name = analysis.set_pkl_name(
         exp,
         period,
-        run,
         datatype,
         det_type,
         string_number,
         parameter,
-        time_cut,
-        start_code,
-        start_name,
-        end_name,
+        time_range,
     )
 
     pkl.dump(ax, open(f"{output}/pkl-files/par-vs-time/{pkl_name}", "wb"))
@@ -340,6 +339,7 @@ def plot_par_vs_time_ch000(
     puls_only_ievt: np.ndarray,
     not_puls_ievt: np.ndarray,
     start_code: str,
+    time_range: list[str],
     pdf=None,
 ) -> dict:
     """
@@ -362,7 +362,9 @@ def plot_par_vs_time_ch000(
     not_puls_ievt
                     Event number for physical events
     start_code
-                Starting time of the code
+                    Starting time of the code
+    time_range
+                    First and last timestamps of the time range of interest
     """
     fig, ax = plt.subplots(1, 1)
     ax.set_facecolor("w")
@@ -464,22 +466,18 @@ def plot_par_vs_time_ch000(
         ax.axhline(y=upp_lim, color="r", linestyle="--", linewidth=2)
         plt.axhline(y=upp_lim, color="r", linestyle="--", linewidth=2)
 
-    start_name = start_times[0].astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    end_name = end_times[-1].astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    # start_name = start_times[0].astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    # end_name = end_times[-1].astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
 
     # define name of pkl file (with info about time cut if present)
     pkl_name = analysis.set_pkl_name(
         exp,
         period,
-        run,
         datatype,
         det_type,
         "",
         parameter,
-        time_cut,
-        start_code,
-        start_name,
-        end_name,
+        time_range,
     )
 
     pkl.dump(ax, open(f"{output}/pkl-files/par-vs-time/{pkl_name}", "wb"))
@@ -503,6 +501,7 @@ def plot_par_vs_time_2d(
     puls_only_ievt: np.ndarray,
     not_puls_ievt: np.ndarray,
     start_code: str,
+    time_range: list[str],
     pdf=None,
 ) -> None:
     """
@@ -532,6 +531,8 @@ def plot_par_vs_time_2d(
                 Event number for physical events
     start_code
                 Starting time of the code
+    time_range
+                First and last timestamps of the time range of interest
     """
     start_times = []
     end_times = []
@@ -670,22 +671,18 @@ def plot_par_vs_time_2d(
     [ax.set_xticklabels(labels) for axs in ax_array for ax in axs]
     plt.xticks(locs, labels)
 
-    start_name = start_times[0].astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    end_name = end_times[-1].astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    # start_name = start_times[0].astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    # end_name = end_times[-1].astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
 
     # define name of pkl file (with info about time cut if present)
     pkl_name = analysis.set_pkl_name(
         exp,
         period,
-        run,
         datatype,
         det_type,
         string_number,
         parameter,
-        time_cut,
-        start_code,
-        start_name,
-        end_name,
+        time_range,
     )
 
     fig.tight_layout()
@@ -708,6 +705,7 @@ def plot_wtrfll(
     puls_only_ievt: np.ndarray,
     not_puls_ievt: np.ndarray,
     start_code: str,
+    time_range: list[str],
     pdf=None,
 ) -> dict:
     """
@@ -736,7 +734,9 @@ def plot_wtrfll(
     not_puls_ievt
                     Event number for physical events
     start_code
-                Starting time of the code
+                    Starting time of the code
+    time_range
+                    First and last timestamps of the time range of interest
     """
     fig = plt.figure(figsize=(12, 10))
     ax = fig.add_subplot(111, projection="3d")
@@ -864,22 +864,18 @@ def plot_wtrfll(
     fig.subplots_adjust(left=-0.21)  # to move the plot towards the left
 
     # define name of pkl file (with info about time cut if present)
-    start_name = start_times[0].astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    end_name = end_times[-1].astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    # start_name = start_times[0].astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    # end_name = end_times[-1].astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
 
     # define name of pkl file (with info about time cut if present)
     pkl_name = analysis.set_pkl_name(
         exp,
         period,
-        run,
         datatype,
         det_type,
         string_number,
         parameter,
-        time_cut,
-        start_code,
-        start_name,
-        end_name,
+        time_range,
     )
 
     pkl.dump(ax, open(f"{output}/pkl-files/par-vs-time/{pkl_name}", "wb"))
@@ -901,6 +897,7 @@ def plot_ch_par_vs_time(
     puls_only_ievt: np.ndarray,
     not_puls_ievt: np.ndarray,
     start_code: str,
+    time_range: list[str],
     pdf=None,
 ) -> dict:
     """Plot time evolution of given parameter for each channel separately.
@@ -929,6 +926,8 @@ def plot_ch_par_vs_time(
                     Event number for physical events
     start_code
                     Starting time of the code
+    time_range
+                    First and last timestamps of the time range of interest
     """
     columns = 1
     rows = len(det_list)
@@ -1117,22 +1116,18 @@ def plot_ch_par_vs_time(
     if len(start_times) == 0 and len(end_times) == 0:
         return None, None
 
-    start_name = start_times[0].astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    end_name = end_times[-1].astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    # start_name = start_times[0].astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    # end_name = end_times[-1].astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
 
     # define name of pkl file (with info about time cut if present)
     pkl_name = analysis.set_pkl_name(
         exp,
         period,
-        run,
         datatype,
         det_type,
         string_number,
         parameter,
-        time_cut,
-        start_code,
-        start_name,
-        end_name,
+        time_range,
     )
 
     fig.tight_layout()

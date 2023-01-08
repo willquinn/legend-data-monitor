@@ -15,8 +15,8 @@
   "file_keys": "",
   "datatype": "phy",
   "det_type": {
-    "spms": true,
-    "geds": false,
+    "spms": false,
+    "geds": true,
     "ch000": false
   },
   "par_to_plot": {
@@ -72,12 +72,12 @@
     "start_date": "22/09/2022",
     "start_hour": "09:34:00",
     "end_date": "22/09/2022",
-    "end_hour": "16:10:00"
+    "end_hour": "11:10:00"
   },
   "last_hours": {
     "enabled": false,
     "prod_time": {
-      "days": 48,
+      "days": 120,
       "hours": 0,
       "minutes": 0
     }

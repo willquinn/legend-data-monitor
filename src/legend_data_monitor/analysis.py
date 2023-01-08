@@ -463,7 +463,11 @@ def load_dsp_files(time_cut: list[str], start_code: str):
         for avail_run in avail_runs:
             full_paths.append(os.path.join(path, "dsp", datatype, period, avail_run))
     else:
-        full_paths.append(os.path.join(path, "dsp", datatype, period, run))
+        if isinstance(run, str):
+            full_paths.append(os.path.join(path, "dsp", datatype, period, run))
+        if isinstance(run, list):
+            for r in run:
+                full_paths.append(os.path.join(path, "dsp", datatype, period, r))
 
     # get list of lh5 files in chronological order
     lh5_files = []
@@ -481,24 +485,24 @@ def load_dsp_files(time_cut: list[str], start_code: str):
 
     # keep 'cal' or 'phy' data
     if datatype == "cal":
-        runs = [file for file in lh5_files if "cal" in file]
+        loaded_files = [file for file in lh5_files if "cal" in file]
     if datatype == "phy":
-        runs = [file for file in lh5_files if "phy" in file]
+        loaded_files = [file for file in lh5_files if "phy" in file]
 
     # get time cuts info
     time_cut = timecut.build_timecut_list(time_window, last_hours)
 
     # apply time cut to lh5 filenames
     if len(time_cut) == 3:
-        runs = timecut.cut_below_threshold_filelist(
-            full_path, runs, time_cut, start_code
+        loaded_files = timecut.cut_below_threshold_filelist(
+            full_path, loaded_files, time_cut, start_code
         )
     elif len(time_cut) == 4:
-        runs = timecut.cut_min_max_filelist(full_path, runs, time_cut)
+        loaded_files = timecut.cut_min_max_filelist(full_path, loaded_files, time_cut)
 
     # get full file paths
     lh5_files = []
-    for lh5_file in runs:
+    for lh5_file in loaded_files:
         run_no = lh5_file.split("-")[-4]
         lh5_files.append(os.path.join(path, "dsp", datatype, period, run_no, lh5_file))
 
@@ -513,6 +517,70 @@ def load_dsp_files(time_cut: list[str], start_code: str):
             sys.exit(1)
 
     return dsp_files
+
+
+def get_files_timestamps(time_cut: list[str], start_code: str):
+    """
+    Get the first and last timestamps of the time range of interest.
+
+    Parameters
+    ----------
+    time_cut
+                List with info about time cuts
+    start_code
+                Starting time of the code
+    """
+    if time_window["enabled"] is True or last_hours["enabled"] is True:
+        if run == "" and file_keys == "":
+            first_timestamp, last_timestamp = timecut.time_dates(time_cut, start_code)
+        else:
+            logging.error("Too many time selections are enabled, pick one!")
+            sys.exit(1)
+
+    if time_window["enabled"] is False and last_hours["enabled"] is False:
+        if run != "" and file_keys != "":
+            logging.error("Too many time selections are enabled, pick one!")
+            sys.exit(1)
+
+        # keys selection
+        if run == "" and file_keys != "":
+            # it's a list
+            if isinstance(file_keys, list):
+                # sorting files based on timestamps
+                files = sorted(
+                    file_keys,
+                    key=lambda file: int(
+                        ((file.split("-")[4]).split("Z")[0]).split("T")[0]
+                        + ((file.split("-")[4]).split("Z")[0]).split("T")[1]
+                    ),
+                )
+            # it's a file
+            else:
+                with open(file_keys) as f:
+                    lines = f.readlines()
+                lines = [line.strip("\n") for line in lines]
+                # sorting files based on timestamps
+                files = sorted(
+                    lines,
+                    key=lambda file: int(
+                        ((file.split("-")[4]).split("Z")[0]).split("T")[0]
+                        + ((file.split("-")[4]).split("Z")[0]).split("T")[1]
+                    ),
+                )
+            first_file = files[0]
+            last_file = files[-1]
+            first_timestamp = (first_file.split("-"))[4]
+            last_timestamp = (last_file.split("-"))[4]
+
+        # run(s) selection OR everything
+        if (run != "" and file_keys == "") or (run == "" and file_keys == ""):
+            files = load_dsp_files(time_cut, start_code)
+            first_file = files[0]
+            last_file = files[-1]
+            first_timestamp = ((first_file.split("/")[-1]).split("-"))[4]
+            last_timestamp = ((last_file.split("/")[-1]).split("-"))[4]
+
+    return [first_timestamp, last_timestamp]
 
 
 def check_par_values(
@@ -892,20 +960,16 @@ def get_mean(
 
 
 def set_pkl_name(
-    exp,
-    period,
-    run,
-    datatype,
-    det_type,
-    string_number,
-    parameter,
-    time_cut,
-    start_code,
-    start_name,
-    end_name,
+    exp: str,
+    period: str,
+    datatype: str,
+    det_type: str,
+    string_number: str,
+    parameter: str,
+    time_range: list[str],
 ):
     """
-    Set the pkl filename.
+    Set the pkl file's name.
 
     Parameters
     ----------
@@ -923,99 +987,28 @@ def set_pkl_name(
             Number of the string under study
     parameter
             Parameter to plot
-    time_cut
-            List with info about time cuts
-    start_code
-            Starting time of the code
-    start_name
-            String with timestamp of first event
-    end_name
-            String with timestamp of last event
+    time_range
+            First and last timestamps of the time range of interest
     """
-    run_name = ""
-    if isinstance(run, str):
-        run_name = run
-    elif isinstance(run, list):
-        for r in run:
-            run_name = run_name + r + "-"
-    run_name = run_name[:-1]
+    pkl_name = (
+        exp
+        + "-"
+        + period
+        + "-"
+        + datatype
+        + "-"
+        + time_range[0]
+        + "_"
+        + time_range[1]
+        + "-"
+        + parameter
+    )
 
-    if run:
-        # define name of pkl file (with info about time cut if present)
-        if len(time_cut) != 0:
-            start, end = timecut.time_dates(time_cut, start_code)
-            pkl_name = (
-                exp
-                + "-"
-                + period
-                + "-"
-                + run
-                + "-"
-                + datatype
-                + "-"
-                + start
-                + "_"
-                + end
-                + "-"
-                + parameter
-            )
-        else:
-            pkl_name = (
-                exp
-                + "-"
-                + period
-                + "-"
-                # + run_name
-                # + "-"
-                + start_name
-                + "-"
-                + end_name
-                + "-"
-                + datatype
-                + "-"
-                + parameter
-            )
-        if det_type == "geds":
-            pkl_name += "-S" + string_number + ".pkl"
-        if det_type == "spms":
-            pkl_name += "-" + string_number + ".pkl"
-        if det_type == "ch000":
-            pkl_name += "-ch000.pkl"
-    else:
-        if len(time_cut) != 0:
-            start, end = timecut.time_dates(time_cut, start_code)
-            pkl_name = (
-                exp
-                + "-"
-                + period
-                + "-"
-                + datatype
-                + "-"
-                + start
-                + "_"
-                + end
-                + "-"
-                + parameter
-            )
-        else:
-            pkl_name = (
-                exp
-                + "-"
-                + period
-                + "-"
-                + datatype
-                + "-"
-                + start_name
-                + "-"
-                + end_name
-                + "-"
-                + parameter
-            )
-        if det_type == "geds":
-            pkl_name += "-S" + string_number + ".pkl"
-        if det_type == "spms":
-            pkl_name += "-" + string_number + ".pkl"
-        if det_type == "ch000":
-            pkl_name += "-ch000.pkl"
+    if det_type == "geds":
+        pkl_name += "-S" + string_number + ".pkl"
+    if det_type == "spms":
+        pkl_name += "-" + string_number + ".pkl"
+    if det_type == "ch000":
+        pkl_name += "-ch000.pkl"
 
     return pkl_name
