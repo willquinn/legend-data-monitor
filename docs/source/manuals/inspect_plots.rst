@@ -32,7 +32,7 @@ for all germanium strings using L60 data):
     ├── json-files/
     │   └── l60-p01-phy_20220922T093400Z_20220922T161000Z.json
     ├── log-files/
-    │   └── l60-p01--phy_20220922T093400Z_20220922T161000Z.log
+    │   └── l60-p01-phy_20220922T093400Z_20220922T161000Z.log
     ├── pdf-files/
     │   ├── heatmaps/
     │   │   └── l60-p01-phy_20220922T093400Z_20220922T161000Z.pdf
@@ -40,7 +40,7 @@ for all germanium strings using L60 data):
     │       └── l60-p01-phy_20220922T093400Z_20220922T161000Z.pdf
     └── pkl-files/
         ├── heatmaps/
-        │   └── l60-p01--20220922T093400Z_20220922T161000Z-baseline.pkl
+        │   └── l60-p01-phy-20220922T093400Z_20220922T161000Z-baseline.pkl
         └── par-vs-time/
             └── l60-p01-phy-20220922T093400Z_20220922T161000Z-baseline-S1.pkl
             └── l60-p01-phy-20220922T093400Z_20220922T161000Z-baseline-S2.pkl
@@ -61,7 +61,7 @@ In particular,
   * ``exp`` identifies the experiment (e.g. *l60*)
   * ``period`` identifies a certain period of data taking (e.g. *p01*)
   * ``datatype`` denotes the run type (e.g. *phy*, *cal*, ...)
-  * ``time_interval``, if present, has the format ``start_stop`` where ``start`` is the initial timestamp in UTC+00 format (e.g. *20220922T093400Z*), while ``stop`` is the final timestamp in UTC+00 format (e.g. *20220922T161000Z*)
+  * ``time_interval`` has the format ``start_stop``, where ``start`` is the initial timestamp in UTC+00 format (e.g. *20220922T093400Z*), while ``stop`` is the final timestamp in UTC+00 format (e.g. *20220922T161000Z*)
 
 Inspect plots
 -------------

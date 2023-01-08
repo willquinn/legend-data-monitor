@@ -4,18 +4,24 @@ from datetime import datetime, timedelta
 
 import numpy as np
 import pandas as pd
+import pygama.lgdo.lh5_store as lh5
 
 from . import analysis
 
 j_config, j_par, _ = analysis.read_json_files()
+version = j_config[0]["path"]["version"]
 keep_puls_pars = j_config[6]["pulser"]["keep_puls_pars"]
 keep_phys_pars = j_config[6]["pulser"]["keep_phys_pars"]
 no_variation_pars = j_config[6]["plot_values"]["no_variation_pars"]
 qc_flag = j_config[6]["quality_cuts"]
+qc_version = j_config[6]["quality_cuts"]["version"]["QualityCuts_flag"][
+    "apply_to_version"
+]
+is_qc_version = j_config[6]["quality_cuts"]["version"]["isQC_flag"]["apply_to_version"]
 
 
 def load_parameter(
-    data: pd.DataFrame,
+    data: pd.DataFrame | list[str],
     parameter: str,
     detector: str,
     det_type: str,
@@ -31,7 +37,7 @@ def load_parameter(
     Parameters
     ----------
     data
-                    Pandas dataframes containing dsp/hit data
+                    Pandas dataframes containing dsp/hit data or list of dsp files
     parameter
                     Parameter to plot
     detector
@@ -50,16 +56,20 @@ def load_parameter(
                     Starting time of the code
     """
     no_cut_pars = ["event_rate", "K_lines"]
-    utime_array = data["timestamp"]
+    qc_method = analysis.get_qc_method(version, qc_version, is_qc_version)
+
+    if det_type == "spms":
+        utime_array = lh5.load_nda(data, ["timestamp"], detector + "/dsp")[
+            "timestamp"
+        ]  # <- remove it when DataLoader is working for spms too!
+    else:
+        utime_array = data["timestamp"]
 
     if all_ievt != [] and puls_only_ievt != [] and not_puls_ievt != []:
-
         det_only_index = np.isin(all_ievt, not_puls_ievt)
         puls_only_index = np.isin(all_ievt, puls_only_ievt)
-
         if parameter in keep_puls_pars:
             utime_array = utime_array[puls_only_index]
-
         if parameter in keep_phys_pars:
             utime_array = utime_array[det_only_index]
 
@@ -71,7 +81,7 @@ def load_parameter(
             keep_evt_index = det_only_index
         else:
             keep_evt_index = []
-        quality_index = analysis.get_qc_ievt(data["Quality_cuts"], keep_evt_index)
+        quality_index = analysis.get_qc_ievt(data[qc_method], keep_evt_index)
         utime_array = utime_array[quality_index]
 
     # cutting time array according to time selection
@@ -82,9 +92,17 @@ def load_parameter(
         return [], [], []
 
     if parameter == "energy_in_pe" and det_type == "spms":
-        par_array = data["energy_in_pe"]
+        hit_files = [dsp_file.replace("dsp", "hit") for dsp_file in data]
+        par_array = lh5.load_nda(hit_files, ["energy_in_pe"], detector + "/hit")[
+            "energy_in_pe"
+        ]
+        # par_array = data["energy_in_pe"] # <-- use it when DataLoader is working for spms
     elif parameter == "trigger_pos" and det_type == "spms":
-        par_array = data["trigger_pos"]
+        hit_files = [dsp_file.replace("dsp", "hit") for dsp_file in data]
+        par_array = lh5.load_nda(hit_files, ["trigger_pos"], detector + "/hit")[
+            "trigger_pos"
+        ]
+        # par_array = data["trigger_pos"]  # <-- use it when DataLoader is working for spms
     elif parameter == "event_rate":
         par_array, utime_array_cut = event_rate(
             data,
@@ -208,7 +226,8 @@ def event_rate(
 
     # for spms, we keep timestamp entries only if there's a non-null energy release
     if det_type == "spms":
-        energies = data["energies"]
+        # energies = data["energies"] # <- use it when the DataLoader will work for spms and remove the following line
+        energies = lh5.load_nda(data, ["energies"], detector + "/dsp")["energies"]
 
         # remove nan entries
         energies = [entry[~np.isnan(entry)] for entry in energies]
@@ -268,17 +287,16 @@ def event_rate(
         len_par = [no for no in no_hits]
         timestamp = [t for i, t in enumerate(timestamp) for _ in range(len_par[i])]
 
-    # first_entry = data["timestamp"][0]
-    date_time = [
-        "20220914",
-        "130000",
-    ]  # TO FIX (((dsp_files[0].split("/")[-1]).split("-")[4]).split("Z")[0]).split("T")
+    # get the date+time of the first file included in the time range of interest
+    if det_type != "spms":  # <- remove it when the DataLoader will work for spms!
+        data = analysis.load_dsp_files(time_cut, start_code)
+    date_time = (((data[0].split("/")[-1]).split("-")[4]).split("Z")[0]).split("T")
     run_start = datetime.strptime(date_time[0] + date_time[1], "%Y%m%d%H%M%S")
     run_start = datetime.strptime(str(run_start), "%Y-%m-%d %H:%M:%S")
 
     i = 0
     j = datetime.timestamp(run_start + timedelta(days=0, hours=2, minutes=0))
-    dt = j_config[6]["Other-par"]["event_rate"]["dt"]
+    dt = j_config[6]["par-info"]["event_rate"]["dt"]
 
     while j + dt <= timestamp[-1]:
         num = 0
@@ -290,7 +308,7 @@ def event_rate(
             times.append(j)
         j += dt
 
-    units = j_config[6]["Other-par"]["event_rate"]["units"]
+    units = j_config[6]["par-info"]["event_rate"]["units"]
     if units == "mHz":
         fact = 1000
     if units == "Hz":

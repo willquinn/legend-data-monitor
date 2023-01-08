@@ -12,16 +12,16 @@
   },
   "period": "p01",
   "run": "",
-  "file_list": "",
+  "file_keys": "",
   "datatype": "phy",
   "det_type": {
-    "spms": false,
-    "geds": true,
+    "spms": true,
+    "geds": false,
     "ch000": false
   },
   "par_to_plot": {
     "README": "Select here the parameters you want to plot for spms, geds and channel 0.",
-    "spms": ["energy_in_pe", "energies"],
+    "spms": ["event_rate"],
     "geds": ["baseline"],
     "ch000": ["baseline"],
     "pulser": {
@@ -41,7 +41,17 @@
       "README": "Specify for which detector type you want to apply quality cuts.",
       "spms": false,
       "geds": false,
-      "ch000": false
+      "ch000": false,
+      "version": {
+        "README": "Depending on the selected version of files, different methods of quality cuts are enabled in hit files. Specify below the versions that use different hit flags for quality cuts.",
+        "QualityCuts_flag": {
+          "apply_to_version": "<=v06.00"
+        },
+        "isQC_flag": {
+          "which": "is_valid_0vbb",
+          "apply_to_version": ">v06.00"
+        }
+      }
     },
     "plot_values": {
       "README": "Specify here the parameters for which you want the absolute value (and not the percentage variation wrt the mean value).",
@@ -53,19 +63,17 @@
         "AoE_Corrected"
       ]
     },
-    "Available-par": {
-      "Other-par": {
-        "event_rate": {
-          "README": "Event rate. Change 'dt' and 'units' if needed. 'dt' is the time interval (in [s]) in which rate is evaluated: rate=cts/dt. 'units' can be chosen among: mHz, Hz, kHz.",
-          "dt": 600,
-          "units": "Hz"
-        }
+    "par-info": {
+      "event_rate": {
+        "README": "Event rate. Change 'dt' and 'units' if needed. 'dt' is the time interval (in [s]) in which rate is evaluated: rate=cts/dt. 'units' can be chosen among: mHz, Hz, kHz.",
+        "dt": 600,
+        "units": "Hz"
       }
     }
   },
   "plot_style": {
     "README": "Specify here which parameter you want to plot in 3D. The other parameters will be automatically plotted in 2D. Set to true 'par_average' if you want to average over 'step' entries, otherwise set it to false.",
-    "three_dim_pars": ["baseline"],
+    "three_dim_pars": [],
     "par_average": true,
     "avg_interval": 10
   },
@@ -74,12 +82,12 @@
     "start_date": "22/09/2022",
     "start_hour": "09:34:00",
     "end_date": "22/09/2022",
-    "end_hour": "16:10:00"
+    "end_hour": "11:10:00"
   },
   "last_hours": {
     "enabled": false,
     "prod_time": {
-      "days": 48,
+      "days": 120,
       "hours": 0,
       "minutes": 0
     }
@@ -94,5 +102,9 @@
     "README": "Choose the time format of your plots: day/month-time, day/month, time",
     "frmt": "day/month-time"
   },
-  "verbose": true
+  "verbose": true,
+  "no_avail_chs": {
+    "geds": [24, 10, 41],
+    "spms": [49, 71, 72, 81, 91, 50, 70, 73, 80, 83, 85, 47]
+  }
 }
