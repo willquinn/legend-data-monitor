@@ -265,9 +265,30 @@ def get_qc_method(version: str, qc_version: str, is_qc_version: str):
     # if True, we use 'Quality_cuts' as quality cuts
     if ops[qc_version[:-6]](version, qc_version[-6:]):
         qc_method = "Quality_cuts"
+
     # if True, we use 'is_valid_0vbb' as quality cuts
     elif ops[is_qc_version[:-6]](version, is_qc_version[-6:]):
-        qc_method = j_config[6]["quality_cuts"]["version"]["isQC_flag"]
+        # get available parameters in hit files
+        config_hit_file_path = files_path + version + "/inputs/config/tier_hit/"
+        config_hit_file = [
+            config_hit_file_path + f
+            for f in os.listdir(config_hit_file_path)
+            if "ICPC" in f
+        ][0]
+        with open(config_hit_file) as d:
+            hit_dict = json.load(d)
+        avail_hit_pars = hit_dict["outputs"]
+
+        # check if the wanted selection has been implemented in the version of interest or not
+        config_selection = j_config[6]["quality_cuts"]["version"]["isQC_flag"]["which"]
+        if config_selection in avail_hit_pars:
+            qc_method = j_config[6]["quality_cuts"]["version"]["isQC_flag"]["which"]
+        else:
+            logging.error(
+                f"'{config_selection}' has not been implemented in version {version}, try again with another flag, another version in {files_path}!\n(...or check quality cut versions in config file...)"
+            )
+            sys.exit(1)
+
     else:
         logging.error(
             "There is a conflict among files' version and quality cuts versions, check it!"
@@ -319,8 +340,8 @@ def load_df_cols(par_to_plot: list[str], det_type: str):
 
 def load_geds():
     """Load channel map for geds."""
-    config_path = j_config[0]["path"]["geds-config"]
-    with open(config_path) as d:
+    config_file = j_config[0]["path"]["geds-config"]
+    with open(config_file) as d:
         channel_map = json.load(d)
     geds_dict = channel_map["hardware_configuration"]["channel_map"]
 
@@ -329,8 +350,8 @@ def load_geds():
 
 def load_spms():
     """Load channel map for spms."""
-    config_path = j_config[0]["path"]["spms-config"]
-    with open(config_path) as d:
+    config_file = j_config[0]["path"]["spms-config"]
+    with open(config_file) as d:
         channel_map = json.load(d)
     spms_dict = channel_map
 
