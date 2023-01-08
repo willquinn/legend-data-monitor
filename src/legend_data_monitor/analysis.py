@@ -3,16 +3,20 @@ from __future__ import annotations
 import importlib.resources
 import json
 import logging
+import operator
 import os
+import sys
 from datetime import datetime, timedelta
 
 import numpy as np
 import pandas as pd
+import pygama.lgdo.lh5_store as lh5
 from pygama.flow import DataLoader
 
 from . import timecut
 
 pkg = importlib.resources.files("legend_data_monitor")
+ops = {"<=": operator.le, "<": operator.lt, ">=": operator.ge, ">": operator.gt}
 
 
 def read_json_files():
@@ -30,7 +34,7 @@ def read_json_files():
     j_config.append(data_config["run_info"])  # 0
     j_config.append(data_config["period"])  # 1
     j_config.append(data_config["run"])  # 2
-    j_config.append(data_config["file_list"])  # 3
+    j_config.append(data_config["file_keys"])  # 3
     j_config.append(data_config["datatype"])  # 4
     j_config.append(data_config["det_type"])  # 5
     j_config.append(data_config["par_to_plot"])  # 6
@@ -40,6 +44,7 @@ def read_json_files():
     j_config.append(data_config["status"])  # 10
     j_config.append(data_config["time-format"])  # 11
     j_config.append(data_config["verbose"])  # 12
+    j_config.append(data_config["no_avail_chs"])  # 13
 
     j_par.append(data_par["par_to_plot"])  # 0
 
@@ -56,12 +61,19 @@ version = j_config[0]["path"]["version"]
 output = j_config[0]["path"]["output"]
 period = j_config[1]
 run = j_config[2]
-filelist = j_config[3]
+file_keys = j_config[3]
 datatype = j_config[4]
 keep_puls_pars = j_config[6]["pulser"]["keep_puls_pars"]
 keep_phys_pars = j_config[6]["pulser"]["keep_phys_pars"]
 keep_phys_pars = j_config[6]["pulser"]["keep_phys_pars"]
 qc_flag = j_config[6]["quality_cuts"]
+qc_version = j_config[6]["quality_cuts"]["version"]["QualityCuts_flag"][
+    "apply_to_version"
+]
+is_qc_version = j_config[6]["quality_cuts"]["version"]["isQC_flag"]["apply_to_version"]
+time_window = j_config[8]
+last_hours = j_config[9]
+verbose = j_config[12]
 
 
 def write_config(
@@ -196,12 +208,15 @@ def set_query(time_cut: list, start_code: str, run: str | list[str]):
     """
     query = ""
 
-    # Reading from file
-    if filelist:
-        with open(filelist) as f:
-            lines = f.readlines()
-        lines = [line.strip("\n") for line in lines]
-        query = lines
+    # Reading from file or list of keys
+    if file_keys != "":
+        if isinstance(file_keys, list):
+            query = file_keys
+        else:
+            with open(file_keys) as f:
+                lines = f.readlines()
+            lines = [line.strip("\n") for line in lines]
+            query = lines
 
     # Applying time cut
     if len(time_cut) > 0:
@@ -209,25 +224,78 @@ def set_query(time_cut: list, start_code: str, run: str | list[str]):
         start_datetime = datetime.strptime(start, "%Y%m%dT%H%M%SZ")
         start_datetime = start_datetime - timedelta(minutes=120)
         start = start_datetime.strftime("%Y%m%dT%H%M%SZ")
-        query = query + f"timestamp > '{start}' and timestamp < '{stop}'"
+        if query != "":
+            query += " and "
+        query += f"timestamp > '{start}' and timestamp < '{stop}'"
 
     # Applying run cut
     if run:
         if query != "":
-            query = query + " and "
+            query += " and "
         if isinstance(run, str):
-            query = query + f"run == '{run}'"
+            query += f"run == '{run}'"
         elif isinstance(run, list):
             for r in run:
-                query = query + f"run == '{r}' or "
+                query += f"run == '{r}' or "
             # Just the remove the final 'or'
             query = query[:-4]
 
     if query == "":
         logging.error(
-            "Empty query.\nProvide at least a run name, a time interval of a list of files to open."
+            "Empty query: provide at least a run, a time interval or a list of files to open, try again!"
         )
+        sys.exit(1)
+
     return query
+
+
+def get_qc_method(version: str, qc_version: str, is_qc_version: str):
+    """
+    Define the quality cut method to use, depending on the version of processed files under inspection.
+
+    Parameters
+    ----------
+    version
+                Version of processed files under inspection
+    qc_version
+                Version condition for Quality_Cuts flag (eg. "<=v06.00")
+    is_qc_version
+                Version condition for isQC flag (eg. ">v06.00")
+    """
+    # if True, we use 'Quality_cuts' as quality cuts
+    if ops[qc_version[:-6]](version, qc_version[-6:]):
+        qc_method = "Quality_cuts"
+
+    # if True, we use 'is_valid_0vbb' as quality cuts
+    elif ops[is_qc_version[:-6]](version, is_qc_version[-6:]):
+        # get available parameters in hit files
+        config_hit_file_path = files_path + version + "/inputs/config/tier_hit/"
+        config_hit_file = [
+            config_hit_file_path + f
+            for f in os.listdir(config_hit_file_path)
+            if "ICPC" in f
+        ][0]
+        with open(config_hit_file) as d:
+            hit_dict = json.load(d)
+        avail_hit_pars = hit_dict["outputs"]
+
+        # check if the wanted selection has been implemented in the version of interest or not
+        config_selection = j_config[6]["quality_cuts"]["version"]["isQC_flag"]["which"]
+        if config_selection in avail_hit_pars:
+            qc_method = j_config[6]["quality_cuts"]["version"]["isQC_flag"]["which"]
+        else:
+            logging.error(
+                f"'{config_selection}' has not been implemented in version {version}, try again with another flag, another version in {files_path}!\n(...or check quality cut versions in config file...)"
+            )
+            sys.exit(1)
+
+    else:
+        logging.error(
+            "There is a conflict among files' version and quality cuts versions, check it!"
+        )
+        sys.exit(1)
+
+    return qc_method
 
 
 def load_df_cols(par_to_plot: list[str], det_type: str):
@@ -242,6 +310,7 @@ def load_df_cols(par_to_plot: list[str], det_type: str):
                 Type of detector (geds or spms)
     """
     db_parameters = par_to_plot
+
     if "uncal_puls" in db_parameters:
         db_parameters = [db.replace("uncal_puls", "trapTmax") for db in db_parameters]
     if "cal_puls" in db_parameters:
@@ -257,10 +326,13 @@ def load_df_cols(par_to_plot: list[str], det_type: str):
             db_parameters = [
                 db.replace("event_rate", "energies") for db in db_parameters
             ]
-    # problems with QCs
-    # if qc_flag[det_type] is True:
-    #    db_parameters.append("Quality_cuts")
 
+    # load quality cuts, if enabled
+    if qc_flag[det_type] is True:
+        qc_method = get_qc_method(version, qc_version, is_qc_version)
+        db_parameters.append(qc_method)
+
+    # load always timestamps
     db_parameters.append("timestamp")
 
     return db_parameters
@@ -268,8 +340,8 @@ def load_df_cols(par_to_plot: list[str], det_type: str):
 
 def load_geds():
     """Load channel map for geds."""
-    config_path = j_config[0]["path"]["geds-config"]
-    with open(config_path) as d:
+    config_file = j_config[0]["path"]["geds-config"]
+    with open(config_file) as d:
         channel_map = json.load(d)
     geds_dict = channel_map["hardware_configuration"]["channel_map"]
 
@@ -278,8 +350,8 @@ def load_geds():
 
 def load_spms():
     """Load channel map for spms."""
-    config_path = j_config[0]["path"]["spms-config"]
-    with open(config_path) as d:
+    config_file = j_config[0]["path"]["spms-config"]
+    with open(config_file) as d:
         channel_map = json.load(d)
     spms_dict = channel_map
 
@@ -429,6 +501,145 @@ def read_spms(spms_dict: dict):
     string_name = ["top_OB", "bot_OB", "top_IB", "bot_IB"]
 
     return string_tot, string_name, string_tot, string_name
+
+
+def load_dsp_files(time_cut: list[str], start_code: str):
+    """
+    Load dsp files applying the time cut over filenames.
+
+    Parameters
+    ----------
+    time_cut
+                List with info about time cuts
+    start_code
+                Starting time of the code
+    """
+    path = files_path + version + "/generated/tier"
+    avail_runs = os.listdir(path + "/dsp/" + datatype + "/" + period)
+
+    full_paths = []
+    if run == "":
+        for avail_run in avail_runs:
+            full_paths.append(os.path.join(path, "dsp", datatype, period, avail_run))
+    else:
+        if isinstance(run, str):
+            full_paths.append(os.path.join(path, "dsp", datatype, period, run))
+        if isinstance(run, list):
+            for r in run:
+                full_paths.append(os.path.join(path, "dsp", datatype, period, r))
+
+    # get list of lh5 files in chronological order
+    lh5_files = []
+    for full_path in full_paths:
+        for lh5_file in os.listdir(full_path):
+            lh5_files.append(lh5_file)
+
+    lh5_files = sorted(
+        lh5_files,
+        key=lambda file: int(
+            ((file.split("-")[4]).split("Z")[0]).split("T")[0]
+            + ((file.split("-")[4]).split("Z")[0]).split("T")[1]
+        ),
+    )
+
+    # keep 'cal' or 'phy' data
+    if datatype == "cal":
+        loaded_files = [file for file in lh5_files if "cal" in file]
+    if datatype == "phy":
+        loaded_files = [file for file in lh5_files if "phy" in file]
+
+    # get time cuts info
+    time_cut = timecut.build_timecut_list(time_window, last_hours)
+
+    # apply time cut to lh5 filenames
+    if len(time_cut) == 3:
+        loaded_files = timecut.cut_below_threshold_filelist(
+            full_path, loaded_files, time_cut, start_code
+        )
+    elif len(time_cut) == 4:
+        loaded_files = timecut.cut_min_max_filelist(full_path, loaded_files, time_cut)
+
+    # get full file paths
+    lh5_files = []
+    for lh5_file in loaded_files:
+        run_no = lh5_file.split("-")[-4]
+        lh5_files.append(os.path.join(path, "dsp", datatype, period, run_no, lh5_file))
+
+    dsp_files = []
+    for lh5_file in lh5_files:
+        if os.path.isfile(lh5_file.replace("dsp", "hit")):
+            dsp_files.append(lh5_file)
+
+    if len(dsp_files) == 0:
+        if verbose is True:
+            logging.error("There are no files to inspect!")
+            sys.exit(1)
+
+    return dsp_files
+
+
+def get_files_timestamps(time_cut: list[str], start_code: str):
+    """
+    Get the first and last timestamps of the time range of interest.
+
+    Parameters
+    ----------
+    time_cut
+                List with info about time cuts
+    start_code
+                Starting time of the code
+    """
+    if time_window["enabled"] is True or last_hours["enabled"] is True:
+        if run == "" and file_keys == "":
+            first_timestamp, last_timestamp = timecut.time_dates(time_cut, start_code)
+        else:
+            logging.error("Too many time selections are enabled, pick one!")
+            sys.exit(1)
+
+    if time_window["enabled"] is False and last_hours["enabled"] is False:
+        if run != "" and file_keys != "":
+            logging.error("Too many time selections are enabled, pick one!")
+            sys.exit(1)
+
+        # keys selection
+        if run == "" and file_keys != "":
+            # it's a list
+            if isinstance(file_keys, list):
+                # sorting files based on timestamps
+                files = sorted(
+                    file_keys,
+                    key=lambda file: int(
+                        ((file.split("-")[4]).split("Z")[0]).split("T")[0]
+                        + ((file.split("-")[4]).split("Z")[0]).split("T")[1]
+                    ),
+                )
+            # it's a file
+            else:
+                with open(file_keys) as f:
+                    lines = f.readlines()
+                lines = [line.strip("\n") for line in lines]
+                # sorting files based on timestamps
+                files = sorted(
+                    lines,
+                    key=lambda file: int(
+                        ((file.split("-")[4]).split("Z")[0]).split("T")[0]
+                        + ((file.split("-")[4]).split("Z")[0]).split("T")[1]
+                    ),
+                )
+            first_file = files[0]
+            last_file = files[-1]
+            first_timestamp = (first_file.split("-"))[4]
+            last_timestamp = (last_file.split("-"))[4]
+
+        # run(s) selection OR everything
+        if (run != "" and file_keys == "") or (run == "" and file_keys == ""):
+            files = load_dsp_files(time_cut, start_code)
+            first_file = files[0]
+            last_file = files[-1]
+            first_timestamp = ((first_file.split("/")[-1]).split("-"))[4]
+            last_timestamp = ((last_file.split("/")[-1]).split("-"))[4]
+
+    return [first_timestamp, last_timestamp]
 
 
 def check_par_values(
@@ -593,7 +804,41 @@ def get_puls_ievt(query: str):
         puls_ievt.append(idx)
         if entry > high_thr:
             pulser_entry.append(idx)
-        else:
+        if entry < high_thr:
+            not_pulser_entry.append(idx)
+
+    # pulser+physical events
+    puls_ievt = np.array(puls_ievt)
+    # HW pulser+FC entries
+    puls_only_ievt = puls_ievt[np.isin(puls_ievt, pulser_entry)]
+    # physical entries
+    not_puls_ievt = puls_ievt[np.isin(puls_ievt, not_pulser_entry)]
+
+    return puls_ievt, puls_only_ievt, not_puls_ievt
+
+
+def get_puls_ievt_spms(dsp_files: list[str]):
+    """
+    Select pulser events for spms only.
+
+    Parameters
+    ----------
+    dsp_files
+            List of dsp files
+    """
+    wf_max = lh5.load_nda(dsp_files, ["wf_max"], "ch000/dsp/")["wf_max"]
+    baseline = lh5.load_nda(dsp_files, ["baseline"], "ch000/dsp")["baseline"]
+    wf_max = np.subtract(wf_max, baseline)
+    puls_ievt = []
+    pulser_entry = []
+    not_pulser_entry = []
+    high_thr = 12500
+
+    for idx, entry in enumerate(wf_max):
+        puls_ievt.append(idx)
+        if entry > high_thr:
+            pulser_entry.append(idx)
+        if entry < high_thr:
             not_pulser_entry.append(idx)
 
     # pulser+physical events
@@ -774,20 +1019,16 @@ def get_mean(
 
 
 def set_pkl_name(
-    exp,
-    period,
-    run,
-    datatype,
-    det_type,
-    string_number,
-    parameter,
-    time_cut,
-    start_code,
-    start_name,
-    end_name,
+    exp: str,
+    period: str,
+    datatype: str,
+    det_type: str,
+    string_number: str,
+    parameter: str,
+    time_range: list[str],
 ):
     """
-    Set the pkl filename.
+    Set the pkl file's name.
 
     Parameters
     ----------
@@ -805,99 +1046,28 @@ def set_pkl_name(
             Number of the string under study
     parameter
             Parameter to plot
-    time_cut
-            List with info about time cuts
-    start_code
-            Starting time of the code
-    start_name
-            String with timestamp of first event
-    end_name
-            String with timestamp of last event
+    time_range
+            First and last timestamps of the time range of interest
     """
-    run_name = ""
-    if isinstance(run, str):
-        run_name = run
-    elif isinstance(run, list):
-        for r in run:
-            run_name = run_name + r + "-"
-    run_name = run_name[:-1]
+    pkl_name = (
+        exp
+        + "-"
+        + period
+        + "-"
+        + datatype
+        + "-"
+        + time_range[0]
+        + "_"
+        + time_range[1]
+        + "-"
+        + parameter
+    )
 
-    if run:
-        # define name of pkl file (with info about time cut if present)
-        if len(time_cut) != 0:
-            start, end = timecut.time_dates(time_cut, start_code)
-            pkl_name = (
-                exp
-                + "-"
-                + period
-                + "-"
-                + run
-                + "-"
-                + datatype
-                + "-"
-                + start
-                + "_"
-                + end
-                + "-"
-                + parameter
-            )
-        else:
-            pkl_name = (
-                exp
-                + "-"
-                + period
-                + "-"
-                # + run_name
-                # + "-"
-                + start_name
-                + "-"
-                + end_name
-                + "-"
-                + datatype
-                + "-"
-                + parameter
-            )
-        if det_type == "geds":
-            pkl_name += "-S" + string_number + ".pkl"
-        if det_type == "spms":
-            pkl_name += "-" + string_number + ".pkl"
-        if det_type == "ch000":
-            pkl_name += "-ch000.pkl"
-    else:
-        if len(time_cut) != 0:
-            start, end = timecut.time_dates(time_cut, start_code)
-            pkl_name = (
-                exp
-                + "-"
-                + period
-                + "-"
-                + datatype
-                + "-"
-                + start
-                + "_"
-                + end
-                + "-"
-                + parameter
-            )
-        else:
-            pkl_name = (
-                exp
-                + "-"
-                + period
-                + "-"
-                + datatype
-                + "-"
-                + start_name
-                + "-"
-                + end_name
-                + "-"
-                + parameter
-            )
-        if det_type == "geds":
-            pkl_name += "-S" + string_number + ".pkl"
-        if det_type == "spms":
-            pkl_name += "-" + string_number + ".pkl"
-        if det_type == "ch000":
-            pkl_name += "-ch000.pkl"
+    if det_type == "geds":
+        pkl_name += "-S" + string_number + ".pkl"
+    if det_type == "spms":
+        pkl_name += "-" + string_number + ".pkl"
+    if det_type == "ch000":
+        pkl_name += "-ch000.pkl"
 
     return pkl_name

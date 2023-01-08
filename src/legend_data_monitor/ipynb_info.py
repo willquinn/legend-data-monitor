@@ -66,20 +66,27 @@ def get_dates_pars():
         geds_date = sorted(
             list(dict.fromkeys([file.split("-")[-3] for file in geds_list]))
         )
-        # print("\ngeds strings:", geds_map)
-        # print("geds parameters:", geds_par)
     else:
         geds_map = geds_par = geds_date = []
-        # print("\n-> NO data for geds were found")
 
     geds_date_formatted = [get_day_hour(date) for date in geds_date]
     geds_time_option = [
         (key, value) for key, value in zip(geds_date_formatted, geds_date)
     ]
+    # to handle the 'no time cuts' case, even when other time selection are already present
     if "no time cuts" in geds_date_formatted:
-        geds_time_option = [("all", "no_time_cuts")]
-        geds_date = ["no_time_cuts"]
-    # print("geds dates:", geds_date)
+        if len(geds_date) == 1:
+            geds_time_option = [("all", "no_time_cuts")]
+            geds_date = ["no_time_cuts"]
+        if len(geds_date) > 1:
+            geds_time_option.append(("all", "no_time_cuts"))
+            geds_date.append("no_time_cuts")
+    geds_times = [tup for tup in geds_time_option if tup[0] != "no time cuts"]
+    geds_dates = [
+        date
+        for idx, date in enumerate(geds_date)
+        if geds_time_option[idx][0] != "no time cuts"
+    ]
 
     # spms
     if spms_list != []:
@@ -93,19 +100,27 @@ def get_dates_pars():
         spms_date = sorted(
             list(dict.fromkeys([file.split("-")[-3] for file in spms_list]))
         )
-        # print("\nspms barrels:", spms_map)
-        # print("spms parameters:", spms_par)
     else:
         spms_map = spms_par = spms_date = []
-        # print("\n-> NO data for spms were found")
 
     spms_date_formatted = [get_day_hour(date) for date in spms_date]
     spms_time_option = [
         (key, value) for key, value in zip(spms_date_formatted, spms_date)
     ]
+    # to handle the 'no time cuts' case, even when other time selection are already present
     if "no time cuts" in spms_date_formatted:
-        spms_time_option = [("all", "no_time_cuts")]
-        spms_date = ["no_time_cuts"]
+        if len(spms_date) == 1:
+            spms_time_option = [("all", "no_time_cuts")]
+            spms_date = ["no_time_cuts"]
+        if len(spms_date) > 1:
+            spms_time_option.append(("all", "no_time_cuts"))
+            spms_date.append("no_time_cuts")
+    spms_times = [tup for tup in spms_time_option if tup[0] != "no time cuts"]
+    spms_dates = [
+        date
+        for idx, date in enumerate(spms_date)
+        if spms_time_option[idx][0] != "no time cuts"
+    ]
 
     # ch000
     if ch000_list != []:
@@ -115,22 +130,31 @@ def get_dates_pars():
         ch000_date = sorted(
             list(dict.fromkeys([file.split("-")[-3] for file in ch000_list]))
         )
-        # print("\nch000 parameters:", ch000_par)
     else:
         ch000_par = ch000_date = []
-        # print("\n-> NO data for ch000 were found")
 
     ch000_date_formatted = [get_day_hour(date) for date in ch000_date]
     ch000_time_option = [
         (key, value) for key, value in zip(ch000_date_formatted, ch000_date)
     ]
+    # to handle the 'no time cuts' case, even when other time selection are already present
     if "no time cuts" in ch000_date_formatted:
-        ch000_time_option = [("all", "no_time_cuts")]
-        ch000_date = ["no_time_cuts"]
+        if len(ch000_date) == 1:
+            ch000_time_option = [("all", "no_time_cuts")]
+            ch000_date = ["no_time_cuts"]
+        if len(ch000_date) > 1:
+            ch000_time_option.append(("all", "no_time_cuts"))
+            ch000_date.append("no_time_cuts")
+    ch000_times = [tup for tup in ch000_time_option if tup[0] != "no time cuts"]
+    ch000_dates = [
+        date
+        for idx, date in enumerate(ch000_date)
+        if ch000_time_option[idx][0] != "no time cuts"
+    ]
 
-    geds_info = [geds_date, geds_par, geds_map, geds_time_option]
-    spms_info = [spms_date, spms_par, spms_map, spms_time_option]
-    ch000_info = [ch000_date, ch000_par, ch000_time_option]
+    geds_info = [geds_dates, geds_par, geds_map, geds_times]
+    spms_info = [spms_dates, spms_par, spms_map, spms_times]
+    ch000_info = [ch000_dates, ch000_par, ch000_times]
 
     return output, geds_info, spms_info, ch000_info
 
