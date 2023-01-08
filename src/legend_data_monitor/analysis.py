@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib.resources
 import json
 import logging
+import operator
 import os
 import sys
 from datetime import datetime, timedelta
@@ -15,6 +16,7 @@ from pygama.flow import DataLoader
 from . import timecut
 
 pkg = importlib.resources.files("legend_data_monitor")
+ops = {"<=": operator.le, "<": operator.lt, ">=": operator.ge, ">": operator.gt}
 
 
 def read_json_files():
@@ -65,6 +67,10 @@ keep_puls_pars = j_config[6]["pulser"]["keep_puls_pars"]
 keep_phys_pars = j_config[6]["pulser"]["keep_phys_pars"]
 keep_phys_pars = j_config[6]["pulser"]["keep_phys_pars"]
 qc_flag = j_config[6]["quality_cuts"]
+qc_version = j_config[6]["quality_cuts"]["version"]["QualityCuts_flag"][
+    "apply_to_version"
+]
+is_qc_version = j_config[6]["quality_cuts"]["version"]["isQC_flag"]["apply_to_version"]
 time_window = j_config[8]
 last_hours = j_config[9]
 verbose = j_config[12]
@@ -243,6 +249,34 @@ def set_query(time_cut: list, start_code: str, run: str | list[str]):
     return query
 
 
+def get_qc_method(version: str, qc_version: str, is_qc_version: str):
+    """
+    Define the quality cut method to use, depending on the version of processed files under inspection.
+
+    Parameters
+    ----------
+    version
+                Version of processed files under inspection
+    qc_version
+                Version condition for Quality_Cuts flag (eg. "<=v06.00")
+    is_qc_version
+                Version condition for isQC flag (eg. ">v06.00")
+    """
+    # if True, we use 'Quality_cuts' as quality cuts
+    if ops[qc_version[:-6]](version, qc_version[-6:]):
+        qc_method = "Quality_cuts"
+    # if True, we use 'is_valid_0vbb' as quality cuts
+    elif ops[is_qc_version[:-6]](version, is_qc_version[-6:]):
+        qc_method = j_config[6]["quality_cuts"]["version"]["isQC_flag"]
+    else:
+        logging.error(
+            "There is a conflict among files' version and quality cuts versions, check it!"
+        )
+        sys.exit(1)
+
+    return qc_method
+
+
 def load_df_cols(par_to_plot: list[str], det_type: str):
     """
     Load parameters to plot starting from config file input.
@@ -255,6 +289,7 @@ def load_df_cols(par_to_plot: list[str], det_type: str):
                 Type of detector (geds or spms)
     """
     db_parameters = par_to_plot
+
     if "uncal_puls" in db_parameters:
         db_parameters = [db.replace("uncal_puls", "trapTmax") for db in db_parameters]
     if "cal_puls" in db_parameters:
@@ -270,10 +305,13 @@ def load_df_cols(par_to_plot: list[str], det_type: str):
             db_parameters = [
                 db.replace("event_rate", "energies") for db in db_parameters
             ]
-    # problems with QCs
-    # if qc_flag[det_type] is True:
-    #    db_parameters.append("Quality_cuts")
 
+    # load quality cuts, if enabled
+    if qc_flag[det_type] is True:
+        qc_method = get_qc_method(version, qc_version, is_qc_version)
+        db_parameters.append(qc_method)
+
+    # load always timestamps
     db_parameters.append("timestamp")
 
     return db_parameters

@@ -9,10 +9,15 @@ import pygama.lgdo.lh5_store as lh5
 from . import analysis
 
 j_config, j_par, _ = analysis.read_json_files()
+version = j_config[0]["path"]["version"]
 keep_puls_pars = j_config[6]["pulser"]["keep_puls_pars"]
 keep_phys_pars = j_config[6]["pulser"]["keep_phys_pars"]
 no_variation_pars = j_config[6]["plot_values"]["no_variation_pars"]
 qc_flag = j_config[6]["quality_cuts"]
+qc_version = j_config[6]["quality_cuts"]["version"]["QualityCuts_flag"][
+    "apply_to_version"
+]
+is_qc_version = j_config[6]["quality_cuts"]["version"]["isQC_flag"]["apply_to_version"]
 
 
 def load_parameter(
@@ -51,6 +56,8 @@ def load_parameter(
                     Starting time of the code
     """
     no_cut_pars = ["event_rate", "K_lines"]
+    qc_method = analysis.get_qc_method(version, qc_version, is_qc_version)
+
     if det_type == "spms":
         utime_array = lh5.load_nda(data, ["timestamp"], detector + "/dsp")[
             "timestamp"
@@ -74,7 +81,7 @@ def load_parameter(
             keep_evt_index = det_only_index
         else:
             keep_evt_index = []
-        quality_index = analysis.get_qc_ievt(data["Quality_cuts"], keep_evt_index)
+        quality_index = analysis.get_qc_ievt(data[qc_method], keep_evt_index)
         utime_array = utime_array[quality_index]
 
     # cutting time array according to time selection

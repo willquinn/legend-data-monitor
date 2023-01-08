@@ -41,7 +41,17 @@
       "README": "Specify for which detector type you want to apply quality cuts.",
       "spms": false,
       "geds": false,
-      "ch000": false
+      "ch000": false,
+      "version": {
+        "README": "Depending on the selected version of files, different methods of quality cuts are enabled in hit files. Specify below the versions that use different hit flags for quality cuts.",
+        "QualityCuts_flag": {
+          "apply_to_version": "<=v06.00"
+        },
+        "isQC_flag": {
+          "which": "is_valid_0vbb",
+          "apply_to_version": ">v06.00"
+        }
+      }
     },
     "plot_values": {
       "README": "Specify here the parameters for which you want the absolute value (and not the percentage variation wrt the mean value).",

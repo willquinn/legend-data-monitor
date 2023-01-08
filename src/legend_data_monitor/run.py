@@ -23,6 +23,11 @@ filelist = j_config[3]
 datatype = j_config[4]
 det_type = j_config[5]
 par_to_plot = j_config[6]
+qc_flag = par_to_plot["quality_cuts"]
+qc_version = par_to_plot["quality_cuts"]["version"]["QualityCuts_flag"][
+    "apply_to_version"
+]
+is_qc_version = par_to_plot["quality_cuts"]["version"]["isQC_flag"]["apply_to_version"]
 three_dim_pars = j_config[7]["three_dim_pars"]
 time_window = j_config[8]
 last_hours = j_config[9]
@@ -164,10 +169,15 @@ def select_and_plot_run(
                     data = analysis.read_from_dataloader(
                         dbconfig_filename, dlconfig_filename, query, db_parameters
                     )
-
                     logging.error("Geds will be plotted...")
-                    if "timestamp" in geds_par:
-                        geds_par.remove("timestamp")
+
+                    qc_method = analysis.get_qc_method(
+                        version, qc_version, is_qc_version
+                    )
+                    for entry in ["timestamp", qc_method]:
+                        if entry in geds_par:
+                            geds_par.remove(entry)
+
                     for par in geds_par:
                         det_status_dict = {}
                         if par != "timestamp":
