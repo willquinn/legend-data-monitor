@@ -61,7 +61,7 @@ def main():
     # get start and stop for the time range of interest
     time_range = analysis.get_files_timestamps(time_cut, start_code)
     # output log-filenames
-    log_name = f"{log_path}/{exp}-{period}-{run}-{datatype}-{time_range[0]}_{time_range[1]}.log"
+    log_name = f"{log_path}/{exp}-{period}-{datatype}-{time_range[0]}_{time_range[1]}.log"
 
     # set up logging to file
     logging.basicConfig(
