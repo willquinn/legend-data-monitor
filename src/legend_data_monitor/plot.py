@@ -176,8 +176,8 @@ def plot_par_vs_time(
             continue
 
         # add entries for the legend
-        card = det_dict[detector]["daq"]["board_slot"]
-        ch_orca = det_dict[detector]["daq"]["board_ch"]
+        # card = det_dict[detector]["daq"]["board_slot"]
+        # ch_orca = det_dict[detector]["daq"]["board_ch"]
         if det_type == "geds":
             name = det_dict[detector]["det_id"]
             string_no = det_dict[detector]["string"]["number"]
@@ -185,7 +185,8 @@ def plot_par_vs_time(
             lab = f"s{string_no}-p{string_pos}-{detector}-{name}"
             col = j_plot[1][detector]
         if det_type == "spms":
-            lab = f"{detector} - {card},{ch_orca}"
+            name = det_dict[detector]["det_id"]
+            lab = f"{name} - {detector}"
             col = j_plot[0][str(detector)]
         handle_list.append(
             mpatches.Patch(
@@ -354,7 +355,7 @@ def plot_par_vs_time_ch000(
     time_cut
                     List with info about time cuts
     det_type
-                    Type of detector (pulser)
+                    Type of detector (ch000)
     all_ievt
                     Event number for all events
     puls_only_ievt
@@ -587,7 +588,8 @@ def plot_par_vs_time_2d(
                 string_pos = det_dict[detector]["string"]["position"]
                 lbl = f"{name}\ns{string_no}-p{string_pos}-{detector}"
             else:
-                lbl = f"{detector}"
+                name = det_dict[detector]["det_id"]
+                lbl = f"{name} - {detector}"
 
             _, par_array, utime_array = parameters.load_parameter(
                 data,  # use 'new_data' when DataLoader is working for spms
@@ -759,7 +761,8 @@ def plot_wtrfll(
                 string_pos = det_dict[detector]["string"]["position"]
                 new_label = f"s{string_no}-p{string_pos}-{detector}-{name}"
             else:
-                name = f"{detector}"
+                name = det_dict[detector]["det_id"]
+                new_label = f"{name} - {detector}"
             y_values.append(new_label)
             if det_type == "spms":
                 col = j_plot[0][str(detector)]
@@ -990,7 +993,8 @@ def plot_ch_par_vs_time(
                 string_pos = det_dict[detector]["string"]["position"]
                 lbl = f"{name}\ns{string_no}-p{string_pos}-{detector}"
             else:
-                lbl = f"{detector}"
+                name = det_dict[detector]["det_id"]
+                lbl = f"{name} - {detector}"
             if det_type == "spms":
                 col = j_plot[0][str(detector)]
             if det_type == "geds":
@@ -1038,29 +1042,24 @@ def plot_ch_par_vs_time(
                     + "]"
                 )
 
-            # plot (+rebinning)
+            # plot with rebinning
             if parameter != "event_rate":
                 axes.plot(times, par_list, color="darkgray", linewidth=1, label=lbl)
                 par_avg, utime_avg = analysis.avg_over_minutes(par_array, utime_array)
                 times_avg = [datetime.fromtimestamp(t) for t in utime_avg]
                 axes.plot(times_avg, par_avg, color=col, linewidth=2)
-                # axes.set_ylim(-5,5)
-                # if parameter == "uncal_puls": axes.set_ylim(-0.6,0.6)
-                # elif parameter == "baseline": axes.set_ylim(-5,5)
-                # elif parameter == "bl_std": axes.set_ylim(-40,40)
+            # plot without rebinning
             else:
-                if parameter == "event_rate":
-                    axes.plot(
-                        times,
-                        par_list,
-                        color=col,
-                        linewidth=0,
-                        marker=".",
-                        markersize=10,
-                        label=lbl,
-                    )
-                else:
-                    axes.plot(times, par_list, color=col, linewidth=1, label=lbl)
+                axes.plot(
+                    times,
+                    par_list,
+                    color=col,
+                    linewidth=0,
+                    marker=".",
+                    markersize=10,
+                    label=lbl,
+                )
+
             axes.legend(
                 bbox_to_anchor=(1.01, 1.0),
                 loc="upper left",
