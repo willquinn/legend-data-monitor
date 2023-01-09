@@ -16,7 +16,7 @@ The core of *legend-data-monitor* is the configuration file. If modified, one ca
 the time variation of parameters specified in that json file.
 In the following, we describe the structure of this json file in detail.
 First of all, one can specify the type of run one wants to study, plus the absolute path to processed lh5 files
-(``lh5-files``), orca files (``orca-files``), channel maps (``geds-config``, ``spms-config``), output folder
+(``lh5-files``), orca files (``orca-files``), channel maps (``channel-map``), output folder
 (``output``), plus the processing version (``version``) and the period (``p01``):
 
 .. code-block:: json
@@ -28,8 +28,7 @@ First of all, one can specify the type of run one wants to study, plus the absol
       "lh5-files": "/data1/shared/l60/l60-prodven-v1/prod-ref/",
       "version": "v06.00",
       "orca-files": "/data1/shared/l60/l60-daq/daq-v01/",
-      "geds-config": "/data1/users/calgaro/legend-data-monitor/src/legend_data_monitor/settings/L60-p01-r022-T%-all-config.json",
-      "spms-config": "/data1/users/calgaro/legend-data-monitor/src/legend_data_monitor/settings/SiPM-config.json",
+      "channel-map": "/data1/users/calgaro/legend-data-monitor/src/legend_data_monitor/settings/",
       "output": "/data1/users/calgaro/legend-data-monitor/out/"
     }
   },
