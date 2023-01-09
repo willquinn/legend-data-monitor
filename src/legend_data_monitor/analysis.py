@@ -340,20 +340,124 @@ def load_df_cols(par_to_plot: list[str], det_type: str):
 
 def load_geds():
     """Load channel map for geds."""
-    config_file = j_config[0]["path"]["geds-config"]
-    with open(config_file) as d:
-        channel_map = json.load(d)
-    geds_dict = channel_map["hardware_configuration"]["channel_map"]
+    map_path = j_config[0]["path"]["channel-map"]
+
+    if exp == "l60":
+        map_file = map_path + f"{exp.upper()}-{period}-r%-T%-ICPC-config.json"
+        with open(map_file) as f:
+            channel_map = json.load(f)
+        geds_dict = channel_map["hardware_configuration"]["channel_map"]
+
+    if exp == "l200":
+        map_file = map_path + f"{exp.upper()}-{period}-r%-T%-all-config.json"
+        with open(map_file) as f:
+            channel_map = json.load(f)
+
+        geds_dict = {}
+        for k1, v1 in channel_map.items():
+            if "S0" not in k1:  # keep only geds
+                info_dict = {}
+                info_dict["system"] = "ged"
+                info_dict["det_type"] = "icpc"
+                info_dict["hardware_status"] = "--"
+                info_dict["software_status"] = "--"
+                info_dict["electronics"] = "--"
+                for k2, v2 in v1.items():
+                    if k2 == "detname":
+                        info_dict["det_id"] = v2
+                    if k2 == "location":
+                        info_dict[k2] = {
+                            "number": v2["string"],
+                            "position": v2["position"],
+                        }
+                    if k2 == "daq":
+                        info_dict[k2] = {
+                            "board_ch": v1[k2]["channel"],  # check if it's ok
+                            "board_slot": v2["card"]["id"],  # check if it's ok
+                            "board_id": v2["card"]["address"],
+                            "crate": v1[k2]["crate"],
+                        }
+                    if k2 == "voltage":
+                        info_dict["high_voltage"] = {
+                            "board_chan": v1[k2]["channel"],
+                            "cable": "--",
+                            "flange_id": "?",  # check it
+                            "flange_pos": "--",
+                            "crate": "0",  # check if it's ok
+                        }
+                    if k2 == "electronics":
+                        info_dict[k2] = {
+                            "fanout_card": "?",  # check it
+                            "lmfe_id": v2["cc4"]["id"],  # check if it's ok
+                            "raspberrypi": "?",  # check it
+                            "cc4_ch": v2["cc4"]["channel"],
+                            "head_card_ana": "?",  # check it
+                            "head_card_dig": "?",  # check it
+                        }
+                # get the FC channel
+                channel = v1["daq"]["fc_channel"]
+                if channel < 10:
+                    channel = f"ch00{channel}"
+                elif channel > 9 and channel < 100:
+                    channel = f"ch0{channel}"
+                else:
+                    channel = f"ch{channel}"
+                # final dictionary
+                geds_dict[channel] = info_dict
 
     return geds_dict
 
 
 def load_spms():
     """Load channel map for spms."""
-    config_file = j_config[0]["path"]["spms-config"]
-    with open(config_file) as d:
-        channel_map = json.load(d)
-    spms_dict = channel_map
+    map_path = j_config[0]["path"]["channel-map"]
+
+    if exp == "l60":
+        map_file = map_path + f"{exp.upper()}-{period}-r%-T%-SiPM-config.json"
+        with open(map_file) as f:
+            spms_dict = json.load(f)
+
+    if exp == "l200":
+        # we keep using L60 map because L200 map has no info about spms positions
+        map_file = map_path + f"L60-{period}-r%-T%-SiPM-config.json"
+        with open(map_file) as f:
+            spms_dict = json.load(f)
+
+        """
+        # a future possible dictionary for L200
+        map_file = map_path + f"{exp.upper()}-{period}-r%-T%-all-config.json"
+        with open(map_file) as f:
+            channel_map = json.load(f)
+
+        spms_dict = {}
+        for k1,v1 in channel_map.items():
+            if 'S0' in k1: # keep only spms
+                info_dict = {}
+                info_dict["system"] = "spm"
+                info_dict["det_id"] = v1["detname"]
+                info_dict["barrel"] = str(v1["location"]["fiber"])[2:]
+
+                for k2,v2 in v1.items():
+                    if k2 == "detname":
+                        info_dict["det_id"] = v2
+                    if k2 == "daq":
+                        info_dict[k2] = {
+                            "board_ch": v1[k2]["channel"], # check if it's ok
+                            "board_slot": v2["card"]["id"], # check if it's ok
+                            "board_id": v2["card"]["address"],
+                            "crate": v1[k2]["crate"]
+                        }
+                # get the FC channel
+                channel = v1["daq"]["fc_channel"]
+                if channel < 10:
+                    channel = f"ch00{channel}"
+                elif channel > 9 and channel < 100:
+                    channel = f"ch0{channel}"
+                else:
+                    channel = f"ch{channel}"
+                # final dictionary
+                spms_dict[channel] = info_dict
+        """
 
     return spms_dict
 
@@ -1041,7 +1145,7 @@ def set_pkl_name(
     datatype
             Either 'cal' or 'phy'
     det_type
-            Type of detector (geds or spms)
+            Type of detector (geds, spms or ch000)
     string_number
             Number of the string under study
     parameter

@@ -5,8 +5,7 @@
       "lh5-files": "/data1/shared/l60/l60-prodven-v1/prod-ref/",
       "version": "v06.00",
       "orca-files": "/data1/shared/l60/l60-daq/daq-v01/",
-      "geds-config": "/data1/users/calgaro/legend-data-monitor/src/legend_data_monitor/settings/L60-p01-r022-T%-all-config.json",
-      "spms-config": "/data1/users/calgaro/legend-data-monitor/src/legend_data_monitor/settings/SiPM-config.json",
+      "channel-map": "/data1/users/calgaro/legend-data-monitor/src/legend_data_monitor/settings/",
       "output": "/data1/users/calgaro/legend-data-monitor/out/"
     }
   },
@@ -16,7 +15,7 @@
   "datatype": "phy",
   "det_type": {
     "spms": true,
-    "geds": false,
+    "geds": true,
     "ch000": false
   },
   "par_to_plot": {
@@ -82,7 +81,7 @@
     "start_date": "22/09/2022",
     "start_hour": "09:34:00",
     "end_date": "22/09/2022",
-    "end_hour": "11:10:00"
+    "end_hour": "10:10:00"
   },
   "last_hours": {
     "enabled": false,
