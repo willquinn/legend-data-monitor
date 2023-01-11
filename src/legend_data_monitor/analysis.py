@@ -125,7 +125,7 @@ def write_config(
         hit_list = det_list.copy()
 
         # removing channels having no hit data
-        removed_chs = j_config[13][det_type] 
+        removed_chs = j_config[13][det_type]
 
         for ch in removed_chs:
             if ch in hit_list:
@@ -656,7 +656,7 @@ def load_dsp_files(time_cut: list[str], start_code: str):
         # it's a file of keys; let's convert it into a list
         if isinstance(file_keys, list):
             list_keys = file_keys
-        else: 
+        else:
             with open(file_keys) as f:
                 lines = f.readlines()
             list_keys = [line.strip("\n") for line in lines]
@@ -713,13 +713,21 @@ def get_files_timestamps(time_cut: list[str], start_code: str):
             sys.exit(1)
 
         # (run(s) selection OR everything ) || (keys selection)
-        if ((run != "" and file_keys == "") or (run == "" and file_keys == "")) or (run == "" and file_keys != ""):
+        if ((run != "" and file_keys == "") or (run == "" and file_keys == "")) or (
+            run == "" and file_keys != ""
+        ):
             files = load_dsp_files(time_cut, start_code)
             first_file = files[0]
             last_file = files[-1]
             first_timestamp = ((first_file.split("/")[-1]).split("-"))[4]
-            last_timestamp = (lh5.load_nda(last_file, ["timestamp"], "ch000/dsp")["timestamp"])[-1] - 2*60*60 # in seconds (2h shift)
-            last_timestamp = datetime.fromtimestamp(last_timestamp).strftime("%Y%m%dT%H%M%SZ")
+            last_timestamp = (
+                lh5.load_nda(last_file, ["timestamp"], "ch000/dsp")["timestamp"]
+            )[
+                -1
+            ] - 2 * 60 * 60  # in seconds (2h shift)
+            last_timestamp = datetime.fromtimestamp(last_timestamp).strftime(
+                "%Y%m%dT%H%M%SZ"
+            )
 
     return [first_timestamp, last_timestamp]
 
