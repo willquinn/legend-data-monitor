@@ -125,10 +125,7 @@ def write_config(
         hit_list = det_list.copy()
 
         # removing channels having no hit data
-        if det_type == "geds":
-            removed_chs = [24, 10, 41]  # geds
-        elif det_type == "spms":
-            removed_chs = [49, 71, 72, 81, 91, 50, 70, 73, 80, 83, 85, 47]  # spms
+        removed_chs = j_config[13][det_type] 
 
         for ch in removed_chs:
             if ch in hit_list:
@@ -215,8 +212,8 @@ def set_query(time_cut: list, start_code: str, run: str | list[str]):
         else:
             with open(file_keys) as f:
                 lines = f.readlines()
-            lines = [line.strip("\n") for line in lines]
-            query = lines
+            keys = [(line.strip("\n")).split("-")[-1] for line in lines]
+            query = keys
 
     # Applying time cut
     if len(time_cut) > 0:
@@ -340,20 +337,124 @@ def load_df_cols(par_to_plot: list[str], det_type: str):
 
 def load_geds():
     """Load channel map for geds."""
-    config_file = j_config[0]["path"]["geds-config"]
-    with open(config_file) as d:
-        channel_map = json.load(d)
-    geds_dict = channel_map["hardware_configuration"]["channel_map"]
+    map_path = j_config[0]["path"]["channel-map"]
+
+    if exp == "l60":
+        map_file = map_path + f"{exp.upper()}-{period}-r%-T%-ICPC-config.json"
+        with open(map_file) as f:
+            channel_map = json.load(f)
+        geds_dict = channel_map["hardware_configuration"]["channel_map"]
+
+    if exp == "l200":
+        map_file = map_path + f"{exp.upper()}-{period}-r%-T%-all-config.json"
+        with open(map_file) as f:
+            channel_map = json.load(f)
+
+        geds_dict = {}
+        for k1, v1 in channel_map.items():
+            if "S0" not in k1:  # keep only geds
+                info_dict = {}
+                info_dict["system"] = "ged"
+                info_dict["det_type"] = "icpc"
+                info_dict["hardware_status"] = "--"
+                info_dict["software_status"] = "--"
+                info_dict["electronics"] = "--"
+                for k2, v2 in v1.items():
+                    if k2 == "detname":
+                        info_dict["det_id"] = v2
+                    if k2 == "location":
+                        info_dict[k2] = {
+                            "number": v2["string"],
+                            "position": v2["position"],
+                        }
+                    if k2 == "daq":
+                        info_dict[k2] = {
+                            "board_ch": v1[k2]["channel"],  # check if it's ok
+                            "board_slot": v2["card"]["id"],  # check if it's ok
+                            "board_id": v2["card"]["address"],
+                            "crate": v1[k2]["crate"],
+                        }
+                    if k2 == "voltage":
+                        info_dict["high_voltage"] = {
+                            "board_chan": v1[k2]["channel"],
+                            "cable": "--",
+                            "flange_id": "?",  # check it
+                            "flange_pos": "--",
+                            "crate": "0",  # check if it's ok
+                        }
+                    if k2 == "electronics":
+                        info_dict[k2] = {
+                            "fanout_card": "?",  # check it
+                            "lmfe_id": v2["cc4"]["id"],  # check if it's ok
+                            "raspberrypi": "?",  # check it
+                            "cc4_ch": v2["cc4"]["channel"],
+                            "head_card_ana": "?",  # check it
+                            "head_card_dig": "?",  # check it
+                        }
+                # get the FC channel
+                channel = v1["daq"]["fc_channel"]
+                if channel < 10:
+                    channel = f"ch00{channel}"
+                elif channel > 9 and channel < 100:
+                    channel = f"ch0{channel}"
+                else:
+                    channel = f"ch{channel}"
+                # final dictionary
+                geds_dict[channel] = info_dict
 
     return geds_dict
 
 
 def load_spms():
     """Load channel map for spms."""
-    config_file = j_config[0]["path"]["spms-config"]
-    with open(config_file) as d:
-        channel_map = json.load(d)
-    spms_dict = channel_map
+    map_path = j_config[0]["path"]["channel-map"]
+
+    if exp == "l60":
+        map_file = map_path + f"{exp.upper()}-{period}-r%-T%-SiPM-config.json"
+        with open(map_file) as f:
+            spms_dict = json.load(f)
+
+    if exp == "l200":
+        # we keep using L60 map because L200 map has no info about spms positions
+        map_file = map_path + f"L60-{period}-r%-T%-SiPM-config.json"
+        with open(map_file) as f:
+            spms_dict = json.load(f)
+
+        """
+        # a future possible dictionary for L200
+        map_file = map_path + f"{exp.upper()}-{period}-r%-T%-all-config.json"
+        with open(map_file) as f:
+            channel_map = json.load(f)
+
+        spms_dict = {}
+        for k1,v1 in channel_map.items():
+            if 'S0' in k1: # keep only spms
+                info_dict = {}
+                info_dict["system"] = "spm"
+                info_dict["det_id"] = v1["detname"]
+                info_dict["barrel"] = str(v1["location"]["fiber"])[2:]
+
+                for k2,v2 in v1.items():
+                    if k2 == "detname":
+                        info_dict["det_id"] = v2
+                    if k2 == "daq":
+                        info_dict[k2] = {
+                            "board_ch": v1[k2]["channel"], # check if it's ok
+                            "board_slot": v2["card"]["id"], # check if it's ok
+                            "board_id": v2["card"]["address"],
+                            "crate": v1[k2]["crate"]
+                        }
+                # get the FC channel
+                channel = v1["daq"]["fc_channel"]
+                if channel < 10:
+                    channel = f"ch00{channel}"
+                elif channel > 9 and channel < 100:
+                    channel = f"ch0{channel}"
+                else:
+                    channel = f"ch{channel}"
+                # final dictionary
+                spms_dict[channel] = info_dict
+        """
 
     return spms_dict
 
@@ -518,9 +619,11 @@ def load_dsp_files(time_cut: list[str], start_code: str):
     avail_runs = os.listdir(path + "/dsp/" + datatype + "/" + period)
 
     full_paths = []
+    # load files of all runs (there is no enabled run(s) selection)
     if run == "":
         for avail_run in avail_runs:
             full_paths.append(os.path.join(path, "dsp", datatype, period, avail_run))
+    # run(s) selection is enabled
     else:
         if isinstance(run, str):
             full_paths.append(os.path.join(path, "dsp", datatype, period, run))
@@ -543,20 +646,28 @@ def load_dsp_files(time_cut: list[str], start_code: str):
     )
 
     # keep 'cal' or 'phy' data
-    if datatype == "cal":
-        loaded_files = [file for file in lh5_files if "cal" in file]
-    if datatype == "phy":
-        loaded_files = [file for file in lh5_files if "phy" in file]
+    loaded_files = [f for f in lh5_files if datatype in f]
 
     # get time cuts info
     time_cut = timecut.build_timecut_list(time_window, last_hours)
+
+    # keep some keys (if specified)
+    if len(time_cut) == 0 and file_keys != "":
+        # it's a file of keys; let's convert it into a list
+        if isinstance(file_keys, list):
+            list_keys = file_keys
+        else: 
+            with open(file_keys) as f:
+                lines = f.readlines()
+            list_keys = [line.strip("\n") for line in lines]
+        loaded_files = [f for f in loaded_files for k in list_keys if k in f]
 
     # apply time cut to lh5 filenames
     if len(time_cut) == 3:
         loaded_files = timecut.cut_below_threshold_filelist(
             full_path, loaded_files, time_cut, start_code
         )
-    elif len(time_cut) == 4:
+    if len(time_cut) == 4:
         loaded_files = timecut.cut_min_max_filelist(full_path, loaded_files, time_cut)
 
     # get full file paths
@@ -601,43 +712,14 @@ def get_files_timestamps(time_cut: list[str], start_code: str):
             logging.error("Too many time selections are enabled, pick one!")
             sys.exit(1)
 
-        # keys selection
-        if run == "" and file_keys != "":
-            # it's a list
-            if isinstance(file_keys, list):
-                # sorting files based on timestamps
-                files = sorted(
-                    file_keys,
-                    key=lambda file: int(
-                        ((file.split("-")[4]).split("Z")[0]).split("T")[0]
-                        + ((file.split("-")[4]).split("Z")[0]).split("T")[1]
-                    ),
-                )
-            # it's a file
-            else:
-                with open(file_keys) as f:
-                    lines = f.readlines()
-                lines = [line.strip("\n") for line in lines]
-                # sorting files based on timestamps
-                files = sorted(
-                    lines,
-                    key=lambda file: int(
-                        ((file.split("-")[4]).split("Z")[0]).split("T")[0]
-                        + ((file.split("-")[4]).split("Z")[0]).split("T")[1]
-                    ),
-                )
-            first_file = files[0]
-            last_file = files[-1]
-            first_timestamp = (first_file.split("-"))[4]
-            last_timestamp = (last_file.split("-"))[4]
-
-        # run(s) selection OR everything
-        if (run != "" and file_keys == "") or (run == "" and file_keys == ""):
+        # (run(s) selection OR everything ) || (keys selection)
+        if ((run != "" and file_keys == "") or (run == "" and file_keys == "")) or (run == "" and file_keys != ""):
             files = load_dsp_files(time_cut, start_code)
             first_file = files[0]
             last_file = files[-1]
             first_timestamp = ((first_file.split("/")[-1]).split("-"))[4]
-            last_timestamp = ((last_file.split("/")[-1]).split("-"))[4]
+            last_timestamp = (lh5.load_nda(last_file, ["timestamp"], "ch000/dsp")["timestamp"])[-1] - 2*60*60 # in seconds (2h shift)
+            last_timestamp = datetime.fromtimestamp(last_timestamp).strftime("%Y%m%dT%H%M%SZ")
 
     return [first_timestamp, last_timestamp]
 
@@ -1041,7 +1123,7 @@ def set_pkl_name(
     datatype
             Either 'cal' or 'phy'
     det_type
-            Type of detector (geds or spms)
+            Type of detector (geds, spms or ch000)
     string_number
             Number of the string under study
     parameter
