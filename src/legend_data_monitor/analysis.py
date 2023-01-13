@@ -11,12 +11,14 @@ from datetime import datetime, timedelta
 import numpy as np
 import pandas as pd
 import pygama.lgdo.lh5_store as lh5
+from legendmeta import LegendMetadata
 from pygama.flow import DataLoader
 
 from . import timecut
 
 pkg = importlib.resources.files("legend_data_monitor")
 ops = {"<=": operator.le, "<": operator.lt, ">=": operator.ge, ">": operator.gt}
+lmeta = LegendMetadata()
 
 
 def read_json_files():
@@ -337,19 +339,11 @@ def load_df_cols(par_to_plot: list[str], det_type: str):
 
 def load_geds():
     """Load channel map for geds."""
-    map_path = j_config[0]["path"]["channel-map"]
+    json_file = f"{exp.upper()}-{period}-r%-T%-all-config"
+    map_lmeta = lmeta["hardware"]["configuration"]["channelmaps"]
+    channel_map = map_lmeta[json_file]
 
-    if exp == "l60":
-        map_file = map_path + f"{exp.upper()}-{period}-r%-T%-ICPC-config.json"
-        with open(map_file) as f:
-            channel_map = json.load(f)
-        geds_dict = channel_map["hardware_configuration"]["channel_map"]
-
-    if exp == "l200":
-        map_file = map_path + f"{exp.upper()}-{period}-r%-T%-all-config.json"
-        with open(map_file) as f:
-            channel_map = json.load(f)
-
+    if exp == "l60" or exp == "l200":
         geds_dict = {}
         for k1, v1 in channel_map.items():
             if "S0" not in k1:  # keep only geds
@@ -363,20 +357,20 @@ def load_geds():
                     if k2 == "detname":
                         info_dict["det_id"] = v2
                     if k2 == "location":
-                        info_dict[k2] = {
-                            "number": v2["string"],
-                            "position": v2["position"],
+                        info_dict["string"] = {
+                            "number": str(v2["string"]),
+                            "position": str(v2["position"]),
                         }
                     if k2 == "daq":
                         info_dict[k2] = {
-                            "board_ch": v1[k2]["channel"],  # check if it's ok
-                            "board_slot": v2["card"]["id"],  # check if it's ok
-                            "board_id": v2["card"]["address"],
-                            "crate": v1[k2]["crate"],
+                            "board_ch": str(v1[k2]["channel"]),  # check if it's ok
+                            "board_slot": str(v2["card"]["id"]),  # check if it's ok
+                            "board_id": str(v2["card"]["address"]),
+                            "crate": str(v1[k2]["crate"]),
                         }
                     if k2 == "voltage":
                         info_dict["high_voltage"] = {
-                            "board_chan": v1[k2]["channel"],
+                            "board_chan": str(v1[k2]["channel"]),
                             "cable": "--",
                             "flange_id": "?",  # check it
                             "flange_pos": "--",
@@ -385,9 +379,9 @@ def load_geds():
                     if k2 == "electronics":
                         info_dict[k2] = {
                             "fanout_card": "?",  # check it
-                            "lmfe_id": v2["cc4"]["id"],  # check if it's ok
+                            "lmfe_id": str(v2["cc4"]["id"]),  # check if it's ok
                             "raspberrypi": "?",  # check it
-                            "cc4_ch": v2["cc4"]["channel"],
+                            "cc4_ch": str(v2["cc4"]["channel"]),
                             "head_card_ana": "?",  # check it
                             "head_card_dig": "?",  # check it
                         }
@@ -401,6 +395,11 @@ def load_geds():
                     channel = f"ch{channel}"
                 # final dictionary
                 geds_dict[channel] = info_dict
+
+        # sorting channels in dict
+        geds_keys = list(geds_dict.keys())
+        geds_keys.sort()
+        geds_dict = {i: geds_dict[i] for i in geds_keys}
 
     return geds_dict
 
@@ -422,9 +421,9 @@ def load_spms():
 
         """
         # a future possible dictionary for L200
-        map_file = map_path + f"{exp.upper()}-{period}-r%-T%-all-config.json"
-        with open(map_file) as f:
-            channel_map = json.load(f)
+        json_file = f"{exp.upper()}-{period}-r%-T%-all-config"
+        map_lmeta = lmeta["hardware"]["configuration"]["channelmaps"]
+        channel_map = map_lmeta[json_file]
 
         spms_dict = {}
         for k1,v1 in channel_map.items():
@@ -439,10 +438,10 @@ def load_spms():
                         info_dict["det_id"] = v2
                     if k2 == "daq":
                         info_dict[k2] = {
-                            "board_ch": v1[k2]["channel"], # check if it's ok
-                            "board_slot": v2["card"]["id"], # check if it's ok
-                            "board_id": v2["card"]["address"],
-                            "crate": v1[k2]["crate"]
+                            "board_ch": str(v1[k2]["channel"]), # check if it's ok
+                            "board_slot": str(v2["card"]["id"]), # check if it's ok
+                            "board_id": str(v2["card"]["address"]),
+                            "crate": str(v1[k2]["crate"])
                         }
                 # get the FC channel
                 channel = v1["daq"]["fc_channel"]
@@ -454,6 +453,11 @@ def load_spms():
                     channel = f"ch{channel}"
                 # final dictionary
                 spms_dict[channel] = info_dict
+
+        # sorting channels in dict
+        spms_keys = list(spms_dict.keys())
+        spms_keys.sort()
+        spms_dict = {i: spms_dict[i] for i in spms_keys}
         """
 
     return spms_dict

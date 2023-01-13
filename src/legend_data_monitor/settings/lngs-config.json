@@ -14,7 +14,7 @@
   "file_keys": "",
   "datatype": "phy",
   "det_type": {
-    "spms": true,
+    "spms": false,
     "geds": true,
     "ch000": false
   },
