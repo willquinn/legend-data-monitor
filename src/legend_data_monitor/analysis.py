@@ -403,7 +403,7 @@ def load_spms():
     channel_map = map_lmeta[json_file]
 
     spms_dict = {}
-    for k1, v1 in channel_map.items():
+    for _, v1 in channel_map.items():
         if v1["system"] == "spms":  # keep only spms
             info_dict = {}
             info_dict["system"] = v1["system"]
