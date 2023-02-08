@@ -753,7 +753,6 @@ def plot_wtrfll(
 
     for index, detector in enumerate(det_list):
         if string_number == "1":
-
             # keep entries for the selected detector
             new_data = data[data["hit_table"] == int(detector.split("ch0")[-1])]
 
@@ -966,7 +965,6 @@ def plot_ch_par_vs_time(
 
     for i, ax_row in enumerate(ax_array):
         for axes in ax_row:
-
             detector = det_list[i]
             # keep entries for the selected detector
             if (
