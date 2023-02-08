@@ -342,7 +342,7 @@ def load_df_cols(par_to_plot: list[str], det_type: str):
 
 def load_geds():
     """Load channel map for geds."""
-    ex = 'l' + exp.split('l')[1].zfill(3)
+    ex = "l" + exp.split("l")[1].zfill(3)
     json_file = f"{exp}-{period}-r%-T%-all-config"
     map_lmeta = lmeta["hardware"]["configuration"]["channelmaps"]
     channel_map = map_lmeta[json_file]
@@ -352,7 +352,7 @@ def load_geds():
         if v1["system"] == "geds":  # keep only geds
             info_dict = {}
             info_dict["system"] = v1["system"]
-            #info_dict["det_type"] = k1["det_type"]
+            # info_dict["det_type"] = k1["det_type"]
             info_dict["electronics"] = v1["electronics"]
             info_dict["det_id"] = k1
 
@@ -364,8 +364,8 @@ def load_geds():
                     }
                 if k2 == "daq":
                     info_dict[k2] = {
-                        "board_ch": str(v1[k2]["channel"]),  
-                        "board_slot": str(v2["card"]["id"]), 
+                        "board_ch": str(v1[k2]["channel"]),
+                        "board_slot": str(v2["card"]["id"]),
                         "board_id": str(v2["card"]["address"]),
                         "crate": str(v1[k2]["crate"]),
                     }
@@ -463,10 +463,7 @@ def read_geds(geds_dict: dict):
     string_name = []
 
     # no of strings
-    str_no = [
-        v["string"]["number"]
-        for k, v in geds_dict.items()
-    ]
+    str_no = [v["string"]["number"] for k, v in geds_dict.items()]
     min_str = int(min(str_no))
     max_str = int(max(str_no))
     idx = min_str
@@ -906,8 +903,10 @@ def get_puls_ievt_spms(dsp_files: list[str]):
     dsp_files
             List of dsp files
     """
-    if exp == "l60": ch_pul = "ch000"
-    if exp == "l200": ch_pul = "ch001"
+    if exp == "l60":
+        ch_pul = "ch000"
+    if exp == "l200":
+        ch_pul = "ch001"
     wf_max = lh5.load_nda(dsp_files, ["wf_max"], f"{ch_pul}/dsp/")["wf_max"]
     baseline = lh5.load_nda(dsp_files, ["baseline"], f"{ch_pul}/dsp")["baseline"]
     wf_max = np.subtract(wf_max, baseline)
