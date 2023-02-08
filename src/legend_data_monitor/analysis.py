@@ -123,13 +123,19 @@ def write_config(
         det_list = [int(elem.split("ch")[-1]) for elem in flat_list]
 
         # removing channels having no hit data
-        if "60" in exp: run = "r022"
-        if "200" in exp: run = "r010"
+        if "60" in exp:
+            run = "r022"
+        if "200" in exp:
+            run = "r010"
         json_file = f"{exp.upper()}-{period}-{run}-T%-all-config"
         map_lmeta = lmeta["dataprod"]["config"]
         status_dict = map_lmeta[json_file]["hardware_configuration"]["channel_map"]
 
-        removed_chs = [int(k.split("ch")[-1]) for k,v in status_dict.items() if v["software_status"] == "Off"]
+        removed_chs = [
+            int(k.split("ch")[-1])
+            for k, v in status_dict.items()
+            if v["software_status"] == "Off"
+        ]
         for ch in removed_chs:
             if ch in det_list:
                 det_list.remove(ch)
@@ -340,7 +346,7 @@ def load_df_cols(par_to_plot: list[str], det_type: str):
 
 def load_geds():
     """Load channel map for geds."""
-    ex = 'l' + exp.split('l')[1].zfill(3)
+    ex = "l" + exp.split("l")[1].zfill(3)
     json_file = f"{ex}-{period}-r%-T%-all-config"
     map_lmeta = lmeta["hardware"]["configuration"]["channelmaps"]
     channel_map = map_lmeta[json_file]
@@ -350,7 +356,7 @@ def load_geds():
         if v1["system"] == "geds":  # keep only geds
             info_dict = {}
             info_dict["system"] = v1["system"]
-            #info_dict["det_type"] = k1["det_type"]
+            # info_dict["det_type"] = k1["det_type"]
             info_dict["electronics"] = v1["electronics"]
             info_dict["det_id"] = k1
 
@@ -362,8 +368,8 @@ def load_geds():
                     }
                 if k2 == "daq":
                     info_dict[k2] = {
-                        "board_ch": str(v1[k2]["channel"]),  
-                        "board_slot": str(v2["card"]["id"]), 
+                        "board_ch": str(v1[k2]["channel"]),
+                        "board_slot": str(v2["card"]["id"]),
                         "board_id": str(v2["card"]["address"]),
                         "crate": str(v1[k2]["crate"]),
                     }
@@ -391,14 +397,14 @@ def load_geds():
 
 def load_spms():
     """Load channel map for spms."""
-    ex = 'l' + exp.split('l')[1].zfill(3)
+    ex = "l" + exp.split("l")[1].zfill(3)
     json_file = f"{ex}-{period}-r%-T%-all-config"
     map_lmeta = lmeta["hardware"]["configuration"]["channelmaps"]
     channel_map = map_lmeta[json_file]
 
     spms_dict = {}
-    for k1,v1 in channel_map.items():
-        if v1["system"] == "spms": # keep only spms
+    for k1, v1 in channel_map.items():
+        if v1["system"] == "spms":  # keep only spms
             info_dict = {}
             info_dict["system"] = v1["system"]
             info_dict["det_id"] = v1["name"]
@@ -406,7 +412,6 @@ def load_spms():
             info_dict["position"] = str(v1["location"]["position"])
             info_dict["daq"] = v1["daq"]
             info_dict["electronics"] = v1["electronics"]
-            
 
             # get the FC channel
             channel = v1["daq"]["fcid"]
@@ -440,10 +445,7 @@ def read_geds(geds_dict: dict):
     string_name = []
 
     # no of strings
-    str_no = [
-        v["string"]["number"]
-        for k, v in geds_dict.items()
-    ]
+    str_no = [v["string"]["number"] for k, v in geds_dict.items()]
     min_str = int(min(str_no))
     max_str = int(max(str_no))
     idx = min_str
@@ -817,9 +819,11 @@ def get_puls_ievt_spms(dsp_files: list[str]):
     dsp_files
             List of dsp files
     """
-    if "60" in exp: ch_pul = "ch000"
-    if "200" in exp: ch_pul = "ch001"
-      
+    if "60" in exp:
+        ch_pul = "ch000"
+    if "200" in exp:
+        ch_pul = "ch001"
+
     wf_max = lh5.load_nda(dsp_files, ["wf_max"], f"{ch_pul}/dsp/")["wf_max"]
     baseline = lh5.load_nda(dsp_files, ["baseline"], f"{ch_pul}/dsp")["baseline"]
     wf_max = np.subtract(wf_max, baseline)
