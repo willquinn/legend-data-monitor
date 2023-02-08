@@ -132,6 +132,9 @@ def write_config(
         for ch in removed_chs:
             if ch in hit_list:
                 hit_list.remove(ch)
+        for ch in removed_chs:
+            if ch in dsp_list:
+                dsp_list.remove(ch)
 
         dict_dbconfig = {
             "data_dir": files_path + version + "/generated/tier",
@@ -339,62 +342,46 @@ def load_df_cols(par_to_plot: list[str], det_type: str):
 
 def load_geds():
     """Load channel map for geds."""
-    json_file = f"{exp.upper()}-{period}-r%-T%-all-config"
+    ex = 'l' + exp.split('l')[1].zfill(3)
+    json_file = f"{exp}-{period}-r%-T%-all-config"
     map_lmeta = lmeta["hardware"]["configuration"]["channelmaps"]
     channel_map = map_lmeta[json_file]
 
-    if exp == "l60" or exp == "l200":
-        geds_dict = {}
-        for k1, v1 in channel_map.items():
-            if "S0" not in k1:  # keep only geds
-                info_dict = {}
-                info_dict["system"] = "ged"
-                info_dict["det_type"] = "icpc"
-                info_dict["hardware_status"] = "--"
-                info_dict["software_status"] = "--"
-                info_dict["electronics"] = "--"
-                for k2, v2 in v1.items():
-                    if k2 == "detname":
-                        info_dict["det_id"] = v2
-                    if k2 == "location":
-                        info_dict["string"] = {
-                            "number": str(v2["string"]),
-                            "position": str(v2["position"]),
-                        }
-                    if k2 == "daq":
-                        info_dict[k2] = {
-                            "board_ch": str(v1[k2]["channel"]),  # check if it's ok
-                            "board_slot": str(v2["card"]["id"]),  # check if it's ok
-                            "board_id": str(v2["card"]["address"]),
-                            "crate": str(v1[k2]["crate"]),
-                        }
-                    if k2 == "voltage":
-                        info_dict["high_voltage"] = {
-                            "board_chan": str(v1[k2]["channel"]),
-                            "cable": "--",
-                            "flange_id": "?",  # check it
-                            "flange_pos": "--",
-                            "crate": "0",  # check if it's ok
-                        }
-                    if k2 == "electronics":
-                        info_dict[k2] = {
-                            "fanout_card": "?",  # check it
-                            "lmfe_id": str(v2["cc4"]["id"]),  # check if it's ok
-                            "raspberrypi": "?",  # check it
-                            "cc4_ch": str(v2["cc4"]["channel"]),
-                            "head_card_ana": "?",  # check it
-                            "head_card_dig": "?",  # check it
-                        }
-                # get the FC channel
-                channel = v1["daq"]["fc_channel"]
-                if channel < 10:
-                    channel = f"ch00{channel}"
-                elif channel > 9 and channel < 100:
-                    channel = f"ch0{channel}"
-                else:
-                    channel = f"ch{channel}"
-                # final dictionary
-                geds_dict[channel] = info_dict
+    geds_dict = {}
+    for k1, v1 in channel_map.items():
+        if v1["system"] == "geds":  # keep only geds
+            info_dict = {}
+            info_dict["system"] = v1["system"]
+            #info_dict["det_type"] = k1["det_type"]
+            info_dict["electronics"] = v1["electronics"]
+            info_dict["det_id"] = k1
+
+            for k2, v2 in v1.items():
+                if k2 == "location":
+                    info_dict["string"] = {
+                        "number": str(v2["string"]),
+                        "position": str(v2["position"]),
+                    }
+                if k2 == "daq":
+                    info_dict[k2] = {
+                        "board_ch": str(v1[k2]["channel"]),  
+                        "board_slot": str(v2["card"]["id"]), 
+                        "board_id": str(v2["card"]["address"]),
+                        "crate": str(v1[k2]["crate"]),
+                    }
+                if k2 == "voltage":
+                    info_dict["high_voltage"] = v1[k2]
+
+            # get the FC channel
+            channel = v1["daq"]["fcid"]
+            if channel < 10:
+                channel = f"ch00{channel}"
+            elif channel > 9 and channel < 100:
+                channel = f"ch0{channel}"
+            else:
+                channel = f"ch{channel}"
+            # final dictionary
+            geds_dict[channel] = info_dict
 
         # sorting channels in dict
         geds_keys = list(geds_dict.keys())
@@ -415,7 +402,7 @@ def load_spms():
 
     if exp == "l200":
         # we keep using L60 map because L200 map has no info about spms positions
-        map_file = map_path + f"L60-{period}-r%-T%-SiPM-config.json"
+        map_file = map_path + f"L60-p01-r%-T%-SiPM-config.json"
         with open(map_file) as f:
             spms_dict = json.load(f)
 
@@ -479,7 +466,6 @@ def read_geds(geds_dict: dict):
     str_no = [
         v["string"]["number"]
         for k, v in geds_dict.items()
-        if v["string"]["number"] != "--"
     ]
     min_str = int(min(str_no))
     max_str = int(max(str_no))
@@ -920,8 +906,10 @@ def get_puls_ievt_spms(dsp_files: list[str]):
     dsp_files
             List of dsp files
     """
-    wf_max = lh5.load_nda(dsp_files, ["wf_max"], "ch000/dsp/")["wf_max"]
-    baseline = lh5.load_nda(dsp_files, ["baseline"], "ch000/dsp")["baseline"]
+    if exp == "l60": ch_pul = "ch000"
+    if exp == "l200": ch_pul = "ch001"
+    wf_max = lh5.load_nda(dsp_files, ["wf_max"], f"{ch_pul}/dsp/")["wf_max"]
+    baseline = lh5.load_nda(dsp_files, ["baseline"], f"{ch_pul}/dsp")["baseline"]
     wf_max = np.subtract(wf_max, baseline)
     puls_ievt = []
     pulser_entry = []
