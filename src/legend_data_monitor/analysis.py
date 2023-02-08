@@ -819,7 +819,7 @@ def get_puls_ievt_spms(dsp_files: list[str]):
     """
     if "60" in exp: ch_pul = "ch000"
     if "200" in exp: ch_pul = "ch001"
-
+      
     wf_max = lh5.load_nda(dsp_files, ["wf_max"], f"{ch_pul}/dsp/")["wf_max"]
     baseline = lh5.load_nda(dsp_files, ["baseline"], f"{ch_pul}/dsp")["baseline"]
     wf_max = np.subtract(wf_max, baseline)
