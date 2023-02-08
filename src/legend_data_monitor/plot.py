@@ -10,9 +10,12 @@ import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import seaborn as sn
 from matplotlib import dates, ticker
 
 from . import analysis, parameters
+
+palette = sn.color_palette("hls", 15)
 
 plt.rcParams.update({"figure.max_open_warning": 0})
 plt.rcParams["figure.figsize"] = (14, 10)
@@ -183,7 +186,7 @@ def plot_par_vs_time(
             string_no = det_dict[detector]["string"]["number"]
             string_pos = det_dict[detector]["string"]["position"]
             lab = f"s{string_no}-p{string_pos}-{detector}-{name}"
-            col = j_plot[1][detector]
+            col = palette[int(string_pos)]
         if det_type == "spms":
             name = det_dict[detector]["det_id"]
             lab = f"{name} - {detector}"
@@ -766,7 +769,7 @@ def plot_wtrfll(
             if det_type == "spms":
                 col = j_plot[0][str(detector)]
             if det_type == "geds":
-                col = j_plot[1][detector]
+                col = palette[int(string_pos)]
 
             # skip detectors that are not geds/spms
             if det_dict[detector]["system"] == "--":
@@ -996,7 +999,7 @@ def plot_ch_par_vs_time(
             if det_type == "spms":
                 col = j_plot[0][str(detector)]
             if det_type == "geds":
-                col = j_plot[1][detector]
+                col = palette[int(string_pos)]
 
             # det parameter and time arrays for a given detector
             par_array_mean, par_array, utime_array = parameters.load_parameter(
@@ -1026,7 +1029,7 @@ def plot_ch_par_vs_time(
             if det_type == "spms":
                 col = j_plot[0][str(detector)]
             if det_type == "geds":
-                col = j_plot[1][detector]
+                col = palette[int(string_pos)]
             if det_type == "ch000":
                 col = "r"
 
