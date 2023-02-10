@@ -1,6 +1,7 @@
+import logging
+
 import numpy as np
 import pandas as pd
-import logging
 from pygama.flow import DataLoader
 
 # ------------
@@ -116,7 +117,7 @@ class Subsystem:
         # -------------------------------
         # get data from DataLoader
         dlconfig, dbconfig = self.construct_dataloader_configs(dataset, params)
-        logging.error('...... calling data loader')        
+        logging.error("...... calling data loader")
         dl = DataLoader(dlconfig, dbconfig)
         # if querying by run, need different query word
         time_word = "run" if dataset.time_range["start"][0] == "r" else "timestamp"
@@ -129,7 +130,7 @@ class Subsystem:
         # !!!! QUICKFIX FOR R010
         query += " and (timestamp != '20230125T222013Z')"
         query += " and (timestamp != '20230126T015308Z')"
-        
+
         logging.error(query)
         dl.set_files(query)
         dl.set_output(fmt="pd.DataFrame", columns=params)
@@ -138,11 +139,11 @@ class Subsystem:
         # -------------------------------
         # polish things up
 
-        tier = 'hit' if 'hit' in dbconfig['columns'] else 'dsp'
+        tier = "hit" if "hit" in dbconfig["columns"] else "dsp"
         # remove columns we don't need
-        self.data = self.data.drop([f"{tier}_idx", 'file'], axis=1)
+        self.data = self.data.drop([f"{tier}_idx", "file"], axis=1)
         # rename channel to channel
-        self.data = self.data.rename(columns={f'{tier}_table': 'channel'})
+        self.data = self.data.rename(columns={f"{tier}_table": "channel"})
 
         # rename columns back to user params
         # remove Nones
@@ -157,7 +158,7 @@ class Subsystem:
             self.data["timestamp"], origin="unix", utc=True, unit="s"
         )
         # drop timestamp
-        self.data = self.data.drop('timestamp', axis=1)
+        self.data = self.data.drop("timestamp", axis=1)
 
         # -------------------------------
         # add detector name, location and position from map
@@ -175,15 +176,14 @@ class Subsystem:
         # apply QC*
         # !! right now set up to be per subsystem, not per parameter
         if self.qc:
-            logging.error('...... applying quality cut')
-            self.data = self.data[ self.data[dataset.qc_name] ]
+            logging.error("...... applying quality cut")
+            self.data = self.data[self.data[dataset.qc_name]]
 
         logging.error(self.data)
-        
-    
+
     def flag_pulser_events(self, pulser):
         # flag pulser events
-        logging.error('... flagging pulser events')
+        logging.error("... flagging pulser events")
         # find timestamps where goes over threshold
         high_thr = 12500
         pulser.data["wf_max_rel"] = pulser.data["wf_max"] - pulser.data["baseline"]
@@ -197,19 +197,23 @@ class Subsystem:
             self.data = self.data.set_index("datetime")
             self.data.loc[pulser_timestamps, "flag_pulser"] = True
         except:
-            logging.error("Warning: probably calibration has faulty pulser data and timestamps not found. Proceeding with all events flagged as False for pulser.")
- 
-        self.data = self.data.reset_index()       
+            logging.error(
+                "Warning: probably calibration has faulty pulser data and timestamps not found. Proceeding with all events flagged as False for pulser."
+            )
+
+        self.data = self.data.reset_index()
 
     def get_channel_map(self, config):
         """
         Buld channel map for given subsystem
         location - fiber for SiPMs, string for gedet, dummy for pulser
-        """   
-        logging.error('... getting channel map')
-        
-        df_map = pd.DataFrame({'name':[], 'location': [], 'channel':[], 'position':[]})
-        df_map = df_map.set_index('channel')
+        """
+        logging.error("... getting channel map")
+
+        df_map = pd.DataFrame(
+            {"name": [], "location": [], "channel": [], "position": []}
+        )
+        df_map = df_map.set_index("channel")
 
         # selection depending on subsystem, dct_key is the part corresponding to one chmap entry
         def is_subsystem(dct_key):
@@ -238,8 +242,8 @@ class Subsystem:
 
             # add info for this channel
             # FlashCam channel, unique for geds/spms/pulser
-            ch = config.channel_map[key]['daq']['fcid']
-            df_map.at[ch, 'name'] = config.channel_map[key]['name']
+            ch = config.channel_map[key]["daq"]["fcid"]
+            df_map.at[ch, "name"] = config.channel_map[key]["name"]
             # number/name of stirng/fiber for geds/spms, dummy for pulser
             df_map.at[ch, "location"] = (
                 0
@@ -299,9 +303,9 @@ class Subsystem:
         dict_dlconfig = {"channel_map": {}, "levels": {}}
 
         # set up tiers depending on what parameters we need
-        logging.error('......removing channels with no data: {}'.format(self.removed_chs))        
-        for tier, tier_params in param_tiers.groupby('tier'):
-            dict_dbconfig['tier_dirs'][tier] = f'/{tier}'
+        logging.error(f"......removing channels with no data: {self.removed_chs}")
+        for tier, tier_params in param_tiers.groupby("tier"):
+            dict_dbconfig["tier_dirs"][tier] = f"/{tier}"
             # type not fixed and instead specified in the query
             dict_dbconfig["file_format"][tier] = (
                 "/{type}/{period}/{run}/{exp}-{period}-{run}-{type}-{timestamp}-tier_"

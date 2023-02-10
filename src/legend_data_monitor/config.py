@@ -28,10 +28,10 @@ def Config(json_name: str):
     >>> config.a.c
     1
     """
-    logging.error('Reading settings from ' + str(json_name) + '...')    
-    
-    with open(pkg / "settings" / json_name) as f:    
-        conf = AttrsDict(json.load(f))    
+    logging.error("Reading settings from " + str(json_name) + "...")
+
+    with open(pkg / "settings" / json_name) as f:
+        conf = AttrsDict(json.load(f))
 
     # update single to list with subsystem for single to list conversion
     for subsys in conf.subsystems:
@@ -66,10 +66,10 @@ def Config(json_name: str):
 
 class PlotSettings:
     def __init__(self, conf: Config, dset):
-        logging.error('----------------------------------------------------')
-        logging.error('--- Setting up plotting')    
-        logging.error('----------------------------------------------------')
-        
+        logging.error("----------------------------------------------------")
+        logging.error("--- Setting up plotting")
+        logging.error("----------------------------------------------------")
+
         # sampling for averages
         # e.g. "30T"
         # minute - T, second - S, month - M
@@ -123,9 +123,9 @@ class PlotSettings:
 
     def check_settings(self):
         options = {
-            'events': ['phy', 'pulser', 'all', 'K_lines'],
-            'plot_style': plotting.plot_style.keys(),
-            'some_name': ['variation', 'absolute']
+            "events": ["phy", "pulser", "all", "K_lines"],
+            "plot_style": plotting.plot_style.keys(),
+            "some_name": ["variation", "absolute"],
         }
 
         # for each parameter, check provided plot settings
@@ -207,5 +207,5 @@ def make_dir(dir_path):
     message = "Output directory " + dir_path
     if not os.path.isdir(dir_path):
         os.mkdir(dir_path)
-        message += ' (created)'
-    logging.error(message)    
+        message += " (created)"
+    logging.error(message)
