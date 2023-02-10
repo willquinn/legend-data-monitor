@@ -114,9 +114,9 @@ class ParamData:
             logging.error("... keeping all (pulser + non-pulser) events")
 
     def map_channels(self, subsys):
-        logging.error('... mapping channel name, location, and position')
-        ch_map = subsys.ch_map.set_index('channel')
-        self.data = self.data.set_index('channel')
+        logging.error("... mapping channel name, location, and position")
+        ch_map = subsys.ch_map.set_index("channel")
+        self.data = self.data.set_index("channel")
         self.data = pd.concat([self.data, ch_map.loc[self.data.index]], axis=1)
         self.data = self.data.reset_index()
 
