@@ -1,4 +1,5 @@
 import os
+import logging
 
 import matplotlib.pyplot as plt
 from matplotlib import cycler, rcParams
@@ -14,7 +15,8 @@ from . import parameter_data as paramdata
 
 # See mapping user plot style keywords to corresponding functions in the end of this file
 
-
+# ---- main plotting function
+def make_subsystem_plots(subsys, plot_settings):
     # !! this is wrong here - not all plots in the loop may be par_vs_time
     # there could be 2 subsystems in config, e.g. baseline vs time for geds, and some param histo or so
     # in this case, pdf should be not per subsystem, but per parameter
@@ -32,13 +34,13 @@ from . import parameter_data as paramdata
         # decide plot function based on user requested style (see dict below)            
         plot_parameter = plot_style[pardata.plot_settings['plot_style']]            
             
-        #print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
-        #print('~~~ P L O T T I N G')
-        #print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
+        logging.error('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
+        logging.error('~~~ P L O T T I N G')
+        logging.error('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
         plot_parameter(pardata, pdf)
 
     pdf.close()
-    #print('All plots saved in: ' + out_name)
+    logging.error('All plots saved in: ' + out_name)
             
 
 # -------------------------------------------------------------------------------
@@ -51,7 +53,7 @@ def plot_ch_par_vs_time(pardata, pdf):
 
     # separate figure for each string/fiber ("location")
     for location, data_location in data.groupby('location'):
-        #print(f'... {pardata.locname} {location}')
+        logging.error(f'... {pardata.locname} {location}')
         
         # ---------------------------------------------
         #  global channel mean
@@ -68,7 +70,7 @@ def plot_ch_par_vs_time(pardata, pdf):
         # set y label now already, add % if variation
         ylabel = pardata.param_info.label + f" [{pardata.param_info.units}]"
         if pardata.plot_settings['some_name'] == "variation":
-            #print('... calculating variation from the mean')
+            logging.error('... calculating variation from the mean')
             # set index to position to correspond to channel_mean
             data_location = data_location.set_index("position")
             # subtract mean from value for each position (i.e. channel)
@@ -87,7 +89,7 @@ def plot_ch_par_vs_time(pardata, pdf):
         if numch == 1:
             axes = [axes]
 
-        #print('... plotting')
+        logging.error('... plotting')
         ax_idx = 0
         # groupby takes 4 seconds while pd.pivot_table - 20 -> changed to for loop with groupby
         for position, data_position in data_location.groupby("position"):
@@ -106,7 +108,7 @@ def plot_ch_par_vs_time(pardata, pdf):
         # plot resampled average, unless it's event rate - already resampled and counted for the same time window
 
         if pardata.param != 'event_rate':
-            #print('...... resampling for every ' + pardata.sampling)
+            logging.error('...... resampling for every ' + pardata.sampling)
             # after groupby->resample will have multi index in (position, datetime)
             resampled = (
                 data_location.set_index("datetime")
@@ -118,7 +120,7 @@ def plot_ch_par_vs_time(pardata, pdf):
             resampled = resampled.drop("position", axis=1)
             resampled = resampled.reset_index()
 
-            #print('...... plotting resampled')
+            logging.error('...... plotting resampled')
             # color settings using a pre-defined palette
             rcParams["axes.prop_cycle"] = cycler(
                 color=color_palette("hls", len(resampled.position.unique()))
@@ -134,7 +136,7 @@ def plot_ch_par_vs_time(pardata, pdf):
         # ---------------------------------------------
         # beautification
 
-        #print('... making the plot pretty for you')
+        logging.error('... making the plot pretty for you')
 
         # summary annotations
         channel_mean = channel_mean.reset_index()
@@ -196,7 +198,7 @@ def plot_histo(pardata, pdf):
     x_max = data.max()
     no_bins = int(x_max - x_min)
 
-    #print('Plotting...')
+    logging.error('Plotting...')
     data.plot.hist(bins=no_bins, range=[x_min, x_max], histtype='step', linewidth=1.5)
 
     xlabel = pardata.param_info.label + f" [{pardata.param_info.units}]"

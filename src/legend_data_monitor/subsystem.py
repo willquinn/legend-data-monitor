@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import logging
 from pygama.flow import DataLoader
 
 # ------------
@@ -32,9 +33,9 @@ class Subsystem:
         conf: config.Config object with user providedsettings
         sub_type [str]: geds | spms | pulser
         """
-        #print(r"\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/")
-        #print(r"\/\ Setting up " + sub_type)
-        #print(r"\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/")
+        logging.error(r"\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/")
+        logging.error(r"\/\ Setting up " + sub_type)
+        logging.error(r"\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/")
 
         self.type = sub_type
 
@@ -79,7 +80,7 @@ class Subsystem:
             (params to plot, QC bool, ...)
         """
 
-        #print("... getting data")
+        logging.error("... getting data")
 
         # -------------------------------
         # prepare parameter list for DataLoader()
@@ -115,7 +116,7 @@ class Subsystem:
         # -------------------------------
         # get data from DataLoader
         dlconfig, dbconfig = self.construct_dataloader_configs(dataset, params)
-        #print('...... calling data loader')        
+        logging.error('...... calling data loader')        
         dl = DataLoader(dlconfig, dbconfig)
         # if querying by run, need different query word
         time_word = "run" if dataset.time_range["start"][0] == "r" else "timestamp"
@@ -129,7 +130,7 @@ class Subsystem:
         query += " and (timestamp != '20230125T222013Z')"
         query += " and (timestamp != '20230126T015308Z')"
         
-        #print(query)
+        logging.error(query)
         dl.set_files(query)
         dl.set_output(fmt="pd.DataFrame", columns=params)
         self.data = dl.load()
@@ -162,7 +163,7 @@ class Subsystem:
         # add detector name, location and position from map
 
         # !! don't need to do yet, takes time?
-        # #print('......mapping to name and string/fiber position')
+        # logging.error('......mapping to name and string/fiber position')
         # self.ch_map = self.ch_map.set_index('channel')
         # self.data = self.data.set_index('channel')
         # for col in self.ch_map:
@@ -174,15 +175,15 @@ class Subsystem:
         # apply QC*
         # !! right now set up to be per subsystem, not per parameter
         if self.qc:
-            #print('...... applying quality cut')
+            logging.error('...... applying quality cut')
             self.data = self.data[ self.data[dataset.qc_name] ]
 
-        #print(self.data)
+        logging.error(self.data)
         
     
     def flag_pulser_events(self, pulser):
         # flag pulser events
-        #print('... flagging pulser events')
+        logging.error('... flagging pulser events')
         # find timestamps where goes over threshold
         high_thr = 12500
         pulser.data["wf_max_rel"] = pulser.data["wf_max"] - pulser.data["baseline"]
@@ -196,7 +197,7 @@ class Subsystem:
             self.data = self.data.set_index("datetime")
             self.data.loc[pulser_timestamps, "flag_pulser"] = True
         except:
-            #print("Warning: probably calibration has faulty pulser data and timestamps not found. Proceeding with all events flagged as False for pulser.")
+            print("Warning: probably calibration has faulty pulser data and timestamps not found. Proceeding with all events flagged as False for pulser.")
  
         self.data = self.data.reset_index()       
 
@@ -206,7 +207,7 @@ class Subsystem:
         location - fiber for SiPMs, string for gedet, dummy for pulser
         """
         
-        #print('... getting channel map')
+        logging.error('... getting channel map')
         
         df_map = pd.DataFrame({'name':[], 'location': [], 'channel':[], 'position':[]})
         df_map = df_map.set_index('channel')
@@ -299,7 +300,7 @@ class Subsystem:
         dict_dlconfig = {"channel_map": {}, "levels": {}}
 
         # set up tiers depending on what parameters we need
-        #print('......removing channels with no data: {}'.format(self.removed_chs))        
+        logging.error('......removing channels with no data: {}'.format(self.removed_chs))        
         for tier, tier_params in param_tiers.groupby('tier'):
             dict_dbconfig['tier_dirs'][tier] = f'/{tier}'
             # type not fixed and instead specified in the query

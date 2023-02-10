@@ -1,8 +1,16 @@
 import sys
+import logging
 
 from . import config, dataset, plotting, subsystem
 
-# import logging
+import logging
+log = logging.getLogger(__name__)
+# set up logging to console
+console = logging.StreamHandler()
+console.setLevel(logging.ERROR)
+formatter = logging.Formatter("%(asctime)s:  %(message)s")
+console.setFormatter(formatter)
+logging.getLogger("").addHandler(console)
 
 def control_plots(user_config):
     # Read user settings
@@ -53,7 +61,7 @@ def control_plots(user_config):
         # ToDo: K_lines
         plotting.make_subsystem_plots(subsystems[syst], plot_settings)
     
-    #print('D O N E')
+    logging.error('D O N E')
 
 
 if __name__ == "__main__":

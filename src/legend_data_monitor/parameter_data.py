@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import logging
 
 from . import subsystem
 
@@ -8,10 +9,9 @@ from . import subsystem
 class ParamData:
     # should maybe inherit from pd.DataFrame directly?
     def __init__(self, subsys, param, plot_settings):
-
-        #print('============================================')
-        #print('=== Setting up ' + param)
-        #print('============================================')
+        logging.error('============================================')
+        logging.error('=== Setting up ' + param)
+        logging.error('============================================')
 
         # !! can be gotten from non (datetime, channel, pulser flag columns)
         self.param = param
@@ -92,28 +92,28 @@ class ParamData:
         # map to det name and string
         self.map_channels(subsys)
 
-        #print(self.data)
+        logging.error(self.data)
 
     def select_events(self):
         # do we want to keep all, phy or pulser events?
         if self.plot_settings['events'] == 'pulser':
-            #print('... keeping only pulser events')
+            logging.error('... keeping only pulser events')
             self.data = self.data[ self.data['flag_pulser'] ]
         elif self.plot_settings['events'] == 'phy':
-            #print('... keeping only physical (non-pulser) events')
+            logging.error('... keeping only physical (non-pulser) events')
             self.data = self.data[ ~self.data['flag_pulser'] ]
         elif self.plot_settings['events'] == 'K_lines':
-            #print('... selecting K lines in physical (non-pulser) events')
+            logging.error('... selecting K lines in physical (non-pulser) events')
             self.data = self.data[ ~self.data['flag_pulser'] ]
             energy = subsystem.SPECIAL_PARAMETERS['K_lines'][0]
             self.data = self.data[ (self.data[energy] > 1430) & (self.data[energy] < 1575)] 
         else:
-            #print('... keeping all (pulser + non-pulser) events')
+            logging.error('... keeping all (pulser + non-pulser) events')
                        
         
         
     def map_channels(self, subsys):
-        #print(f'... mapping channel name, location, and position')
+        logging.error(f'... mapping channel name, location, and position')
         ch_map = subsys.ch_map.set_index('channel')
         self.data = self.data.set_index('channel')
         self.data = pd.concat([self.data, ch_map.loc[self.data.index]], axis=1)        

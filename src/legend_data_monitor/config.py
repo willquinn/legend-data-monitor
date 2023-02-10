@@ -28,7 +28,7 @@ def Config(json_name: str):
     >>> config.a.c
     1
     '''
-    #print('Reading settings from ' + str(json_name) + '...')    
+    logging.error('Reading settings from ' + str(json_name) + '...')    
     
     with open(pkg / "settings" / json_name) as f:    
         conf = AttrsDict(json.load(f))    
@@ -66,9 +66,9 @@ def Config(json_name: str):
 
 class PlotSettings:
     def __init__(self, conf: Config, dset):
-        #print('----------------------------------------------------')
-        #print('--- Setting up plotting')    
-        #print('----------------------------------------------------')
+        logging.error('----------------------------------------------------')
+        logging.error('--- Setting up plotting')    
+        logging.error('----------------------------------------------------')
         
         # sampling for averages
         # e.g. "30T"
@@ -124,7 +124,7 @@ class PlotSettings:
     def check_settings(self):
         options = {
             'events': ['phy', 'pulser', 'all', 'K_lines'],
-            'plot_style': plotting.PLOT_STYLE.keys(),
+            'plot_style': plotting.plot_style.keys(),
             'some_name': ['variation', 'absolute']
         }
         
@@ -202,5 +202,4 @@ def make_dir(dir_path):
     if not os.path.isdir(dir_path):
         os.mkdir(dir_path)
         message += ' (created)'
-    # ?? should be logging.info? (now: unmuted)
-    #print(message)    
+    logging.error(message)    
