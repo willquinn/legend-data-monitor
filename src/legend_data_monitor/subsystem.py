@@ -25,6 +25,7 @@ for param in SPECIAL_PARAMETERS:
 
 class Subsystem:
     """Object containing information for a given subsystem such as channel map, removed channels etc."""
+
     def __init__(self, config, sub_type):
         logging.error(r"\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/")
         logging.error(r"\/\ Setting up " + sub_type)
@@ -191,11 +192,13 @@ class Subsystem:
         self.data = self.data.reset_index()
 
     def get_channel_map(self, config):
-        """Build channel map for given subsystem location - fiber for SiPMs, string for gedet, dummy for pulser."""   
-        logging.error('... getting channel map')
-        
-        df_map = pd.DataFrame({'name':[], 'location': [], 'channel':[], 'position':[]})
-        df_map = df_map.set_index('channel')
+        """Build channel map for given subsystem location - fiber for SiPMs, string for gedet, dummy for pulser."""
+        logging.error("... getting channel map")
+
+        df_map = pd.DataFrame(
+            {"name": [], "location": [], "channel": [], "position": []}
+        )
+        df_map = df_map.set_index("channel")
 
         # selection depending on subsystem, dct_key is the part corresponding to one chmap entry
         def is_subsystem(dct_key):
@@ -224,8 +227,8 @@ class Subsystem:
 
             # add info for this channel
             # FlashCam channel, unique for geds/spms/pulser
-            ch = config.channel_map[key]['daq']['fcid']
-            df_map.at[ch, 'name'] = config.channel_map[key]['name']
+            ch = config.channel_map[key]["daq"]["fcid"]
+            df_map.at[ch, "name"] = config.channel_map[key]["name"]
             # number/name of string/fiber for geds/spms, dummy for pulser
             df_map.at[ch, "location"] = (
                 0
