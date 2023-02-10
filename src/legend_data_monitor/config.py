@@ -21,7 +21,7 @@ SINGLE_TO_LIST = {
 
 def Config(json_name: str):
     '''
-    json_name: path to user config json file
+    json_name: path to user config json file.
     
     Returns NestedAttrDict. Can't use inheritance because of conflicting kwargs
     in __init__ when passing self. Mascking this function to look like a class.
@@ -30,13 +30,12 @@ def Config(json_name: str):
     >>> config.a.c
     1
     '''
-    print('Reading settings from ' + str(json_name) + '...')    
+    #print('Reading settings from ' + str(json_name) + '...')    
     
     with open(pkg / "settings" / json_name) as f:    
         conf = AttrsDict(json.load(f))    
 
-    ## update single to list with subsystem for single to list conversion
-    # (trust me on this one)
+    # update single to list with subsystem for single to list conversion
     for subsys in conf.subsystems:
         SINGLE_TO_LIST['subsystems'] = {subsys: {'parameters': 0, "removed_channels": 0}}
 
@@ -70,9 +69,9 @@ def Config(json_name: str):
 
 class PlotSettings():
     def __init__(self, conf: Config, dset):
-        print('----------------------------------------------------')
-        print('--- Setting up plotting')    
-        print('----------------------------------------------------')
+        #print('----------------------------------------------------')
+        #print('--- Setting up plotting')    
+        #print('----------------------------------------------------')
         
         # sampling for averages
         # e.g. "30T"
@@ -102,11 +101,10 @@ class PlotSettings():
         
     def make_output_paths(self, conf):
         ''' define output paths and create directories accordingly '''
-        
         # general output path
         make_dir(conf.plotting.output)
 
-        ## output subfolders
+        # output subfolders
         output_paths = {"path": conf.plotting.output}
 
         # sub directories
@@ -128,28 +126,27 @@ class PlotSettings():
 
 
     def check_settings(self):
-
-        OPTIONS = {
+        options = {
             'events': ['phy', 'pulser', 'all', 'K_lines'],
             'plot_style': plotting.PLOT_STYLE.keys(),
             'some_name': ['variation', 'absolute']
         }
         
-        ## for each parameter, check provided plot settings
+        # for each parameter, check provided plot settings
         for param in self.param_settings:
-            ## look at every option available in plot settings
-            for field in OPTIONS:
-                ## if this field is not provided by user, tell them to provide it
-                if not field in self.param_settings[param]:
+            # look at every option available in plot settings
+            for field in options:
+                # if this field is not provided by user, tell them to provide it
+                if field not in self.param_settings[param]:
                     logging.error('Provide {} settings for {}!'.format(field, param))
-                    logging.error('Available options: {}'.format(','.join(OPTIONS[field])))
+                    logging.error('Available options: {}'.format(','.join(options[field])))
                     sys.exit(1)
 
                 opt = self.param_settings[param][field]
 
-                if not opt in OPTIONS[field]:
+                if opt not in options[field]:
                     logging.error('Option {} provided for {} does not exist!'.format(opt, param))
-                    logging.error('Available options: {}'.format(','.join(OPTIONS[field])))
+                    logging.error('Available options: {}'.format(','.join(options[field])))
                     sys.exit(1)
 
 
@@ -178,25 +175,23 @@ class PlotSettings():
 
 # ------- Config related functions
 def check_settings(conf):
-    ## if parameter is under subsystem to be plotted, must be in plot settings
+    # if parameter is under subsystem to be plotted, must be in plot settings
     for subsys in conf.subsystems:
         for param in conf.subsystems[subsys].parameters:
-            if not param in conf.plotting.parameters:
+            if param not in conf.plotting.parameters:
                 logging.error(f'Parameter {param} is asked to be plotted for subsystem {subsys} but no plot settings are provided!')
                 sys.exit(1)
 
-    ## time selection types
+    # time selection types
     for key in conf.dataset.selection:
-        if not key in ['start','end', 'timestamps', 'runs']:
+        if key not in ['start','end', 'timestamps', 'runs']:
             logging.error('Invalid dataset time selection!')
             logging.error('Available selection: start & end, timestamps, or runs')
             sys.exit(1)
 
 
 def single_to_list(conf, dct=SINGLE_TO_LIST):
-    '''
-    Recursively convert single entries to lists
-    '''
+    '''Recursively convert single entries to lists.'''
     for field in dct:
         if isinstance(dct[field], dict):
             conf[field] = single_to_list(conf[field], dct[field])
@@ -210,10 +205,10 @@ def single_to_list(conf, dct=SINGLE_TO_LIST):
 
 # ----------- helper function
 def make_dir(dir_path):
-    ''' check if directory exists, and if not, make it'''
+    '''Check if directory exists, and if not, make it.'''
     message = 'Output directory ' + dir_path
     if not os.path.isdir(dir_path):
         os.mkdir(dir_path)
         message += ' (created)'
-    ## ?? should be logging.info? (now: unmuted)
-    # print(message)    
+    # ?? should be logging.info? (now: unmuted)
+    #print(message)    

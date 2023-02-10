@@ -8,9 +8,9 @@ class ParamData():
     # should maybe inherit from pd.DataFrame directly?
     def __init__(self, subsys, param, plot_settings):
 
-        print('============================================')
-        print('=== Setting up ' + param)
-        print('============================================')
+        #print('============================================')
+        #print('=== Setting up ' + param)
+        #print('============================================')
 
         # !! can be gotten from non (datetime, channel, pulser flag columns)
         self.param = param
@@ -21,7 +21,7 @@ class ParamData():
         # for plotting, whether 'location' is string or fiber for given subsystem
         self.locname = {'geds': 'string', 'spms': 'fiber', 'pulser': 'pulser'}[subsys.type]
 
-        ## plot settings for this param
+        # plot settings for this param
         # what events to keep (phy/puls/all), plot style, variation or absolute 
         # note: results in a UserWarning about columns as attributes
         self.plot_settings = plot_settings.param_settings[param]   
@@ -30,8 +30,8 @@ class ParamData():
         # pass on avg sampling from plot settings
         self.sampling = plot_settings.sampling
 
-        ## -------------------------------
-        ## subselect data to load for only this parameter
+        # -------------------------------
+        # subselect data to load for only this parameter
 
         # always get channel and datetime
         params_to_get = ['channel', 'datetime']
@@ -51,13 +51,13 @@ class ParamData():
         params_to_get = list(np.unique(params_to_get))
         self.data = subsys.data[params_to_get].copy()
 
-        ## -------------------------------
+        # -------------------------------
 
         # selec phy/puls/all events
         self.select_events()
 
-        ## -------------------------------
-        ## calculate special parameters
+        # -------------------------------
+        # calculate special parameters
 
         if param == 'wf_max_rel':
             # calculate wf max relative to baseline
@@ -78,7 +78,7 @@ class ParamData():
         # map to det name and string
         self.map_channels(subsys)
 
-        print(self.data)
+        #print(self.data)
 
 
                 
@@ -86,23 +86,23 @@ class ParamData():
     def select_events(self):
         # do we want to keep all, phy or pulser events?
         if self.plot_settings['events'] == 'pulser':
-            print('... keeping only pulser events')
+            #print('... keeping only pulser events')
             self.data = self.data[ self.data['flag_pulser'] ]
         elif self.plot_settings['events'] == 'phy':
-            print('... keeping only physical (non-pulser) events')
+            #print('... keeping only physical (non-pulser) events')
             self.data = self.data[ ~self.data['flag_pulser'] ]
         elif self.plot_settings['events'] == 'K_lines':
-            print('... selecting K lines in physical (non-pulser) events')
+            #print('... selecting K lines in physical (non-pulser) events')
             self.data = self.data[ ~self.data['flag_pulser'] ]
             energy = subsystem.SPECIAL_PARAMETERS['K_lines'][0]
             self.data = self.data[ (self.data[energy] > 1430) & (self.data[energy] < 1575)] 
         else:
-            print('... keeping all (pulser + non-pulser) events')
+            #print('... keeping all (pulser + non-pulser) events')
                        
         
         
     def map_channels(self, subsys):
-        print(f'... mapping channel name, location, and position')
+        #print(f'... mapping channel name, location, and position')
         ch_map = subsys.ch_map.set_index('channel')
         self.data = self.data.set_index('channel')
         self.data = pd.concat([self.data, ch_map.loc[self.data.index]], axis=1)        

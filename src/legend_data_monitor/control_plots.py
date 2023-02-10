@@ -5,7 +5,6 @@ import sys
 # import logging
 
 def control_plots(user_config):
-
     # Read user settings
     # - read all json
     # - mark code start time
@@ -41,7 +40,7 @@ def control_plots(user_config):
         # - channel map
         # - removed channels
         # - parameters of interest
-        if not syst in subsystems:
+        if syst not in subsystems:
             subsystems[syst] = subsystem.Subsystem(conf, syst)
             subsystems[syst].get_data(dset)
         
@@ -54,7 +53,7 @@ def control_plots(user_config):
         # ToDo: K_lines
         plotting.make_subsystem_plots(subsystems[syst], plot_settings)
     
-    print('D O N E')
+    #print('D O N E')
 
 
 if __name__ == '__main__':

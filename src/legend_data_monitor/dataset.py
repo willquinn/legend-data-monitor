@@ -8,20 +8,20 @@ from datetime import timedelta
 class Dataset():
     # : config.Config
     def __init__(self, config):
-        print('----------------------------------------------------')
-        print('--- Setting up dataset')
-        print('----------------------------------------------------')
+        #print('----------------------------------------------------')
+        #print('--- Setting up dataset')
+        #print('----------------------------------------------------')
         
         # e.g. path to period = path + v06.00/generated/tier (+ dsp/phy/p01 later)
         self.path = os.path.join(config.dataset.path, config.dataset.version, 'generated', 'tier')
-        print('Data path: ' + self.path)
+        #print('Data path: ' + self.path)
 
         # determine QC cut column name based on version
         self.qc_name = 'isQC_flag' if config.dataset.version > 'v06.00' else 'QualityCuts_flag'
 
         # type of data (phy or cal or both, always list)
         self.type = config.dataset.type
-        print('Data type: ' + ','.join(self.type))
+        #print('Data type: ' + ','.join(self.type))
         
         # get list of all dsp files in period to later get final file time range
         # !! not really needed except for SiPM quickfix cause of DataLoader not working
@@ -30,7 +30,7 @@ class Dataset():
 
         # get user time range in format of keys - for selection and plotting
         self.user_time_range = self.get_user_time_range(config)
-        print('User requested time range: {} - {}'.format(self.user_time_range['start'], self.user_time_range['end']))
+        #print('User requested time range: {} - {}'.format(self.user_time_range['start'], self.user_time_range['end']))
         
         # get final time range based on dsp files available
         # !! ignore for now because there can be multiple type like both cal and phy
@@ -66,17 +66,16 @@ class Dataset():
     #     return period_dsp
 
 
-    # config: config.Config
     def get_user_time_range(self, config):
         """
         Get time range requested by user converted to key format.
+
         Directly from input if selection mode is time range, time window, or key(s);
-        from dsp files if selection mode is runs
+        from dsp files if selection mode is 'runs'.
         
         >>> dataset.get_user_time_range()
         ['20220928T080000Z','20220928093000Z']
         """
-
         time_range = {'start': 0, 'end': 0} # convenient for the loop
         message = 'Time selection mode: '
 
@@ -128,17 +127,9 @@ class Dataset():
 # helper functions
 
 def get_run(dsp_fname: str):
-    '''
-    str -> str
-    
-    extract run from lh5 filename
-    '''    
+    '''Eextract run from lh5 filename.'''    
     return re.search('r-\d{3}', dsp_fname).group(0)[2:]
 
 def get_key(dsp_fname: str):
-    '''
-    str -> str
-    
-    extract key from lh5 filename
-    '''
+    '''Extract key from lh5 filename.'''
     return re.search('-\d{8}T\d{6}Z', dsp_fname).group(0)[1:]    
