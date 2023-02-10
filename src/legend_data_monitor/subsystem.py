@@ -26,10 +26,6 @@ for param in SPECIAL_PARAMETERS:
 class Subsystem:
     """Object containing information for a given subsystem such as channel map, removed channels etc."""
     def __init__(self, config, sub_type):
-        """
-        conf: config.Config object with user providedsettings
-        sub_type [str]: geds | spms | pulser
-        """
         logging.error(r"\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/")
         logging.error(r"\/\ Setting up " + sub_type)
         logging.error(r"\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/")
@@ -72,11 +68,6 @@ class Subsystem:
         self.data = pd.DataFrame()
 
     def get_data(self, dataset):
-        """
-        plt_set [dict]: plot settings for this subsystem
-            (params to plot, QC bool, ...)
-        """
-
         logging.error("... getting data")
 
         # -------------------------------
@@ -192,7 +183,7 @@ class Subsystem:
         try:
             self.data = self.data.set_index("datetime")
             self.data.loc[pulser_timestamps, "flag_pulser"] = True
-        except:
+        except Exception:
             logging.error(
                 "Warning: probably calibration has faulty pulser data and timestamps not found. Proceeding with all events flagged as False for pulser."
             )

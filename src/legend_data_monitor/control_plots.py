@@ -17,7 +17,7 @@ def control_plots(user_config):
     # - read all json
     # - mark code start time
     # - read channel map as dict (for now from path)
-    conf = config.Config(user_config)
+    conf = config.config_build(user_config)
 
     # Note: is a nested attribute dict so that one can do dct.a.b instead of dct['a']['b']
     # simplifies stuff but maybe not needed if takes too much memory

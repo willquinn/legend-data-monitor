@@ -17,14 +17,14 @@ pkg = importlib.resources.files("legend_data_monitor")
 SINGLE_TO_LIST = {"dataset": {"type": 0, "selection": {"runs": 0}}}
 
 
-def Config(json_name: str):
+def config_build(json_name: str):
     """
     json_name: path to user config json file.
 
     Returns NestedAttrDict. Can't use inheritance because of conflicting kwargs
     in __init__ when passing self. Mascking this function to look like a class.
 
-    >>> config = Config({'a': {'c':1, 'd':3}, 'b': 2})
+    >>> config = config_build({'a': {'c':1, 'd':3}, 'b': 2})
     >>> config.a.c
     1
     """
@@ -65,7 +65,7 @@ def Config(json_name: str):
 
 
 class PlotSettings:
-    def __init__(self, conf: Config, dset):
+    def __init__(self, conf: config_build, dset):
         logging.error("----------------------------------------------------")
         logging.error("--- Setting up plotting")
         logging.error("----------------------------------------------------")
@@ -160,13 +160,6 @@ class PlotSettings:
     #     filemode="w",
     #     format="%(levelname)s: %(message)s",
     # )
-
-    # # set up logging to console
-    # console = logging.StreamHandler()
-    # console.setLevel(logging.ERROR)
-    # formatter = logging.Formatter("%(asctime)s:  %(message)s")
-    # console.setFormatter(formatter)
-    # logging.getLogger("").addHandler(console)
     # ------ logging
 
 
