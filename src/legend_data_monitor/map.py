@@ -7,8 +7,6 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 
-from . import analysis
-
 j_config, j_par, j_plot = analysis.read_json_files()
 exp = j_config[0]["exp"]
 output = j_config[0]["path"]["output"]

@@ -1,0 +1,32 @@
+{
+    "dataset": {
+        "exp": "l200",
+        "period": "p02",
+        "version": "v06.00",
+        "path": "/data1/users/marshall/prod-ref",
+        "type": "phy",
+        "selection": {
+            "start": "2023/01/27 08:00:00",
+            "end": "2023/01/27 09:00:00"
+        }
+    },
+    "subsystems": {
+        "pulser": {
+            "quality_cut": false,
+            "parameters": ["bl_mean"],
+            "status": "problematic / all ?"
+        }
+    },
+    "plotting": {
+        "output": "dm_out",
+        "sampling": "3T",
+        "parameters": {
+            "bl_mean": {
+                "events": "pulser",
+                "plot_style" : "per channel",
+                "some_name": "absolute"
+            }
+        }
+    },
+    "verbose": true
+}
