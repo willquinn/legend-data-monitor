@@ -1,31 +1,31 @@
 {
-    "dataset": {
-        "exp": "l60",
-        "period": "p01",
-        "version": "v06.00",
-        "path": "/data1/shared/l60/l60-prodven-v1/prod-ref",
-        "type": "phy",
-        "selection": {
-            "runs": 25
-        }
-    },
-    "subsystems": {
-        "pulser": {
-            "quality_cut": false,
-            "parameters": ["baseline"],
-            "status": "problematic / all ?"
-        }
-    },
-    "plotting": {
-        "output": "dm_out",
-        "sampling": "3T",
-        "parameters": {
-            "baseline": {
-                "events": "all",
-                "plot_style" : "histogram",
-                "some_name": "absolute"
-            }
-        }
-    },
-    "verbose": true
+  "dataset": {
+    "exp": "l60",
+    "period": "p01",
+    "version": "v06.00",
+    "path": "/data1/shared/l60/l60-prodven-v1/prod-ref",
+    "type": "phy",
+    "selection": {
+      "runs": 25
+    }
+  },
+  "subsystems": {
+    "pulser": {
+      "quality_cut": false,
+      "parameters": ["baseline"],
+      "status": "problematic / all ?"
+    }
+  },
+  "plotting": {
+    "output": "dm_out",
+    "sampling": "3T",
+    "parameters": {
+      "baseline": {
+        "events": "all",
+        "plot_style": "histogram",
+        "some_name": "absolute"
+      }
+    }
+  },
+  "verbose": true
 }

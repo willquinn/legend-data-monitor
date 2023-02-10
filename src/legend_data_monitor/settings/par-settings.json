@@ -1,5 +1,5 @@
 {
-  "cuspEmax_ctc_cal":{
+  "cuspEmax_ctc_cal": {
     "label": "cusp Emax",
     "units": "keV"
   },
