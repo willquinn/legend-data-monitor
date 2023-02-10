@@ -71,12 +71,12 @@ class Dataset:
 
         Directly from input if selection mode is time range, time window, or key(s);
         from dsp files if selection mode is 'runs'.
-        
+
         >>> dataset.get_user_time_range()
         ['20220928T080000Z','20220928093000Z']
         """
-        time_range = {'start': 0, 'end': 0} # convenient for the loop
-        message = 'Time selection mode: '
+        time_range = {"start": 0, "end": 0}  # convenient for the loop
+        message = "Time selection mode: "
 
         # option 1: time window
         if "start" in config.dataset.selection:
@@ -133,9 +133,10 @@ class Dataset:
 
 
 def get_run(dsp_fname: str):
-    '''Eextract run from lh5 filename.'''    
-    return re.search('r-\d{3}', dsp_fname).group(0)[2:]
+    """Eextract run from lh5 filename."""
+    return re.search(r"r-\d{3}", dsp_fname).group(0)[2:]
+
 
 def get_key(dsp_fname: str):
-    '''Extract key from lh5 filename.'''
-    return re.search('-\d{8}T\d{6}Z', dsp_fname).group(0)[1:]    
+    """Extract key from lh5 filename."""
+    return re.search(r"-\d{8}T\d{6}Z", dsp_fname).group(0)[1:]

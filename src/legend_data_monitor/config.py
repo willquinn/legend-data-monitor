@@ -18,16 +18,16 @@ SINGLE_TO_LIST = {"dataset": {"type": 0, "selection": {"runs": 0}}}
 
 
 def Config(json_name: str):
-    '''
+    """
     json_name: path to user config json file.
-    
+
     Returns NestedAttrDict. Can't use inheritance because of conflicting kwargs
     in __init__ when passing self. Mascking this function to look like a class.
 
     >>> config = Config({'a': {'c':1, 'd':3}, 'b': 2})
     >>> config.a.c
     1
-    '''
+    """
     logging.error('Reading settings from ' + str(json_name) + '...')    
     
     with open(pkg / "settings" / json_name) as f:    
@@ -97,7 +97,7 @@ class PlotSettings:
         )
 
     def make_output_paths(self, conf):
-        ''' define output paths and create directories accordingly '''
+        """define output paths and create directories accordingly"""
         # general output path
         make_dir(conf.plotting.output)
 
@@ -127,22 +127,26 @@ class PlotSettings:
             'plot_style': plotting.plot_style.keys(),
             'some_name': ['variation', 'absolute']
         }
-        
+
         # for each parameter, check provided plot settings
         for param in self.param_settings:
             # look at every option available in plot settings
             for field in options:
                 # if this field is not provided by user, tell them to provide it
                 if field not in self.param_settings[param]:
-                    logging.error('Provide {} settings for {}!'.format(field, param))
-                    logging.error('Available options: {}'.format(','.join(options[field])))
+                    logging.error(f"Provide {field} settings for {param}!")
+                    logging.error(
+                        "Available options: {}".format(",".join(options[field]))
+                    )
                     sys.exit(1)
 
                 opt = self.param_settings[param][field]
 
                 if opt not in options[field]:
-                    logging.error('Option {} provided for {} does not exist!'.format(opt, param))
-                    logging.error('Available options: {}'.format(','.join(options[field])))
+                    logging.error(f"Option {opt} provided for {param} does not exist!")
+                    logging.error(
+                        "Available options: {}".format(",".join(options[field]))
+                    )
                     sys.exit(1)
 
     # ------ logging -> should go to dataset? settings? separate?
@@ -172,19 +176,21 @@ def check_settings(conf):
     for subsys in conf.subsystems:
         for param in conf.subsystems[subsys].parameters:
             if param not in conf.plotting.parameters:
-                logging.error(f'Parameter {param} is asked to be plotted for subsystem {subsys} but no plot settings are provided!')
+                logging.error(
+                    f"Parameter {param} is asked to be plotted for subsystem {subsys} but no plot settings are provided!"
+                )
                 sys.exit(1)
 
     # time selection types
     for key in conf.dataset.selection:
-        if key not in ['start','end', 'timestamps', 'runs']:
-            logging.error('Invalid dataset time selection!')
-            logging.error('Available selection: start & end, timestamps, or runs')
+        if key not in ["start", "end", "timestamps", "runs"]:
+            logging.error("Invalid dataset time selection!")
+            logging.error("Available selection: start & end, timestamps, or runs")
             sys.exit(1)
 
 
 def single_to_list(conf, dct=SINGLE_TO_LIST):
-    '''Recursively convert single entries to lists.'''
+    """Recursively convert single entries to lists."""
     for field in dct:
         if isinstance(dct[field], dict):
             conf[field] = single_to_list(conf[field], dct[field])
@@ -197,8 +203,8 @@ def single_to_list(conf, dct=SINGLE_TO_LIST):
 
 # ----------- helper function
 def make_dir(dir_path):
-    '''Check if directory exists, and if not, make it.'''
-    message = 'Output directory ' + dir_path
+    """Check if directory exists, and if not, make it."""
+    message = "Output directory " + dir_path
     if not os.path.isdir(dir_path):
         os.mkdir(dir_path)
         message += ' (created)'

@@ -25,8 +25,8 @@ def make_subsystem_plots(subsys, plot_settings):
     # -> TBD
     out_name = os.path.join(plot_settings.output_paths['pdf_files'], 'par_vs_time',
                                     plot_settings.basename + '_' + subsys.type + '.pdf')
-    pdf = PdfPages(out_name)        
-    
+    pdf = PdfPages(out_name)
+
     for param in subsys.parameters:
         # select data from subsystem data for given parameter based on parameter settings
         pardata = paramdata.ParamData(subsys, param, plot_settings)
@@ -75,9 +75,9 @@ def plot_ch_par_vs_time(pardata, pdf):
             data_location = data_location.set_index("position")
             # subtract mean from value for each position (i.e. channel)
             data_location[pardata.param] = (-data_location[pardata.param] / channel_mean['mean'] + 1) * 100 # %
-            data_location = data_location.reset_index()   
-            ylabel += ' - %'   
-    
+            data_location = data_location.reset_index()
+            ylabel += ' - %'
+
         # ---------------------------------------------
         # plot
 
@@ -165,7 +165,7 @@ def plot_ch_par_vs_time(pardata, pdf):
         # formatter - formats the x label
         formatter = DateFormatter("%Y\n%m/%d\n%H:%M")
 
-            
+
         # now add this stuff to axes
         for idx in range(len(axes)):
             # text

@@ -12,6 +12,7 @@ formatter = logging.Formatter("%(asctime)s:  %(message)s")
 console.setFormatter(formatter)
 logging.getLogger("").addHandler(console)
 
+
 def control_plots(user_config):
     # Read user settings
     # - read all json
