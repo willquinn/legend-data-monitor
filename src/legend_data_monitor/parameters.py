@@ -3,20 +3,26 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 
 import numpy as np
+import pandas as pd
 import pygama.lgdo.lh5_store as lh5
 
 from . import analysis
 
 j_config, j_par, _ = analysis.read_json_files()
-keep_puls_pars = j_config[5]["pulser"]["keep_puls_pars"]
-keep_phys_pars = j_config[5]["pulser"]["keep_phys_pars"]
-no_variation_pars = j_config[5]["plot_values"]["no_variation_pars"]
-qc_flag = j_config[5]["quality_cuts"]
+version = j_config[0]["path"]["version"]
+keep_puls_pars = j_config[6]["pulser"]["keep_puls_pars"]
+keep_phys_pars = j_config[6]["pulser"]["keep_phys_pars"]
+no_variation_pars = j_config[6]["plot_values"]["no_variation_pars"]
+qc_flag = j_config[6]["quality_cuts"]
+qc_version = j_config[6]["quality_cuts"]["version"]["QualityCuts_flag"][
+    "apply_to_version"
+]
+is_qc_version = j_config[6]["quality_cuts"]["version"]["isQC_flag"]["apply_to_version"]
 
 
 def load_parameter(
+    data: pd.DataFrame | list[str],
     parameter: str,
-    dsp_files: list[str],
     detector: str,
     det_type: str,
     time_cut: list[str],
@@ -30,12 +36,12 @@ def load_parameter(
 
     Parameters
     ----------
+    data
+                    Pandas dataframes containing dsp/hit data or list of dsp files
     parameter
                     Parameter to plot
-    dsp_files
-                    lh5 dsp files
     detector
-                    Name of the aoe
+                    Channel of the detector
     det_type
                     Type of detector (geds or spms)
     time_cut
@@ -50,9 +56,14 @@ def load_parameter(
                     Starting time of the code
     """
     no_cut_pars = ["event_rate", "K_lines"]
-    par_array = np.array([])
-    utime_array = lh5.load_nda(dsp_files, ["timestamp"], detector + "/dsp")["timestamp"]
-    hit_files = [dsp_file.replace("dsp", "hit") for dsp_file in dsp_files]
+    qc_method = analysis.get_qc_method(version, qc_version, is_qc_version)
+
+    if det_type == "spms":
+        utime_array = lh5.load_nda(data, ["timestamp"], detector + "/dsp")[
+            "timestamp"
+        ]  # <- remove it when DataLoader is working for spms too!
+    else:
+        utime_array = data["timestamp"]
 
     if all_ievt != [] and puls_only_ievt != [] and not_puls_ievt != []:
         det_only_index = np.isin(all_ievt, not_puls_ievt)
@@ -70,7 +81,7 @@ def load_parameter(
             keep_evt_index = det_only_index
         else:
             keep_evt_index = []
-        quality_index = analysis.get_qc_ievt(hit_files, detector, keep_evt_index)
+        quality_index = analysis.get_qc_ievt(data[qc_method], keep_evt_index)
         utime_array = utime_array[quality_index]
 
     # cutting time array according to time selection
@@ -80,20 +91,21 @@ def load_parameter(
     if len(utime_array_cut) == 0:
         return [], [], []
 
-    if parameter == "lc":
-        par_array = leakage_current(dsp_files, detector, det_type)
-    elif parameter == "energy_in_pe" and det_type == "spms":
+    if parameter == "energy_in_pe" and det_type == "spms":
+        hit_files = [dsp_file.replace("dsp", "hit") for dsp_file in data]
         par_array = lh5.load_nda(hit_files, ["energy_in_pe"], detector + "/hit")[
             "energy_in_pe"
         ]
-        # par_array = lh5.load_nda(dsp_files, ["energies"], detector+"/dsp")["energies"]
+        # par_array = data["energy_in_pe"] # <-- use it when DataLoader is working for spms
     elif parameter == "trigger_pos" and det_type == "spms":
+        hit_files = [dsp_file.replace("dsp", "hit") for dsp_file in data]
         par_array = lh5.load_nda(hit_files, ["trigger_pos"], detector + "/hit")[
             "trigger_pos"
         ]
+        # par_array = data["trigger_pos"]  # <-- use it when DataLoader is working for spms
     elif parameter == "event_rate":
         par_array, utime_array_cut = event_rate(
-            dsp_files,
+            data,
             utime_array,
             utime_array_cut,
             detector,
@@ -105,27 +117,11 @@ def load_parameter(
             start_code,
         )
     elif parameter == "uncal_puls":
-        par_array = lh5.load_nda(dsp_files, ["trapTmax"], detector + "/dsp")["trapTmax"]
+        par_array = data["trapTmax"]
     elif parameter == "cal_puls":
-        par_array = lh5.load_nda(hit_files, ["cuspEmax_ctc_cal"], detector + "/hit")[
-            "cuspEmax_ctc_cal"
-        ]
-    elif parameter == "AoE_Classifier":
-        par_array = lh5.load_nda(hit_files, ["AoE_Classifier"], detector + "/hit")[
-            "AoE_Classifier"
-        ]
-    elif parameter == "AoE_Corrected":
-        par_array = np.array(
-            lh5.load_nda(hit_files, ["AoE_Corrected"], detector + "/hit")[
-                "AoE_Corrected"
-            ]
-        )
+        par_array = data["cuspEmax_ctc_cal"]
     elif parameter == "K_lines":
-        par_array = np.array(
-            lh5.load_nda(hit_files, ["cuspEmax_ctc_cal"], detector + "/hit")[
-                "cuspEmax_ctc_cal"
-            ]
-        )
+        par_array = data["cuspEmax_ctc_cal"]
         # keep physical events
         if all_ievt != [] and puls_only_ievt != [] and not_puls_ievt != []:
             par_array = par_array[det_only_index]
@@ -134,17 +130,8 @@ def load_parameter(
             utime_array, par_array, time_cut, start_code
         )
         par_array, utime_array_cut = energy_potassium_lines(par_array, utime_array_cut)
-    elif parameter == "AoE_Classifier":
-        par_array = np.array(
-            lh5.load_nda(hit_files, ["AoE_Classifier"], detector + "/hit")[
-                "AoE_Classifier"
-            ]
-        )
     else:
-        par_array = lh5.load_nda(dsp_files, [parameter], detector + "/dsp")[parameter]
-        if parameter == "wf_max":
-            baseline = lh5.load_nda(dsp_files, ["baseline"], "ch000/dsp")["baseline"]
-            par_array = np.subtract(par_array, baseline)
+        par_array = data[parameter]
 
     if all_ievt != [] and puls_only_ievt != [] and not_puls_ievt != []:
         if parameter in keep_puls_pars:
@@ -176,10 +163,18 @@ def load_parameter(
     if np.isnan(par_array).any() and parameter not in ["energy_in_pe", "trigger_pos"]:
         par_array, utime_array_cut = analysis.remove_nan(par_array, utime_array_cut)
 
+    # convert pandas series to numpy array
+    if isinstance(par_array, pd.core.series.Series):
+        par_array = par_array.to_numpy()
+    if isinstance(utime_array_cut, pd.core.series.Series):
+        utime_array_cut = utime_array_cut.to_numpy()
+
     # Enable following lines to get the % variation of a parameter wrt to its mean value
     if parameter not in no_variation_pars and det_type not in ["spms", "ch000"]:
-        par_array_mean = np.mean(par_array[: int(0.05 * len(par_array))])
-        # par_array_mean = analysis.get_mean(parameter, detector)
+        # par_array_mean = np.mean(par_array[: int(0.05 * len(par_array))])
+        par_array_mean = analysis.get_mean(
+            par_array, utime_array_cut, parameter, detector
+        )
         par_array = np.subtract(par_array, par_array_mean)
         par_array = np.divide(par_array, par_array_mean) * 100
     else:
@@ -188,31 +183,8 @@ def load_parameter(
     return par_array_mean, par_array, utime_array_cut
 
 
-def leakage_current(dsp_files: list[str], detector: str, det_type: str):
-    """
-    Return the leakage current.
-
-    Parameters
-    ----------
-    dsp_files
-               lh5 dsp files
-    detector
-               Channel of the detector
-    det_type
-               Type of detector (geds or spms)
-    """
-    bl_det = lh5.load_nda(dsp_files, ["baseline"], detector + "/dsp")["baseline"]
-    bl_puls = lh5.load_nda(dsp_files, ["baseline"], "ch000/dsp")["baseline"][:100]
-    bl_puls_mean = np.mean(bl_puls)
-    lc = bl_det - bl_puls_mean
-
-    return (
-        lc * 2.5 / 500 / 3 / (2**16)
-    )  # using old GERDA (baseline -> lc) conversion factor
-
-
 def event_rate(
-    dsp_files: list[str],
+    data: pd.DataFrame,
     utime_array: list,
     timestamp: list,
     detector: str,
@@ -228,12 +200,12 @@ def event_rate(
 
     Parameters
     ----------
-    dsp_files
-                lh5 dsp files
+    data
+                Pandas dataframes containing dsp/hit data
     utime_array
                 List of shifted UTC timestamps - no time cut applied
     timestamp
-                List of shifted UTC timestamps
+                List of shifted UTC timestamps - time cut applied
     detector
                 Channel of the detector
     det_type
@@ -254,7 +226,8 @@ def event_rate(
 
     # for spms, we keep timestamp entries only if there's a non-null energy release
     if det_type == "spms":
-        energies = lh5.load_nda(dsp_files, ["energies"], detector + "/dsp")["energies"]
+        # energies = data["energies"] # <- use it when the DataLoader will work for spms and remove the following line
+        energies = lh5.load_nda(data, ["energies"], detector + "/dsp")["energies"]
 
         # remove nan entries
         energies = [entry[~np.isnan(entry)] for entry in energies]
@@ -291,8 +264,7 @@ def event_rate(
                 keep_evt_index = det_only_index
             else:
                 keep_evt_index = []
-            hit_files = [dsp_file.replace("dsp", "hit") for dsp_file in dsp_files]
-            quality_index = analysis.get_qc_ievt(hit_files, detector, keep_evt_index)
+            quality_index = analysis.get_qc_ievt(data["Quality_cuts"], keep_evt_index)
             energies = energies[quality_index]
             no_hits = no_hits[quality_index]
             if len(energies) == 0:
@@ -315,13 +287,16 @@ def event_rate(
         len_par = [no for no in no_hits]
         timestamp = [t for i, t in enumerate(timestamp) for _ in range(len_par[i])]
 
-    date_time = (((dsp_files[0].split("/")[-1]).split("-")[4]).split("Z")[0]).split("T")
+    # get the date+time of the first file included in the time range of interest
+    if det_type != "spms":  # <- remove it when the DataLoader will work for spms!
+        data = analysis.load_dsp_files(time_cut, start_code)
+    date_time = (((data[0].split("/")[-1]).split("-")[4]).split("Z")[0]).split("T")
     run_start = datetime.strptime(date_time[0] + date_time[1], "%Y%m%d%H%M%S")
     run_start = datetime.strptime(str(run_start), "%Y-%m-%d %H:%M:%S")
 
     i = 0
     j = datetime.timestamp(run_start + timedelta(days=0, hours=2, minutes=0))
-    dt = j_config[5]["Available-par"]["Other-par"]["event_rate"]["dt"]
+    dt = j_config[6]["par-info"]["event_rate"]["dt"]
 
     while j + dt <= timestamp[-1]:
         num = 0
@@ -333,7 +308,7 @@ def event_rate(
             times.append(j)
         j += dt
 
-    units = j_config[5]["Available-par"]["Other-par"]["event_rate"]["units"]
+    units = j_config[6]["par-info"]["event_rate"]["units"]
     if units == "mHz":
         fact = 1000
     if units == "Hz":

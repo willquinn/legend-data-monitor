@@ -3,20 +3,27 @@ from __future__ import annotations
 import importlib.resources
 import json
 import logging
+import operator
 import os
-from datetime import datetime
+import sys
+from datetime import datetime, timedelta
 
 import numpy as np
+import pandas as pd
 import pygama.lgdo.lh5_store as lh5
+from legendmeta import LegendMetadata
+from pygama.flow import DataLoader
 
 from . import timecut
 
 pkg = importlib.resources.files("legend_data_monitor")
+ops = {"<=": operator.le, "<": operator.lt, ">=": operator.ge, ">": operator.gt}
+lmeta = LegendMetadata()
 
 
 def read_json_files():
     """Read json files of 'settings/' folder and return three lists."""
-    with open(pkg / ".." / ".." / "config.json") as f:
+    with open(pkg / "settings" / "lngs-config.json") as f:
         data_config = json.load(f)
     with open(pkg / "settings" / "par-settings.json") as g:
         data_par = json.load(g)
@@ -29,52 +36,398 @@ def read_json_files():
     j_config.append(data_config["run_info"])  # 0
     j_config.append(data_config["period"])  # 1
     j_config.append(data_config["run"])  # 2
-    j_config.append(data_config["datatype"])  # 3
-    j_config.append(data_config["det_type"])  # 4
-    j_config.append(data_config["par_to_plot"])  # 5
-    j_config.append(data_config["plot_style"])  # 6
-    j_config.append(data_config["time_window"])  # 7
-    j_config.append(data_config["last_hours"])  # 8
-    j_config.append(data_config["status"])  # 9
-    j_config.append(data_config["time-format"])  # 10
-    j_config.append(data_config["verbose"])  # 11
+    j_config.append(data_config["file_keys"])  # 3
+    j_config.append(data_config["datatype"])  # 4
+    j_config.append(data_config["det_type"])  # 5
+    j_config.append(data_config["par_to_plot"])  # 6
+    j_config.append(data_config["plot_style"])  # 7
+    j_config.append(data_config["time_window"])  # 8
+    j_config.append(data_config["last_hours"])  # 9
+    j_config.append(data_config["status"])  # 10
+    j_config.append(data_config["time-format"])  # 11
+    j_config.append(data_config["verbose"])  # 12
 
     j_par.append(data_par["par_to_plot"])  # 0
 
-    j_plot.append(data_plot["spms_name_dict"])  # 0
-    j_plot.append(data_plot["geds_name_dict"])  # 1
-    j_plot.append(data_plot["spms_col_dict"])  # 2
-    j_plot.append(data_plot["geds_col_dict"])  # 3
+    j_plot.append(data_plot["spms_col_dict"])  # 0
+    j_plot.append(data_plot["geds_col_dict"])  # 1
 
     return j_config, j_par, j_plot
 
 
 j_config, j_par, j_plot = read_json_files()
+exp = j_config[0]["exp"]
 files_path = j_config[0]["path"]["lh5-files"]
 version = j_config[0]["path"]["version"]
+output = j_config[0]["path"]["output"]
 period = j_config[1]
 run = j_config[2]
-datatype = j_config[3]
-keep_puls_pars = j_config[5]["pulser"]["keep_puls_pars"]
-keep_phys_pars = j_config[5]["pulser"]["keep_phys_pars"]
+file_keys = j_config[3]
+datatype = j_config[4]
+keep_puls_pars = j_config[6]["pulser"]["keep_puls_pars"]
+keep_phys_pars = j_config[6]["pulser"]["keep_phys_pars"]
+keep_phys_pars = j_config[6]["pulser"]["keep_phys_pars"]
+qc_flag = j_config[6]["quality_cuts"]
+qc_version = j_config[6]["quality_cuts"]["version"]["QualityCuts_flag"][
+    "apply_to_version"
+]
+is_qc_version = j_config[6]["quality_cuts"]["version"]["isQC_flag"]["apply_to_version"]
+time_window = j_config[8]
+last_hours = j_config[9]
+verbose = j_config[12]
+
+
+def write_config(
+    files_path: str,
+    version: str,
+    det_map: list[list[str]],
+    parameters: list[str],
+    det_type: str,
+):
+    """
+    Write DataLoader config file.
+
+    Parameters
+    ----------
+    files_path
+                Path previous to generated files path
+    version
+                Version of processed data
+    det_map
+                Map of detectors
+    parameters
+                Parameters to plot
+    det_type
+                Type of detector (geds, spms or ch000)
+    """
+    if "0" in det_type:
+        if det_type == "ch00":
+            det_type = "evts"
+        det_list = [0]
+        dict_dbconfig = {
+            "data_dir": files_path + version + "/generated/tier",
+            "tier_dirs": {"dsp": "/dsp"},
+            "file_format": {
+                "dsp": "/phy/{period}/{run}/{exp}-{period}-{run}-phy-{timestamp}-tier_dsp.lh5"
+            },
+            "table_format": {"dsp": "ch{ch:03d}/dsp"},
+            "tables": {"dsp": det_list},
+            "columns": {"dsp": parameters},
+        }
+        dict_dlconfig = {"levels": {"dsp": {"tiers": ["dsp"]}}, "channel_map": {}}
+    else:
+        # flattening list[list[str]] to list[str]
+        flat_list = [ch for det in det_map for ch in det]
+
+        # converting channel number to int to give array as input to FileDB
+        det_list = [int(elem.split("ch")[-1]) for elem in flat_list]
+
+        # removing channels having no hit data
+        if "60" in exp:
+            run = "r022"
+        if "200" in exp:
+            run = "r010"
+        json_file = f"{exp.upper()}-{period}-{run}-T%-all-config"
+        map_lmeta = lmeta["dataprod"]["config"]
+        status_dict = map_lmeta[json_file]["hardware_configuration"]["channel_map"]
+
+        removed_chs = [
+            int(k.split("ch")[-1])
+            for k, v in status_dict.items()
+            if v["software_status"] == "Off"
+        ]
+        for ch in removed_chs:
+            if ch in det_list:
+                det_list.remove(ch)
+
+        dict_dbconfig = {
+            "data_dir": files_path + version + "/generated/tier",
+            "tier_dirs": {"dsp": "/dsp", "hit": "/hit"},
+            "file_format": {
+                "dsp": "/phy/{period}/{run}/{exp}-{period}-{run}-phy-{timestamp}-tier_dsp.lh5",
+                "hit": "/phy/{period}/{run}/{exp}-{period}-{run}-phy-{timestamp}-tier_hit.lh5",
+            },
+            "table_format": {"dsp": "ch{ch:03d}/dsp", "hit": "ch{ch:03d}/hit"},
+            "tables": {"dsp": det_list, "hit": det_list},
+            "columns": {"dsp": parameters, "hit": parameters},
+        }
+        dict_dlconfig = {
+            "levels": {"hit": {"tiers": ["dsp", "hit"]}},
+            "channel_map": {},
+        }
+
+    # Serializing json
+    json_dbconfig = json.dumps(dict_dbconfig, indent=4)
+    json_dlconfig = json.dumps(dict_dlconfig, indent=4)
+
+    # Writing to _.json
+    dbconfig_filename = str(pkg / "settings" / f"dbconfig_{det_type}.json")
+    dlconfig_filename = str(pkg / "settings" / f"dlconfig_{det_type}.json")
+
+    # Writing FileDB config file
+    with open(dbconfig_filename, "w") as outfile:
+        outfile.write(json_dbconfig)
+
+    # Writing DataLoader config file
+    with open(dlconfig_filename, "w") as outfile:
+        outfile.write(json_dlconfig)
+
+    return dbconfig_filename, dlconfig_filename
+
+
+def read_from_dataloader(
+    dbconfig: str, dlconfig: str, query: str | list[str], parameters: list[str]
+):
+    """
+    Return the loaded data as a pandas DataFrame.
+
+    Parameters
+    ----------
+    dbconfig
+                Database filename
+    dlconfig
+                Configuration filename
+    query
+                Cut over files
+    parameters
+                Parameters to load
+    """
+    dl = DataLoader(dlconfig, dbconfig)
+    dl.set_files(query)
+    dl.set_output(fmt="pd.DataFrame", columns=parameters)
+
+    return dl.load()
+
+
+def set_query(time_cut: list, start_code: str, run: str | list[str]):
+    """
+    Load specific runs and/or files.
+
+    Parameters
+    ----------
+    time_cut
+                List with info about time cuts
+    start_code
+                Starting time of the code
+    run
+                Run(s) to load
+    """
+    query = ""
+
+    # Reading from file or list of keys
+    if file_keys != "":
+        if isinstance(file_keys, list):
+            query = file_keys
+        else:
+            with open(file_keys) as f:
+                lines = f.readlines()
+            keys = [(line.strip("\n")).split("-")[-1] for line in lines]
+            query = keys
+
+    # Applying time cut
+    if len(time_cut) > 0:
+        start, stop = timecut.time_dates(time_cut, start_code)
+        start_datetime = datetime.strptime(start, "%Y%m%dT%H%M%SZ")
+        start_datetime = start_datetime - timedelta(minutes=120)
+        start = start_datetime.strftime("%Y%m%dT%H%M%SZ")
+        if query != "":
+            query += " and "
+        query += f"timestamp > '{start}' and timestamp < '{stop}'"
+
+    # Applying run cut
+    if run:
+        if query != "":
+            query += " and "
+        if isinstance(run, str):
+            query += f"run == '{run}'"
+        elif isinstance(run, list):
+            for r in run:
+                query += f"run == '{r}' or "
+            # Just the remove the final 'or'
+            query = query[:-4]
+
+    if query == "":
+        logging.error(
+            "Empty query: provide at least a run, a time interval or a list of files to open, try again!"
+        )
+        sys.exit(1)
+
+    return query
+
+
+def get_qc_method(version: str, qc_version: str, is_qc_version: str):
+    """
+    Define the quality cut method to use, depending on the version of processed files under inspection.
+
+    Parameters
+    ----------
+    version
+                Version of processed files under inspection
+    qc_version
+                Version condition for Quality_Cuts flag (eg. "<=v06.00")
+    is_qc_version
+                Version condition for isQC flag (eg. ">v06.00")
+    """
+    # if True, we use 'Quality_cuts' as quality cuts
+    if ops[qc_version[:-6]](version, qc_version[-6:]):
+        qc_method = "Quality_cuts"
+
+    # if True, we use 'is_valid_0vbb' as quality cuts
+    elif ops[is_qc_version[:-6]](version, is_qc_version[-6:]):
+        # get available parameters in hit files
+        config_hit_file_path = files_path + version + "/inputs/config/tier_hit/"
+        config_hit_file = [
+            config_hit_file_path + f
+            for f in os.listdir(config_hit_file_path)
+            if "ICPC" in f
+        ][0]
+        with open(config_hit_file) as d:
+            hit_dict = json.load(d)
+        avail_hit_pars = hit_dict["outputs"]
+
+        # check if the wanted selection has been implemented in the version of interest or not
+        config_selection = j_config[6]["quality_cuts"]["version"]["isQC_flag"]["which"]
+        if config_selection in avail_hit_pars:
+            qc_method = j_config[6]["quality_cuts"]["version"]["isQC_flag"]["which"]
+        else:
+            logging.error(
+                f"'{config_selection}' has not been implemented in version {version}, try again with another flag, another version in {files_path}!\n(...or check quality cut versions in config file...)"
+            )
+            sys.exit(1)
+
+    else:
+        logging.error(
+            "There is a conflict among files' version and quality cuts versions, check it!"
+        )
+        sys.exit(1)
+
+    return qc_method
+
+
+def load_df_cols(par_to_plot: list[str], det_type: str):
+    """
+    Load parameters to plot starting from config file input.
+
+    Parameters
+    ----------
+    par_to_plot
+                Parameters to load for a given type of detector.
+    det_type
+                Type of detector (geds or spms)
+    """
+    db_parameters = par_to_plot
+
+    if "uncal_puls" in db_parameters:
+        db_parameters = [db.replace("uncal_puls", "trapTmax") for db in db_parameters]
+    if "cal_puls" in db_parameters:
+        db_parameters = [
+            db.replace("cal_puls", "cuspEmax_ctc_cal") for db in db_parameters
+        ]
+    if "K_lines" in db_parameters:
+        db_parameters = [
+            db.replace("K_lines", "cuspEmax_ctc_cal") for db in db_parameters
+        ]
+    if "event_rate" in db_parameters:
+        if det_type == "spms":
+            db_parameters = [
+                db.replace("event_rate", "energies") for db in db_parameters
+            ]
+
+    # load quality cuts, if enabled
+    if qc_flag[det_type] is True:
+        qc_method = get_qc_method(version, qc_version, is_qc_version)
+        db_parameters.append(qc_method)
+
+    # load always timestamps
+    db_parameters.append("timestamp")
+
+    return db_parameters
 
 
 def load_geds():
     """Load channel map for geds."""
-    config_path = j_config[0]["path"]["geds-config"]
-    with open(config_path) as d:
-        channel_map = json.load(d)
-    geds_dict = channel_map["hardware_configuration"]["channel_map"]
+    ex = "l" + exp.split("l")[1].zfill(3)
+    json_file = f"{ex}-{period}-r%-T%-all-config"
+    map_lmeta = lmeta["hardware"]["configuration"]["channelmaps"]
+    channel_map = map_lmeta[json_file]
+
+    geds_dict = {}
+    for k1, v1 in channel_map.items():
+        if v1["system"] == "geds":  # keep only geds
+            info_dict = {}
+            info_dict["system"] = v1["system"]
+            # info_dict["det_type"] = k1["det_type"]
+            info_dict["electronics"] = v1["electronics"]
+            info_dict["det_id"] = k1
+
+            for k2, v2 in v1.items():
+                if k2 == "location":
+                    info_dict["string"] = {
+                        "number": str(v2["string"]),
+                        "position": str(v2["position"]),
+                    }
+                if k2 == "daq":
+                    info_dict[k2] = {
+                        "board_ch": str(v1[k2]["channel"]),
+                        "board_slot": str(v2["card"]["id"]),
+                        "board_id": str(v2["card"]["address"]),
+                        "crate": str(v1[k2]["crate"]),
+                    }
+                if k2 == "voltage":
+                    info_dict["high_voltage"] = v1[k2]
+
+            # get the FC channel
+            channel = v1["daq"]["fcid"]
+            if channel < 10:
+                channel = f"ch00{channel}"
+            elif channel > 9 and channel < 100:
+                channel = f"ch0{channel}"
+            else:
+                channel = f"ch{channel}"
+            # final dictionary
+            geds_dict[channel] = info_dict
+
+        # sorting channels in dict
+        geds_keys = list(geds_dict.keys())
+        geds_keys.sort()
+        geds_dict = {i: geds_dict[i] for i in geds_keys}
 
     return geds_dict
 
 
-def load_spms(raw_files: list[str]):
+def load_spms():
     """Load channel map for spms."""
-    config_path = j_config[0]["path"]["spms-config"]
-    with open(config_path) as d:
-        channel_map = json.load(d)
-    spms_dict = channel_map
+    ex = "l" + exp.split("l")[1].zfill(3)
+    json_file = f"{ex}-{period}-r%-T%-all-config"
+    map_lmeta = lmeta["hardware"]["configuration"]["channelmaps"]
+    channel_map = map_lmeta[json_file]
+
+    spms_dict = {}
+    for _, v1 in channel_map.items():
+        if v1["system"] == "spms":  # keep only spms
+            info_dict = {}
+            info_dict["system"] = v1["system"]
+            info_dict["det_id"] = v1["name"]
+            info_dict["barrel"] = str(v1["location"]["fiber"])[:2]
+            info_dict["position"] = str(v1["location"]["position"])
+            info_dict["daq"] = v1["daq"]
+            info_dict["electronics"] = v1["electronics"]
+
+            # get the FC channel
+            channel = v1["daq"]["fcid"]
+            if channel < 10:
+                channel = f"ch00{channel}"
+            elif channel > 9 and channel < 100:
+                channel = f"ch0{channel}"
+            else:
+                channel = f"ch{channel}"
+            # final dictionary
+            spms_dict[channel] = info_dict
+
+    # sorting channels in dict
+    spms_keys = list(spms_dict.keys())
+    spms_keys.sort()
+    spms_dict = {i: spms_dict[i] for i in spms_keys}
 
     return spms_dict
 
@@ -92,11 +445,7 @@ def read_geds(geds_dict: dict):
     string_name = []
 
     # no of strings
-    str_no = [
-        v["string"]["number"]
-        for k, v in geds_dict.items()
-        if v["string"]["number"] != "--"
-    ]
+    str_no = [v["string"]["number"] for k, v in geds_dict.items()]
     min_str = int(min(str_no))
     max_str = int(max(str_no))
     idx = min_str
@@ -124,70 +473,6 @@ def read_geds(geds_dict: dict):
     return string_tot, string_name
 
 
-def read_spms_old(spms_dict: dict):
-    """
-    Build two lists for IN and OUT spms.
-
-    Parameters
-    ----------
-    spms_dict
-               Contains info (crate, card, ch_orca) for spms
-    """
-    spms_map = json.load(open(pkg / "settings" / "spms_map.json"))
-    top_ob = []
-    bot_ob = []
-    top_ib = []
-    bot_ib = []
-
-    # loop over spms channels (i.e. channels w/ crate=2)
-    for ch in list(spms_dict.keys()):
-        card = spms_dict[ch]["daq"]["card"]
-        ch_orca = spms_dict[ch]["daq"]["ch_orca"]
-
-        idx = "0"
-        for serial in list(spms_map.keys()):
-            if (
-                spms_map[serial]["card"] == card
-                and spms_map[serial]["ch_orca"] == ch_orca
-            ):
-                idx = str(serial)
-        if idx == "0":
-            continue
-
-        spms_type = spms_map[idx]["type"]
-        spms_pos = spms_map[idx]["pos"]
-        if spms_type == "OB" and spms_pos == "top":
-            top_ob.append(ch)
-        if spms_type == "OB" and spms_pos == "bot":
-            bot_ob.append(ch)
-        if spms_type == "IB" and spms_pos == "top":
-            top_ib.append(ch)
-        if spms_type == "IB" and spms_pos == "bot":
-            bot_ib.append(ch)
-
-    half_len_top_ob = int(len(top_ob) / 2)
-    half_len_bot_ob = int(len(bot_ob) / 2)
-    top_ob_1 = top_ob[half_len_top_ob:]
-    top_ob_2 = top_ob[:half_len_top_ob]
-    bot_ob_1 = bot_ob[half_len_bot_ob:]
-    bot_ob_2 = bot_ob[:half_len_bot_ob]
-
-    string_tot_div = [top_ob_1, top_ob_2, bot_ob_1, bot_ob_2, top_ib, bot_ib]
-    string_name_div = [
-        "top_OB-1",
-        "top_OB-2",
-        "bot_OB-1",
-        "bot_OB-2",
-        "top_IB",
-        "bot_IB",
-    ]
-
-    string_tot = [top_ob, bot_ob, top_ib, bot_ib]
-    string_name = ["top_OB", "bot_OB", "top_IB", "bot_IB"]
-
-    return string_tot, string_name, string_tot_div, string_name_div
-
-
 def read_spms(spms_dict: dict):
     """
     Build two lists for IN and OUT spms.
@@ -202,26 +487,152 @@ def read_spms(spms_dict: dict):
     top_ib = []
     bot_ib = []
 
-    # loop over spms channels (i.e. channels w/ crate=2)
+    # loop over spms channels
     for ch in list(spms_dict.keys()):
-        # card = spms_dict[ch]["daq"]["card"]
-        # ch_orca = spms_dict[ch]["daq"]["ch_orca"]
         spms_type = spms_dict[ch]["barrel"]
-        det_name_int = int(spms_dict[ch]["det_id"].split("S")[1])
+        position = spms_dict[ch]["position"]
 
-        if spms_type == "OB" and det_name_int % 2 != 0:
+        if spms_type == "OB" and position == "top":
             top_ob.append(ch)
-        if spms_type == "OB" and det_name_int % 2 == 0:
+        if spms_type == "OB" and position == "bottom":
             bot_ob.append(ch)
-        if spms_type == "IB" and det_name_int % 2 != 0:
+        if spms_type == "IB" and position == "top":
             top_ib.append(ch)
-        if spms_type == "IB" and det_name_int % 2 == 0:
+        if spms_type == "IB" and position == "bottom":
             bot_ib.append(ch)
 
     string_tot = [top_ob, bot_ob, top_ib, bot_ib]
     string_name = ["top_OB", "bot_OB", "top_IB", "bot_IB"]
 
     return string_tot, string_name, string_tot, string_name
+
+
+def load_dsp_files(time_cut: list[str], start_code: str):
+    """
+    Load dsp files applying the time cut over filenames.
+
+    Parameters
+    ----------
+    time_cut
+                List with info about time cuts
+    start_code
+                Starting time of the code
+    """
+    path = files_path + version + "/generated/tier"
+    avail_runs = os.listdir(path + "/dsp/" + datatype + "/" + period)
+
+    full_paths = []
+    # load files of all runs (there is no enabled run(s) selection)
+    if run == "":
+        for avail_run in avail_runs:
+            full_paths.append(os.path.join(path, "dsp", datatype, period, avail_run))
+    # run(s) selection is enabled
+    else:
+        if isinstance(run, str):
+            full_paths.append(os.path.join(path, "dsp", datatype, period, run))
+        if isinstance(run, list):
+            for r in run:
+                full_paths.append(os.path.join(path, "dsp", datatype, period, r))
+
+    # get list of lh5 files in chronological order
+    lh5_files = []
+    for full_path in full_paths:
+        for lh5_file in os.listdir(full_path):
+            lh5_files.append(lh5_file)
+
+    lh5_files = sorted(
+        lh5_files,
+        key=lambda file: int(
+            ((file.split("-")[4]).split("Z")[0]).split("T")[0]
+            + ((file.split("-")[4]).split("Z")[0]).split("T")[1]
+        ),
+    )
+
+    # keep 'cal' or 'phy' data
+    loaded_files = [f for f in lh5_files if datatype in f]
+
+    # get time cuts info
+    time_cut = timecut.build_timecut_list(time_window, last_hours)
+
+    # keep some keys (if specified)
+    if len(time_cut) == 0 and file_keys != "":
+        # it's a file of keys; let's convert it into a list
+        if isinstance(file_keys, list):
+            list_keys = file_keys
+        else:
+            with open(file_keys) as f:
+                lines = f.readlines()
+            list_keys = [line.strip("\n") for line in lines]
+        loaded_files = [f for f in loaded_files for k in list_keys if k in f]
+
+    # apply time cut to lh5 filenames
+    if len(time_cut) == 3:
+        loaded_files = timecut.cut_below_threshold_filelist(
+            full_path, loaded_files, time_cut, start_code
+        )
+    if len(time_cut) == 4:
+        loaded_files = timecut.cut_min_max_filelist(full_path, loaded_files, time_cut)
+
+    # get full file paths
+    lh5_files = []
+    for lh5_file in loaded_files:
+        run_no = lh5_file.split("-")[-4]
+        lh5_files.append(os.path.join(path, "dsp", datatype, period, run_no, lh5_file))
+
+    dsp_files = []
+    for lh5_file in lh5_files:
+        if os.path.isfile(lh5_file.replace("dsp", "hit")):
+            dsp_files.append(lh5_file)
+
+    if len(dsp_files) == 0:
+        if verbose is True:
+            logging.error("There are no files to inspect!")
+            sys.exit(1)
+
+    return dsp_files
+
+
+def get_files_timestamps(time_cut: list[str], start_code: str):
+    """
+    Get the first and last timestamps of the time range of interest.
+
+    Parameters
+    ----------
+    time_cut
+                List with info about time cuts
+    start_code
+                Starting time of the code
+    """
+    if time_window["enabled"] is True or last_hours["enabled"] is True:
+        if run == "" and file_keys == "":
+            first_timestamp, last_timestamp = timecut.time_dates(time_cut, start_code)
+        else:
+            logging.error("Too many time selections are enabled, pick one!")
+            sys.exit(1)
+
+    if time_window["enabled"] is False and last_hours["enabled"] is False:
+        if run != "" and file_keys != "":
+            logging.error("Too many time selections are enabled, pick one!")
+            sys.exit(1)
+
+        # (run(s) selection OR everything ) || (keys selection)
+        if ((run != "" and file_keys == "") or (run == "" and file_keys == "")) or (
+            run == "" and file_keys != ""
+        ):
+            files = load_dsp_files(time_cut, start_code)
+            first_file = files[0]
+            last_file = files[-1]
+            first_timestamp = ((first_file.split("/")[-1]).split("-"))[4]
+            last_timestamp = (
+                lh5.load_nda(last_file, ["timestamp"], "ch000/dsp")["timestamp"]
+            )[
+                -1
+            ] - 2 * 60 * 60  # in seconds (2h shift)
+            last_timestamp = datetime.fromtimestamp(last_timestamp).strftime(
+                "%Y%m%dT%H%M%SZ"
+            )
+
+    return [first_timestamp, last_timestamp]
 
 
 def check_par_values(
@@ -307,26 +718,6 @@ def check_par_values(
     return thr_flag
 
 
-def add_offset_to_timestamp(tmp_array: np.ndarray, dsp_file: list[str]):
-    """
-    Add a time shift to the filename given by the time shown in 'runtime'.
-
-    Parameters
-    ----------
-    tmp_array
-                Time since beginning of file
-    dsp_file
-                lh5 dsp file
-    """
-    date_time = (((dsp_file.split("/")[-1]).split("-")[4]).split("Z")[0]).split("T")
-    date = date_time[0]
-    time = date_time[1]
-    run_start = datetime.strptime(date + time, "%Y%m%d%H%M%S")
-    utime_array = tmp_array + np.full(tmp_array.size, run_start.timestamp())
-
-    return utime_array
-
-
 def time_analysis(
     utime_array: np.ndarray, par_array: np.ndarray, time_cut: list[str], start_code: str
 ):
@@ -376,30 +767,76 @@ def time_analysis(
     return utime_array, par_array
 
 
-def get_puls_ievt(dsp_files: list[str]):
+def get_puls_ievt(query: str):
     """
     Select pulser events.
 
     Parameters
     ----------
-    dsp_files
-               lh5 dsp file
+    query
+            Cut over files
     """
-    wf_max = lh5.load_nda(dsp_files, ["wf_max"], "ch000/dsp/")["wf_max"]
-    baseline = lh5.load_nda(dsp_files, ["baseline"], "ch000/dsp")["baseline"]
+    parameters = ["wf_max", "baseline"]
+    dbconfig_filename, dlconfig_filename = write_config(
+        files_path, version, [["ch00"]], parameters, "ch00"
+    )
+    ch0_data = read_from_dataloader(
+        dbconfig_filename, dlconfig_filename, query, parameters
+    )
+
+    wf_max = ch0_data["wf_max"]
+    baseline = ch0_data["baseline"]
+
     wf_max = np.subtract(wf_max, baseline)
     puls_ievt = []
-    # baseline_entry = []
     pulser_entry = []
     not_pulser_entry = []
     high_thr = 12500
-    # low_thr = 2500
 
     for idx, entry in enumerate(wf_max):
         puls_ievt.append(idx)
         if entry > high_thr:
             pulser_entry.append(idx)
-        else:
+        if entry < high_thr:
+            not_pulser_entry.append(idx)
+
+    # pulser+physical events
+    puls_ievt = np.array(puls_ievt)
+    # HW pulser+FC entries
+    puls_only_ievt = puls_ievt[np.isin(puls_ievt, pulser_entry)]
+    # physical entries
+    not_puls_ievt = puls_ievt[np.isin(puls_ievt, not_pulser_entry)]
+
+    return puls_ievt, puls_only_ievt, not_puls_ievt
+
+
+def get_puls_ievt_spms(dsp_files: list[str]):
+    """
+    Select pulser events for spms only.
+
+    Parameters
+    ----------
+    dsp_files
+            List of dsp files
+    """
+    if "60" in exp:
+        ch_pul = "ch000"
+    if "200" in exp:
+        ch_pul = "ch001"
+
+    wf_max = lh5.load_nda(dsp_files, ["wf_max"], f"{ch_pul}/dsp/")["wf_max"]
+    baseline = lh5.load_nda(dsp_files, ["baseline"], f"{ch_pul}/dsp")["baseline"]
+    wf_max = np.subtract(wf_max, baseline)
+    puls_ievt = []
+    pulser_entry = []
+    not_pulser_entry = []
+    high_thr = 12500
+
+    for idx, entry in enumerate(wf_max):
+        puls_ievt.append(idx)
+        if entry > high_thr:
+            pulser_entry.append(idx)
+        if entry < high_thr:
             not_pulser_entry.append(idx)
 
     # pulser+physical events
@@ -413,8 +850,7 @@ def get_puls_ievt(dsp_files: list[str]):
 
 
 def get_qc_ievt(
-    hit_files: list,
-    detector: str,
+    quality_index: np.array,
     keep_evt_index: np.array,
 ):
     """
@@ -422,17 +858,11 @@ def get_qc_ievt(
 
     Parameters
     ----------
-    hit_files
-                lh5 hit files
-    detector
-                Name of the detector
+    quality_index
+                    Quality cuts, event by event
     keep_evt_index
-                Event number for either high energy pulser or physical events
+                    Event number for either high energy pulser or physical events
     """
-    quality_index = lh5.load_nda(hit_files, ["Quality_cuts"], detector + "/hit")[
-        "Quality_cuts"
-    ]
-
     if keep_evt_index != []:
         quality_index = quality_index[keep_evt_index]
 
@@ -452,8 +882,8 @@ def remove_nan(par_array: np.ndarray, time_array: np.ndarray):
     """
     par_array_no_nan = par_array[~np.isnan(par_array)]
     time_array_no_nan = time_array[~np.isnan(par_array)]
-
-    return np.asarray(par_array_no_nan), np.asarray(time_array_no_nan)
+    return par_array_no_nan, time_array_no_nan
+    # return np.asarray(par_array_no_nan), np.asarray(time_array_no_nan)
 
 
 def avg_over_entries(par_array: np.ndarray, time_array: np.ndarray):
@@ -504,7 +934,7 @@ def avg_over_minutes(par_array: np.ndarray, time_array: np.ndarray):
     par_avg = []
     time_avg = []
 
-    dt = j_config[6]["avg_interval"] * 60  # minutes in seconds
+    dt = j_config[7]["avg_interval"] * 60  # minutes in seconds
     start = time_array[0]
     end = time_array[-1]
 
@@ -537,7 +967,12 @@ def avg_over_minutes(par_array: np.ndarray, time_array: np.ndarray):
     return par_avg, time_avg
 
 
-def get_mean(parameter: str, detector: str):
+def get_mean(
+    par_array: np.ndarray | pd.core.series.Series,
+    time_array: np.ndarray | pd.core.series.Series,
+    parameter: str,
+    detector: str,
+):
     """
     Evaluate the average over first files/hours. It is used when we want to show the percentage variation of a parameter with respect to its average value.
 
@@ -548,77 +983,50 @@ def get_mean(parameter: str, detector: str):
     detector
                 Name of the detector
     """
-    input_dsp = files_path + version + "/inputs/config/tier_dsp/"
-    input_hit = files_path + version + "/inputs/config/tier_hit/"
-    config_dsp = os.listdir(input_dsp)
-    config_hit = os.listdir(input_hit)
-    config_dsp = [input_dsp + f for f in config_dsp if "ICPC" in f][0]
-    config_hit = [input_hit + f for f in config_hit if "ICPC" in f][0]
-    with open(config_dsp) as d:
-        outputs_dsp = json.load(d)
-    dsp_pars = outputs_dsp["outputs"]
-    with open(config_hit) as h:
-        outputs_hit = json.load(h)
-    hit_pars = outputs_hit["outputs"]
-    # get the parameter's tier
-    if parameter in dsp_pars:
-        file_type = "dsp"
-    if parameter in hit_pars:
-        file_type = "hit"
+    # output path with json files
+    out_path = output
+    json_path = os.path.join(out_path, "json-files")
 
-    # get the path of files for a given parameter, depending if it belongs to the dsp or hit tier
-    file_path = (
-        files_path
-        + version
-        + "/generated/tier/"
-        + file_type
-        + "/"
-        + datatype
-        + "/"
-        + period
-        + "/"
-        + run
-        + "/"
-    )
+    # defining json file name for this run
+    run_name = ""
+    if isinstance(run, str):
+        run_name = run
+    elif isinstance(run, list):
+        for r in run:
+            run_name = run_name + r + "-"
+        run_name = run_name[:-1]
 
-    # get list of lh5 files in chronological order
-    lh5_files = os.listdir(file_path)
-    lh5_files = sorted(
-        lh5_files,
-        key=lambda file: int(
-            ((file.split("-")[4]).split("Z")[0]).split("T")[0]
-            + ((file.split("-")[4]).split("Z")[0]).split("T")[1]
-        ),
-    )
-    lh5_files = [file_path + f for f in lh5_files]
+    jsonfile_name = f"{exp}-{period}-{run_name}-{datatype}.json"
 
-    par_array = lh5.load_nda(lh5_files, [parameter], detector + "/" + file_type)[
-        parameter
-    ]
-    # apply selection of pulser/physical events
-    all_ievt, puls_only_ievt, not_puls_ievt = get_puls_ievt(lh5_files)
-    if all_ievt != [] and puls_only_ievt != [] and not_puls_ievt != []:
-        det_only_index = np.isin(all_ievt, not_puls_ievt)
-        puls_only_index = np.isin(all_ievt, puls_only_ievt)
-        if parameter in keep_puls_pars:
-            par_array = par_array[puls_only_index]
-        if parameter in keep_phys_pars:
-            par_array = par_array[det_only_index]
+    # list with all the files already saved in out/json_files directory
+    file_list = os.listdir(json_path)
 
-    # use the first file (about 1h long) to compute the mean of a parameter
-    len_first = len(
-        lh5.load_nda(lh5_files[0], [parameter], detector + "/" + file_type)[parameter]
-    )
-    par_array_mean = np.mean(par_array[:len_first])
+    # if file already exists, open it and get mean for detector/parameter
+    if jsonfile_name in file_list:
+        with open(json_path + "/" + jsonfile_name) as file:
+            mydict = json.load(file)
+            mean = mydict[detector][parameter]
+            mean = float(mean)
+    else:
+        # whatever the time length, compute mean over 1h of data
+        first_hour_indices = np.where(time_array < time_array[0] + 3600)
+        par_array = par_array[first_hour_indices]
+        mean = np.mean(par_array)
 
-    return par_array_mean
+    return mean
 
 
 def set_pkl_name(
-    exp, period, run, datatype, det_type, string_number, parameter, time_cut, start_code
+    exp: str,
+    period: str,
+    datatype: str,
+    det_type: str,
+    string_number: str,
+    parameter: str,
+    time_range: list[str],
 ):
     """
-    Set the pkl filename.
+    Set the pkl file's name.
 
     Parameters
     ----------
@@ -631,40 +1039,33 @@ def set_pkl_name(
     datatype
             Either 'cal' or 'phy'
     det_type
-            Type of detector (geds or spms)
+            Type of detector (geds, spms or ch000)
     string_number
             Number of the string under study
     parameter
             Parameter to plot
-    time_cut
-            List with info about time cuts
-    start_code
-            Starting time of the code
+    time_range
+            First and last timestamps of the time range of interest
     """
-    if len(time_cut) != 0:
-        start, end = timecut.time_dates(time_cut, start_code)
-        pkl_name = (
-            exp
-            + "-"
-            + period
-            + "-"
-            + run
-            + "-"
-            + datatype
-            + "-"
-            + start
-            + "_"
-            + end
-            + "-"
-            + parameter
-        )
-    else:
-        pkl_name = exp + "-" + period + "-" + run + "-" + datatype + "-" + parameter
+    pkl_name = (
+        exp
+        + "-"
+        + period
+        + "-"
+        + datatype
+        + "-"
+        + time_range[0]
+        + "_"
+        + time_range[1]
+        + "-"
+        + parameter
+    )
+
     if det_type == "geds":
-        pkl_name += "-string" + string_number + ".pkl"
+        pkl_name += "-S" + string_number + ".pkl"
     if det_type == "spms":
         pkl_name += "-" + string_number + ".pkl"
     if det_type == "ch000":
-        pkl_name += "-pulser.pkl"
+        pkl_name += "-ch000.pkl"
 
     return pkl_name

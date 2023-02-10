@@ -7,49 +7,13 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 
-from . import analysis, timecut
+from . import analysis
 
 j_config, j_par, j_plot = analysis.read_json_files()
 exp = j_config[0]["exp"]
+output = j_config[0]["path"]["output"]
 period = j_config[1]
-run = j_config[2]
-datatype = j_config[3]
-
-
-def pkl_name(time_cut: list[str], parameter: str, start_code: str):
-    """
-    Define the name of output pkl file.
-
-    Parameters
-    ----------
-    time_cut
-                     List with info about time cuts
-    parameter
-                     Parameter to plot
-    start_code
-                     Starting time of the code
-    """
-    if len(time_cut) != 0:
-        start, end = timecut.time_dates(time_cut, start_code)
-        pkl_filename = (
-            exp
-            + "-"
-            + period
-            + "-"
-            + run
-            + "-"
-            + datatype
-            + "-"
-            + start
-            + "_"
-            + end
-            + "-"
-            + parameter
-        )
-    else:
-        pkl_filename = exp + "-" + period + "-" + run + "-" + datatype + "-" + parameter
-
-    return pkl_filename
+datatype = j_config[4]
 
 
 def place_dets(det_dict: dict, string_entries: list[str]):
@@ -125,6 +89,7 @@ def geds_map(
     time_cut: list[str],
     map_path: str,
     start_code: str,
+    time_range: list[str],
     pdf,
 ):
     """
@@ -148,6 +113,8 @@ def geds_map(
                      Path where to save output heatmaps
     start_code
                      Starting time of the code
+    time_range
+                     First and last timestamps of the time range of interest
     """
     string_entries = place_dets(det_dict, string_entries)
     df = pd.DataFrame(data=list(string_entries))
@@ -217,8 +184,16 @@ def geds_map(
     )
     plt.title(f"geds ({parameter})")
 
-    pkl_file = pkl_name(time_cut, parameter, start_code)
-    pkl.dump(fig, open(f"out/pkl-files/heatmaps/{pkl_file}.pkl", "wb"))
+    pkl_name = analysis.set_pkl_name(
+        exp,
+        period,
+        datatype,
+        "geds",
+        "",
+        parameter,
+        time_range,
+    )
+    pkl.dump(fig, open(f"{output}/pkl-files/heatmaps/{pkl_name}", "wb"))
     pdf.savefig(bbox_inches="tight")
     plt.close()
 
@@ -234,6 +209,7 @@ def spms_map(
     time_cut: list[str],
     map_path: str,
     start_code: str,
+    time_range: list[str],
     pdf,
 ):
     """
@@ -257,6 +233,8 @@ def spms_map(
                      Path where to save output heatmaps
     start_code
                      Starting time of the code
+    time_range
+                     First and last timestamps of the time range of interest
     """
     cmap_dict = check_det(cmap_dict, det_dict)
 
@@ -343,8 +321,16 @@ def spms_map(
     )
     plt.title(f"spms - outer barrel ({parameter})")
 
-    pkl_file = pkl_name(time_cut, parameter, start_code)
-    pkl.dump(fig_ob, open(f"out/pkl-files/heatmaps/{pkl_file}-OB.pkl", "wb"))
+    pkl_name_ob = analysis.set_pkl_name(
+        exp,
+        period,
+        datatype,
+        "spms",
+        "OB",
+        parameter,
+        time_range,
+    )
+    pkl.dump(fig_ob, open(f"{output}/pkl-files/heatmaps/{pkl_name_ob}", "wb"))
     pdf.savefig(bbox_inches="tight")
 
     # inner barrel
@@ -380,7 +366,17 @@ def spms_map(
         labeltop=True,
     )
     plt.title(f"spms - inner barrel ({parameter})")
-    pkl.dump(fig_ib, open(f"out/pkl-files/heatmaps/{pkl_file}-IB.pkl", "wb"))
+
+    pkl_name_ib = analysis.set_pkl_name(
+        exp,
+        period,
+        datatype,
+        "spms",
+        "IB",
+        parameter,
+        time_range,
+    )
+    pkl.dump(fig_ib, open(f"{output}/pkl-files/heatmaps/{pkl_name_ib}", "wb"))
     pdf.savefig(bbox_inches="tight")
 
     plt.close()
