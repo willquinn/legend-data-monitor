@@ -4,14 +4,15 @@ import argparse
 
 from . import control_plots
 
+
 def main():
     """legend-data-monitor's starting point.
 
-    Here you define the JSON configuration file you want to use when generating the plots. 
+    Here you define the JSON configuration file you want to use when generating the plots.
     To learn more, have a look at the help section:
 
     .. code-block:: console
-      $ legend-data-monitor --help # help section 
+      $ legend-data-monitor --help # help section
 
     Example JSON configuration file:
     .. code-block:: json
@@ -52,11 +53,13 @@ def main():
         prog="legend-data-monitor", description="Software's command-line interface"
     )
     # one input argument: config file
-    parser.add_argument('config_file', help='Name of the configuration file you want to use')
+    parser.add_argument(
+        "config_file", help="Name of the configuration file you want to use"
+    )
 
     # load input config file
     args = parser.parse_args()
     user_config = args.config_file
-    
+
     # start loading data & generating plota
     control_plots.control_plots(user_config)

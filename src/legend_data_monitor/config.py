@@ -1,8 +1,9 @@
+# needed to open files in settings/
+import importlib.resources
 import json
+import logging
 import os
 import sys
-import logging
-
 from datetime import datetime
 
 from legendmeta import LegendMetadata
@@ -11,13 +12,10 @@ from legendmeta.jsondb import AttrsDict
 # needed to check plot settings
 from . import plotting
 
-# needed to open files in settings/
-import importlib.resources
 pkg = importlib.resources.files("legend_data_monitor")
 
-SINGLE_TO_LIST = {
-    'dataset': {'type': 0, 'selection': {'runs': 0}}
-}
+SINGLE_TO_LIST = {"dataset": {"type": 0, "selection": {"runs": 0}}}
+
 
 def Config(json_name: str):
     '''
@@ -25,7 +23,7 @@ def Config(json_name: str):
     
     Returns NestedAttrDict. Can't use inheritance because of conflicting kwargs
     in __init__ when passing self. Mascking this function to look like a class.
-    
+
     >>> config = Config({'a': {'c':1, 'd':3}, 'b': 2})
     >>> config.a.c
     1
@@ -37,11 +35,13 @@ def Config(json_name: str):
 
     # update single to list with subsystem for single to list conversion
     for subsys in conf.subsystems:
-        SINGLE_TO_LIST['subsystems'] = {subsys: {'parameters': 0, "removed_channels": 0}}
+        SINGLE_TO_LIST["subsystems"] = {
+            subsys: {"parameters": 0, "removed_channels": 0}
+        }
 
     # convert strings to lists for single input
     conf = single_to_list(conf)
-             
+
     # check if something wrong was entered
     check_settings(conf)
 
@@ -50,24 +50,21 @@ def Config(json_name: str):
 
     # load channel map
     # l060 instead of l60 for exp
-    ex = 'l' + conf.dataset.exp.split('l')[1].zfill(3)
+    ex = "l" + conf.dataset.exp.split("l")[1].zfill(3)
     json_file = f"{ex}-{conf.dataset.period}-r%-T%-all-config.json"
-    
-    lmeta =  LegendMetadata()
+
+    lmeta = LegendMetadata()
     conf.channel_map = lmeta.hardware.configuration.channelmaps[json_file]
 
-    # load dicitonary with plot info (= units, thresholds, label, ...) 
-    with open(pkg / "settings" / "par-settings.json") as f:    
-        plot_info_json = AttrsDict(json.load(f))   
+    # load dicitonary with plot info (= units, thresholds, label, ...)
+    with open(pkg / "settings" / "par-settings.json") as f:
+        plot_info_json = AttrsDict(json.load(f))
     conf.plot_info = plot_info_json
-        
+
     return conf
 
 
-
-         
-
-class PlotSettings():
+class PlotSettings:
     def __init__(self, conf: Config, dset):
         #print('----------------------------------------------------')
         #print('--- Setting up plotting')    
@@ -77,28 +74,28 @@ class PlotSettings():
         # e.g. "30T"
         # minute - T, second - S, month - M
         self.sampling = conf.plotting.sampling
-        
+
         # output paths, make folders if needed
         self.output_paths = self.make_output_paths(conf)
 
         # settings for each parameter
-        # (keep phy or pulser events, plot style)                
+        # (keep phy or pulser events, plot style)
         self.param_settings = conf.plotting.parameters
-        # 
+        #
         self.param_info = conf.plot_info
-        
+
         # check if something is missing or not valid
         self.check_settings()
 
-	    # base name for log and PDF files
+        # base name for log and PDF files
         self.basename = "{}-{}-{}-{}_{}".format(
-		     	conf.dataset.exp,
-		     	conf.dataset.period,
-		     	'_'.join(conf.dataset.type),
-		     	dset.user_time_range['start'],
-		     	dset.user_time_range['end']
-		)        
-        
+            conf.dataset.exp,
+            conf.dataset.period,
+            "_".join(conf.dataset.type),
+            dset.user_time_range["start"],
+            dset.user_time_range["end"],
+        )
+
     def make_output_paths(self, conf):
         ''' define output paths and create directories accordingly '''
         # general output path
@@ -120,10 +117,9 @@ class PlotSettings():
                 out_dir_path = os.path.join(conf.plotting.output, out_dir, out_subdir)
                 make_dir(out_dir_path)
                 # !! oops
-                output_paths[out_subdir] = out_dir_path                
-                
-        return AttrsDict(output_paths)        
+                output_paths[out_subdir] = out_dir_path
 
+        return AttrsDict(output_paths)
 
     def check_settings(self):
         options = {
@@ -149,8 +145,6 @@ class PlotSettings():
                     logging.error('Available options: {}'.format(','.join(options[field])))
                     sys.exit(1)
 
-
-
     # ------ logging -> should go to dataset? settings? separate?
     # set up logging to file
     # log name
@@ -170,7 +164,6 @@ class PlotSettings():
     # console.setFormatter(formatter)
     # logging.getLogger("").addHandler(console)
     # ------ logging
-
 
 
 # ------- Config related functions
@@ -198,9 +191,8 @@ def single_to_list(conf, dct=SINGLE_TO_LIST):
 
         elif field in conf and not isinstance(conf[field], list):
             conf[field] = [conf[field]]
-            
-    return conf
 
+    return conf
 
 
 # ----------- helper function
