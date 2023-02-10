@@ -113,7 +113,7 @@ class ParamData:
         
         
     def map_channels(self, subsys):
-        logging.error(f'... mapping channel name, location, and position')
+        logging.error('... mapping channel name, location, and position')
         ch_map = subsys.ch_map.set_index('channel')
         self.data = self.data.set_index('channel')
         self.data = pd.concat([self.data, ch_map.loc[self.data.index]], axis=1)

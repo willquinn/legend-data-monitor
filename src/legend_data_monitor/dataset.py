@@ -116,7 +116,7 @@ class Dataset:
         return time_range
 
     # !! not needed except for SiPM not loading with DataLoader
-    # ignore for now because diabled period_list because now type can be multiple
+    # ignore for now because disabled period_list because now type can be multiple
     # def get_final_time_range(self):
     #     # apply user time range to available dsp files
     #     selected_files = [f for f in self.period_dsp if get_key(f) > self.user_time_range['start'] and get_key(f) < self.user_time_range['end']]
@@ -133,7 +133,7 @@ class Dataset:
 
 
 def get_run(dsp_fname: str):
-    """Eextract run from lh5 filename."""
+    """Extract run from lh5 filename."""
     return re.search(r"r-\d{3}", dsp_fname).group(0)[2:]
 
 

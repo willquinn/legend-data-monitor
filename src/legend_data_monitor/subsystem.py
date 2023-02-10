@@ -5,7 +5,7 @@ from pygama.flow import DataLoader
 
 # ------------
 
-# specify which lh5 parameters are neede to be loaded from lh5 to calculate them
+# specify which lh5 parameters are needed to be loaded from lh5 to calculate them
 SPECIAL_PARAMETERS = {
     # 'uncal_puls': 'trapTmax',
     # 'cal_puls': 'cuspEmax_ctc_cal',
@@ -23,11 +23,7 @@ for param in SPECIAL_PARAMETERS:
 
 
 class Subsystem:
-    """
-    Object containing information for a given subsystem
-    such as chanel map, removed channels etc.
-    """
-
+    """Object containing information for a given subsystem such as channel map, removed channels etc."""
     def __init__(self, config, sub_type):
         """
         conf: config.Config object with user providedsettings
@@ -202,10 +198,7 @@ class Subsystem:
         self.data = self.data.reset_index()       
 
     def get_channel_map(self, config):
-        """
-        Buld channel map for given subsystem
-        location - fiber for SiPMs, string for gedet, dummy for pulser
-        """   
+        """Build channel map for given subsystem location - fiber for SiPMs, string for gedet, dummy for pulser."""   
         logging.error('... getting channel map')
         
         df_map = pd.DataFrame({'name':[], 'location': [], 'channel':[], 'position':[]})
@@ -240,7 +233,7 @@ class Subsystem:
             # FlashCam channel, unique for geds/spms/pulser
             ch = config.channel_map[key]['daq']['fcid']
             df_map.at[ch, 'name'] = config.channel_map[key]['name']
-            # number/name of stirng/fiber for geds/spms, dummy for pulser
+            # number/name of string/fiber for geds/spms, dummy for pulser
             df_map.at[ch, "location"] = (
                 0
                 if self.type == "pulser"
@@ -265,8 +258,6 @@ class Subsystem:
         return df_map
 
     def construct_dataloader_configs(self, dataset, params):
-        """ """
-
         # which parameters belong to which tiers
         # !! put in a settings json or something!
         param_tiers = pd.DataFrame(

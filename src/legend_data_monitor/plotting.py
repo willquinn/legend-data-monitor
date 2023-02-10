@@ -92,7 +92,7 @@ def plot_ch_par_vs_time(pardata, pdf):
         logging.error('... plotting')
         ax_idx = 0
         # groupby takes 4 seconds while pd.pivot_table - 20 -> changed to for loop with groupby
-        for position, data_position in data_location.groupby("position"):
+        for _, data_position in data_location.groupby("position"):
             # need to plot this way, and not data_position.plot(...) because the datetime column is of type Timestamp
             # plotting this way, to_pydatetime() converts it to type datetime which is needed for DateFormatter
             # changing the type of the column itself with the table does not work

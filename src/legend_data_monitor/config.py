@@ -56,7 +56,7 @@ def Config(json_name: str):
     lmeta = LegendMetadata()
     conf.channel_map = lmeta.hardware.configuration.channelmaps[json_file]
 
-    # load dicitonary with plot info (= units, thresholds, label, ...)
+    # load dictionary with plot info (= units, thresholds, label, ...)
     with open(pkg / "settings" / "par-settings.json") as f:
         plot_info_json = AttrsDict(json.load(f))
     conf.plot_info = plot_info_json
@@ -97,7 +97,7 @@ class PlotSettings:
         )
 
     def make_output_paths(self, conf):
-        """define output paths and create directories accordingly"""
+        """Define output paths and create directories accordingly."""
         # general output path
         make_dir(conf.plotting.output)
 
