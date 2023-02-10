@@ -1,5 +1,5 @@
-import os
 import logging
+import os
 
 import matplotlib.pyplot as plt
 from matplotlib import cycler, rcParams
@@ -15,6 +15,7 @@ from . import parameter_data as paramdata
 
 # See mapping user plot style keywords to corresponding functions in the end of this file
 
+
 # ---- main plotting function
 def make_subsystem_plots(subsys, plot_settings):
     # !! this is wrong here - not all plots in the loop may be par_vs_time
@@ -23,25 +24,28 @@ def make_subsystem_plots(subsys, plot_settings):
     # in principle, i think one DataMonitor run will have one PDF with everything in it - geds, spms, all the plots
     # so that after it launches automatically, produces one pdf per run, and RunTeam or someone can analyse the run behavior
     # -> TBD
-    out_name = os.path.join(plot_settings.output_paths['pdf_files'], 'par_vs_time',
-                                    plot_settings.basename + '_' + subsys.type + '.pdf')
+    out_name = os.path.join(
+        plot_settings.output_paths["pdf_files"],
+        "par_vs_time",
+        plot_settings.basename + "_" + subsys.type + ".pdf",
+    )
     pdf = PdfPages(out_name)
 
     for param in subsys.parameters:
         # select data from subsystem data for given parameter based on parameter settings
         pardata = paramdata.ParamData(subsys, param, plot_settings)
-            
-        # decide plot function based on user requested style (see dict below)            
-        plot_parameter = plot_style[pardata.plot_settings['plot_style']]            
-            
-        logging.error('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
-        logging.error('~~~ P L O T T I N G')
-        logging.error('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
+
+        # decide plot function based on user requested style (see dict below)
+        plot_parameter = plot_style[pardata.plot_settings["plot_style"]]
+
+        logging.error("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+        logging.error("~~~ P L O T T I N G")
+        logging.error("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
         plot_parameter(pardata, pdf)
 
     pdf.close()
-    logging.error('All plots saved in: ' + out_name)
-            
+    logging.error("All plots saved in: " + out_name)
+
 
 # -------------------------------------------------------------------------------
 # different plot style functions called from the main one depending on parameter
@@ -52,9 +56,9 @@ def plot_ch_par_vs_time(pardata, pdf):
     data = pardata.data.sort_values(["location", "position"])
 
     # separate figure for each string/fiber ("location")
-    for location, data_location in data.groupby('location'):
-        logging.error(f'... {pardata.locname} {location}')
-        
+    for location, data_location in data.groupby("location"):
+        logging.error(f"... {pardata.locname} {location}")
+
         # ---------------------------------------------
         #  global channel mean
         # det name, channel in each position (position will be index after groupby)
@@ -69,14 +73,16 @@ def plot_ch_par_vs_time(pardata, pdf):
 
         # set y label now already, add % if variation
         ylabel = pardata.param_info.label + f" [{pardata.param_info.units}]"
-        if pardata.plot_settings['some_name'] == "variation":
-            logging.error('... calculating variation from the mean')
+        if pardata.plot_settings["some_name"] == "variation":
+            logging.error("... calculating variation from the mean")
             # set index to position to correspond to channel_mean
             data_location = data_location.set_index("position")
             # subtract mean from value for each position (i.e. channel)
-            data_location[pardata.param] = (-data_location[pardata.param] / channel_mean['mean'] + 1) * 100 # %
+            data_location[pardata.param] = (
+                -data_location[pardata.param] / channel_mean["mean"] + 1
+            ) * 100  # %
             data_location = data_location.reset_index()
-            ylabel += ' - %'
+            ylabel += " - %"
 
         # ---------------------------------------------
         # plot
@@ -89,7 +95,7 @@ def plot_ch_par_vs_time(pardata, pdf):
         if numch == 1:
             axes = [axes]
 
-        logging.error('... plotting')
+        logging.error("... plotting")
         ax_idx = 0
         # groupby takes 4 seconds while pd.pivot_table - 20 -> changed to for loop with groupby
         for _, data_position in data_location.groupby("position"):
@@ -103,12 +109,11 @@ def plot_ch_par_vs_time(pardata, pdf):
             )
             ax_idx += 1
 
-
         # ---------------------------------------------
         # plot resampled average, unless it's event rate - already resampled and counted for the same time window
 
-        if pardata.param != 'event_rate':
-            logging.error('...... resampling for every ' + pardata.sampling)
+        if pardata.param != "event_rate":
+            logging.error("...... resampling for every " + pardata.sampling)
             # after groupby->resample will have multi index in (position, datetime)
             resampled = (
                 data_location.set_index("datetime")
@@ -120,7 +125,7 @@ def plot_ch_par_vs_time(pardata, pdf):
             resampled = resampled.drop("position", axis=1)
             resampled = resampled.reset_index()
 
-            logging.error('...... plotting resampled')
+            logging.error("...... plotting resampled")
             # color settings using a pre-defined palette
             rcParams["axes.prop_cycle"] = cycler(
                 color=color_palette("hls", len(resampled.position.unique()))
@@ -136,7 +141,7 @@ def plot_ch_par_vs_time(pardata, pdf):
         # ---------------------------------------------
         # beautification
 
-        logging.error('... making the plot pretty for you')
+        logging.error("... making the plot pretty for you")
 
         # summary annotations
         channel_mean = channel_mean.reset_index()
@@ -165,7 +170,6 @@ def plot_ch_par_vs_time(pardata, pdf):
         # formatter - formats the x label
         formatter = DateFormatter("%Y\n%m/%d\n%H:%M")
 
-
         # now add this stuff to axes
         for idx in range(len(axes)):
             # text
@@ -173,7 +177,7 @@ def plot_ch_par_vs_time(pardata, pdf):
                 1.01, 0.5, channel_mean.iloc[idx]["text"], transform=axes[idx].transAxes
             )
             # grid
-            axes[idx].grid('major', linestyle='--')
+            axes[idx].grid("major", linestyle="--")
             # locate ticks
             axes[idx].xaxis.set_major_locator(locator)
 
@@ -198,8 +202,8 @@ def plot_histo(pardata, pdf):
     x_max = data.max()
     no_bins = int(x_max - x_min)
 
-    logging.error('Plotting...')
-    data.plot.hist(bins=no_bins, range=[x_min, x_max], histtype='step', linewidth=1.5)
+    logging.error("Plotting...")
+    data.plot.hist(bins=no_bins, range=[x_min, x_max], histtype="step", linewidth=1.5)
 
     xlabel = pardata.param_info.label + f" [{pardata.param_info.units}]"
     plt.xlabel(xlabel)

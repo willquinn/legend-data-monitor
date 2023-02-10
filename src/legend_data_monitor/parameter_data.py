@@ -1,6 +1,7 @@
+import logging
+
 import numpy as np
 import pandas as pd
-import logging
 
 from . import subsystem
 
@@ -9,9 +10,9 @@ from . import subsystem
 class ParamData:
     # should maybe inherit from pd.DataFrame directly?
     def __init__(self, subsys, param, plot_settings):
-        logging.error('============================================')
-        logging.error('=== Setting up ' + param)
-        logging.error('============================================')
+        logging.error("============================================")
+        logging.error("=== Setting up " + param)
+        logging.error("============================================")
 
         # !! can be gotten from non (datetime, channel, pulser flag columns)
         self.param = param
@@ -96,22 +97,22 @@ class ParamData:
 
     def select_events(self):
         # do we want to keep all, phy or pulser events?
-        if self.plot_settings['events'] == 'pulser':
-            logging.error('... keeping only pulser events')
-            self.data = self.data[ self.data['flag_pulser'] ]
-        elif self.plot_settings['events'] == 'phy':
-            logging.error('... keeping only physical (non-pulser) events')
-            self.data = self.data[ ~self.data['flag_pulser'] ]
-        elif self.plot_settings['events'] == 'K_lines':
-            logging.error('... selecting K lines in physical (non-pulser) events')
-            self.data = self.data[ ~self.data['flag_pulser'] ]
-            energy = subsystem.SPECIAL_PARAMETERS['K_lines'][0]
-            self.data = self.data[ (self.data[energy] > 1430) & (self.data[energy] < 1575)]
+        if self.plot_settings["events"] == "pulser":
+            logging.error("... keeping only pulser events")
+            self.data = self.data[self.data["flag_pulser"]]
+        elif self.plot_settings["events"] == "phy":
+            logging.error("... keeping only physical (non-pulser) events")
+            self.data = self.data[~self.data["flag_pulser"]]
+        elif self.plot_settings["events"] == "K_lines":
+            logging.error("... selecting K lines in physical (non-pulser) events")
+            self.data = self.data[~self.data["flag_pulser"]]
+            energy = subsystem.SPECIAL_PARAMETERS["K_lines"][0]
+            self.data = self.data[
+                (self.data[energy] > 1430) & (self.data[energy] < 1575)
+            ]
         else:
-            logging.error('... keeping all (pulser + non-pulser) events')
-                       
-        
-        
+            logging.error("... keeping all (pulser + non-pulser) events")
+
     def map_channels(self, subsys):
         logging.error('... mapping channel name, location, and position')
         ch_map = subsys.ch_map.set_index('channel')

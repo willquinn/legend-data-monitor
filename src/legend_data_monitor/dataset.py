@@ -1,19 +1,21 @@
+import logging
 import os
 import re
-import logging
 from datetime import timedelta
 
 
 class Dataset:
     # : config.Config
     def __init__(self, config):
-        logging.error('----------------------------------------------------')
-        logging.error('--- Setting up dataset')
-        logging.error('----------------------------------------------------')
-        
+        logging.error("----------------------------------------------------")
+        logging.error("--- Setting up dataset")
+        logging.error("----------------------------------------------------")
+
         # e.g. path to period = path + v06.00/generated/tier (+ dsp/phy/p01 later)
-        self.path = os.path.join(config.dataset.path, config.dataset.version, 'generated', 'tier')
-        logging.error('Data path: ' + self.path)
+        self.path = os.path.join(
+            config.dataset.path, config.dataset.version, "generated", "tier"
+        )
+        logging.error("Data path: " + self.path)
 
         # determine QC cut column name based on version
         self.qc_name = (
@@ -22,8 +24,8 @@ class Dataset:
 
         # type of data (phy or cal or both, always list)
         self.type = config.dataset.type
-        logging.error('Data type: ' + ','.join(self.type))
-        
+        logging.error("Data type: " + ",".join(self.type))
+
         # get list of all dsp files in period to later get final file time range
         # !! not really needed except for SiPM quickfix cause of DataLoader not working
         # avoid for now because now type can be multiple
@@ -31,8 +33,12 @@ class Dataset:
 
         # get user time range in format of keys - for selection and plotting
         self.user_time_range = self.get_user_time_range(config)
-        logging.error('User requested time range: {} - {}'.format(self.user_time_range['start'], self.user_time_range['end']))
-        
+        logging.error(
+            "User requested time range: {} - {}".format(
+                self.user_time_range["start"], self.user_time_range["end"]
+            )
+        )
+
         # get final time range based on dsp files available
         # !! ignore for now because there can be multiple type like both cal and phy
         self.time_range = self.user_time_range

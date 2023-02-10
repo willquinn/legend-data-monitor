@@ -1,9 +1,8 @@
-import sys
 import logging
+import sys
 
 from . import config, dataset, plotting, subsystem
 
-import logging
 log = logging.getLogger(__name__)
 # set up logging to console
 console = logging.StreamHandler()
@@ -61,8 +60,8 @@ def control_plots(user_config):
         # ?? one plot for all? one plot per subsystem? -> currently per subsystem
         # ToDo: K_lines
         plotting.make_subsystem_plots(subsystems[syst], plot_settings)
-    
-    logging.error('D O N E')
+
+    logging.error("D O N E")
 
 
 if __name__ == "__main__":
