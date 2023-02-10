@@ -115,7 +115,7 @@ class Subsystem:
         # -------------------------------
         # get data from DataLoader
         dlconfig, dbconfig = self.construct_dataloader_configs(dataset, params)
-        #print('...... calling data loader')        
+        #print('...... calling data loader')
         dl = DataLoader(dlconfig, dbconfig)
         # if querying by run, need different query word
         time_word = "run" if dataset.time_range["start"][0] == "r" else "timestamp"
@@ -128,7 +128,7 @@ class Subsystem:
         # !!!! QUICKFIX FOR R010
         query += " and (timestamp != '20230125T222013Z')"
         query += " and (timestamp != '20230126T015308Z')"
-        
+
         #print(query)
         dl.set_files(query)
         dl.set_output(fmt="pd.DataFrame", columns=params)
@@ -141,7 +141,7 @@ class Subsystem:
         # remove columns we don't need
         self.data = self.data.drop([f"{tier}_idx", 'file'], axis=1)
         # rename channel to channel
-        self.data = self.data.rename(columns={f'{tier}_table': 'channel'})    
+        self.data = self.data.rename(columns={f'{tier}_table': 'channel'})
 
         # rename columns back to user params
         # remove Nones
@@ -156,8 +156,8 @@ class Subsystem:
             self.data["timestamp"], origin="unix", utc=True, unit="s"
         )
         # drop timestamp
-        self.data = self.data.drop('timestamp', axis=1)  
-            
+        self.data = self.data.drop('timestamp', axis=1)
+
         # -------------------------------
         # add detector name, location and position from map
 
@@ -168,7 +168,7 @@ class Subsystem:
         # for col in self.ch_map:
         #     self.data[col] = self.ch_map.loc[self.data.index][col]
         # self.data = self.data.reset_index()
-        
+
         # -------------------------------
 
         # apply QC*
@@ -178,8 +178,8 @@ class Subsystem:
             self.data = self.data[ self.data[dataset.qc_name] ]
 
         #print(self.data)
-        
-    
+
+
     def flag_pulser_events(self, pulser):
         # flag pulser events
         #print('... flagging pulser events')
@@ -197,20 +197,20 @@ class Subsystem:
             self.data.loc[pulser_timestamps, "flag_pulser"] = True
         except:
             #print("Warning: probably calibration has faulty pulser data and timestamps not found. Proceeding with all events flagged as False for pulser.")
- 
-        self.data = self.data.reset_index()       
+
+        self.data = self.data.reset_index()
 
     def get_channel_map(self, config):
         """
         Buld channel map for given subsystem
         location - fiber for SiPMs, string for gedet, dummy for pulser
         """
-        
+
         #print('... getting channel map')
-        
+
         df_map = pd.DataFrame({'name':[], 'location': [], 'channel':[], 'position':[]})
         df_map = df_map.set_index('channel')
-        
+
         # selection depending on subsystem, dct_key is the part corresponding to one chmap entry
         def is_subsystem(dct_key):
             # special case for pulser
@@ -235,9 +235,9 @@ class Subsystem:
             # skip if this is not our system
             if not is_subsystem(config.channel_map[key]):
                 continue
-                        
+
             # add info for this channel
-            # FlashCam channel, unique for geds/spms/pulser            
+            # FlashCam channel, unique for geds/spms/pulser
             ch = config.channel_map[key]['daq']['fcid']
             df_map.at[ch, 'name'] = config.channel_map[key]['name']
             # number/name of stirng/fiber for geds/spms, dummy for pulser
@@ -299,7 +299,7 @@ class Subsystem:
         dict_dlconfig = {"channel_map": {}, "levels": {}}
 
         # set up tiers depending on what parameters we need
-        #print('......removing channels with no data: {}'.format(self.removed_chs))        
+        #print('......removing channels with no data: {}'.format(self.removed_chs))
         for tier, tier_params in param_tiers.groupby('tier'):
             dict_dbconfig['tier_dirs'][tier] = f'/{tier}'
             # type not fixed and instead specified in the query

@@ -23,15 +23,15 @@ from . import parameter_data as paramdata
     # -> TBD
     out_name = os.path.join(plot_settings.output_paths['pdf_files'], 'par_vs_time',
                                     plot_settings.basename + '_' + subsys.type + '.pdf')
-    pdf = PdfPages(out_name)        
-    
+    pdf = PdfPages(out_name)
+
     for param in subsys.parameters:
         # select data from subsystem data for given parameter based on parameter settings
         pardata = paramdata.ParamData(subsys, param, plot_settings)
-            
-        # decide plot function based on user requested style (see dict below)            
-        plot_parameter = plot_style[pardata.plot_settings['plot_style']]            
-            
+
+        # decide plot function based on user requested style (see dict below)
+        plot_parameter = plot_style[pardata.plot_settings['plot_style']]
+
         #print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
         #print('~~~ P L O T T I N G')
         #print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
@@ -39,7 +39,7 @@ from . import parameter_data as paramdata
 
     pdf.close()
     #print('All plots saved in: ' + out_name)
-            
+
 
 # -------------------------------------------------------------------------------
 # different plot style functions called from the main one depending on parameter
@@ -52,7 +52,7 @@ def plot_ch_par_vs_time(pardata, pdf):
     # separate figure for each string/fiber ("location")
     for location, data_location in data.groupby('location'):
         #print(f'... {pardata.locname} {location}')
-        
+
         # ---------------------------------------------
         #  global channel mean
         # det name, channel in each position (position will be index after groupby)
@@ -73,9 +73,9 @@ def plot_ch_par_vs_time(pardata, pdf):
             data_location = data_location.set_index("position")
             # subtract mean from value for each position (i.e. channel)
             data_location[pardata.param] = (-data_location[pardata.param] / channel_mean['mean'] + 1) * 100 # %
-            data_location = data_location.reset_index()   
-            ylabel += ' - %'   
-    
+            data_location = data_location.reset_index()
+            ylabel += ' - %'
+
         # ---------------------------------------------
         # plot
 
@@ -163,7 +163,7 @@ def plot_ch_par_vs_time(pardata, pdf):
         # formatter - formats the x label
         formatter = DateFormatter("%Y\n%m/%d\n%H:%M")
 
-            
+
         # now add this stuff to axes
         for idx in range(len(axes)):
             # text

@@ -25,7 +25,7 @@ class ParamData:
         ]
 
         # plot settings for this param
-        # what events to keep (phy/puls/all), plot style, variation or absolute 
+        # what events to keep (phy/puls/all), plot style, variation or absolute
         # note: results in a UserWarning about columns as attributes
         self.plot_settings = plot_settings.param_settings[param]
         # color, range, etc. (not user defined)
@@ -106,17 +106,17 @@ class ParamData:
             #print('... selecting K lines in physical (non-pulser) events')
             self.data = self.data[ ~self.data['flag_pulser'] ]
             energy = subsystem.SPECIAL_PARAMETERS['K_lines'][0]
-            self.data = self.data[ (self.data[energy] > 1430) & (self.data[energy] < 1575)] 
+            self.data = self.data[ (self.data[energy] > 1430) & (self.data[energy] < 1575)]
         else:
             #print('... keeping all (pulser + non-pulser) events')
-                       
-        
-        
+
+
+
     def map_channels(self, subsys):
         #print(f'... mapping channel name, location, and position')
         ch_map = subsys.ch_map.set_index('channel')
         self.data = self.data.set_index('channel')
-        self.data = pd.concat([self.data, ch_map.loc[self.data.index]], axis=1)        
+        self.data = pd.concat([self.data, ch_map.loc[self.data.index]], axis=1)
         self.data = self.data.reset_index()
 
 
