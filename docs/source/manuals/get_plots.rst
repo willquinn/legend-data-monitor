@@ -38,7 +38,7 @@ Example config
      },
      "subsystems": {
          "pulser": { // type of detector to plot (geds, spms, pulser)
-             "quality_cut": false, 
+             "quality_cut": false,
              "parameters": "wf_max_rel", // parameters to plot
              "status": "problematic / all ?"
          }
@@ -71,19 +71,19 @@ Example config
 .. note::
   Time selection is based on:
   - `"start"` and `"end"` in format `YYYY/MM/DD hh:mm:ss`;
-  - `"timestamps"` in format `YYYYMMDDThhmmssZ`, either single or a list of timestamps; 
+  - `"timestamps"` in format `YYYYMMDDThhmmssZ`, either single or a list of timestamps;
   - `"runs"`: run in integer format, single (e.g., ``10``) or a list of runs (e.g., ``[10, 11]``)
 
 .. note::
-  Note: currently taking range between earliest and latest i.e. also including the ones in between that are not listed, will be modified to either 
+  Note: currently taking range between earliest and latest i.e. also including the ones in between that are not listed, will be modified to either
 
-  1. require only two timestamps as start and end, or 
+  1. require only two timestamps as start and end, or
   2. get only specified timestamps (strange though, because would have gaps in the plot)
 
   The same happens with run selection.
 
 .. note::
-  If you load L200 data but accidentally mark `exp` as `l200`, L200 channel map will be loaded, and the code may or may not crash, 
+  If you load L200 data but accidentally mark `exp` as `l200`, L200 channel map will be loaded, and the code may or may not crash,
   most likely not but the mapping would simply be wrong.
 
 
@@ -339,4 +339,4 @@ Note that selecting K lines is a bit more complex, because in order to do that i
       # energy can be flexibly defined, not always cusp Emax
       energy = SPECIAL_PARAMETERS['K_lines'][0]
       # energy cut
-      self.data = self.data[ (self.data[energy] > 1430) & (self.data[energy] < 1575)] 
+      self.data = self.data[ (self.data[energy] > 1430) & (self.data[energy] < 1575)]
