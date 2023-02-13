@@ -85,11 +85,6 @@ Example config
 .. note::
   If you load L200 data but accidentally mark ``exp`` as ``l200``, L200 channel map will be loaded, and the code may or may not crash,
   most likely not but the mapping would simply be wrong.
-
-
-``subsystem`` settings
-~~~~~~~~~~~~~~~~~~~~
-
 Subsystems to be plotted: ``geds`` or ``pulser``, ``spms`` (not implemented yet due to ``DataLoader`` not loading SiPM data). For each subsystem to be plotted, specify
 
 - ``"quality_cut"``: boolean, applying quality cut to data or not. Note: might be per parameter, not per subsystem, in that case would be moved to ``plotting.parameters`` (see below). Functionality not tested yet
