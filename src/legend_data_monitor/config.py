@@ -12,6 +12,8 @@ from .plotting import PLOT_STRUCTURE
 # needed to check available plot styles
 from .plot_styles import PLOT_STYLE
 
+# 0 signifies end for the recursive search
+# to convert single inputs to lists
 SINGLE_TO_LIST = {"dataset": {"type": 0, "selection": {"runs": 0}}}
 
 
@@ -41,13 +43,6 @@ def config_build(user_config):
     # convert to AttrsDict for convenience
     conf = AttrsDict(conf)
 
-
-    # update single to list with subsystem for single to list conversion
-    for subsys in conf.subsystems:
-        SINGLE_TO_LIST["subsystems"] = {
-            subsys: {"parameters": 0, "removed_channels": 0}
-        }
-
     # convert strings to lists for single input
     conf = single_to_list(conf)
 
@@ -71,10 +66,15 @@ def config_build(user_config):
     # load status map
     if conf.dataset.exp == "60":
         ex = conf.dataset.exp
-    json_file = f"{ex.upper()}-{conf.dataset.period}-r%-T%-all-config.json"  # "L200-p02-r010-T%-all-config.json"
+    json_file = f"{ex.upper()}-{conf.dataset.period}-r%-T%-all-config.json"  
     if conf.dataset.exp == "l200":
-        json_file = json_file.replace("r%", "r010")
-    conf.status_map = lmeta.dataprod.config[json_file]
+        json_file = json_file.replace("r%", "r010") # "L200-p02-r010-T%-all-config.json"
+    conf.status_map = lmeta.dataprod.config[json_file]['hardware_configuration']['channel_map']
+
+    # chstatmap = self.lmeta.dataprod.config.on(timestamp=timestamp, system='phy')['hardware_configuration']['channel_map']
+    # chstat = chstatmap.get('ch'+f"{val.daq.fcid:03d}", {}).get("software_status", "Off")
+    # if chstat == "On":
+    # ....    
 
     return conf
 

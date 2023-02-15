@@ -4,6 +4,7 @@ from datetime import datetime
 
 from pygama.flow import DataLoader
 
+
 # ------------
 # specify which lh5 parameters are neede to be loaded from lh5 to calculate them
 SPECIAL_PARAMETERS = {
@@ -42,19 +43,15 @@ class Subsystem():
         self.parameters = []
         for plot in self.plots:
             self.parameters.append(self.plots[plot]['parameter'])
-            
-
-		# --- channels to be removed from channel map (have no hit data)
-        # will be removed once read OFF channels from legendmeta
-        self.removed_chs = []
-        if sub_type in config.subsystems and 'removed_channels' in config.subsystems[sub_type]:
-            self.removed_chs = config.subsystems[sub_type]['removed_channels']
 
         # -------------------------------------------------------------------------
         # get channel map for this subsystem
         # -------------------------------------------------------------------------
 
         self.ch_map = self.get_channel_map(config) # pd.DataFrame
+
+        # add column status to channel map stating On/Off
+        self.get_channel_status(config)
 
         # -------------------------------------------------------------------------
         # K lines
@@ -92,7 +89,7 @@ class Subsystem():
         
         # --- construct list of parameters for the data loader
         # depending on special parameters, k lines etc.
-        params = self.params_for_dataloader()
+        params = self.params_for_dataloader(dataset)
 
         # --- set up DataLoader
         dlconfig, dbconfig = self.construct_dataloader_configs(dataset, params)
@@ -261,7 +258,19 @@ class Subsystem():
         return df_map
     
 
-    def params_for_dataloader(self):
+    def get_channel_status(self, config):
+        # AUX channels are not in status map, so at least for pulser need default On        
+        self.ch_map['status'] = 'On'
+        self.ch_map = self.ch_map.set_index('channel')
+        for ch in config.status_map:
+            # status map contains all channels, check if this channel is in our subsystem
+            if ch in self.ch_map:
+                self.ch_map.at[int(ch[2:]), 'status'] = config.status_map[ch]['software_status']
+                
+        self.ch_map = self.ch_map.reset_index()
+
+
+    def params_for_dataloader(self, dataset):
         # --- always read timestamp
         params = ['timestamp']
         # --- always get wf_max & baseline for pulser for flagging
@@ -324,19 +333,18 @@ class Subsystem():
         # -------------------------------------------------------------------------      
         # set up tiers depending on what parameters we need
 
-        print('...... removing channels with no data: {}'.format(self.removed_chs))  
+        # ronly load channels that are On (Off channels will crash DataLoader)
+        chlist = list(self.ch_map[ self.ch_map['status'] == 'On']['channel'])
+        removed_chs = list(self.ch_map[ self.ch_map['status'] == 'Off']['channel'])
+        print('...... not loading channels with status Off: {}'.format(removed_chs))  
 
         for tier, tier_params in PARAM_TIERS.groupby('tier'):
             dict_dbconfig['tier_dirs'][tier] = f'/{tier}'
             # type not fixed and instead specified in the query
             dict_dbconfig['file_format'][tier] = "/{type}/{period}/{run}/{exp}-{period}-{run}-{type}-{timestamp}-tier_" + tier + '.lh5'
             dict_dbconfig['table_format'][tier] = "ch{ch:03d}/" + tier
-            
-            # remove channels requested by user if hit level
-            chlist = self.ch_map['channel']
-            # if tier == 'hit':
-            chlist = chlist[ ~self.ch_map['channel'].isin(self.removed_chs) ]                
-            dict_dbconfig['tables'][tier] = list(chlist)
+                         
+            dict_dbconfig['tables'][tier] = chlist
 
             dict_dbconfig['columns'][tier] = list(tier_params['param'])
 
