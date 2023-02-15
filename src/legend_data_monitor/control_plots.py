@@ -1,7 +1,7 @@
 import logging
 import sys
 
-from . import config, dataset, plotting, subsystem
+from . import config, dataset, heatmaps, subsystem
 
 log = logging.getLogger(__name__)
 # set up logging to console
@@ -20,7 +20,6 @@ def control_plots(user_config):
     conf = config.config_build(user_config)
 
     # Note: is a nested attribute dict so that one can do dct.a.b instead of dct['a']['b']
-    # simplifies stuff but maybe not needed if takes too much memory
 
     # Load dataset based on user provided config
     # - construct paths to data
@@ -59,7 +58,11 @@ def control_plots(user_config):
         # make subsystem plots
         # ?? one plot for all? one plot per subsystem? -> currently per subsystem
         # ToDo: K_lines
-        plotting.make_subsystem_plots(subsystems[syst], plot_settings)
+        # plotting.make_subsystem_plots(subsystems[syst], plot_settings)
+
+        # make heatmaps plots (not available for pulser channel)
+        if syst != "pulser":
+            heatmaps.make_subsystem_heatmaps(subsystems[syst], plot_settings)
 
     logging.error("D O N E")
 

@@ -56,6 +56,14 @@ def config_build(json_name: str):
     lmeta = LegendMetadata()
     conf.channel_map = lmeta.hardware.configuration.channelmaps[json_file]
 
+    # load status map
+    if conf.dataset.exp == "60":
+        ex = conf.dataset.exp
+    json_file = f"{ex.upper()}-{conf.dataset.period}-r%-T%-all-config.json"  # "L200-p02-r010-T%-all-config.json"
+    if conf.dataset.exp == "l200":
+        json_file = json_file.replace("r%", "r010")
+    conf.status_map = lmeta.dataprod.config[json_file]
+
     # load dictionary with plot info (= units, thresholds, label, ...)
     with open(pkg / "settings" / "par-settings.json") as f:
         plot_info_json = AttrsDict(json.load(f))
@@ -81,8 +89,14 @@ class PlotSettings:
         # settings for each parameter
         # (keep phy or pulser events, plot style)
         self.param_settings = conf.plotting.parameters
-        #
+        # from par-settings.json
         self.param_info = conf.plot_info
+
+        # get channel map
+        self.channel_map = conf.channel_map
+
+        # get status map
+        self.status_map = conf.status_map
 
         # check if something is missing or not valid
         self.check_settings()
@@ -156,7 +170,7 @@ class PlotSettings:
 
     # logging.basicConfig(
     #     filename=log_name,
-    #     level=logging.INFO,
+    #     level=logging.error,
     #     filemode="w",
     #     format="%(levelname)s: %(message)s",
     # )
