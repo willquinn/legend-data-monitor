@@ -34,6 +34,15 @@ class ParamData:
         # pass on avg sampling from plot settings
         self.sampling = plot_settings.sampling
 
+        # get channel map (re-arrange by chNNN, and not detector's name)
+        new_d = {}
+        for _, v in plot_settings.channel_map.items():
+            new_d[v.daq.fcid] = v
+        self.channel_map = new_d
+
+        # get status map
+        self.status_map = plot_settings.status_map.hardware_configuration.channel_map
+
         # -------------------------------
         # subselect data to load for only this parameter
 

@@ -14,7 +14,7 @@
     "geds": {
       "removed_channels": [26, 33, 47, 48, 84, 85, 94, 112, 116, 120, 122],
       "quality_cut": false,
-      "parameters": ["bl_comparison"],
+      "parameters": ["trapTmax"],
       "status": "problematic / all ?"
     }
   },
@@ -22,10 +22,10 @@
     "output": "dm_out",
     "sampling": "3T",
     "parameters": {
-      "bl_comparison": {
+      "trapTmax": {
         "events": "pulser",
         "plot_style": "per channel",
-        "some_name": "variation"
+        "some_name": "absolute"
       }
     }
   },

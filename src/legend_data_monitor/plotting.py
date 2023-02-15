@@ -11,8 +11,6 @@ from seaborn import color_palette
 
 from . import parameter_data as paramdata
 
-# from __future__ import annotations
-
 # See mapping user plot style keywords to corresponding functions in the end of this file
 
 
