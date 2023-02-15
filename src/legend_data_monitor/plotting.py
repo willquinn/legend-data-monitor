@@ -1,250 +1,191 @@
-import logging
-import os
+from . import plot_data
+from .plot_styles import *
 
 import matplotlib.pyplot as plt
-from matplotlib import cycler, rcParams
 from matplotlib.backends.backend_pdf import PdfPages
-from matplotlib.dates import DateFormatter, MinuteLocator
-from matplotlib.ticker import FormatStrFormatter
-from pandas import pivot_table
 from seaborn import color_palette
 
-from . import parameter_data as paramdata
+# -------------------------------------------------------------------------
 
-# See mapping user plot style keywords to corresponding functions in the end of this file
+# global variable to be filled later with colors based on number of channels
+COLORS = []
 
+# -------------------------------------------------------------------------
+# main plotting function(s)
+# -------------------------------------------------------------------------
 
-# ---- main plotting function
-def make_subsystem_plots(subsys, plot_settings):
-    # !! this is wrong here - not all plots in the loop may be par_vs_time
-    # there could be 2 subsystems in config, e.g. baseline vs time for geds, and some param histo or so
-    # in this case, pdf should be not per subsystem, but per parameter
-    # in principle, i think one DataMonitor run will have one PDF with everything in it - geds, spms, all the plots
-    # so that after it launches automatically, produces one pdf per run, and RunTeam or someone can analyse the run behavior
-    # -> TBD
-    out_name = os.path.join(
-        plot_settings.output_paths["pdf_files"],
-        "par_vs_time",
-        plot_settings.basename + "_" + subsys.type + ".pdf",
-    )
-    pdf = PdfPages(out_name)
+# plotting function that makes subsystem plots
+# feel free to write your own one using Dataset, Subsystem and ParamData objects
+# for example, this structure won't work to plot one parameter VS the other
 
-    for param in subsys.parameters:
-        # select data from subsystem data for given parameter based on parameter settings
-        pardata = paramdata.ParamData(subsys, param, plot_settings)
+def make_subsystem_plots(subsys, pdf_path):         
 
-        # decide plot function based on user requested style (see dict below)
-        plot_parameter = plot_style[pardata.plot_settings["plot_style"]]
+    pdf = PdfPages(pdf_path)        
+    
+    # for param in subsys.parameters:
+    for plot in subsys.plots:
+        # --- set up plot data
+        # - set up plot settings and info
+        # - subselect data from this plot from subsystem data for given parameter based on given selection etc.
+        plotdata = plot_data.PlotData(subsys, plot)
+            
+        # choose plot function based on user requested structure e.g. per channel or all ch together            
+        plot_structure = PLOT_STRUCTURE[plotdata.plot_settings['plot_structure']]            
 
-        logging.error("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-        logging.error("~~~ P L O T T I N G")
-        logging.error("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-        plot_parameter(pardata, pdf)
-
+        # --- color settings using a pre-defined palette
+        # num colors needed = max number of channels per string
+        # - find number of unique positions in each string
+        # - get maximum occuring
+        max_ch_per_string = plotdata.data.groupby('location')['position'].nunique().max()
+        global COLORS
+        COLORS = color_palette("hls", max_ch_per_string).as_hex()
+            
+        print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
+        print('~~~ P L O T T I N G')
+        print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
+        print('Plot structure: ' + plotdata.plot_settings['plot_structure'])
+        plot_structure(plotdata, pdf)
+          
     pdf.close()
-    logging.error("All plots saved in: " + out_name)
-
+    print('- - - - - - - - - - - - - - - - - - - - - - -')
+    print('All plots saved in: ' + pdf_path)
+    print('- - - - - - - - - - - - - - - - - - - - - - -')
+            
 
 # -------------------------------------------------------------------------------
-# different plot style functions called from the main one depending on parameter
+# different plot structure functions, how the figure should look like
 # -------------------------------------------------------------------------------
 
+# See mapping user plot structure keywords to corresponding functions in the end of this file
+        
+def plot_per_ch(plotdata, pdf):
+    # --- choose plot function based on user requested style e.g. vs time or histogram
+    plot_style =  PLOT_STYLE[plotdata.plot_settings['plot_style']]
+    print('Plot style: ' + plotdata.plot_settings['plot_style'])
 
-def plot_ch_par_vs_time(pardata, pdf):
-    data = pardata.data.sort_values(["location", "position"])
+    plotdata.data = plotdata.data.sort_values(['location', 'position'])   
+
+    # -------------------------------------------------------------------------------
 
     # separate figure for each string/fiber ("location")
-    for location, data_location in data.groupby("location"):
-        logging.error(f"... {pardata.locname} {location}")
+    for location, data_location in plotdata.data.groupby('location'):
+        print(f'... {plotdata.locname} {location}')
 
-        # ---------------------------------------------
-        #  global channel mean
-        # det name, channel in each position (position will be index after groupby)
-        channel_mean = data_location.groupby("position").first()[["name", "channel"]]
-        # get mean
-        channel_mean["mean"] = data_location.groupby("position").mean(
-            numeric_only=True
-        )[pardata.param]
+        # -------------------------------------------------------------------------------
+        # create plot structure: 1 column, N rows with subplot for each channel
+        # -------------------------------------------------------------------------------
 
-        # ---------------------------------------------
-        # calculate variation if asked by user
-
-        # set y label now already, add % if variation
-        ylabel = pardata.param_info.label + f" [{pardata.param_info.units}]"
-        if pardata.plot_settings["some_name"] == "variation":
-            logging.error("... calculating variation from the mean")
-            # set index to position to correspond to channel_mean
-            data_location = data_location.set_index("position")
-            # subtract mean from value for each position (i.e. channel)
-            data_location[pardata.param] = (
-                -data_location[pardata.param] / channel_mean["mean"] + 1
-            ) * 100  # %
-            data_location = data_location.reset_index()
-            ylabel += " - %"
-
-        # ---------------------------------------------
-        # plot
-
-        numch = len(data_location["channel"].unique())
-        fig, axes = plt.subplots(
-            numch, figsize=(10, numch * 3), sharex=True
-        )  # , sharey=True)
+        # number of channels in this string/fiber
+        numch = len(data_location['channel'].unique())
+        # create corresponding number of subplots for each channel, set constrained layout to accommodate figure suptitle
+        fig, axes = plt.subplots(nrows=numch, ncols=1, figsize=(10,numch*3), sharex = True, constrained_layout=True)#, sharey=True)
         # in case of pulser, axes will be not a list but one axis -> convert to list
         if numch == 1:
             axes = [axes]
 
-        logging.error("... plotting")
+        # -------------------------------------------------------------------------------
+        # plot
+        # -------------------------------------------------------------------------------
+
         ax_idx = 0
-        # groupby takes 4 seconds while pd.pivot_table - 20 -> changed to for loop with groupby
-        for _, data_position in data_location.groupby("position"):
-            # need to plot this way, and not data_position.plot(...) because the datetime column is of type Timestamp
-            # plotting this way, to_pydatetime() converts it to type datetime which is needed for DateFormatter
-            # changing the type of the column itself with the table does not work
-            axes[ax_idx].plot(
-                data_position["datetime"].dt.to_pydatetime(),
-                data_position[pardata.param],
-                color="darkgray",
-            )
+        # plot one channel on each axis, ordered by position
+        for position, data_channel in data_location.groupby('position'):
+            print(f'...... position {position}')
+
+            # plot selected style on this axis
+            plot_style(data_channel, plotdata.param, fig, axes[ax_idx], color=COLORS[ax_idx])
+
+            # --- add summary to axis
+            # name, position and mean are unique for each channel - take first value
+            t = data_channel.iloc[0][['channel', 'position', 'name', 'mean']]
+            text =  t['name']  +  '\n'  +\
+                    f"channel {t['channel']}\n" +\
+                    f"position {t['position']}\n"  +\
+                    f"mean {round(t['mean'],3)} [{plotdata.param.unit}]"
+            axes[ax_idx].text(1.01, 0.5, text, transform=axes[ax_idx].transAxes)  
+
+            # add grid
+            axes[ax_idx].grid('major', linestyle='--')
+            # remove automatic y label since there will be a shared one
+            axes[ax_idx].set_ylabel('')
+
             ax_idx += 1
 
-        # ---------------------------------------------
-        # plot resampled average, unless it's event rate - already resampled and counted for the same time window
+        # -------------------------------------------------------------------------------
 
-        if pardata.param != "event_rate":
-            logging.error("...... resampling for every " + pardata.sampling)
-            # after groupby->resample will have multi index in (position, datetime)
-            resampled = (
-                data_location.set_index("datetime")
-                .groupby("position")
-                .resample(pardata.sampling)
-                .mean(numeric_only=True)
-            )
-            # drop position, will be re-inserted with reset_index
-            resampled = resampled.drop("position", axis=1)
-            resampled = resampled.reset_index()
+        fig.suptitle(f'{plotdata.subsys} - {plotdata.plot_title}')
+        axes[0].set_title(f"{plotdata.locname} {location}")
 
-            logging.error("...... plotting resampled")
-            # color settings using a pre-defined palette
-            rcParams["axes.prop_cycle"] = cycler(
-                color=color_palette("hls", len(resampled.position.unique()))
-            )
-            # here pivot is quite quick even with 3minute sampling
-            pivot_table(
-                resampled, index="datetime", columns="position", values=pardata.param
-            ).plot(subplots=True, legend=False, ax=axes)
-
-        # !! with very short ranges, x-axis with datetime might behave weird
-        # might not need a solution for this because usually the range is > 2 keys
-
-        # ---------------------------------------------
-        # beautification
-
-        logging.error("... making the plot pretty for you")
-
-        # summary annotations
-        channel_mean = channel_mean.reset_index()
-        channel_mean["text"] = channel_mean[
-            ["name", "channel", "position", "mean"]
-        ].apply(
-            lambda x: f"{x[0]}\nchannel {x[1]}\nposition {x[2]}\nmean = {round(x[3],2)}"
-            + f" {pardata.param_info.units}",
-            axis=1,
-        )
-
-        # time ticks/labels on x-axis
-        # !! does not work for very small or non uniform data
-        # index step width for taking every 10th time point
-        every_10th_index_step = int(len(data_location) / 10.0)
-        # get corresponding timedelta in minutes to be safe for any plotting range
-        time_step = int(
-            (
-                pardata.data.iloc[every_10th_index_step]["datetime"]
-                - pardata.data.iloc[0]["datetime"]
-            ).total_seconds()
-            / 60.0
-        )
-        # locator - locates the ticks for given interval
-        locator = MinuteLocator(interval=time_step)
-        # formatter - formats the x label
-        formatter = DateFormatter("%Y\n%m/%d\n%H:%M")
-
-        # now add this stuff to axes
-        for idx in range(len(axes)):
-            # text
-            axes[idx].text(
-                1.01, 0.5, channel_mean.iloc[idx]["text"], transform=axes[idx].transAxes
-            )
-            # grid
-            axes[idx].grid("major", linestyle="--")
-            # locate ticks
-            axes[idx].xaxis.set_major_locator(locator)
-
-        # set date format
-        axes[-1].xaxis.set_major_formatter(formatter)
-
-        # ---- fix plot info
-        axes[0].set_title(f"{pardata.subsys} - {pardata.locname} {location}")
-        axes[-1].set_xlabel("")  # remove 'datatime' authomatic entry
-        fig.supxlabel("UTC Time")
-        fig.supylabel(ylabel)
-
-        fig.tight_layout()
-        plt.savefig(pdf, format="pdf")  # , bbox_inches='tight')
-        # pdf.savefig()
+        plt.savefig(pdf, format='pdf')
+        # figures are retained until explicitly closed; close to not consume too much memory
+        plt.close()
 
 
-def plot_histo(pardata, pdf):
-    # bins and range definition
-    data = pardata.data[pardata.param]
-    x_min = data.min()
-    x_max = data.max()
-    no_bins = int(x_max - x_min)
+def plot_per_string(plotdata, pdf):
+    # --- choose plot function based on user requested style e.g. vs time or histogram
+    plot_style =  PLOT_STYLE[plotdata.plot_settings['plot_style']]
+    print('Plot style: ' + plotdata.plot_settings['plot_style'])
 
-    logging.error("Plotting...")
-    data.plot.hist(bins=no_bins, range=[x_min, x_max], histtype="step", linewidth=1.5)
+    # --- create plot structure
+    # number of strings/fibers
+    no_location = len(plotdata.data['location'].unique())
+    # set constrained layout to accommodate figure suptitle
+    fig, axes = plt.subplots(no_location, figsize=(10,no_location*3), sharex=True, sharey=True, constrained_layout=True)
 
-    xlabel = pardata.param_info.label + f" [{pardata.param_info.units}]"
-    plt.xlabel(xlabel)
-    plt.ylabel("Counts")
-    plt.yscale("log")
-    pdf.savefig(bbox_inches="tight")
+    # -------------------------------------------------------------------------------
+    # create label of format hardcoded for geds sXX-pX-chXXX-name
+    # -------------------------------------------------------------------------------
 
+    labels = plotdata.data.groupby('channel').first()[['name', 'position']]
+    labels['channel'] = labels.index
+    labels['label'] = labels[['position', 'channel', 'name']].apply( lambda x: f'p{x[0]}-ch{str(x[1]).zfill(3)}-{x[2]}', axis=1 )
+    # put it in the table
+    plotdata.data = plotdata.data.set_index('channel')
+    plotdata.data['label'] = labels['label']
+    plotdata.data = plotdata.data.sort_values('label')    
 
-def plot_all_par_vs_time(pardata, pdf):
-    labels = pardata.data.groupby("channel").first()[["name", "location", "position"]]
-    labels["channel"] = labels.index
-    labels["label"] = labels[["location", "position", "channel", "name"]].apply(
-        lambda x: f"s{x[0]}-p{x[1]}-ch{str(x[2]).zfill(3)}-{x[3]}", axis=1
-    )
+    # -------------------------------------------------------------------------------
+    # plot
+    # -------------------------------------------------------------------------------
 
-    pardata.data = pardata.data.set_index("channel")
-    pardata.data["label"] = labels["label"]
+    plotdata.data = plotdata.data.sort_values(['location', 'label'])
+    # new subplot for each string
+    ax_idx = 0
+    for location, data_location in plotdata.data.groupby('location'):
+        print(f'... {plotdata.locname} {location}')
 
-    fig, ax = plt.subplots()
+        # new color for each channel
+        col_idx = 0
+        labels = []
+        for label, data_channel in data_location.groupby('label'):
+            plot_style(data_channel, plotdata.param, fig, axes[ax_idx], COLORS[col_idx])
+            labels.append(label)
+            col_idx += 1
 
-    colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
-    for label, group in pardata.data.groupby("label"):
-        plt.scatter(
-            group["datetime"].dt.to_pydatetime(),
-            group[pardata.param],
-            label=label,
-            color=colors[group["location"].iloc[0]],
-        )
+        axes[ax_idx].set_title(f"{plotdata.locname} {location}")
+        axes[ax_idx].set_ylabel('')
+        axes[ax_idx].legend(labels = labels, loc='center left', bbox_to_anchor=(1, 0.5))
+        ax_idx += 1
 
-    ax.set_xlabel("Time (UTC)")
-    ax.xaxis.set_major_formatter(DateFormatter("%Y\n%m/%d\n%H:%M"))
-    ax.set_ylabel(f"{pardata.param} [{pardata.param_info.units}]")
-    ax.yaxis.set_major_formatter(FormatStrFormatter("%.1f"))
+    # -------------------------------------------------------------------------------
 
-    plt.legend()
+    fig.suptitle(f'{plotdata.subsys} - {plotdata.plot_title}')
+    fig.supylabel(f'{plotdata.param.label} [{plotdata.param.unit_label}]')
+    plt.savefig(pdf, format='pdf')
+    # figures are retained until explicitly closed; close to not consume too much memory
+    plt.close()
+        
 
-    fig.tight_layout()
-    pdf.savefig()
+def plot_top_bottom(plotdata, pdf):
+    # here will be the SiPM function plotting one figure for top and one for bottom SiPMs, arranged in grid
+    pass
 
-
+# -------------------------------------------------------------------------------
 # mapping user keywords to plot style functions
-plot_style = {
-    "per channel": plot_ch_par_vs_time,
-    "all channels": plot_all_par_vs_time,
-    "histogram": plot_histo,
-}
+# -------------------------------------------------------------------------------
+
+PLOT_STRUCTURE = {
+    'per channel': plot_per_ch,
+    'per string': plot_per_string,
+    'top bottom': plot_top_bottom
+}  
