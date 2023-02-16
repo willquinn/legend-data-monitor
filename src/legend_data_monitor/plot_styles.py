@@ -10,7 +10,7 @@ from matplotlib.dates import DateFormatter, date2num
 from matplotlib.ticker import FixedLocator
 
 
-def plot_vs_time(data_channel, param, fig, ax, color=None):
+def plot_vs_time(data_channel, fig, ax, plot_info, color=None):
     # -------------------------------------------------------------------------
     # plot this data vs time
     # -------------------------------------------------------------------------
@@ -19,24 +19,24 @@ def plot_vs_time(data_channel, param, fig, ax, color=None):
     # plotting this way, to_pydatetime() converts it to type datetime which is needed for DateFormatter
     # changing the type of the column itself with the table does not work  
     data_channel = data_channel.sort_values('datetime')  
-    ax.plot(data_channel['datetime'].dt.to_pydatetime(), data_channel[param.name], zorder = 0,
-        color=color if param.name == 'event_rate' else 'darkgray')
+    ax.plot(data_channel['datetime'].dt.to_pydatetime(), data_channel[plot_info['parameter']], zorder = 0,
+        color=color if plot_info['parameter'] == 'event_rate' else 'darkgray')
 
     # -------------------------------------------------------------------------
     # plot resampled average
     # -------------------------------------------------------------------------
     
     # unless event rate - already resampled and counted in some time window
-    if not param.name == 'event_rate':
+    if not plot_info['parameter'] == 'event_rate':
         # resample in given time window, as start pick the first timestamp in table
-        resampled = data_channel.set_index('datetime').resample(param.sampling, origin='start').mean(numeric_only=True)
+        resampled = data_channel.set_index('datetime').resample(plot_info['time_window'], origin='start').mean(numeric_only=True)
         # will have datetime as index after resampling -> put back
         resampled = resampled.reset_index()
         # the timestamps in the resampled table will start from the first timestamp, and go with sampling intervals
-        # I want to shift them by sampling window, so that the resampled value is plotted for the end of the time window in which it was calculated
-        resampled['datetime'] = resampled['datetime'] + Timedelta(param.sampling)
+        # I want to shift them by half sampling window, so that the resampled value is plotted in the middle time window in which it was calculated
+        resampled['datetime'] = resampled['datetime'] + Timedelta(plot_info['time_window']) / 2
 
-        ax.plot(resampled['datetime'].dt.to_pydatetime(), resampled[param.name], color=color, zorder=1, marker='o', linestyle='-')
+        ax.plot(resampled['datetime'].dt.to_pydatetime(), resampled[plot_info['parameter']], color=color, zorder=1, marker='o', linestyle='-')
 
     # -------------------------------------------------------------------------
     # beautification
@@ -55,48 +55,45 @@ def plot_vs_time(data_channel, param, fig, ax, color=None):
 
     # --- set labels
     fig.supxlabel('UTC Time')
-    fig.supylabel(f'{param.label} [{param.unit_label}]')
+    fig.supylabel(f"{plot_info['label']} [{plot_info['unit_label']}]")
 
 
-def plot_histo(data_channel, param, fig, ax, color=None):
+def plot_histo(data_channel, fig, ax, plot_info, color=None):
   
     # --- histo range
     # !! in the future take from par-settings
     # needed for cuspEmax because with geant outliers not possible to view normal histo
     hrange = {'keV': [0, 2500]}
     # take full range if not specified
-    x_min = hrange[param.unit][0] if param.unit in hrange else data_channel[param.name].min()
-    x_max = hrange[param.unit][1] if param.unit in hrange else data_channel[param.name].max()
+    x_min = hrange[plot_info['unit']][0] if plot_info['unit'] in hrange else data_channel[plot_info['parameter']].min()
+    x_max = hrange[plot_info['unit']][1] if plot_info['unit'] in hrange else data_channel[plot_info['parameter']].max()
 
     # --- bin width
     bwidth = {'keV': 2.5} # what to do with binning???
-    bin_width = bwidth[param.unit] if param.unit in bwidth else None
+    bin_width = bwidth[plot_info['unit']] if plot_info['unit'] in bwidth else None
     no_bins = int( (x_max - x_min) / bin_width) if bin_width else 50
 
     # -------------------------------------------------------------------------
 
-    data_channel[param.name].plot.hist(bins=no_bins, range=[x_min, x_max], histtype='step', linewidth=1.5, ax = ax, color=color)
+    data_channel[plot_info['parameter']].plot.hist(bins=no_bins, range=[x_min, x_max], histtype='step', linewidth=1.5, ax = ax, color=color)
 
     # -------------------------------------------------------------------------
 
     ax.set_yscale('log')
-    fig.supxlabel(f'{param.label} [{param.unit_label}]') 
+    fig.supxlabel(f"{plot_info['label']} [{plot_info['unit_label']}]") 
 
 
-def plot_scatter(data_channel, param, fig, ax, color=None):
-    ax.scatter(data_channel['datetime'].dt.to_pydatetime(), data_channel[param.name], color=color)
+def plot_scatter(data_channel, fig, ax, plot_info, color=None):
+    ax.scatter(data_channel['datetime'].dt.to_pydatetime(), data_channel[plot_info['parameter']], color=color)
 
     ax.xaxis.set_major_formatter(DateFormatter('%Y\n%m/%d\n%H:%M'))
     fig.supxlabel('UTC Time')
 
 
-def plot_heatmap(data_channel, param, fig, ax, color=None):
+def plot_heatmap(data_channel, fig, ax, plot_info, color=None):
     # here will be a function to plot a SiPM heatmap
     pass
 
-def plot_status(data_channel, param, fig, ax, color=None):
-    # here i will transfer Sofia's heatmaps.py function
-    pass
 
 # -------------------------------------------------------------------------------                
 # mapping user keywords to plot style functions
@@ -106,6 +103,5 @@ PLOT_STYLE = {
     'vs time': plot_vs_time,
     'histogram': plot_histo,
     'scatter': plot_scatter,
-    'heatmap': plot_heatmap,
-    'status': plot_status
+    'heatmap': plot_heatmap
 }

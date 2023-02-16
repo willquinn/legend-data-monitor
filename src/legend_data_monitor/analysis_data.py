@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import logging
 
 # needed to know which parameters are not in DataLoader
 # but need to be calculated, such as event rate
@@ -11,52 +12,80 @@ from .subsystem import SPECIAL_PARAMETERS
 
 class AnalysisData():
     '''
+    Object containing information for a data subselected from Subsystem data based on given criteria
+
     sub_data [DataFrame]: subsystem data
-    [parameters] [str|list]: parameter(s) of interest
-    evt_type [str]: event type (pulser/phy/all/Klines)
-    variation [bool]: keep absolute value of parameter (False) or calculate % variation from mean (True)
-    window [str]: time window in which to calculate event rate, in case that's the parameter of interest (default None)
+
+    Available kwargs:
+        selection=
+            dict with the following contents:
+                - 'parameters' [str or list of str]: parameter(s) of interest e.g. 'baseline'
+                - 'event_type' [str]: event type, options: pulser/phy/all/Klines
+                - 'variation' [bool]: [optional] keep absolute value of parameter (False) or calculate % variation from mean (True).
+                    Default: False
+                - 'time_window' [str]: [optional] time window in which to calculate event rate, in case that's the parameter of interest.
+                    Format: time_window='NA', where N is integer, and A is M for months, D for days, T for minutes, and S for seconds.
+                    Default: None
+        Or input kwargs directly parameters=, event_type=, variation=, time_window=
     '''
 
-    def __init__(self, sub_data, parameters, event_type, variation=False, time_window=None):
+    def __init__(self, sub_data, **kwargs):
 
         print('============================================')
         print('=== Setting up Analysis Data')
         print('============================================')
+
+        # if selection= was provided, take the dict
+        # if kwargs were used directly, kwargs itself is already our dict
+        # need to do .copy() or else modifies original config!
+        analysis_info = kwargs['selection'].copy() if 'selection' in kwargs else kwargs.copy()
 
         # -------------------------------------------------------------------------      
         # validity checks
         # -------------------------------------------------------------------------      
         
         # convert single parameter input to list for convenience
-        if isinstance(parameters, str):
-            parameters = [parameters]
+        if isinstance(analysis_info['parameters'], str):
+            analysis_info['parameters'] = [ analysis_info['parameters'] ]
+        # defaults
+        if not 'time_window' in analysis_info:
+            analysis_info['time_window'] = None
+        if not 'variation' in analysis_info:
+            analysis_info['variation'] = False
+
+
+        if analysis_info['event_type'] != 'all' and not 'flag_pulser' in sub_data:
+            logging.error(f"Your subsystem data does not have a pulser flag! We need it to subselect event type {analysis_info['event_type']}")
+            logging.error('Run the function <subsystem>.flag_pulser_events(<pulser>) first, where <subsystem> is your Subsystem object, ' +\
+                "and <pulser> is a Subsystem object of type 'pulser', which already has it data loaded with <pulser>.get_data(); then create AnalysisData object.")
+            return
 
         # cannot do event rate and another parameter at the same time
         # since event rate is calculated in windows
-        if 'event_rate' in parameters and len(parameters) > 1:
-            print('Cannot get event rate and another parameter at the same time!')
-            print('Event rate has to be calculated based on time windows, so the other parameter has to be thrown away.')
-            print('Contact Mariia if you want, for example, to keep that parameter, but look at mean in the windows of event rate.')
+        if 'event_rate' in analysis_info['parameters'] and len(analysis_info['parameters']) > 1:
+            logging.error('Cannot get event rate and another parameter at the same time!')
+            logging.error('Event rate has to be calculated based on time windows, so the other parameter has to be thrown away.')
+            logging.error('Contact developers if you want, for example, to keep that parameter, but look at mean in the windows of event rate.')
             return
 
         # time window must be provided for event rate
-        if parameters[0] == 'event_rate' and not time_window:
-            print('Provide time window in which to take the event rate!')
-            print('Format: NA, where N is integer, and A is M for months, D for days, T for minutes, and S for seconds')
+        if analysis_info['parameters'][0] == 'event_rate' and not analysis_info['time_window']:
+            logging.error("Provide argument <time_window> in which to take the event rate!")
+            print(self.__doc__)
             return
 
-        self.parameters = parameters
-        self.evt_type = event_type
-        self.time_window = time_window
-        self.variation = variation
+
+        self.parameters = analysis_info['parameters']
+        self.evt_type = analysis_info['event_type']
+        self.time_window = analysis_info['time_window']
+        self.variation = analysis_info['variation']
 
         # -------------------------------------------------------------------------      
         # subselect data
         # -------------------------------------------------------------------------      
 
         # always get basic parameters
-        params_to_get = ['datetime', 'channel', 'name', 'location', 'position']
+        params_to_get = ['datetime', 'channel', 'name', 'location', 'position', 'status']
         # pulser flag is present only if subsystem.flag_pulser_events() was called
         # needed to subselect phy/pulser events
         if 'flag_pulser' in sub_data:
@@ -79,7 +108,9 @@ class AnalysisData():
         # -------------------------------------------------------------------------      
 
         # selec phy/puls/all events
-        self.select_events()
+        bad = self.select_events()
+        if(bad):
+            return
 
         # calculate if special parameter
         self.special_parameter()          
@@ -93,8 +124,6 @@ class AnalysisData():
         # -------------------------------------------------------------------------      
 
         self.data = self.data.sort_values(['channel', 'datetime'])       
-
-        print(self.data)
 
         
     def select_events(self):
@@ -110,8 +139,12 @@ class AnalysisData():
             self.data = self.data[ ~self.data['flag_pulser'] ]
             energy = SPECIAL_PARAMETERS['K_lines'][0]
             self.data = self.data[ (self.data[energy] > 1430) & (self.data[energy] < 1575)] 
-        else:
+        elif self.evt_type == 'all':
             print('... keeping all (pulser + non-pulser) events')
+        else:
+            logging.error('Invalid event type!')
+            print(self.__doc__)
+            return 'bad'
               
         
     def special_parameter(self):
@@ -162,7 +195,6 @@ class AnalysisData():
         channel_mean = channel_mean.rename(columns={param: param+'_mean' for param in self.parameters})
         # add it as column for convenience - repeating redundant information, but convenient
         self.data = self.data.set_index('channel')
-        # print(channel_mean.reindex(self.data.index))
         # self.data['mean'] = channel_mean.reindex(self.data.index)
         self.data = pd.concat([self.data, channel_mean.reindex(self.data.index)], axis=1)
         # put channel back in
