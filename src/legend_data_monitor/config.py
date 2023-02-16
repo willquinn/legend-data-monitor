@@ -1,5 +1,3 @@
-# needed to open files in settings/
-import importlib.resources
 import json
 import logging
 import os
@@ -9,41 +7,50 @@ from datetime import datetime
 from legendmeta import LegendMetadata
 from legendmeta.jsondb import AttrsDict
 
-# needed to check plot settings
-from . import plotting
+# needed to check available plot structures
+from .plotting import PLOT_STRUCTURE
+# needed to check available plot styles
+from .plot_styles import PLOT_STYLE
 
-pkg = importlib.resources.files("legend_data_monitor")
-
+# 0 signifies end for the recursive search
+# to convert single inputs to lists
 SINGLE_TO_LIST = {"dataset": {"type": 0, "selection": {"runs": 0}}}
 
 
-def config_build(json_name: str):
+def config_build(user_config):
     """
-    json_name: path to user config json file.
+    user_config: str - name of json, dict/AttrsDict - already in dict format given directly
 
-    Returns NestedAttrDict. Can't use inheritance because of conflicting kwargs
-    in __init__ when passing self. Mascking this function to look like a class.
+    Returns nested AttrsDict designed in legendmeta
 
     >>> config = config_build({'a': {'c':1, 'd':3}, 'b': 2})
     >>> config.a.c
     1
     """
-    logging.error("Reading settings from " + str(json_name) + "...")
 
-    with open(pkg / "settings" / json_name) as f:
-        conf = AttrsDict(json.load(f))
+    # if path to json is provided, open json
+    if isinstance(user_config, str):
+        logging.error("Reading settings from " + str(user_config) + "...")
+        with open(user_config) as f:
+            conf = json.load(f)
+    # if dict is provided, take directly
+    elif isinstance(user_config, dict):
+        conf = AttrsDict(user_config)
+    else:
+        logging.error('Input to build_config() should be a dict, AttrsDict or json filename!')
+        sys.exit(1)
 
-    # update single to list with subsystem for single to list conversion
-    for subsys in conf.subsystems:
-        SINGLE_TO_LIST["subsystems"] = {
-            subsys: {"parameters": 0, "removed_channels": 0}
-        }
+    # convert to AttrsDict for convenience
+    conf = AttrsDict(conf)
 
     # convert strings to lists for single input
     conf = single_to_list(conf)
 
     # check if something wrong was entered
     check_settings(conf)
+
+    # create output paths
+    conf.output_paths = make_output_paths(conf)
 
     # start time of code - needed if data selection type is "last hours"
     conf.start_code = datetime.now().strftime("%Y%m%dT%H%M%SZ")
@@ -59,109 +66,20 @@ def config_build(json_name: str):
     # load status map
     if conf.dataset.exp == "60":
         ex = conf.dataset.exp
-    json_file = f"{ex.upper()}-{conf.dataset.period}-r%-T%-all-config.json"  # "L200-p02-r010-T%-all-config.json"
+    json_file = f"{ex.upper()}-{conf.dataset.period}-r%-T%-all-config.json"  
     if conf.dataset.exp == "l200":
-        json_file = json_file.replace("r%", "r010")
-    conf.status_map = lmeta.dataprod.config[json_file]
+        json_file = json_file.replace("r%", "r010") # "L200-p02-r010-T%-all-config.json"
+    conf.status_map = lmeta.dataprod.config[json_file]['hardware_configuration']['channel_map']
 
-    # load dictionary with plot info (= units, thresholds, label, ...)
-    with open(pkg / "settings" / "par-settings.json") as f:
-        plot_info_json = AttrsDict(json.load(f))
-    conf.plot_info = plot_info_json
+    # chstatmap = self.lmeta.dataprod.config.on(timestamp=timestamp, system='phy')['hardware_configuration']['channel_map']
+    # chstat = chstatmap.get('ch'+f"{val.daq.fcid:03d}", {}).get("software_status", "Off")
+    # if chstat == "On":
+    # ....    
 
     return conf
 
 
-class PlotSettings:
-    def __init__(self, conf: config_build, dset):
-        logging.error("----------------------------------------------------")
-        logging.error("--- Setting up plotting")
-        logging.error("----------------------------------------------------")
-
-        # sampling for averages
-        # e.g. "30T"
-        # minute - T, second - S, month - M
-        self.sampling = conf.plotting.sampling
-
-        # output paths, make folders if needed
-        self.output_paths = self.make_output_paths(conf)
-
-        # settings for each parameter
-        # (keep phy or pulser events, plot style)
-        self.param_settings = conf.plotting.parameters
-        # from par-settings.json
-        self.param_info = conf.plot_info
-
-        # get channel map
-        self.channel_map = conf.channel_map
-
-        # get status map
-        self.status_map = conf.status_map
-
-        # check if something is missing or not valid
-        self.check_settings()
-
-        # base name for log and PDF files
-        self.basename = "{}-{}-{}-{}_{}".format(
-            conf.dataset.exp,
-            conf.dataset.period,
-            "_".join(conf.dataset.type),
-            dset.user_time_range["start"],
-            dset.user_time_range["end"],
-        )
-
-    def make_output_paths(self, conf):
-        """Define output paths and create directories accordingly."""
-        # general output path
-        make_dir(conf.plotting.output)
-
-        # output subfolders
-        output_paths = {"path": conf.plotting.output}
-
-        # sub directories
-        for out_dir in ["log_files", "pdf_files", "pkl_files", "json_files"]:
-            out_dir_path = os.path.join(conf.plotting.output, out_dir)
-            make_dir(out_dir_path)
-            output_paths[out_dir] = out_dir_path
-
-        # sub sub directories
-        for out_dir in ["pdf_files", "pkl_files"]:
-            # "plot path" and "map path"
-            for out_subdir in ["par_vs_time", "heatmaps"]:
-                out_dir_path = os.path.join(conf.plotting.output, out_dir, out_subdir)
-                make_dir(out_dir_path)
-                # !! oops
-                output_paths[out_subdir] = out_dir_path
-
-        return AttrsDict(output_paths)
-
-    def check_settings(self):
-        options = {
-            "events": ["phy", "pulser", "all", "K_lines"],
-            "plot_style": plotting.plot_style.keys(),
-            "some_name": ["variation", "absolute"],
-        }
-
-        # for each parameter, check provided plot settings
-        for param in self.param_settings:
-            # look at every option available in plot settings
-            for field in options:
-                # if this field is not provided by user, tell them to provide it
-                if field not in self.param_settings[param]:
-                    logging.error(f"Provide {field} settings for {param}!")
-                    logging.error(
-                        "Available options: {}".format(",".join(options[field]))
-                    )
-                    sys.exit(1)
-
-                opt = self.param_settings[param][field]
-
-                if opt not in options[field]:
-                    logging.error(f"Option {opt} provided for {param} does not exist!")
-                    logging.error(
-                        "Available options: {}".format(",".join(options[field]))
-                    )
-                    sys.exit(1)
+    
 
     # ------ logging -> should go to dataset? settings? separate?
     # set up logging to file
@@ -177,24 +95,96 @@ class PlotSettings:
     # ------ logging
 
 
-# ------- Config related functions
+# -------------------------------------------------------------------------
+# Config related functions
+# -------------------------------------------------------------------------
+
 def check_settings(conf):
-    # if parameter is under subsystem to be plotted, must be in plot settings
-    for subsys in conf.subsystems:
-        for param in conf.subsystems[subsys].parameters:
-            if param not in conf.plotting.parameters:
-                logging.error(
-                    f"Parameter {param} is asked to be plotted for subsystem {subsys} but no plot settings are provided!"
-                )
-                sys.exit(1)
 
     # time selection types
     for key in conf.dataset.selection:
-        if key not in ["start", "end", "timestamps", "runs"]:
-            logging.error("Invalid dataset time selection!")
-            logging.error("Available selection: start & end, timestamps, or runs")
+        if not key in ['start','end', 'timestamps', 'runs']:
+            logging.error('Invalid dataset time selection!')
+            logging.error('Available selection: start & end, timestamps, or runs')
             sys.exit(1)
 
+    # param settings
+    OPTIONS = {
+        'events': ['phy', 'pulser', 'all', 'K_lines'],
+        'plot_structure': PLOT_STRUCTURE.keys(),
+        'plot_style': PLOT_STYLE.keys(),
+        'some_name': ['variation', 'absolute']
+    }
+        
+    # for each plot, check provided plot settings
+    for subsys in conf.subsystems:
+        for plot in conf.subsystems[subsys]["plots"]:
+            # settings for this plot
+            plot_settings = conf.subsystems[subsys]['plots'][plot]
+
+            # check if all necessary fields for param settings were provided
+            for field in OPTIONS:
+                # if this field is not provided by user, tell them to provide it
+                if not field in plot_settings:
+                    logging.error(f"Provide {field} for plot '{plot}' in {subsys}!")
+                    logging.error('Available options: {}'.format(','.join(OPTIONS[field])))
+                    sys.exit(1)
+
+                # check if the provided option is valid
+                opt = plot_settings[field]
+
+                if not opt in OPTIONS[field]:
+                    logging.error(f"Option {opt} provided for {field} in plot '{plot}' does not exist!")
+                    logging.error('Available options: {}'.format(','.join(OPTIONS[field])))
+                    sys.exit(1)            
+
+            # sampling is needed if
+            # - plot style vs time is asked
+            # - event rate is asked as parameter
+            # parameter in this plot
+            param = plot_settings['parameter']
+            if not 'sampling' in plot_settings:
+                if param == 'event_rate':
+                    logging.error(f"You chose parameter event_rate for plot '{plot}' in {subsys} and did not provide sampling window.")
+                    sys.exit(1)
+                
+                elif plot_settings['plot_style'] == 'vs time':
+                    logging.error(f"You chose plot style vs time for plot '{plot}' in {sybsys} and did not provide sampling window.")
+                    sys.exit(1)            
+
+
+def make_output_paths(conf):
+    ''' define output paths and create directories accordingly '''
+
+    print('----------------------------------------------------')
+    print('--- Setting up plotting')    
+    print('----------------------------------------------------')
+
+    # general output path
+    make_dir(conf.output)
+
+    # output subfolders
+    output_paths = {}
+
+    # sub directories
+    for out_dir in ["log_files", "pdf_files", "pkl_files", "json_files"]:
+        out_dir_path = os.path.join(conf.output, out_dir)
+        make_dir(out_dir_path)
+        # remember for later for convenience
+        output_paths[out_dir] = out_dir_path
+
+    # sub sub directories
+    for out_dir in ["pdf_files", "pkl_files"]:
+        for out_subdir in ["par_vs_time", "heatmaps"]:
+            out_dir_path = os.path.join(conf.output, out_dir, out_subdir)
+            # make dir but no need to remember
+            make_dir(out_dir_path)
+            
+    return AttrsDict(output_paths)   
+
+# ------------------------------------------------------------------------- 
+# helper functions
+# -------------------------------------------------------------------------
 
 def single_to_list(conf, dct=SINGLE_TO_LIST):
     """Recursively convert single entries to lists."""
@@ -208,7 +198,6 @@ def single_to_list(conf, dct=SINGLE_TO_LIST):
     return conf
 
 
-# ----------- helper function
 def make_dir(dir_path):
     """Check if directory exists, and if not, make it."""
     message = "Output directory " + dir_path
