@@ -4,6 +4,9 @@ from datetime import datetime
 
 from pygama.flow import DataLoader
 
+from legendmeta import LegendMetadata
+LEGEND_META = LegendMetadata()
+
 
 # ------------
 # specify which lh5 parameters are neede to be loaded from lh5 to calculate them
@@ -38,44 +41,44 @@ class Subsystem():
 
         # --- list of plots to make for this subsystem
         # if subtype is not in config, means probably it's pulser being set up for flagging not for plotting
-        self.plots = config.subsystems[sub_type]['plots'] if sub_type in config.subsystems else []
+        # self.plots = config.subsystems[sub_type]['plots'] if sub_type in config.subsystems else []
         # total parameters of interest for all plots to load from DataLoader (can have repetitions)
-        self.parameters = []
-        for plot in self.plots:
-            self.parameters.append(self.plots[plot]['parameter'])
+        # self.parameters = []
+        # for plot in self.plots:
+        #     self.parameters.append(self.plots[plot]['parameter'])
 
         # -------------------------------------------------------------------------
         # get channel map for this subsystem
-        # -------------------------------------------------------------------------
+        # -------------------------------------------------------------------------          
 
-        self.ch_map = self.get_channel_map(config) # pd.DataFrame
+        self.ch_map = self.get_channel_map(config.dataset) # pd.DataFrame
 
         # add column status to channel map stating On/Off
-        self.get_channel_status(config)
+        self.get_channel_status(config.dataset)
 
         # -------------------------------------------------------------------------
         # K lines
         # -------------------------------------------------------------------------
  
-        # a bit cumbersome, but we need to know if K_lines was requested to select specified energy parameter
-        self.k_lines = False
-        for plot in self.plots:
-            # if K lines is asked, set to true
-            self.k_lines = self.k_lines or (self.plots[plot]['events'] == 'K_lines')
+        # # a bit cumbersome, but we need to know if K_lines was requested to select specified energy parameter
+        # self.k_lines = False
+        # for plot in self.plots:
+        #     # if K lines is asked, set to true
+        #     self.k_lines = self.k_lines or (self.plots[plot]['events'] == 'K_lines')
 
         # -------------------------------------------------------------------------
         # quality cut*
         # -------------------------------------------------------------------------
 
         # !! per parameter or per subsystem?
-        self.qc = config.subsystems[sub_type]['quality_cut'] if sub_type in config.subsystems else False
+        # self.qc = config.subsystems[sub_type]['quality_cut'] if sub_type in config.subsystems else False
 
         # -------------------------------------------------------------------------
         # have something before get_data() is called just in case
         self.data = pd.DataFrame()
 
 
-    def get_data(self, dataset):
+    def get_data(self, dataset, parameters):
         '''
         plt_set [dict]: plot settings for this subsystem
             (params to plot, QC bool, ...)
@@ -89,7 +92,7 @@ class Subsystem():
         
         # --- construct list of parameters for the data loader
         # depending on special parameters, k lines etc.
-        params = self.params_for_dataloader(dataset)
+        params = self.params_for_dataloader(parameters)
 
         # --- set up DataLoader
         dlconfig, dbconfig = self.construct_dataloader_configs(dataset, params)
@@ -119,9 +122,9 @@ class Subsystem():
         # -------------------------------------------------------------------------
         # !! right now set up to be per subsystem, not per parameter
 
-        if self.qc:
-            print('...... applying quality cut')
-            self.data = self.data[ self.data[dataset.qc_name] ]        
+        # if self.qc:
+        #     print('...... applying quality cut')
+        #     self.data = self.data[ self.data[dataset.qc_name] ]        
 
         # -------------------------------------------------------------------------
         # polish things up
@@ -195,24 +198,34 @@ class Subsystem():
         self.data = self.data.reset_index()  
 
 
-    def get_channel_map(self, config):
+    def get_channel_map(self, dataset):
         """
         Buld channel map for given subsystem
         location - fiber for SiPMs, string for gedet, dummy for pulser
         """
         
         print('... getting channel map')
+
+        # -------------------------------------------------------------------------      
+        # load full channel map of this exp and period
+        # -------------------------------------------------------------------------      
+        
+        ex = "l" + dataset.exp.split("l")[1].zfill(3) #l060 or l200
+        json_file = f"{ex}-{dataset.period}-r%-T%-all-config.json"   
+        full_channel_map = LEGEND_META.hardware.configuration.channelmaps[json_file]   
         
         df_map = pd.DataFrame({'name':[], 'location': [], 'channel':[], 'position':[]})
         df_map = df_map.set_index('channel')
         
         # -------------------------------------------------------------------------      
+        # helper function to determine which channel map entry belongs to this subsystem
+        # -------------------------------------------------------------------------      
 
-        # selection depending on subsystem, dct_key is the part corresponding to one chmap entry
+        # dct_key is the subdict corresponding to one chmap entry
         def is_subsystem(dct_key):
             # special case for pulser
             if self.type == 'pulser':
-                pulser_ch = 0 if config.dataset.exp == 'l60' else 1
+                pulser_ch = 0 if dataset.exp == 'l60' else 1
                 return dct_key['system'] == 'auxs' and dct_key['daq']['fcid'] == pulser_ch
             # for geds or spms
             return dct_key['system'] == self.type
@@ -225,23 +238,23 @@ class Subsystem():
         # -------------------------------------------------------------------------      
 
         # config.channel_map is already a dict read from the channel map json
-        for key in config.channel_map:
+        for key in full_channel_map:
             # skip 'BF' don't even know what it is
             if 'BF' in key:
                 continue
 
             # skip if this is not our system
-            if not is_subsystem(config.channel_map[key]):
+            if not is_subsystem(full_channel_map[key]):
                 continue
                         
             # --- add info for this channel
             # FlashCam channel, unique for geds/spms/pulser            
-            ch = config.channel_map[key]['daq']['fcid']
-            df_map.at[ch, 'name'] = config.channel_map[key]['name']
+            ch = full_channel_map[key]['daq']['fcid']
+            df_map.at[ch, 'name'] = full_channel_map[key]['name']
             # number/name of stirng/fiber for geds/spms, dummy for pulser
-            df_map.at[ch, 'location'] = 0 if self.type == 'pulser' else config.channel_map[key]['location'][loc_code[self.type]]
+            df_map.at[ch, 'location'] = 0 if self.type == 'pulser' else full_channel_map[key]['location'][loc_code[self.type]]
             # position in string/fiber for geds/spms, dummy for pulser (works if there is only one pulser channel)
-            df_map.at[ch, 'position'] = 0 if self.type == 'pulser' else config.channel_map[key]['location']['position']
+            df_map.at[ch, 'position'] = 0 if self.type == 'pulser' else full_channel_map[key]['location']['position']
             # ? add CC4 name goes here?
                                 
         df_map = df_map.reset_index()
@@ -258,19 +271,40 @@ class Subsystem():
         return df_map
     
 
-    def get_channel_status(self, config):
+    def get_channel_status(self, dataset):
+
+        print('... getting channel status')
+
+        # -------------------------------------------------------------------------      
+        # load full status map of this exp and period
+        # -------------------------------------------------------------------------   
+
+        ex = "L" + dataset.exp.split("l")[1] # L60 or L200
+        run = {'L60': '%', 'L200': '010'}
+        # L60-pXX-r%-... for L60, L200-pXX-r010-... for L200
+        json_file = f'{ex}-{dataset.period}-r{run[ex]}-T%-all-config.json'
+        full_status_map = LEGEND_META.dataprod.config[json_file]['hardware_configuration']['channel_map']
+
+        # ----- from Katha
+        # chstatmap = self.lmeta.dataprod.config.on(timestamp=timestamp, system='phy')['hardware_configuration']['channel_map']
+        # chstat = chstatmap.get('ch'+f"{val.daq.fcid:03d}", {}).get("software_status", "Off")
+        # if chstat == "On":
+        # ....            
+                
         # AUX channels are not in status map, so at least for pulser need default On        
         self.ch_map['status'] = 'On'
         self.ch_map = self.ch_map.set_index('channel')
-        for ch in config.status_map:
+        for channel in full_status_map:
+            # convert string channel ('ch005') to integer (5)
+            ch = int(channel[2:])
             # status map contains all channels, check if this channel is in our subsystem
-            if ch in self.ch_map:
-                self.ch_map.at[int(ch[2:]), 'status'] = config.status_map[ch]['software_status']
+            if ch in self.ch_map.index:
+                self.ch_map.at[ch, 'status'] = full_status_map[channel]['software_status']
                 
         self.ch_map = self.ch_map.reset_index()
 
 
-    def params_for_dataloader(self, dataset):
+    def params_for_dataloader(self, parameters):
         # --- always read timestamp
         params = ['timestamp']
         # --- always get wf_max & baseline for pulser for flagging
@@ -278,12 +312,12 @@ class Subsystem():
             params += ['wf_max', 'baseline']
         
         # --- add QC method to parameters to be read from the DataLoader
-        if self.qc:
-            params.append(dataset.qc_name)
+        # if self.qc:
+        #     params.append(dataset.qc_name)
             
         # --- add user requested parameters
         global USER_TO_PYGAMA
-        for param in self.parameters:
+        for param in parameters:
             if param in SPECIAL_PARAMETERS:
                 # for special parameters, look up which parameters are needed to be loaded for their calculation
                 # if none, ignore
@@ -293,7 +327,7 @@ class Subsystem():
                 params.append(param)
         
         # add K_lines energy if needed
-        if self.k_lines:
+        if 'K_lines' in parameters:
             params.append(SPECIAL_PARAMETERS['K_lines'][0])
 
         # some parameters might be repeated twice - remove

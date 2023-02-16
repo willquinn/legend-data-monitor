@@ -1,9 +1,22 @@
 from . import plot_data
 from .plot_styles import *
+# from .status_plot import *
 
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from seaborn import color_palette
+
+import json
+# ? not nice that need to load in multiple files? e.g. config.py and here
+# ! will go away from everywhere
+from legendmeta.jsondb import AttrsDict
+# needed to open files in settings/
+import importlib.resources
+
+# load dictionary with plot info (= units, thresholds, label, ...)
+pkg = importlib.resources.files("legend_data_monitor")
+with open(pkg / "settings" / "par-settings.json") as f:
+    PLOT_INFO = AttrsDict(json.load(f))
 
 # -------------------------------------------------------------------------
 
@@ -18,15 +31,37 @@ COLORS = []
 # feel free to write your own one using Dataset, Subsystem and ParamData objects
 # for example, this structure won't work to plot one parameter VS the other
 
-def make_subsystem_plots(subsys, pdf_path):         
+def make_subsystem_plots(subsys, plots, pdf_path):         
 
     pdf = PdfPages(pdf_path)        
     
     # for param in subsys.parameters:
-    for plot in subsys.plots:
-        # --- set up plot data
-        # - set up plot settings and info
-        # - subselect data from this plot from subsystem data for given parameter based on given selection etc.
+    for plot in plots:
+
+        # -------------------------------------------------------------------------
+        # add info to plot info
+        # -------------------------------------------------------------------------
+
+        # - plot title (already in it)
+        # self.plot_title = plot
+        # - subsystem location name (string/fiber/aux for geds/spms/pulser)
+        # self.locname = {'geds': 'string', 'spms': 'fiber', 'pulser': 'aux'}[subsys.type] 
+        # - parameter label
+        # - parameter unit
+        # - parameter unit label (% if variation asked)
+        # self.param = PLOT_INFO[param_name]
+        # self.param['unit_label'] = '%' if self.plot_settings['some_name'] == 'variation' else self.param['unit']
+        # - plot structure and style
+        # -> time window for plot style vs time
+
+        # -------------------------------------------------------------------------
+        # set up analysis data
+        # -------------------------------------------------------------------------
+
+        # AnalysisData
+        # - select parameter of interest
+        # - subselect type of events (pulser/phy/all/klines)
+        # - calculate variation from mean, if asked
         plotdata = plot_data.PlotData(subsys, plot)
             
         # choose plot function based on user requested structure e.g. per channel or all ch together            
@@ -45,6 +80,11 @@ def make_subsystem_plots(subsys, pdf_path):
         print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
         print('Plot structure: ' + plotdata.plot_settings['plot_structure'])
         plot_structure(plotdata, pdf)
+
+        # make a special status plot
+        # if "status" in subsys.plots[plot] and subsys.plots[plot]['status']:
+        #     status_plot(subsys, plot_data, pdf)
+
           
     pdf.close()
     print('- - - - - - - - - - - - - - - - - - - - - - -')

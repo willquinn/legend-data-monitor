@@ -1,6 +1,6 @@
 import re
 import os
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 
 class Dataset():
@@ -90,7 +90,8 @@ class Dataset():
 
         elif 'window' in config.dataset.selection:
             message += 'time window'
-            time_range['end'] = config.start_code
+            time_range['end'] = datetime.now().strftime("%Y%m%dT%H%M%SZ")    # start time of code - needed if data selection type is "last hours"
+
             days, hours, minutes = re.split(r'd|h|m', config.dataset.selection.window)[:-1] # -1 for trailing ''
             dt = timedelta(days=days, hours=hours, minutes=minutes)
             time_range['start'] = (time_range['end'].strptime("%Y%m%dT%H%M%SZ") - dt).strftime("%Y%m%dT%H%M%SZ")

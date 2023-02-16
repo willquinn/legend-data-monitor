@@ -2,7 +2,6 @@ import json
 import logging
 import os
 import sys
-from datetime import datetime
 
 from legendmeta import LegendMetadata
 from legendmeta.jsondb import AttrsDict
@@ -52,30 +51,6 @@ def config_build(user_config):
     # create output paths
     conf.output_paths = make_output_paths(conf)
 
-    # start time of code - needed if data selection type is "last hours"
-    conf.start_code = datetime.now().strftime("%Y%m%dT%H%M%SZ")
-
-    # load channel map
-    # l060 instead of l60 for exp
-    ex = "l" + conf.dataset.exp.split("l")[1].zfill(3)
-    json_file = f"{ex}-{conf.dataset.period}-r%-T%-all-config.json"
-
-    lmeta = LegendMetadata()
-    conf.channel_map = lmeta.hardware.configuration.channelmaps[json_file]
-
-    # load status map
-    if conf.dataset.exp == "60":
-        ex = conf.dataset.exp
-    json_file = f"{ex.upper()}-{conf.dataset.period}-r%-T%-all-config.json"  
-    if conf.dataset.exp == "l200":
-        json_file = json_file.replace("r%", "r010") # "L200-p02-r010-T%-all-config.json"
-    conf.status_map = lmeta.dataprod.config[json_file]['hardware_configuration']['channel_map']
-
-    # chstatmap = self.lmeta.dataprod.config.on(timestamp=timestamp, system='phy')['hardware_configuration']['channel_map']
-    # chstat = chstatmap.get('ch'+f"{val.daq.fcid:03d}", {}).get("software_status", "Off")
-    # if chstat == "On":
-    # ....    
-
     return conf
 
 
@@ -113,7 +88,7 @@ def check_settings(conf):
         'events': ['phy', 'pulser', 'all', 'K_lines'],
         'plot_structure': PLOT_STRUCTURE.keys(),
         'plot_style': PLOT_STYLE.keys(),
-        'some_name': ['variation', 'absolute']
+        'variation': [True, False]
     }
         
     # for each plot, check provided plot settings
