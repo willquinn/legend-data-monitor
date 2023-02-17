@@ -478,7 +478,7 @@ class Subsystem():
 
         # which of these are requested by user
         param_tiers = param_tiers[param_tiers["param"].isin(params)]
-        print('.... loading parameters from the following tiers:')
+        print('...... loading parameters from the following tiers:')
         print(param_tiers)
 
         # -------------------------------------------------------------------------      
