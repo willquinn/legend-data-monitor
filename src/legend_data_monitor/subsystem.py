@@ -1,4 +1,5 @@
 import os
+import typing
 from datetime import datetime
 
 import numpy as np
@@ -9,8 +10,6 @@ from pygama.flow import DataLoader
 from . import utils
 
 LEGEND_META = LegendMetadata()
-
-import typing
 
 list_of_str = list[str]
 tuple_of_str = tuple[str]

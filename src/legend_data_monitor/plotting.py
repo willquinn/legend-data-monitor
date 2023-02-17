@@ -3,9 +3,8 @@ from matplotlib.backends.backend_pdf import PdfPages
 from pandas import DataFrame
 from seaborn import color_palette
 
-from . import analysis_data, plot_styles, utils
-
-# from .plot_styles import *
+from . import analysis_data, utils
+from .plot_styles import *
 from .subsystem import Subsystem
 
 # -------------------------------------------------------------------------
@@ -124,9 +123,8 @@ def make_subsystem_plots(subsystem: Subsystem, plots: dict, pdf_path: str):
 
 def plot_per_ch(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
     # --- choose plot function based on user requested style e.g. vs time or histogram
-    plot_style = plot_styles.PLOT_STYLE[plot_info["plot_style"]]
+    plot_style = PLOT_STYLE[plot_info["plot_style"]]
     utils.logger.debug("Plot style: " + plot_info["plot_style"])
-
     data_analysis.data = data_analysis.data.sort_values(["location", "position"])
 
     # -------------------------------------------------------------------------------
@@ -163,9 +161,7 @@ def plot_per_ch(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
             utils.logger.debug(f"...... position {position}")
 
             # plot selected style on this axis
-            plot_style(
-                data_channel, fig, axes[ax_idx], plot_info, color=COLORS[ax_idx]
-            )
+            plot_style(data_channel, fig, axes[ax_idx], plot_info, color=COLORS[ax_idx])
 
             # --- add summary to axis
             # name, position and mean are unique for each channel - take first value
@@ -201,7 +197,7 @@ def plot_per_ch(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
 # technically per location
 def plot_per_string(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
     # --- choose plot function based on user requested style e.g. vs time or histogram
-    plot_style = plot_styles.PLOT_STYLE[plot_info["plot_style"]]
+    plot_style = PLOT_STYLE[plot_info["plot_style"]]
     utils.logger.debug("Plot style: " + plot_info["plot_style"])
 
     # --- create plot structure
@@ -244,9 +240,7 @@ def plot_per_string(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
         col_idx = 0
         labels = []
         for label, data_channel in data_location.groupby("label"):
-            plot_styles.plot_style(
-                data_channel, fig, axes[ax_idx], plot_info, COLORS[col_idx]
-            )
+            plot_style(data_channel, fig, axes[ax_idx], plot_info, COLORS[col_idx])
             labels.append(label)
             col_idx += 1
 

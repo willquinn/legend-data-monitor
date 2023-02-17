@@ -109,7 +109,7 @@ def control_plots(user_config_path: str):
 
         # - set up log file
         # file handler
-        file_handler = utils.logger.FileHandler(pdf_basepath + system + ".log")
+        file_handler = utils.logging.FileHandler(pdf_basepath + system + ".log")
         file_handler.setLevel(utils.logging.DEBUG)
         # add to logger
         utils.logger.addHandler(file_handler)

@@ -1,3 +1,5 @@
+import importlib.resources
+import json
 import logging
 import os
 import re
@@ -25,9 +27,6 @@ logger.addHandler(stream_handler)
 
 # -------------------------------------------------------------------------
 
-import importlib.resources
-import json
-
 pkg = importlib.resources.files("legend_data_monitor")
 
 # load dictionary with plot info (= units, thresholds, label, ...)
@@ -49,10 +48,11 @@ for param in SPECIAL_PARAMETERS:
 
 # -------------------------------------------------------------------------
 
+
 def get_dataloader_timerange(**kwargs):
     """
     Get DataLoader compatible time range.
-    
+
     Available kwargs:
 
     dataset=
@@ -82,10 +82,6 @@ def get_dataloader_timerange(**kwargs):
     >>> get_dataloader_timerange(dataset={'selection': {'start': '2022-09-28 08:00:00', 'end':'2022-09-28 09:30:00'}})
     {'start': '20220909T080000Z', 'end': '20220909T093000Z'}
     """
-
-    # if dataset= kwarg was used, kwargs['selection'] is the dict we need
-    # otherwise have start&end= or timestamps= or runs=
-
     # if dataset= kwarg was provided, get the 'selection' part
     # otherwise kwargs itself is already the dict we need with start= & end=; or timestamp= etc
     user_selection = kwargs["dataset"]["selection"] if "dataset" in kwargs else kwargs
@@ -103,7 +99,7 @@ def get_dataloader_timerange(**kwargs):
                 time_range[point] = datetime.strptime(
                     user_selection[point], "%Y-%m-%d %H:%M:%S"
                 ).strftime("%Y%m%dT%H%M%SZ")
-            except:
+            except ValueError:
                 logger.error("Invalid date format!'")
                 return
 
@@ -115,7 +111,7 @@ def get_dataloader_timerange(**kwargs):
             days, hours, minutes = re.split(r"d|h|m", user_selection["window"])[
                 :-1
             ]  # -1 for trailing ''
-        except:
+        except ValueError:
             logger.error("Invalid window format!")
             return
 
@@ -158,7 +154,7 @@ def get_dataloader_timerange(**kwargs):
 def check_plot_settings(conf: dict):
     from .plotting import PLOT_STRUCTURE, PLOT_STYLE
 
-    OPTIONS = {
+    options = {
         "plot_structure": PLOT_STRUCTURE.keys(),
         "plot_style": PLOT_STYLE.keys(),
     }
@@ -169,55 +165,50 @@ def check_plot_settings(conf: dict):
             plot_settings = conf["subsystems"][subsys][plot]
 
             # check if all necessary fields for param settings were provided
-            for field in OPTIONS:
+            for field in options:
                 # if this field is not provided by user, tell them to provide it
                 # (if optional to provided, will have been set with defaults before calling set_defaults())
-                if not field in plot_settings:
+                if field not in plot_settings:
                     logger.error(
                         f"Provide {field} in plot settings of '{plot}' for {subsys}!"
                     )
                     logger.error(
-                        "Available options: {}".format(",".join(OPTIONS[field]))
+                        "Available options: {}".format(",".join(options[field]))
                     )
                     return False
 
                 # check if the provided option is valid
                 opt = plot_settings[field]
 
-                if not opt in OPTIONS[field]:
+                if opt not in options[field]:
                     logger.error(
                         f"Option {opt} provided for {field} in plot settings of '{plot}' for {subsys} does not exist!"
                     )
                     logger.error(
-                        "Available options: {}".format(",".join(OPTIONS[field]))
+                        "Available options: {}".format(",".join(options[field]))
                     )
                     return False
 
             # if vs time was provided, need time window
             if (
                 plot_settings["plot_style"] == "vs time"
-                and not "time_window" in plot_settings
+                and "time_window" not in plot_settings
             ):
                 logger.error(
-                    f"You chose plot style 'vs time' and did not provide 'time_window'!"
+                    "You chose plot style 'vs time' and did not provide 'time_window'!"
                 )
                 return False
 
     return True
 
 
-def make_output_paths(config: dict):
-    """
-    dict -> dict
-
-    define output paths and create directories accordingly
-    """
-
+def make_output_paths(config: dict) -> dict:
+    """Define output paths and create directories accordingly."""
     logger.info("----------------------------------------------------")
     logger.info("--- Setting up plotting")
     logger.info("----------------------------------------------------")
 
-    if not "output" in config:
+    if "output" not in config:
         logger.error('Provide output folder path in your config field "output"!')
         return
 
@@ -259,9 +250,7 @@ def make_dir(dir_path):
 
 
 def get_all_plot_parameters(subsystem: str, config: dict):
-    """
-    Get list of all parameters needed for all plots for given subsystem
-    """
+    """Get list of all parameters needed for all plots for given subsystem."""
     all_parameters = []
     if subsystem in config["subsystems"]:
         for plot in config["subsystems"][subsystem]:
