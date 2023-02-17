@@ -11,6 +11,15 @@ from pygama.flow import DataLoader
 from legendmeta import LegendMetadata
 LEGEND_META = LegendMetadata()
 
+import json
+import importlib.resources
+pkg = importlib.resources.files("legend_data_monitor")
+
+with open(pkg / "settings" / "special-parameters.json") as f:
+    SPECIAL_PARAMETERS = json.load(f)
+
+with open(pkg / "settings" / "parameter-tiers.json") as f:
+    PARAMETER_TIERS = json.load(f)   
 
 # ------------
 # specify which lh5 parameters are neede to be loaded from lh5 to calculate them
@@ -449,21 +458,32 @@ class Subsystem():
     
 
     def construct_dataloader_configs(self, params: list, data_info: dict):
+        '''
+        Construct DL and DB configs for DataLoader based on parameters and which tiers they belong to
+
+        params: list of parameters to load
+        data_info: dict of containing type:, path:, version:
+        '''
 
         # -------------------------------------------------------------------------      
         # which parameters belong to which tiers
+        # -------------------------------------------------------------------------      
 
-        # !! put in a settings json or something!
-        PARAM_TIERS = pd.DataFrame({
-            'param': ['baseline', 'wf_max', 'timestamp', 'cuspEmax_ctc_cal', 'AoE_Corrected', 'zacEmax_ctc_cal', 'cuspEmax'],
-            'tier': ['dsp', 'dsp', 'dsp', 'hit', 'hit', 'hit', 'dsp']
-        })
+        # --- convert info in json to DataFrame for convenience
+        # parameter tier
+        # baseline  dsp
+        # ...
+        param_tiers = pd.DataFrame.from_dict(PARAMETER_TIERS.items())
+        param_tiers.columns = ['param', 'tier']
 
         # which of these are requested by user
-        PARAM_TIERS = PARAM_TIERS[ PARAM_TIERS['param'].isin(params) ]
+        param_tiers = param_tiers[param_tiers["param"].isin(params)]
+        print('.... loading parameters from the following tiers:')
+        print(param_tiers)
 
         # -------------------------------------------------------------------------      
         # set up config templates
+        # -------------------------------------------------------------------------      
 
         dict_dbconfig = {
             "data_dir": os.path.join(data_info['path'], data_info['version'], 'generated', 'tier'),
@@ -486,7 +506,8 @@ class Subsystem():
         removed_chs = list(self.channel_map[ self.channel_map['status'] == 'Off']['channel'])
         print('...... not loading channels with status Off: {}'.format(removed_chs))  
 
-        for tier, tier_params in PARAM_TIERS.groupby('tier'):
+        # --- settings for each tier
+        for tier, tier_params in param_tiers.groupby('tier'):
             dict_dbconfig['tier_dirs'][tier] = f'/{tier}'
             # type not fixed and instead specified in the query
             dict_dbconfig['file_format'][tier] = "/{type}/{period}/{run}/{exp}-{period}-{run}-{type}-{timestamp}-tier_" + tier + '.lh5'
@@ -496,13 +517,14 @@ class Subsystem():
 
             dict_dbconfig['columns'][tier] = list(tier_params['param'])
 
-            dict_dlconfig['levels'][tier] = {'tiers': [tier]}
+            # dict_dlconfig['levels'][tier] = {'tiers': [tier]}
 
-        # special "non-symmetrical" stuff for hit
-        if 'hit' in dict_dlconfig['levels']:
-            # levels for hit should also include dsp like this {"hit": {"tiers": ["dsp", "hit"]}}
-            dict_dlconfig['levels']['hit']['tiers'].append('dsp')
-            # # dsp should not be in levels separately - if I'm loading hit, I'm always loading dsp too for timestamp
-            dict_dlconfig['levels'].pop('dsp')
+        # --- settings based on tier hierarchy
+        order = {'hit': 3, 'dsp': 2, 'raw': 1}
+        param_tiers['order'] = param_tiers['tier'].apply(lambda x: order[x])
+        # find highest tier
+        max_tier = param_tiers[ param_tiers['order'] == param_tiers['order'].max() ]['tier'].iloc[0]
+        # format {"hit": {"tiers": ["dsp", "hit"]}}
+        dict_dlconfig['levels'][max_tier] = {'tiers': list(param_tiers['tier'].unique())}
 
         return dict_dlconfig, dict_dbconfig    

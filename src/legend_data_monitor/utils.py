@@ -193,11 +193,12 @@ def get_all_plot_parameters(subsystem: str, config: dict):
     Get list of all parameters needed for all plots for given subsystem
     '''
     all_parameters = []
-    for plot in config['subsystems'][subsystem]:
-        parameters = config['subsystems'][subsystem][plot]['parameters']
-        if isinstance(parameters, str):
-            all_parameters.append(parameters)
-        else:
-            all_parameters += parameters
+    if subsystem in config['subsystems']:
+        for plot in config['subsystems'][subsystem]:
+            parameters = config['subsystems'][subsystem][plot]['parameters']
+            if isinstance(parameters, str):
+                all_parameters.append(parameters)
+            else:
+                all_parameters += parameters
 
     return all_parameters
