@@ -324,7 +324,7 @@ class Subsystem():
         json_file = f"{ex}-{setup_info['period']}-r%-T%-all-config.json"   
         full_channel_map = LEGEND_META.hardware.configuration.channelmaps[json_file]   
         
-        df_map = pd.DataFrame({'name':[], 'location': [], 'channel':[], 'position':[]})
+        df_map = pd.DataFrame(columns=['name', 'location', 'channel', 'position', 'CC4_id', 'CC4_channel'])
         df_map = df_map.set_index('channel')
         
         # -------------------------------------------------------------------------      
@@ -332,13 +332,13 @@ class Subsystem():
         # -------------------------------------------------------------------------      
 
         # dct_key is the subdict corresponding to one chmap entry
-        def is_subsystem(dct_key):
+        def is_subsystem(entry):
             # special case for pulser
             if self.type == 'pulser':
                 pulser_ch = 0 if setup_info['experiment'] == 'L60' else 1
-                return dct_key['system'] == 'auxs' and dct_key['daq']['fcid'] == pulser_ch
+                return entry['system'] == 'auxs' and entry['daq']['fcid'] == pulser_ch
             # for geds or spms
-            return dct_key['system'] == self.type
+            return entry['system'] == self.type
 
         # name of location in the channel map
         loc_code = {'geds': 'string', 'spms': 'fiber'}
@@ -348,24 +348,27 @@ class Subsystem():
         # -------------------------------------------------------------------------      
 
         # config.channel_map is already a dict read from the channel map json
-        for key in full_channel_map:
+        for entry in full_channel_map:
             # skip 'BF' don't even know what it is
-            if 'BF' in key:
+            if 'BF' in entry:
                 continue
 
+            entry_info = full_channel_map[entry]
             # skip if this is not our system
-            if not is_subsystem(full_channel_map[key]):
+            if not is_subsystem(entry_info):
                 continue
                         
             # --- add info for this channel
             # FlashCam channel, unique for geds/spms/pulser            
-            ch = full_channel_map[key]['daq']['fcid']
-            df_map.at[ch, 'name'] = full_channel_map[key]['name']
+            ch = entry_info['daq']['fcid']
+            df_map.at[ch, 'name'] = entry_info['name']
             # number/name of stirng/fiber for geds/spms, dummy for pulser
-            df_map.at[ch, 'location'] = 0 if self.type == 'pulser' else full_channel_map[key]['location'][loc_code[self.type]]
+            df_map.at[ch, 'location'] = 0 if self.type == 'pulser' else entry_info['location'][loc_code[self.type]]
             # position in string/fiber for geds/spms, dummy for pulser (works if there is only one pulser channel)
-            df_map.at[ch, 'position'] = 0 if self.type == 'pulser' else full_channel_map[key]['location']['position']
+            df_map.at[ch, 'position'] = 0 if self.type == 'pulser' else entry_info['location']['position']
             # ? add CC4 name goes here
+            df_map.at[ch, 'cc4_id'] = entry_info['electronics']['cc4']['id'] if self.type == 'geds' else None
+            df_map.at[ch, 'cc4_channel'] = entry_info['electronics']['cc4']['channel'] if self.type == 'geds' else None
                                 
         df_map = df_map.reset_index()
 
