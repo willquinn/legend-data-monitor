@@ -1,8 +1,8 @@
 {
-    "baseline": "dsp",
-    "wf_max": "dsp",
-    "timestamp": "dsp",
-    "cuspEmax_ctc_cal": "hit",
-    "AoE_Corrected": "hit",
-    "zacEmax_ctc_cal": "hit"
+  "baseline": "dsp",
+  "wf_max": "dsp",
+  "timestamp": "dsp",
+  "cuspEmax_ctc_cal": "hit",
+  "AoE_Corrected": "hit",
+  "zacEmax_ctc_cal": "hit"
 }

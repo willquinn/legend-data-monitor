@@ -1,62 +1,40 @@
-from . import utils
-
 import os
-import pandas as pd
-import numpy as np
+import typing
 from datetime import datetime
-import logging
 
+import numpy as np
+import pandas as pd
+from legendmeta import LegendMetadata
 from pygama.flow import DataLoader
 
-from legendmeta import LegendMetadata
+from . import utils
+
 LEGEND_META = LegendMetadata()
 
-import json
-import importlib.resources
-pkg = importlib.resources.files("legend_data_monitor")
+list_of_str = list[str]
+tuple_of_str = tuple[str]
 
-with open(pkg / "settings" / "special-parameters.json") as f:
-    SPECIAL_PARAMETERS = json.load(f)
 
-with open(pkg / "settings" / "parameter-tiers.json") as f:
-    PARAMETER_TIERS = json.load(f)   
-
-# ------------
-# specify which lh5 parameters are neede to be loaded from lh5 to calculate them
-SPECIAL_PARAMETERS = {
-    "K_lines": 'cuspEmax_ctc_cal',
-    'wf_max_rel': ['wf_max', 'baseline'],
-    'event_rate': None  # for event rate, don't need to load any parameter, just count events
-}
-
-# convert all to lists for convenience
-for param in SPECIAL_PARAMETERS:
-    if isinstance(SPECIAL_PARAMETERS[param], str):
-        SPECIAL_PARAMETERS[param] = [ SPECIAL_PARAMETERS[param] ]
-
-# ------------
-
-class Subsystem():
-    '''
-    Object containing information for a given subsystem
-    such as chanel map, removed channels etc.
+class Subsystem:
+    """
+    Object containing information for a given subsystem such as channel map, channels status etc.
 
     sub_type [str]: geds | spms | pulser
 
     Options for kwargs
-    
+
     setup=
         dict with the following keys:
             - 'experiment' [str]: 'L60' or 'L200'
             - 'period' [str]: 'pXX' e.g. p02
-    Or input kwargs separately experiment=, period=    
-    '''
-    def __init__(self, sub_type: str, **kwargs):
+    Or input kwargs separately experiment=, period=
+    """
 
-        print('\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/')
-        print('\/\ Setting up ' + sub_type)
-        print('\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/')
-        
+    def __init__(self, sub_type: str, **kwargs):
+        utils.logger.info(r"\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/")
+        utils.logger.info(r"\/\ Setting up " + sub_type)
+        utils.logger.info(r"\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/")
+
         self.type = sub_type
 
         # -------------------------------------------------------------------------
@@ -65,22 +43,25 @@ class Subsystem():
 
         # if setup= kwarg was provided, get dict provided
         # otherwise kwargs is itself already the dict we need with experiment= and period=
-        setup_info = kwargs['setup'] if 'setup' in kwargs else kwargs
-        experiments = ['L200', 'L60']
-        if not 'experiment' in setup_info or not setup_info['experiment'] in experiments:
-            logging.error('Tell Subsystem valid experiment it belongs to!')
-            print(self.__doc__)
+        setup_info = kwargs["setup"] if "setup" in kwargs else kwargs
+        experiments = ["L200", "L60"]
+        if (
+            "experiment" not in setup_info
+            or not setup_info["experiment"] in experiments
+        ):
+            utils.logger.error("Tell Subsystem valid experiment it belongs to!")
+            utils.logger.error(self.__doc__)
             return
-        if not 'period' in setup_info or not setup_info['period'][0] == 'p':
-            logging.error("Tell Subsystem valid period it belongs to!")
-            print(self.__doc__)
+        if "period" not in setup_info or not setup_info["period"][0] == "p":
+            utils.logger.error("Tell Subsystem valid period it belongs to!")
+            utils.logger.error(self.__doc__)
             return
 
         # -------------------------------------------------------------------------
         # get channel map for this subsystem
-        # -------------------------------------------------------------------------   
-      
-        self.channel_map = self.get_channel_map(setup_info) # pd.DataFrame
+        # -------------------------------------------------------------------------
+
+        self.channel_map = self.get_channel_map(setup_info)  # pd.DataFrame
 
         # add column status to channel map stating On/Off
         self.get_channel_status(setup_info)
@@ -88,7 +69,7 @@ class Subsystem():
         # -------------------------------------------------------------------------
         # K lines
         # -------------------------------------------------------------------------
- 
+
         # # a bit cumbersome, but we need to know if K_lines was requested to select specified energy parameter
         # self.k_lines = False
         # for plot in self.plots:
@@ -99,10 +80,14 @@ class Subsystem():
         # have something before get_data() is called just in case
         self.data = pd.DataFrame()
 
+    def get_data(
+        self, parameters: typing.Union[str, list_of_str, tuple_of_str] = (), **kwargs
+    ):
+        """
+        Get data for requested parameters from DataLoader and "prime" it to be ready for analysis.
 
-    def get_data(self, parameters=[], **kwargs):
-        '''
-        parameters [list]: list of parameters to load; if empty, only default parameters will be loaded (channel, timestamp; baseline and wfmax for pulser)
+        parameters: single parameter or list of parameters to load.
+            If empty, only default parameters will be loaded (channel, timestamp; baseline and wfmax for pulser)
 
         Available kwargs:
 
@@ -110,7 +95,7 @@ class Subsystem():
             dict with the following contents:
                 - 'type' [str or list of str]: type of data to load e.g. 'phy', 'cal', or ['phy', 'cal']
                 - 'path' [str]: path to prod-ref folder (in which is the structure vXX.XX/generated/tier/...) -> needed only for get_data
-                - 'version' [str]: version of pygama vXX.XX e.g. 'v06.00'            
+                - 'version' [str]: version of pygama vXX.XX e.g. 'v06.00'
                 - 'selection' [dict]: dict with fields depending on selection options
                     1) 'start' : <start datetime>, 'end': <end datetime> where <datetime> input is of format 'YYYY-MM-DD hh:mm:ss'
                     2) 'window'[str]: time window in the past from current time point, format: 'Xd Xh Xm' for days, hours, minutes
@@ -119,57 +104,56 @@ class Subsystem():
         Or input kwargs separately type=, path=, version=; start=&end, or timestamp=, or runs=
 
         Might set default v06.00 for version, but gotta be careful.
-        '''
-
-        print('... getting data')
+        """
+        utils.logger.info("... getting data")
 
         # if dataset= kwarg was provided, get the dict provided
         # otherwise kwargs itself is already the dict we need with type=, path=, version=; start=&end= or timestamps= or runs=
         # we need this dict only for type/path/version (will also contain selection info, but don't care about that)
-        data_info = kwargs['dataset'] if 'dataset' in kwargs else kwargs
+        data_info = kwargs["dataset"] if "dataset" in kwargs else kwargs
 
         # -------------------------------------------------------------------------
         # check validity
         # -------------------------------------------------------------------------
-        
-        if not 'type' in data_info:
-            logging.error('Provide data type!')
-            print(self.get_data.__doc__)
+
+        if "type" not in data_info:
+            utils.logger.error("Provide data type!")
+            utils.logger.error(self.get_data.__doc__)
             return
 
         # convert to list for convenience
-        if isinstance(data_info['type'], str):
-            data_info['type'] = [ data_info['type'] ]
+        if isinstance(data_info["type"], str):
+            data_info["type"] = [data_info["type"]]
 
-        data_types = ['phy', 'cal']
-        for datatype in data_info['type']:
-            if not datatype in data_types:
-                logging.error('Invalid data type provided!')
-                print(self.get_data.__doc__)
+        data_types = ["phy", "cal"]
+        for datatype in data_info["type"]:
+            if datatype not in data_types:
+                utils.logger.error("Invalid data type provided!")
+                utils.logger.error(self.get_data.__doc__)
                 return
 
-        if not 'path' in data_info:
-            logging.error('Provide path to data!')
-            print(self.get_data.__doc__)
+        if "path" not in data_info:
+            utils.logger.error("Provide path to data!")
+            utils.logger.error(self.get_data.__doc__)
             return
-        if not os.path.exists(data_info['path']):
-            logging.error('The data path you provided does not exist!')
-            return
-
-        if not 'version' in data_info:
-            logging.error('Provide pygama version!')        
-            print(self.get_data.__doc__)
+        if not os.path.exists(data_info["path"]):
+            utils.logger.error("The data path you provided does not exist!")
             return
 
-        if not os.path.exists(os.path.join(data_info['path'], data_info['version'])):
-            logging.error('Provide valid pygama version!')
-            print(self.get_data.__doc__)
-            return            
+        if "version" not in data_info:
+            utils.logger.error("Provide pygama version!")
+            utils.logger.error(self.get_data.__doc__)
+            return
+
+        if not os.path.exists(os.path.join(data_info["path"], data_info["version"])):
+            utils.logger.error("Provide valid pygama version!")
+            utils.logger.error(self.get_data.__doc__)
+            return
 
         # -------------------------------------------------------------------------
         # Set up DataLoader config
-        # -------------------------------------------------------------------------        
-        print('...... setting up DataLoader')                
+        # -------------------------------------------------------------------------
+        utils.logger.info("...... setting up DataLoader")
 
         # --- construct list of parameters for the data loader
         # depending on special parameters, k lines etc.
@@ -177,134 +161,157 @@ class Subsystem():
 
         # --- set up DataLoader config
         # needs to know path and version from data_info
-        dlconfig, dbconfig = self.construct_dataloader_configs(params_for_dataloader, data_info)
+        dlconfig, dbconfig = self.construct_dataloader_configs(
+            params_for_dataloader, data_info
+        )
 
         # --- set up DataLoader
         dl = DataLoader(dlconfig, dbconfig)
 
         # -------------------------------------------------------------------------
         # Set up query
-        # -------------------------------------------------------------------------  
+        # -------------------------------------------------------------------------
 
-        # --- set up time range      
-  
+        # --- set up time range
+
         # needs kwargs dataset={'selection': {...}} or separately start=&end=, or timestamps=, or runs= <- already in kwargs here
         # returns dict {'start: timestamp1, 'end': timestamp2} or list of runs/keys to get
         # it will also check the validity of the selection arguments
         dataloader_timerange = utils.get_dataloader_timerange(**kwargs)
         # get_dataloader_timerange() will return None if there was an error -> exit
         if not dataloader_timerange:
-            print(self.get_data.__doc__)
+            utils.logger.error(self.get_data.__doc__)
             return
 
         # if querying by run, need different query word than by timestamp
         # in case of runs, format is 'rXXX', and it will be a list
-        time_word = 'run' if isinstance(dataloader_timerange, list) and dataloader_timerange[0][0] == 'r' else 'timestamp'
+        time_word = (
+            "run"
+            if isinstance(dataloader_timerange, list)
+            and dataloader_timerange[0][0] == "r"
+            else "timestamp"
+        )
         if isinstance(dataloader_timerange, dict):
             # query by (timestamp >= ) and (timestamp <=) if format {start: end:}
             query = f"({time_word} >= '{dataloader_timerange['start']}') and ({time_word} <= '{dataloader_timerange['end']}')"
         else:
             # query by (run/timestamp == ) or (run/timestamp == ) if format [list of runs/timestamps]
-            query = ' or '.join(f"({time_word} == '" + run_or_timestamp + "')" for run_or_timestamp in dataloader_timerange)
+            query = " or ".join(
+                f"({time_word} == '" + run_or_timestamp + "')"
+                for run_or_timestamp in dataloader_timerange
+            )
 
         # --- cal or phy data or both
-        query += ' and (' + ' or '.join("(type == '" + x + "')" for x in data_info['type']) + ')'
+        query += (
+            " and ("
+            + " or ".join("(type == '" + x + "')" for x in data_info["type"])
+            + ")"
+        )
 
         # !!!! QUICKFIX FOR R010
         query += " and (timestamp != '20230125T222013Z')"
         query += " and (timestamp != '20230126T015308Z')"
-        
-        print('...... querying DataLoader (includes quickfix-removed faulty files for r010)')
-        print(query)
+
+        utils.logger.info(
+            "...... querying DataLoader (includes quickfix-removed faulty files for r010)"
+        )
+        utils.logger.info(query)
 
         # -------------------------------------------------------------------------
         # Query DataLoader & load data
-        # -------------------------------------------------------------------------    
+        # -------------------------------------------------------------------------
 
         # --- query data loader
         dl.set_files(query)
-        dl.set_output(fmt="pd.DataFrame", columns=params_for_dataloader)    
+        dl.set_output(fmt="pd.DataFrame", columns=params_for_dataloader)
 
         now = datetime.now()
-        self.data = dl.load() 
-        print(f'Total time to load data: {(datetime.now() - now)}')     
+        self.data = dl.load()
+        utils.logger.info(f"Total time to load data: {(datetime.now() - now)}")
 
         # -------------------------------------------------------------------------
         # polish things up
         # -------------------------------------------------------------------------
 
-        tier = 'hit' if 'hit' in dbconfig['columns'] else 'dsp'
+        tier = "hit" if "hit" in dbconfig["columns"] else "dsp"
         # remove columns we don't need
-        self.data = self.data.drop([f"{tier}_idx", 'file'], axis=1)
+        self.data = self.data.drop([f"{tier}_idx", "file"], axis=1)
         # rename channel to channel
-        self.data = self.data.rename(columns={f'{tier}_table': 'channel'})    
+        self.data = self.data.rename(columns={f"{tier}_table": "channel"})
 
         # -------------------------------------------------------------------------
         # create datetime column based on initial key and timestamp
         # -------------------------------------------------------------------------
 
         # convert UTC timestamp to datetime (unix epoch time)
-        self.data['datetime'] = pd.to_datetime(self.data['timestamp'], origin='unix', utc=True, unit='s')
+        self.data["datetime"] = pd.to_datetime(
+            self.data["timestamp"], origin="unix", utc=True, unit="s"
+        )
         # drop timestamp
-        self.data = self.data.drop('timestamp', axis=1)  
-                    
+        self.data = self.data.drop("timestamp", axis=1)
+
         # -------------------------------------------------------------------------
         # add detector name, location and position from map
         # -------------------------------------------------------------------------
 
-        print('... mapping to name and string/fiber position')
-        self.data = self.data.set_index('channel')
+        utils.logger.info("... mapping to name and string/fiber position")
+        self.data = self.data.set_index("channel")
         # expand channel map index to match that of data with repeating channels
-        ch_map_reindexed = self.channel_map.set_index('channel').reindex(self.data.index)
+        ch_map_reindexed = self.channel_map.set_index("channel").reindex(
+            self.data.index
+        )
         # append the channel map columns to the data
-        self.data = pd.concat([ self.data, ch_map_reindexed ], axis=1)        
-        self.data = self.data.reset_index()     
+        self.data = pd.concat([self.data, ch_map_reindexed], axis=1)
+        self.data = self.data.reset_index()
         # stupid dataframe, why float
-        for col in ['location', 'position']:
+        for col in ["location", "position"]:
             # ignore string values for fibers ('I/OB-XXX-XXX') and positions ('top/bottom') for SiPMs
             if isinstance(self.data[col].iloc[0], float):
                 self.data[col] = self.data[col].astype(int)
 
         # -------------------------------------------------------------------------
         # if this subsystem is pulser, flag pulser timestamps
-        # -------------------------------------------------------------------------      
+        # -------------------------------------------------------------------------
 
-        if(self.type == 'pulser'):
-            self.flag_pulser_events()                    
-    
+        if self.type == "pulser":
+            self.flag_pulser_events()
 
     def flag_pulser_events(self, pulser=None):
-        print('... flagging pulser events')
+        utils.logger.info("... flagging pulser events")
 
         # --- if a pulser object was provided, flag pulser events in data based on its flag
-        if(pulser):
+        if pulser:
             try:
-                pulser_timestamps = pulser.data[ pulser.data['flag_pulser'] ]['datetime']#.set_index('datetime').index
-                self.data['flag_pulser'] = False
-                self.data = self.data.set_index('datetime')
-                self.data.loc[pulser_timestamps, 'flag_pulser'] = True
-            except:
-                logging.error("Warning: cannot flag pulser events, maybe timestamps for some reason don't match, faulty data?")
-                logging.error("! Proceeding without pulser flag !")
+                pulser_timestamps = pulser.data[pulser.data["flag_pulser"]][
+                    "datetime"
+                ]  # .set_index('datetime').index
+                self.data["flag_pulser"] = False
+                self.data = self.data.set_index("datetime")
+                self.data.loc[pulser_timestamps, "flag_pulser"] = True
+            except KeyError:
+                utils.logger.warning(
+                    "Warning: cannot flag pulser events, timestamps don't match!\n \
+                    If you are you looking at calibration data, it's not possible to flag pulser events in it this way.\n \
+                    Contact the developers if you would like them to focus on advanced flagging methods."
+                )
+                utils.logger.warning("! Proceeding without pulser flag !")
 
         else:
             # --- if no object was provided, it's understood that this itself is a pulser
             # find timestamps over threshold
             high_thr = 12500
-            self.data = self.data.set_index('datetime')   
-            wf_max_rel = self.data['wf_max'] - self.data['baseline'] 
-            pulser_timestamps = self.data[ wf_max_rel > high_thr ].index
+            self.data = self.data.set_index("datetime")
+            wf_max_rel = self.data["wf_max"] - self.data["baseline"]
+            pulser_timestamps = self.data[wf_max_rel > high_thr].index
             # flag them
-            self.data['flag_pulser'] = False
-            self.data.loc[pulser_timestamps, 'flag_pulser'] = True                    
+            self.data["flag_pulser"] = False
+            self.data.loc[pulser_timestamps, "flag_pulser"] = True
 
-        self.data = self.data.reset_index()  
-
+        self.data = self.data.reset_index()
 
     def get_channel_map(self, setup_info: dict):
         """
-        Buld channel map for given subsystem
-        location - fiber for SiPMs, string for gedet, dummy for pulser
+        Build channel map for given subsystem.
 
         setup_info: dict with the keys 'experiment' and 'period'
 
@@ -313,218 +320,246 @@ class Subsystem():
             - CC4 name
             - barrel column for SiPMs special case
         """
-        
-        print('... getting channel map')
+        utils.logger.info("... getting channel map")
 
-        # -------------------------------------------------------------------------      
+        # -------------------------------------------------------------------------
         # load full channel map of this exp and period
-        # -------------------------------------------------------------------------      
-        
-        ex = "l" + setup_info['experiment'][1:].zfill(3) #l060 or l200
-        json_file = f"{ex}-{setup_info['period']}-r%-T%-all-config.json"   
-        full_channel_map = LEGEND_META.hardware.configuration.channelmaps[json_file]   
-        
-        df_map = pd.DataFrame({'name':[], 'location': [], 'channel':[], 'position':[]})
-        df_map = df_map.set_index('channel')
-        
-        # -------------------------------------------------------------------------      
+        # -------------------------------------------------------------------------
+
+        ex = "l" + setup_info["experiment"][1:].zfill(3)  # l060 or l200
+        json_file = f"{ex}-{setup_info['period']}-r%-T%-all-config.json"
+        full_channel_map = LEGEND_META.hardware.configuration.channelmaps[json_file]
+
+        df_map = pd.DataFrame(
+            columns=["name", "location", "channel", "position", "cc4_id", "cc4_channel"]
+        )
+        df_map = df_map.set_index("channel")
+
+        # -------------------------------------------------------------------------
         # helper function to determine which channel map entry belongs to this subsystem
-        # -------------------------------------------------------------------------      
+        # -------------------------------------------------------------------------
 
         # dct_key is the subdict corresponding to one chmap entry
-        def is_subsystem(dct_key):
+        def is_subsystem(entry):
             # special case for pulser
-            if self.type == 'pulser':
-                pulser_ch = 0 if setup_info['experiment'] == 'L60' else 1
-                return dct_key['system'] == 'auxs' and dct_key['daq']['fcid'] == pulser_ch
+            if self.type == "pulser":
+                pulser_ch = 0 if setup_info["experiment"] == "L60" else 1
+                return entry["system"] == "auxs" and entry["daq"]["fcid"] == pulser_ch
             # for geds or spms
-            return dct_key['system'] == self.type
+            return entry["system"] == self.type
 
         # name of location in the channel map
-        loc_code = {'geds': 'string', 'spms': 'fiber'}
+        loc_code = {"geds": "string", "spms": "fiber"}
 
-        # -------------------------------------------------------------------------      
+        # -------------------------------------------------------------------------
         # loop over entries and find out subsystem
-        # -------------------------------------------------------------------------      
+        # -------------------------------------------------------------------------
 
         # config.channel_map is already a dict read from the channel map json
-        for key in full_channel_map:
+        for entry in full_channel_map:
             # skip 'BF' don't even know what it is
-            if 'BF' in key:
+            if "BF" in entry:
                 continue
 
+            entry_info = full_channel_map[entry]
             # skip if this is not our system
-            if not is_subsystem(full_channel_map[key]):
+            if not is_subsystem(entry_info):
                 continue
-                        
+
             # --- add info for this channel
-            # FlashCam channel, unique for geds/spms/pulser            
-            ch = full_channel_map[key]['daq']['fcid']
-            df_map.at[ch, 'name'] = full_channel_map[key]['name']
-            # number/name of stirng/fiber for geds/spms, dummy for pulser
-            df_map.at[ch, 'location'] = 0 if self.type == 'pulser' else full_channel_map[key]['location'][loc_code[self.type]]
+            # FlashCam channel, unique for geds/spms/pulser
+            ch = entry_info["daq"]["fcid"]
+            df_map.at[ch, "name"] = entry_info["name"]
+            # number/name of string/fiber for geds/spms, dummy for pulser
+            df_map.at[ch, "location"] = (
+                0
+                if self.type == "pulser"
+                else entry_info["location"][loc_code[self.type]]
+            )
             # position in string/fiber for geds/spms, dummy for pulser (works if there is only one pulser channel)
-            df_map.at[ch, 'position'] = 0 if self.type == 'pulser' else full_channel_map[key]['location']['position']
-            # ? add CC4 name goes here
-                                
+            df_map.at[ch, "position"] = (
+                0 if self.type == "pulser" else entry_info["location"]["position"]
+            )
+            # CC4 information
+            df_map.at[ch, "cc4_id"] = (
+                entry_info["electronics"]["cc4"]["id"] if self.type == "geds" else None
+            )
+            df_map.at[ch, "cc4_channel"] = (
+                entry_info["electronics"]["cc4"]["channel"]
+                if self.type == "geds"
+                else None
+            )
+
         df_map = df_map.reset_index()
 
-        # -------------------------------------------------------------------------      
+        # -------------------------------------------------------------------------
 
         # stupid dataframe, can use dtype somehow to fix it?
-        for col in ['channel', 'location', 'position']:
+        for col in ["channel", "location", "position", "cc4_channel"]:
             if isinstance(df_map[col].loc[0], float):
                 df_map[col] = df_map[col].astype(int)
-                
+
         # sort by channel -> do we really need to?
-        df_map = df_map.sort_values('channel')
+        df_map = df_map.sort_values("channel")
         return df_map
-    
 
     def get_channel_status(self, setup_info: dict):
         """
-        Add status column to channel map with On/Off for software status
+        Add status column to channel map with On/Off for software status.
 
         setup_info: dict with the keys 'experiment' and 'period'
 
         Later will probably be changed to get channel status by timestamp (or hopefully run, if possible)
         """
+        utils.logger.info("... getting channel status")
 
-        print('... getting channel status')
-
-        # -------------------------------------------------------------------------      
+        # -------------------------------------------------------------------------
         # load full status map of this exp and period
-        # -------------------------------------------------------------------------   
+        # -------------------------------------------------------------------------
 
-        run = {'L60': '%', 'L200': '010'}[setup_info['experiment']]
+        run = {"L60": "%", "L200": "010"}[setup_info["experiment"]]
         # L60-pXX-r%-... for L60, L200-pXX-r010-... for L200
         json_file = f"{setup_info['experiment']}-{setup_info['period']}-r{run}-T%-all-config.json"
-        full_status_map = LEGEND_META.dataprod.config[json_file]['hardware_configuration']['channel_map']
+        full_status_map = LEGEND_META.dataprod.config[json_file][
+            "hardware_configuration"
+        ]["channel_map"]
 
         # ----- from Katha
         # chstatmap = self.lmeta.dataprod.config.on(timestamp=timestamp, system='phy')['hardware_configuration']['channel_map']
         # chstat = chstatmap.get('ch'+f"{val.daq.fcid:03d}", {}).get("software_status", "Off")
         # if chstat == "On":
-        # ....            
-                
-        # AUX channels are not in status map, so at least for pulser need default On        
-        self.channel_map['status'] = 'On'
-        self.channel_map = self.channel_map.set_index('channel')
+        # ....
+
+        # AUX channels are not in status map, so at least for pulser need default On
+        self.channel_map["status"] = "On"
+        self.channel_map = self.channel_map.set_index("channel")
         for channel in full_status_map:
             # convert string channel ('ch005') to integer (5)
             ch = int(channel[2:])
             # status map contains all channels, check if this channel is in our subsystem
             if ch in self.channel_map.index:
-                self.channel_map.at[ch, 'status'] = full_status_map[channel]['software_status']
-                
+                self.channel_map.at[ch, "status"] = full_status_map[channel][
+                    "software_status"
+                ]
+
         self.channel_map = self.channel_map.reset_index()
 
-
-    def get_parameters_for_dataloader(self, parameters: list):
+    def get_parameters_for_dataloader(self, parameters: typing.Union[str, list_of_str]):
         """
-        Construct list of parameters to query from the DataLoader
-            - parameters that are always loaded (+ pulser special case)
-            - parameters that are already in lh5
-            - parameters needed for calculation, if special parameter(s) asked
-        """
+        Construct list of parameters to query from the DataLoader.
 
+        - parameters that are always loaded (+ pulser special case)
+        - parameters that are already in lh5
+        - parameters needed for calculation, if special parameter(s) asked (e.g. wf_max_rel)
+        """
         # --- always read timestamp
-        params = ['timestamp']
+        params = ["timestamp"]
         # --- always get wf_max & baseline for pulser for flagging
-        if self.type == 'pulser':
-            params += ['wf_max', 'baseline']
-            
+        if self.type == "pulser":
+            params += ["wf_max", "baseline"]
+
         # --- add user requested parameters
         # change to list for convenience, if input was single
         if isinstance(parameters, str):
-            parameters = [ parameters ]
+            parameters = [parameters]
 
         global USER_TO_PYGAMA
         for param in parameters:
-            if param in SPECIAL_PARAMETERS:
+            if param in utils.SPECIAL_PARAMETERS:
                 # for special parameters, look up which parameters are needed to be loaded for their calculation
                 # if none, ignore
-                params += (SPECIAL_PARAMETERS[param] if SPECIAL_PARAMETERS[param] else [])
+                params += (
+                    utils.SPECIAL_PARAMETERS[param]
+                    if utils.SPECIAL_PARAMETERS[param]
+                    else []
+                )
             else:
                 # otherwise just add the parameter directly
                 params.append(param)
-        
+
         # add K_lines energy if needed
         # if 'K_lines' in parameters:
         #     params.append(SPECIAL_PARAMETERS['K_lines'][0])
 
         # some parameters might be repeated twice - remove
-        return list(np.unique(params))        
-    
+        return list(np.unique(params))
 
-    def construct_dataloader_configs(self, params: list, data_info: dict):
-        '''
-        Construct DL and DB configs for DataLoader based on parameters and which tiers they belong to
+    def construct_dataloader_configs(self, params: list_of_str, data_info: dict):
+        """
+        Construct DL and DB configs for DataLoader based on parameters and which tiers they belong to.
 
         params: list of parameters to load
         data_info: dict of containing type:, path:, version:
-        '''
-
-        # -------------------------------------------------------------------------      
+        """
+        # -------------------------------------------------------------------------
         # which parameters belong to which tiers
-        # -------------------------------------------------------------------------      
+        # -------------------------------------------------------------------------
 
         # --- convert info in json to DataFrame for convenience
         # parameter tier
         # baseline  dsp
         # ...
-        param_tiers = pd.DataFrame.from_dict(PARAMETER_TIERS.items())
-        param_tiers.columns = ['param', 'tier']
+        param_tiers = pd.DataFrame.from_dict(utils.PARAMETER_TIERS.items())
+        param_tiers.columns = ["param", "tier"]
 
         # which of these are requested by user
         param_tiers = param_tiers[param_tiers["param"].isin(params)]
-        print('...... loading parameters from the following tiers:')
-        print(param_tiers)
+        utils.logger.info("...... loading parameters from the following tiers:")
+        utils.logger.debug(param_tiers)
 
-        # -------------------------------------------------------------------------      
+        # -------------------------------------------------------------------------
         # set up config templates
-        # -------------------------------------------------------------------------      
+        # -------------------------------------------------------------------------
 
         dict_dbconfig = {
-            "data_dir": os.path.join(data_info['path'], data_info['version'], 'generated', 'tier'),
+            "data_dir": os.path.join(
+                data_info["path"], data_info["version"], "generated", "tier"
+            ),
             "tier_dirs": {},
-            "file_format": {},        
+            "file_format": {},
             "table_format": {},
             "tables": {},
-            "columns": {}
+            "columns": {},
         }
-        dict_dlconfig = {
-            'channel_map': {},
-            'levels': {}
-        }
+        dict_dlconfig = {"channel_map": {}, "levels": {}}
 
-        # -------------------------------------------------------------------------      
+        # -------------------------------------------------------------------------
         # set up tiers depending on what parameters we need
 
         # ronly load channels that are On (Off channels will crash DataLoader)
-        chlist = list(self.channel_map[ self.channel_map['status'] == 'On']['channel'])
-        removed_chs = list(self.channel_map[ self.channel_map['status'] == 'Off']['channel'])
-        print('...... not loading channels with status Off: {}'.format(removed_chs))  
+        chlist = list(self.channel_map[self.channel_map["status"] == "On"]["channel"])
+        removed_chs = list(
+            self.channel_map[self.channel_map["status"] == "Off"]["channel"]
+        )
+        utils.logger.info(f"...... not loading channels with status Off: {removed_chs}")
 
         # --- settings for each tier
-        for tier, tier_params in param_tiers.groupby('tier'):
-            dict_dbconfig['tier_dirs'][tier] = f'/{tier}'
+        for tier, tier_params in param_tiers.groupby("tier"):
+            dict_dbconfig["tier_dirs"][tier] = f"/{tier}"
             # type not fixed and instead specified in the query
-            dict_dbconfig['file_format'][tier] = "/{type}/{period}/{run}/{exp}-{period}-{run}-{type}-{timestamp}-tier_" + tier + '.lh5'
-            dict_dbconfig['table_format'][tier] = "ch{ch:03d}/" + tier
-                         
-            dict_dbconfig['tables'][tier] = chlist
+            dict_dbconfig["file_format"][tier] = (
+                "/{type}/{period}/{run}/{exp}-{period}-{run}-{type}-{timestamp}-tier_"
+                + tier
+                + ".lh5"
+            )
+            dict_dbconfig["table_format"][tier] = "ch{ch:03d}/" + tier
 
-            dict_dbconfig['columns'][tier] = list(tier_params['param'])
+            dict_dbconfig["tables"][tier] = chlist
+
+            dict_dbconfig["columns"][tier] = list(tier_params["param"])
 
             # dict_dlconfig['levels'][tier] = {'tiers': [tier]}
 
         # --- settings based on tier hierarchy
-        order = {'hit': 3, 'dsp': 2, 'raw': 1}
-        param_tiers['order'] = param_tiers['tier'].apply(lambda x: order[x])
+        order = {"hit": 3, "dsp": 2, "raw": 1}
+        param_tiers["order"] = param_tiers["tier"].apply(lambda x: order[x])
         # find highest tier
-        max_tier = param_tiers[ param_tiers['order'] == param_tiers['order'].max() ]['tier'].iloc[0]
+        max_tier = param_tiers[param_tiers["order"] == param_tiers["order"].max()][
+            "tier"
+        ].iloc[0]
         # format {"hit": {"tiers": ["dsp", "hit"]}}
-        dict_dlconfig['levels'][max_tier] = {'tiers': list(param_tiers['tier'].unique())}
+        dict_dlconfig["levels"][max_tier] = {
+            "tiers": list(param_tiers["tier"].unique())
+        }
 
-        return dict_dlconfig, dict_dbconfig    
+        return dict_dlconfig, dict_dbconfig
