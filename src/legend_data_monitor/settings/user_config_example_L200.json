@@ -16,15 +16,13 @@
                 "event_type": "pulser",
                 "plot_structure": "per channel",
                 "plot_style": "vs time",
-                "variation": false,
                 "time_window": "1H"
             },
             "AUX channel waveform maximum": {
                 "parameters": "wf_max",
                 "event_type": "all",
                 "plot_structure": "per channel",
-                "plot_style": "histogram",
-                "variation": false
+                "plot_style": "histogram"
             }
         },        
         "geds": {
@@ -35,6 +33,13 @@
                 "plot_style" : "vs time",
                 "variation": true,
                 "time_window": "1H"
+            },
+            "K lines":{
+                "parameters": "cuspEmax_ctc_cal",
+                "event_type": "phy",
+                "cuts": "K lines",
+                "plot_structure": "per string",
+                "plot_style": "scatter"
             }
         }
     }

@@ -36,11 +36,18 @@ def make_subsystem_plots(subsystem: Subsystem, plots: dict, pdf_path: str):
         # - variation (bool)
         # - time window (for event rate or vs time plot)
         plot_settings = plots[plot_title]
-        # defaults
+        
+        # --- defaults
+        # default time window None if not parameter event rate will be accounted for in AnalysisData,
+        # here need to account for plot style vs time (None for all others)
         if "time_window" not in plot_settings:
             plot_settings["time_window"] = None
+        # same, here need to account for unit label %
         if "variation" not in plot_settings:
             plot_settings["variation"] = False
+        # !? this is not needed because is checked in AnalysisData
+        # if "cuts" not in plot_settings:
+        #     plot_settings["cuts"] = []
 
         # -------------------------------------------------------------------------
         # set up analysis data
@@ -53,6 +60,9 @@ def make_subsystem_plots(subsystem: Subsystem, plots: dict, pdf_path: str):
         data_analysis = analysis_data.AnalysisData(
             subsystem.data, selection=plot_settings
         )
+        # cuts will be loaded but not applied; for our purposes, need to apply the cuts right away
+        # currently only K lines cut is used, and only data after cut is plotted -> just replace
+        data_analysis.data = data_analysis.apply_all_cuts()
         utils.logger.debug(data_analysis.data)
 
         # -------------------------------------------------------------------------

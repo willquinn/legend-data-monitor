@@ -1,4 +1,4 @@
-import utils
+from . import utils
 
 def cut_K_lines(data):
     energy = utils.SPECIAL_PARAMETERS['K lines'][0]
