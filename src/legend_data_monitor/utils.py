@@ -48,7 +48,8 @@ for param in SPECIAL_PARAMETERS:
         SPECIAL_PARAMETERS[param] = [SPECIAL_PARAMETERS[param]]
 
 # -------------------------------------------------------------------------
-
+# Subsystem related functions (for getting channel map & status)
+# -------------------------------------------------------------------------
 
 def get_query_times(**kwargs):
     """
@@ -222,6 +223,9 @@ def get_query_timerange(**kwargs):
 
     return time_range
 
+# -------------------------------------------------------------------------
+# Plotting related functions
+# -------------------------------------------------------------------------
 
 def check_plot_settings(conf: dict):
     from .plotting import PLOT_STRUCTURE, PLOT_STYLE
@@ -312,6 +316,35 @@ def make_output_paths(config: dict) -> dict:
     return output_paths
 
 
+def get_all_plot_parameters(subsystem: str, config: dict):
+    """Get list of all parameters needed for all plots for given subsystem."""
+    all_parameters = []
+    if subsystem in config["subsystems"]:
+        for plot in config["subsystems"][subsystem]:
+            plot_settings = config["subsystems"][subsystem][plot]
+            # check parameters requested to be plotted
+            parameters = plot_settings["parameters"]
+            if isinstance(parameters, str):
+                all_parameters.append(parameters)
+            else:
+                all_parameters += parameters
+
+            # check cuts requested in plots
+            if "cuts" in plot_settings:
+                cuts = plot_settings["cuts"]
+                if isinstance(cuts, str):
+                    all_parameters.append(cuts)
+                else:
+                    all_parameters += cuts
+
+    return all_parameters
+
+
+# -------------------------------------------------------------------------
+# small helper functions
+# -------------------------------------------------------------------------
+
+
 def make_dir(dir_path):
     """Check if directory exists, and if not, make it."""
     message = "Output directory " + dir_path
@@ -319,21 +352,6 @@ def make_dir(dir_path):
         os.mkdir(dir_path)
         message += " (created)"
     logger.info(message)
-
-
-def get_all_plot_parameters(subsystem: str, config: dict):
-    """Get list of all parameters needed for all plots for given subsystem."""
-    all_parameters = []
-    if subsystem in config["subsystems"]:
-        for plot in config["subsystems"][subsystem]:
-            parameters = config["subsystems"][subsystem][plot]["parameters"]
-            if isinstance(parameters, str):
-                all_parameters.append(parameters)
-            else:
-                all_parameters += parameters
-
-    return all_parameters
-
 
 def get_key(dsp_fname: str) -> str:
     """Extract key from lh5 filename."""

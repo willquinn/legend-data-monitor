@@ -461,10 +461,6 @@ class Subsystem:
                 # otherwise just add the parameter directly
                 params.append(param)
 
-        # add K_lines energy if needed
-        # if 'K_lines' in parameters:
-        #     params.append(SPECIAL_PARAMETERS['K_lines'][0])
-
         # some parameters might be repeated twice - remove
         return list(np.unique(params))
 

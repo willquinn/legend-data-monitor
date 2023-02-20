@@ -3,7 +3,7 @@ import pandas as pd
 
 # needed to know which parameters are not in DataLoader
 # but need to be calculated, such as event rate
-from . import utils
+from . import utils, cuts
 
 # -------------------------------------------------------------------------
 
@@ -18,13 +18,18 @@ class AnalysisData:
         selection=
             dict with the following contents:
                 - 'parameters' [str or list of str]: parameter(s) of interest e.g. 'baseline'
-                - 'event_type' [str]: event type, options: pulser/phy/all/Klines
+                - 'event_type' [str]: event type, options: pulser/phy/all
+                - 'cuts' [str or list of str]: [optional] cuts to apply to data (will be loaded but not applied immediately)
                 - 'variation' [bool]: [optional] keep absolute value of parameter (False) or calculate % variation from mean (True).
                     Default: False
                 - 'time_window' [str]: [optional] time window in which to calculate event rate, in case that's the parameter of interest.
                     Format: time_window='NA', where N is integer, and A is M for months, D for days, T for minutes, and S for seconds.
                     Default: None
-        Or input kwargs directly parameters=, event_type=, variation=, time_window=
+        Or input kwargs directly parameters=, event_type=, cuts=, variation=, time_window=
+
+        To apply a single cut, use data_after_cut = ldm.apply_cut(<analysis_data>)
+        To apply all cuts, use data_after_all_cuts = <analysis_data>.apply_all_cuts()
+            where <analysis_data> is the AnalysisData object you created.
     """
 
     def __init__(self, sub_data: pd.DataFrame, **kwargs):
@@ -43,14 +48,18 @@ class AnalysisData:
         # validity checks
         # -------------------------------------------------------------------------
 
-        # convert single parameter input to list for convenience
-        if isinstance(analysis_info["parameters"], str):
-            analysis_info["parameters"] = [analysis_info["parameters"]]
         # defaults
         if "time_window" not in analysis_info:
             analysis_info["time_window"] = None
         if "variation" not in analysis_info:
             analysis_info["variation"] = False
+        if "cuts" not in analysis_info:
+            analysis_info["cuts"] = []
+
+        # convert single parameter input to list for convenience
+        for input in ['parameters', 'cuts']:
+            if isinstance(analysis_info[input], str):
+                analysis_info[input] = [analysis_info[input]]            
 
         if analysis_info["event_type"] != "all" and "flag_pulser" not in sub_data:
             utils.logger.error(
@@ -90,6 +99,7 @@ class AnalysisData:
         self.evt_type = analysis_info["event_type"]
         self.time_window = analysis_info["time_window"]
         self.variation = analysis_info["variation"]
+        self.cuts = analysis_info['cuts']
 
         # -------------------------------------------------------------------------
         # subselect data
@@ -110,7 +120,7 @@ class AnalysisData:
             params_to_get.append("flag_pulser")
 
         # if special parameter, get columns needed to calculate it
-        for param in self.parameters:
+        for param in self.parameters + self.cuts:
             if param in utils.SPECIAL_PARAMETERS:
                 # ignore if none are needed
                 params_to_get += (
@@ -252,6 +262,13 @@ class AnalysisData:
                 self.data[param] = (
                     self.data[param] / self.data[param + "_mean"] - 1
                 ) * 100  # %
+
+    def apply_all_cuts(self):
+        data_after_cuts = self.data.copy()
+        for cut in self.cuts:
+            data_after_cuts = cuts.apply_cut(data_after_cuts, cut)
+        return data_after_cuts
+
 
 
 # -------------------------------------------------------------------------
