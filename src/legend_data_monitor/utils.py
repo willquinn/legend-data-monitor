@@ -113,7 +113,7 @@ def get_dataloader_timerange(**kwargs):
 
 
 def check_plot_settings(conf: dict):
-    OPTIONS = {
+    options = {
         "plot_structure": PLOT_STRUCTURE.keys(),
         "plot_style": PLOT_STYLE.keys(),
     }
@@ -124,7 +124,7 @@ def check_plot_settings(conf: dict):
             plot_settings = conf["subsystems"][subsys][plot]
 
             # check if all necessary fields for param settings were provided
-            for field in OPTIONS:
+            for field in options:
                 # if this field is not provided by user, tell them to provide it
                 # (if optional to provided, will have been set with defaults before calling set_defaults())
                 if field not in plot_settings:
@@ -132,19 +132,19 @@ def check_plot_settings(conf: dict):
                         f"Provide {field} in plot settings of '{plot}' for {subsys}!"
                     )
                     logging.error(
-                        "Available options: {}".format(",".join(OPTIONS[field]))
+                        "Available options: {}".format(",".join(options[field]))
                     )
                     return False
 
                 # check if the provided option is valid
                 opt = plot_settings[field]
 
-                if opt not in OPTIONS[field]:
+                if opt not in options[field]:
                     logging.error(
                         f"Option {opt} provided for {field} in plot settings of '{plot}' for {subsys} does not exist!"
                     )
                     logging.error(
-                        "Available options: {}".format(",".join(OPTIONS[field]))
+                        "Available options: {}".format(",".join(options[field]))
                     )
                     return False
 

@@ -93,7 +93,7 @@ class Subsystem:
         # have something before get_data() is called just in case
         self.data = pd.DataFrame()
 
-    def get_data(self, parameters=[], **kwargs):
+    def get_data(self, parameters=None, **kwargs):
         """
         Parameters [list]: list of parameters to load; if empty, only default parameters will be loaded (channel, timestamp; baseline and wfmax for pulser).
 
@@ -113,6 +113,8 @@ class Subsystem:
 
         Might set default v06.00 for version, but gotta be careful.
         """
+        if parameters is None:  # 👍
+            parameters = []
         logging.info("... getting data")
 
         # if dataset= kwarg was provided, get the dict provided
@@ -480,7 +482,7 @@ class Subsystem:
         # which parameters belong to which tiers
 
         # !! put in a settings json or something!
-        PARAM_TIERS = pd.DataFrame(
+        param_tiers = pd.DataFrame(
             {
                 "param": [
                     "baseline",
@@ -496,7 +498,7 @@ class Subsystem:
         )
 
         # which of these are requested by user
-        PARAM_TIERS = PARAM_TIERS[PARAM_TIERS["param"].isin(params)]
+        param_tiers = param_tiers[param_tiers["param"].isin(params)]
 
         # -------------------------------------------------------------------------
         # set up config templates
@@ -523,7 +525,7 @@ class Subsystem:
         )
         logging.info(f"...... not loading channels with status Off: {removed_chs}")
 
-        for tier, tier_params in PARAM_TIERS.groupby("tier"):
+        for tier, tier_params in param_tiers.groupby("tier"):
             dict_dbconfig["tier_dirs"][tier] = f"/{tier}"
             # type not fixed and instead specified in the query
             dict_dbconfig["file_format"][tier] = (
