@@ -7,7 +7,7 @@ import pandas as pd
 # but need to be calculated, such as event rate
 # ! maybe belongs as json in settings
 # ! maybe needs to be loaded in some sort of utils.py
-from .subsystem import SPECIAL_PARAMETERS
+from . import subsystem
 
 # -------------------------------------------------------------------------
 
@@ -119,10 +119,10 @@ class AnalysisData:
 
         # if special parameter, get columns needed to calculate it
         for param in self.parameters:
-            if param in SPECIAL_PARAMETERS:
+            if param in subsystem.SPECIAL_PARAMETERS:
                 # ignore if none are needed
                 params_to_get += (
-                    SPECIAL_PARAMETERS[param] if SPECIAL_PARAMETERS[param] else []
+                    subsystem.SPECIAL_PARAMETERS[param] if subsystem.SPECIAL_PARAMETERS[param] else []
                 )
             else:
                 # otherwise just load it
@@ -164,7 +164,7 @@ class AnalysisData:
         elif self.evt_type == "K_lines":
             logging.info("... selecting K lines in physical (non-pulser) events")
             self.data = self.data[~self.data["flag_pulser"]]
-            energy = SPECIAL_PARAMETERS["K_lines"][0]
+            energy = subsystem.SPECIAL_PARAMETERS["K_lines"][0]
             self.data = self.data[
                 (self.data[energy] > 1430) & (self.data[energy] < 1575)
             ]

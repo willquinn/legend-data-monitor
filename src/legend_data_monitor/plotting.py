@@ -9,7 +9,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 from seaborn import color_palette
 
 from . import analysis_data, plot_styles, status_plot
-from .subsystem import Subsystem
+from . import subsystem
 
 # load dictionary with plot info (= units, thresholds, label, ...)
 pkg = importlib.resources.files("legend_data_monitor")
@@ -31,7 +31,7 @@ COLORS = []
 # for example, this structure won't work to plot one parameter VS the other
 
 
-def make_subsystem_plots(subsystem: Subsystem, plots: dict, plt_path: str):
+def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: str):
     pdf = PdfPages(plt_path + ".pdf")
     out_dict = {}
 

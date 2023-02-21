@@ -5,8 +5,8 @@ import re
 # for getting DataLoader time range
 from datetime import datetime, timedelta
 
-from .plotting import PLOT_STRUCTURE
-from .plot_styles import PLOT_STYLE
+from . import plotting
+from . import plot_styles
 
 
 def get_dataloader_timerange(**kwargs):
@@ -115,8 +115,8 @@ def get_dataloader_timerange(**kwargs):
 
 def check_plot_settings(conf: dict):
     options = {
-        "plot_structure": PLOT_STRUCTURE.keys(),
-        "plot_style": PLOT_STYLE.keys(),
+        "plot_structure": plotting.PLOT_STRUCTURE.keys(),
+        "plot_style": plot_styles.PLOT_STYLE.keys(),
     }
 
     for subsys in conf["subsystems"]:
