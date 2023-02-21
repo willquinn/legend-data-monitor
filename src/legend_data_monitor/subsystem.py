@@ -9,9 +9,6 @@ from pygama.flow import DataLoader
 
 from . import utils
 
-LEGEND_META = LegendMetadata()
-
-
 # ------------
 # specify which lh5 parameters are needed to be loaded from lh5 to calculate them
 SPECIAL_PARAMETERS = {
@@ -336,6 +333,7 @@ class Subsystem:
 
         ex = "l" + setup_info["experiment"][1:].zfill(3)  # l060 or l200
         json_file = f"{ex}-{setup_info['period']}-r%-T%-all-config.json"
+        LEGEND_META = LegendMetadata()
         full_channel_map = LEGEND_META.hardware.configuration.channelmaps[json_file]
 
         df_map = pd.DataFrame(
@@ -423,6 +421,7 @@ class Subsystem:
         run = {"L60": "%", "L200": "010"}[setup_info["experiment"]]
         # L60-pXX-r%-... for L60, L200-pXX-r010-... for L200
         json_file = f"{setup_info['experiment']}-{setup_info['period']}-r{run}-T%-all-config.json"
+        LEGEND_META = LegendMetadata()
         full_status_map = LEGEND_META.dataprod.config[json_file][
             "hardware_configuration"
         ]["channel_map"]
