@@ -422,9 +422,9 @@ class Subsystem:
         # L60-pXX-r%-... for L60, L200-pXX-r010-... for L200
         json_file = f"{setup_info['experiment']}-{setup_info['period']}-r{run}-T%-all-config.json"
         lmeta = LegendMetadata()
-        full_status_map = lmeta.dataprod.config[json_file][
-            "hardware_configuration"
-        ]["channel_map"]
+        full_status_map = lmeta.dataprod.config[json_file]["hardware_configuration"][
+            "channel_map"
+        ]
 
         # ----- from Katha
         # chstatmap = self.lmeta.dataprod.config.on(timestamp=timestamp, system='phy')['hardware_configuration']['channel_map']
