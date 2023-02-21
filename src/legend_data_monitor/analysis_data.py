@@ -122,7 +122,9 @@ class AnalysisData:
             if param in subsystem.SPECIAL_PARAMETERS:
                 # ignore if none are needed
                 params_to_get += (
-                    subsystem.SPECIAL_PARAMETERS[param] if subsystem.SPECIAL_PARAMETERS[param] else []
+                    subsystem.SPECIAL_PARAMETERS[param]
+                    if subsystem.SPECIAL_PARAMETERS[param]
+                    else []
                 )
             else:
                 # otherwise just load it

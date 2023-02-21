@@ -5,8 +5,7 @@ import re
 # for getting DataLoader time range
 from datetime import datetime, timedelta
 
-from . import plotting
-from . import plot_styles
+from . import plot_styles, plotting
 
 
 def get_dataloader_timerange(**kwargs):
