@@ -114,7 +114,7 @@ def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: 
         # -------------------------------------------------------------------------
 
         # choose plot function based on user requested structure e.g. per channel or all ch together
-        plot_structure = plot_styles.PLOT_STRUCTURE[plot_settings["plot_structure"]]
+        plot_structure = PLOT_STRUCTURE[plot_settings["plot_structure"]]
 
         logging.info("Plot structure: " + plot_settings["plot_structure"])
         par_dict = plot_structure(data_analysis, plot_info, plt_path, pdf)
