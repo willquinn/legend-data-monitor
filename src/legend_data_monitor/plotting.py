@@ -8,8 +8,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from seaborn import color_palette
 
-from . import analysis_data, plot_styles, status_plot
-from . import subsystem
+from . import analysis_data, plot_styles, status_plot, subsystem
 
 # load dictionary with plot info (= units, thresholds, label, ...)
 pkg = importlib.resources.files("legend_data_monitor")
