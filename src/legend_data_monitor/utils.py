@@ -246,7 +246,9 @@ def check_plot_settings(conf: dict):
                         f"\033[91mProvide {field} in plot settings of '{plot}' for {subsys}!\033[0m"
                     )
                     logger.error(
-                        "\033[91mAvailable options: {}\033[0m".format(",".join(options[field]))
+                        "\033[91mAvailable options: {}\033[0m".format(
+                            ",".join(options[field])
+                        )
                     )
                     return False
 
@@ -258,7 +260,9 @@ def check_plot_settings(conf: dict):
                         f"\033[91mOption {opt} provided for {field} in plot settings of '{plot}' for {subsys} does not exist!\033[0m"
                     )
                     logger.error(
-                        "\033[91mAvailable options: {}\033[0m".format(",".join(options[field]))
+                        "\033[91mAvailable options: {}\033[0m".format(
+                            ",".join(options[field])
+                        )
                     )
                     return False
 
@@ -288,7 +292,9 @@ def make_output_paths(config: dict, user_time_range: dict) -> str:
     logger.info("----------------------------------------------------")
 
     if "output" not in config:
-        logger.error("\033[91mProvide output folder path in your config field 'output'!\033[0m")
+        logger.error(
+            "\033[91mProvide output folder path in your config field 'output'!\033[0m"
+        )
         return
 
     # general output path
