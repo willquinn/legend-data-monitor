@@ -6,12 +6,16 @@
 
 from math import ceil
 
+from matplotlib.axes import Axes
 from matplotlib.dates import DateFormatter, date2num
+from matplotlib.figure import Figure
 from matplotlib.ticker import FixedLocator
-from pandas import Timedelta
+from pandas import DataFrame, Timedelta
 
 
-def plot_vs_time(data_channel, fig, ax, plot_info, color=None):
+def plot_vs_time(
+    data_channel: DataFrame, fig: Figure, ax: Axes, plot_info: dict, color=None
+):
     # -------------------------------------------------------------------------
     # plot this data vs time
     # -------------------------------------------------------------------------
@@ -110,7 +114,9 @@ def plot_vs_time(data_channel, fig, ax, plot_info, color=None):
     return ch_dict
 
 
-def plot_histo(data_channel, fig, ax, plot_info, color=None):
+def plot_histo(
+    data_channel: DataFrame, fig: Figure, ax: Axes, plot_info: dict, color=None
+):
     # --- histo range
     # !! in the future take from par-settings
     # needed for cuspEmax because with geant outliers not possible to view normal histo
@@ -149,7 +155,9 @@ def plot_histo(data_channel, fig, ax, plot_info, color=None):
     fig.supxlabel(f"{plot_info['label']} [{plot_info['unit_label']}]")
 
 
-def plot_scatter(data_channel, fig, ax, plot_info, color=None):
+def plot_scatter(
+    data_channel: DataFrame, fig: Figure, ax: Axes, plot_info: dict, color=None
+):
     ax.scatter(
         data_channel["datetime"].dt.to_pydatetime(),
         data_channel[plot_info["parameter"]],
@@ -160,7 +168,9 @@ def plot_scatter(data_channel, fig, ax, plot_info, color=None):
     fig.supxlabel("UTC Time")
 
 
-def plot_heatmap(data_channel, fig, ax, plot_info, color=None):
+def plot_heatmap(
+    data_channel: DataFrame, fig: Figure, ax: Axes, plot_info: dict, color=None
+):
     # here will be a function to plot a SiPM heatmap
     pass
 
