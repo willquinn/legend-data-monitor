@@ -4,16 +4,15 @@
 
 # See mapping user plot structure keywords to corresponding functions in the end of this file
 
-
-import logging
-
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 from pandas import Timedelta
 
+from . import utils
 
-def status_plot(subsystem, data_analysis, plot_info, plt_path, pdf):
+
+def status_plot(subsystem, data_analysis, plot_info, pdf):
     # -------------------------------------------------------------------------
     # plot a map with statuses of channels
     # -------------------------------------------------------------------------
@@ -23,11 +22,19 @@ def status_plot(subsystem, data_analysis, plot_info, plt_path, pdf):
     # get threshold values
     low_thr = plot_info["limits"][0]
     high_thr = plot_info["limits"][1]
-    logging.info(
-        "...low threshold for " + plot_info["parameter"] + " set at: " + str(low_thr)
+    utils.logger.debug(
+        "...low threshold for "
+        + plot_info["parameter"]
+        + " set at: "
+        + str(low_thr)
+        + plot_info["unit_label"]
     )
-    logging.info(
-        "...high threshold for " + plot_info["parameter"] + " set at: " + str(high_thr)
+    utils.logger.debug(
+        "...high threshold for "
+        + plot_info["parameter"]
+        + " set at: "
+        + str(high_thr)
+        + plot_info["unit_label"]
     )
 
     # define the title of the status map
@@ -142,10 +149,25 @@ def status_plot(subsystem, data_analysis, plot_info, plt_path, pdf):
 
     # create a pivot with necessary info
     result = new_dataframe.pivot(index="position", columns="location", values="status")
-    logging.info(
-        "Status map summary (0=ON & ok, 1=ON but problematic, 2=ON but AC, 3=OFF, NaN=no detector):\n",
-        result,
-    )
+
+    # create a fancier copy of the pivot table for the printing
+    # (only for a given level of the logger, to save time in making the prettier copy)
+    if utils.logger.getEffectiveLevel() is utils.logging.DEBUG:
+        output_result = result.fillna("")
+        output_result = output_result.replace(3.0, "-")
+        output_result = output_result.replace(2.0, "\033[93m-\033[0m")
+        output_result = output_result.replace(1.0, "\033[91mX\033[0m")
+        output_result = output_result.replace(0.0, "\033[94m\u2713\033[0m")
+        # convert to dataframe (to use 'tabulate' library)
+        df = pd.DataFrame(output_result.to_records())
+        from tabulate import tabulate
+
+        output_result = tabulate(
+            df, headers="keys", tablefmt="psql", showindex=False, stralign="center"
+        )
+        utils.logger.debug(
+            "Status map summary for " + plot_info["parameter"] + ":\n%s", output_result
+        )
 
     # --------------------------------------------------------------------------------------------------------------------------
     # create the figure

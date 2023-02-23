@@ -1,13 +1,9 @@
-import logging
-
 import numpy as np
 import pandas as pd
 
 # needed to know which parameters are not in DataLoader
 # but need to be calculated, such as event rate
-# ! maybe belongs as json in settings
-# ! maybe needs to be loaded in some sort of utils.py
-from . import subsystem
+from . import utils
 
 # -------------------------------------------------------------------------
 
@@ -31,10 +27,10 @@ class AnalysisData:
         Or input kwargs directly parameters=, event_type=, variation=, time_window=
     """
 
-    def __init__(self, sub_data, **kwargs):
-        logging.info("============================================")
-        logging.info("=== Setting up Analysis Data")
-        logging.info("============================================")
+    def __init__(self, sub_data: pd.DataFrame, **kwargs):
+        utils.logger.info("============================================")
+        utils.logger.info("=== Setting up Analysis Data")
+        utils.logger.info("============================================")
 
         # if selection= was provided, take the dict
         # if kwargs were used directly, kwargs itself is already our dict
@@ -57,12 +53,12 @@ class AnalysisData:
             analysis_info["variation"] = False
 
         if analysis_info["event_type"] != "all" and "flag_pulser" not in sub_data:
-            logging.error(
-                f"Your subsystem data does not have a pulser flag! We need it to subselect event type {analysis_info['event_type']}"
+            utils.logger.error(
+                f"\033[91mYour subsystem data does not have a pulser flag! We need it to subselect event type {analysis_info['event_type']}\033[0m"
             )
-            logging.error(
-                "Run the function <subsystem>.flag_pulser_events(<pulser>) first, where <subsystem> is your Subsystem object, "
-                + "and <pulser> is a Subsystem object of type 'pulser', which already has it data loaded with <pulser>.get_data(); then create AnalysisData object."
+            utils.logger.error(
+                "\033[91mRun the function <subsystem>.flag_pulser_events(<pulser>) first, where <subsystem> is your Subsystem object, \033[0m"
+                + "\033[91mand <pulser> is a Subsystem object of type 'pulser', which already has it data loaded with <pulser>.get_data(); then create AnalysisData object.\033[0m"
             )
             return
 
@@ -72,14 +68,10 @@ class AnalysisData:
             "event_rate" in analysis_info["parameters"]
             and len(analysis_info["parameters"]) > 1
         ):
-            logging.error(
-                "Cannot get event rate and another parameter at the same time!"
-            )
-            logging.error(
-                "Event rate has to be calculated based on time windows, so the other parameter has to be thrown away."
-            )
-            logging.error(
-                "Contact developers if you want, for example, to keep that parameter, but look at mean in the windows of event rate."
+            utils.logger.error(
+                "\033[91mCannot get event rate and another parameter at the same time!\n \
+                Event rate has to be calculated based on time windows, so the other parameter has to be thrown away.\
+                Contact developers if you want, for example, to keep that parameter, but look at mean in the windows of event rate.\033[0m"
             )
             return
 
@@ -88,10 +80,10 @@ class AnalysisData:
             analysis_info["parameters"][0] == "event_rate"
             and not analysis_info["time_window"]
         ):
-            logging.error(
-                "Provide argument <time_window> in which to take the event rate!"
+            utils.logger.error(
+                "\033[91mProvide argument <time_window> in which to take the event rate!\033[0m"
             )
-            logging.info(self.__doc__)
+            utils.logger.error("\033[91m%s\033[0m", self.__doc__)
             return
 
         self.parameters = analysis_info["parameters"]
@@ -119,21 +111,27 @@ class AnalysisData:
 
         # if special parameter, get columns needed to calculate it
         for param in self.parameters:
-            if param in subsystem.SPECIAL_PARAMETERS:
-                # ignore if none are needed
-                params_to_get += (
-                    subsystem.SPECIAL_PARAMETERS[param]
-                    if subsystem.SPECIAL_PARAMETERS[param]
-                    else []
-                )
+            if param in utils.PLOT_INFO.keys():
+                if param in utils.SPECIAL_PARAMETERS:
+                    # ignore if none are needed
+                    params_to_get += (
+                        utils.SPECIAL_PARAMETERS[param]
+                        if utils.SPECIAL_PARAMETERS[param]
+                        else []
+                    )
+                else:
+                    # otherwise just load it
+                    params_to_get.append(param)
+            # the parameter does not exist
             else:
-                # otherwise just load it
-                params_to_get.append(param)
+                utils.logger.error(
+                    "\033[91m'%s' either does not exist in 'par-settings.json' or you misspelled the parameter's name. Try again.\033[0m",
+                    param,
+                )
+                exit()
 
         # avoid repetition
         params_to_get = list(np.unique(params_to_get))
-
-        self.data = sub_data[params_to_get].copy()
 
         # -------------------------------------------------------------------------
 
@@ -158,23 +156,23 @@ class AnalysisData:
     def select_events(self):
         # do we want to keep all, phy or pulser events?
         if self.evt_type == "pulser":
-            logging.info("... keeping only pulser events")
+            utils.logger.info("... keeping only pulser events")
             self.data = self.data[self.data["flag_pulser"]]
         elif self.evt_type == "phy":
-            logging.info("... keeping only physical (non-pulser) events")
+            utils.logger.info("... keeping only physical (non-pulser) events")
             self.data = self.data[~self.data["flag_pulser"]]
         elif self.evt_type == "K_lines":
-            logging.info("... selecting K lines in physical (non-pulser) events")
+            utils.logger.info("... selecting K lines in physical (non-pulser) events")
             self.data = self.data[~self.data["flag_pulser"]]
-            energy = subsystem.SPECIAL_PARAMETERS["K_lines"][0]
+            energy = utils.SPECIAL_PARAMETERS["K_lines"][0]
             self.data = self.data[
                 (self.data[energy] > 1430) & (self.data[energy] < 1575)
             ]
         elif self.evt_type == "all":
-            logging.info("... keeping all (pulser + non-pulser) events")
+            utils.logger.info("... keeping all (pulser + non-pulser) events")
         else:
-            logging.error("Invalid event type!")
-            logging.info(self.__doc__)
+            utils.logger.error("\033[91mInvalid event type!\033[0m")
+            utils.logger.error("\033[91m%s\033[0m", self.__doc__)
             return "bad"
 
     def special_parameter(self):
@@ -234,7 +232,7 @@ class AnalysisData:
                 self.data = self.data.reset_index()
 
     def channel_mean(self):
-        logging.info("... getting channel mean")
+        utils.logger.info("... getting channel mean")
         # series with index channel, columns of parameters containing mean of each channel;
         # the mean is performed over the first 10% interval of the full time range specified in the config file
         min_datetime = self.data["datetime"].min()  # first timestamp
@@ -263,7 +261,7 @@ class AnalysisData:
 
     def calculate_variation(self):
         if self.variation:
-            logging.info("... calculating % variation from the mean")
+            utils.logger.info("... calculating % variation from the mean")
             for param in self.parameters:
                 # subtract mean from value for each channel
                 self.data[param] = (
@@ -276,7 +274,7 @@ class AnalysisData:
 # -------------------------------------------------------------------------
 
 
-def get_seconds(time_window):
+def get_seconds(time_window: str):
     """
     Convert sampling format used for DataFrame.resample() to int representing seconds.
 

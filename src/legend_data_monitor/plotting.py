@@ -1,20 +1,11 @@
-# needed to open files in settings/
-import importlib.resources
-import json
-import logging
 import shelve
 
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
+from pandas import DataFrame
 from seaborn import color_palette
 
-from . import analysis_data, plot_styles, status_plot, subsystem
-
-# load dictionary with plot info (= units, thresholds, label, ...)
-pkg = importlib.resources.files("legend_data_monitor")
-with open(pkg / "settings" / "par-settings.json") as f:
-    PLOT_INFO = json.load(f)
-
+from . import analysis_data, plot_styles, status_plot, subsystem, utils
 
 # -------------------------------------------------------------------------
 
@@ -36,9 +27,9 @@ def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: 
 
     # for param in subsys.parameters:
     for plot_title in plots:
-        logging.info("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-        logging.info("~~~ P L O T T I N G  " + plot_title)
-        logging.info("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+        utils.logger.info("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+        utils.logger.info("~~~ P L O T T I N G  " + plot_title)
+        utils.logger.info("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 
         # --- original plot settings provided in json
         # - parameter of interest
@@ -63,6 +54,7 @@ def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: 
         data_analysis = analysis_data.AnalysisData(
             subsystem.data, selection=plot_settings
         )
+        utils.logger.debug(data_analysis.data)
 
         # -------------------------------------------------------------------------
         # set up plot info
@@ -87,7 +79,7 @@ def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: 
             "locname": {"geds": "string", "spms": "fiber", "pulser": "aux"}[
                 subsystem.type
             ],
-            "unit": PLOT_INFO[plot_settings["parameters"]]["unit"],
+            "unit": utils.PLOT_INFO[plot_settings["parameters"]]["unit"],
             "plot_style": plot_settings["plot_style"],
         }
 
@@ -95,7 +87,7 @@ def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: 
         plot_info["parameter"] = plot_settings[
             "parameters"
         ]  # could be multiple in the future!
-        plot_info["label"] = PLOT_INFO[plot_info["parameter"]]["label"]
+        plot_info["label"] = utils.PLOT_INFO[plot_info["parameter"]]["label"]
         # unit label should be % if variation was asked
         plot_info["unit_label"] = (
             "%" if plot_settings["variation"] else plot_info["unit"]
@@ -104,9 +96,13 @@ def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: 
         plot_info["time_window"] = plot_settings["time_window"]
         # threshold values are needed for status map; might be needed for plotting limits on canvas too
         plot_info["limits"] = (
-            PLOT_INFO[plot_info["parameter"]]["limits"][subsystem.type]["variation"]
+            utils.PLOT_INFO[plot_info["parameter"]]["limits"][subsystem.type][
+                "variation"
+            ]
             if plot_settings["variation"]
-            else PLOT_INFO[plot_info["parameter"]]["limits"][subsystem.type]["absolute"]
+            else utils.PLOT_INFO[plot_info["parameter"]]["limits"][subsystem.type][
+                "absolute"
+            ]
         )
 
         # -------------------------------------------------------------------------
@@ -115,19 +111,19 @@ def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: 
 
         # choose plot function based on user requested structure e.g. per channel or all ch together
         plot_structure = PLOT_STRUCTURE[plot_settings["plot_structure"]]
+        utils.logger.debug("Plot structure: " + plot_settings["plot_structure"])
 
-        logging.info("Plot structure: " + plot_settings["plot_structure"])
         par_dict = plot_structure(data_analysis, plot_info, plt_path, pdf)
 
         # make a special status plot
         if "status" in plot_settings and plot_settings["status"]:
             if subsystem.type == "pulser":
-                logging.info(
+                utils.logger.debug(
                     "Thresholds are not enabled for pulser! Use you own eyes to do checks there"
                 )
             else:
                 status_fig = status_plot.status_plot(
-                    subsystem, data_analysis, plot_info, plt_path, pdf
+                    subsystem, data_analysis, plot_info, pdf
                 )
                 par_dict[plot_info["subsystem"] + "_map"] = status_fig
 
@@ -142,9 +138,9 @@ def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: 
     # save in pdf object
     pdf.close()
 
-    logging.info("- - - - - - - - - - - - - - - - - - - - - - -")
-    logging.info("All plots saved in: " + plt_path + ".pdf")
-    logging.info("- - - - - - - - - - - - - - - - - - - - - - -")
+    utils.logger.info("---------------------------------------------")
+    utils.logger.info("All plots saved in: " + plt_path + ".pdf")
+    utils.logger.info("---------------------------------------------")
 
 
 # -------------------------------------------------------------------------------
@@ -157,7 +153,7 @@ def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: 
 def plot_per_ch(data_analysis, plot_info, plt_path, pdf):
     # --- choose plot function based on user requested style e.g. vs time or histogram
     plot_style = plot_styles.PLOT_STYLE[plot_info["plot_style"]]
-    logging.info("Plot style: " + plot_info["plot_style"])
+    utils.logger.debug("Plot style: " + plot_info["plot_style"])
 
     par_dict = {}
     data_analysis.data = data_analysis.data.sort_values(["location", "position"])
@@ -166,7 +162,7 @@ def plot_per_ch(data_analysis, plot_info, plt_path, pdf):
 
     # separate figure for each string/fiber ("location")
     for location, data_location in data_analysis.data.groupby("location"):
-        logging.info(f"... {plot_info['locname']} {location}")
+        utils.logger.debug(f"... {plot_info['locname']} {location}")
 
         # -------------------------------------------------------------------------------
         # create plot structure: 1 column, N rows with subplot for each channel
@@ -193,7 +189,7 @@ def plot_per_ch(data_analysis, plot_info, plt_path, pdf):
         ax_idx = 0
         # plot one channel on each axis, ordered by position
         for position, data_channel in data_location.groupby("position"):
-            logging.info(f"...... position {position}")
+            utils.logger.debug(f"...... position {position}")
 
             # plot selected style on this axis
             ch_dict = plot_style(
@@ -240,7 +236,7 @@ def plot_per_ch(data_analysis, plot_info, plt_path, pdf):
 def plot_per_string(data_analysis, plot_info, plt_path, pdf):
     # --- choose plot function based on user requested style e.g. vs time or histogram
     plot_style = plot_styles.PLOT_STYLE[plot_info["plot_style"]]
-    logging.info("Plot style: " + plot_info["plot_style"])
+    utils.logger.debug("Plot style: " + plot_info["plot_style"])
 
     par_dict = {}  # not actually filled
 
@@ -278,7 +274,7 @@ def plot_per_string(data_analysis, plot_info, plt_path, pdf):
     # new subplot for each string
     ax_idx = 0
     for location, data_location in data_analysis.data.groupby("location"):
-        logging.info(f"... {plot_info['locname']} {location}")
+        utils.logger.debug(f"... {plot_info['locname']} {location}")
 
         # new color for each channel
         col_idx = 0
@@ -309,7 +305,7 @@ def plot_per_string(data_analysis, plot_info, plt_path, pdf):
 # -------------------------------------------------------------------------------
 
 
-def plot_per_barrel(data_analysis, plot_info, pdf):
+def plot_per_barrel(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
     # here will be a function plotting SiPMs with:
     # - one figure for top and one for bottom SiPMs
     # - each figure has subplots with N columns and M rows where N is the number of fibers, and M is the number of positions (top/bottom -> 2)
@@ -318,7 +314,9 @@ def plot_per_barrel(data_analysis, plot_info, pdf):
     pass
 
 
-def plot_per_barrel_and_position(data_analysis, plot_info, pdf):
+def plot_per_barrel_and_position(
+    data_analysis: DataFrame, plot_info: dict, pdf: PdfPages
+):
     # here will be a function plotting SiPMs with:
     # - one figure for each barrel-position combination (IB-top, IB-bottom, OB-top, OB-bottom; pr IB-top, OB-top, IB-bottom, OB-bottom)
     # - subplots for each fiber

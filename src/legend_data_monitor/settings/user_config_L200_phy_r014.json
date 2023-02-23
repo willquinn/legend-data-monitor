@@ -1,14 +1,13 @@
 {
-  "output": "/data1/users/calgaro/prod-ref/",
+  "output": "/data1/users/calgaro/out_prova",
   "dataset": {
     "experiment": "L200",
     "period": "p02",
     "version": "v06.00",
     "path": "/data1/users/marshall/prod-ref",
     "type": "phy",
-    "selection": {
-      "runs": 14
-    }
+    "start": "2023-02-07 02:00:00",
+    "end": "2023-02-07 03:30:00"
   },
   "subsystems": {
     "geds": {
@@ -20,51 +19,6 @@
         "variation": true,
         "time_window": "1H",
         "status": true
-      },
-      "Uncalibrated gain (cuspEmax) in pulser events": {
-        "parameters": "cuspEmax",
-        "event_type": "pulser",
-        "plot_structure": "per channel",
-        "plot_style": "vs time",
-        "variation": true,
-        "time_window": "1H",
-        "status": true
-      },
-      "Uncalibrated gain (trapEmax) in pulser events": {
-        "parameters": "trapEmax",
-        "event_type": "pulser",
-        "plot_structure": "per channel",
-        "plot_style": "vs time",
-        "variation": true,
-        "time_window": "1H",
-        "status": true
-      },
-      "Calibrated gain (cuspEmax) in pulser events": {
-        "parameters": "cuspEmax_ctc_cal",
-        "event_type": "pulser",
-        "plot_structure": "per channel",
-        "plot_style": "vs time",
-        "variation": true,
-        "time_window": "1H",
-        "status": true
-      },
-      "Calibrated gain (trapEmax) in pulser events": {
-        "parameters": "trapEmax_ctc_cal",
-        "event_type": "pulser",
-        "plot_structure": "per channel",
-        "plot_style": "vs time",
-        "variation": true,
-        "time_window": "1H",
-        "status": true
-      },
-      "noise in pulser events": {
-        "parameters": "bl_std",
-        "event_type": "pulser",
-        "plot_structure": "per channel",
-        "plot_style": "vs time",
-        "variation": false,
-        "time_window": "1H",
-        "status": false
       }
     }
   }
