@@ -124,7 +124,7 @@ class AnalysisData:
                     params_to_get.append(param)
             # the parameter does not exist
             else:
-                utils.logger.error("\033[91m'%s' either does not exist in 'par-settings.json' or you mispelled the parameter's name. Try again.\033[0m", param)
+                utils.logger.error("\033[91m'%s' either does not exist in 'par-settings.json' or you misspelled the parameter's name. Try again.\033[0m", param)
                 exit()
 
         # avoid repetition
