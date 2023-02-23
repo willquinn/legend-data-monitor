@@ -210,7 +210,7 @@ def get_query_timerange(**kwargs):
         # check validity
         for run in runs:
             if not isinstance(run, int):
-                logger.error("Invalid run format!")
+                logger.error("\033[91mInvalid run format!\033[0m")
                 return
 
         # format rXXX for DataLoader
@@ -218,7 +218,7 @@ def get_query_timerange(**kwargs):
         time_range["run"] = ["r" + str(run).zfill(3) for run in runs]
 
     else:
-        logger.error("Invalid time selection!")
+        logger.error("\033[91mInvalid time selection!\033[0m")
         return
 
     return time_range
@@ -243,10 +243,10 @@ def check_plot_settings(conf: dict):
                 # (if optional to provided, will have been set with defaults before calling set_defaults())
                 if field not in plot_settings:
                     logger.error(
-                        f"Provide {field} in plot settings of '{plot}' for {subsys}!"
+                        f"\033[91mProvide {field} in plot settings of '{plot}' for {subsys}!\033[0m"
                     )
                     logger.error(
-                        "Available options: {}".format(",".join(options[field]))
+                        "\033[91mAvailable options: {}\033[0m".format(",".join(options[field]))
                     )
                     return False
 
@@ -255,10 +255,10 @@ def check_plot_settings(conf: dict):
 
                 if opt not in options[field]:
                     logger.error(
-                        f"Option {opt} provided for {field} in plot settings of '{plot}' for {subsys} does not exist!"
+                        f"\033[91mOption {opt} provided for {field} in plot settings of '{plot}' for {subsys} does not exist!\033[0m"
                     )
                     logger.error(
-                        "Available options: {}".format(",".join(options[field]))
+                        "\033[91mAvailable options: {}\033[0m".format(",".join(options[field]))
                     )
                     return False
 
@@ -268,7 +268,7 @@ def check_plot_settings(conf: dict):
                 and "time_window" not in plot_settings
             ):
                 logger.error(
-                    "You chose plot style 'vs time' and did not provide 'time_window'!"
+                    "\033[91mYou chose plot style 'vs time' and did not provide 'time_window'!\033[0m"
                 )
                 return False
 
@@ -288,7 +288,7 @@ def make_output_paths(config: dict, user_time_range: dict) -> str:
     logger.info("----------------------------------------------------")
 
     if "output" not in config:
-        logger.error('Provide output folder path in your config field "output"!')
+        logger.error("\033[91mProvide output folder path in your config field 'output'!\033[0m")
         return
 
     # general output path
@@ -374,7 +374,7 @@ def get_time_name(user_time_range: dict) -> str:
         name_time += "{}".format("_".join(time_range))
 
     else:
-        logger.error("Invalid time selection!")
+        logger.error("\033[91mInvalid time selection!\033[0m")
         return
 
     return name_time

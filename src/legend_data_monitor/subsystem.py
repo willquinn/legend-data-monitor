@@ -63,13 +63,13 @@ class Subsystem:
         # -------------------------------------------------------------------------
 
         if "experiment" not in data_info:
-            utils.logger.error("Provide experiment name!")
-            utils.logger.error(self.__doc__)
+            utils.logger.error("\033[91mProvide experiment name!\033[0m")
+            utils.logger.error("\033[91m%s\033[0m", self.__doc__)
             return
 
         if "type" not in data_info:
-            utils.logger.error("Provide data type!")
-            utils.logger.error(self.__doc__)
+            utils.logger.error("\033[91mProvide data type!\033[0m")
+            utils.logger.error("\033[91m%s\033[0m", self.__doc__)
             return
 
         # convert to list for convenience
@@ -82,26 +82,26 @@ class Subsystem:
         # for datatype in data_info["type"]:
         # if datatype not in data_types:
         if not data_info["type"] in data_types:
-            utils.logger.error("Invalid data type provided!")
-            utils.logger.error(self.__doc__)
+            utils.logger.error("\033[91mInvalid data type provided!\033[0m")
+            utils.logger.error("\033[91m%s\033[0m", self.__doc__)
             return
 
         if "path" not in data_info:
-            utils.logger.error("Provide path to data!")
-            utils.logger.error(self.__doc__)
+            utils.logger.error("\033[91mProvide path to data!\033[0m")
+            utils.logger.error("\033[91m%s\033[0m", self.__doc__)
             return
         if not os.path.exists(data_info["path"]):
-            utils.logger.error("The data path you provided does not exist!")
+            utils.logger.error("\033[91mThe data path you provided does not exist!\033[0m")
             return
 
         if "version" not in data_info:
-            utils.logger.error("Provide pygama version!")
-            utils.logger.error(self.__doc__)
+            utils.logger.error("\033[91mProvide pygama version!\033[0m")
+            utils.logger.error("\033[91m%s\033[0m", self.__doc__)
             return
 
         if not os.path.exists(os.path.join(data_info["path"], data_info["version"])):
-            utils.logger.error("Provide valid pygama version!")
-            utils.logger.error(self.__doc__)
+            utils.logger.error("\033[91mProvide valid pygama version!\033[0m")
+            utils.logger.error("\033[91m%s\033[0m", self.__doc__)
             return
 
         # validity of time selection will be checked in utils
@@ -125,7 +125,7 @@ class Subsystem:
 
         # None will be returned if something went wrong
         if not self.timerange:
-            utils.logger.error(self.get_data.__doc__)
+            utils.logger.error("\033[91m%s\033[0m", self.get_data.__doc__)
             return
 
         self.channel_map = self.get_channel_map()  # pd.DataFrame

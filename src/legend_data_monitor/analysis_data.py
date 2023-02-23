@@ -54,11 +54,11 @@ class AnalysisData:
 
         if analysis_info["event_type"] != "all" and "flag_pulser" not in sub_data:
             utils.logger.error(
-                f"Your subsystem data does not have a pulser flag! We need it to subselect event type {analysis_info['event_type']}"
+                f"\033[91mYour subsystem data does not have a pulser flag! We need it to subselect event type {analysis_info['event_type']}\033[0m"
             )
             utils.logger.error(
-                "Run the function <subsystem>.flag_pulser_events(<pulser>) first, where <subsystem> is your Subsystem object, "
-                + "and <pulser> is a Subsystem object of type 'pulser', which already has it data loaded with <pulser>.get_data(); then create AnalysisData object."
+                "\033[91mRun the function <subsystem>.flag_pulser_events(<pulser>) first, where <subsystem> is your Subsystem object, \033[0m"
+                + "\033[91mand <pulser> is a Subsystem object of type 'pulser', which already has it data loaded with <pulser>.get_data(); then create AnalysisData object.\033[0m"
             )
             return
 
@@ -69,9 +69,9 @@ class AnalysisData:
             and len(analysis_info["parameters"]) > 1
         ):
             utils.logger.error(
-                "Cannot get event rate and another parameter at the same time!\n \
+                "\033[91mCannot get event rate and another parameter at the same time!\n \
                 Event rate has to be calculated based on time windows, so the other parameter has to be thrown away.\
-                Contact developers if you want, for example, to keep that parameter, but look at mean in the windows of event rate."
+                Contact developers if you want, for example, to keep that parameter, but look at mean in the windows of event rate.\033[0m"
             )
             return
 
@@ -81,9 +81,9 @@ class AnalysisData:
             and not analysis_info["time_window"]
         ):
             utils.logger.error(
-                "Provide argument <time_window> in which to take the event rate!"
+                "\033[91mProvide argument <time_window> in which to take the event rate!\033[0m"
             )
-            utils.logger.error(self.__doc__)
+            utils.logger.error("\033[91m%s\033[0m", self.__doc__)
             return
 
         self.parameters = analysis_info["parameters"]
@@ -111,21 +111,24 @@ class AnalysisData:
 
         # if special parameter, get columns needed to calculate it
         for param in self.parameters:
-            if param in utils.SPECIAL_PARAMETERS:
-                # ignore if none are needed
-                params_to_get += (
-                    utils.SPECIAL_PARAMETERS[param]
-                    if utils.SPECIAL_PARAMETERS[param]
-                    else []
-                )
+            if param in utils.PLOT_INFO.keys():
+                if param in utils.SPECIAL_PARAMETERS:
+                    # ignore if none are needed
+                    params_to_get += (
+                        utils.SPECIAL_PARAMETERS[param]
+                        if utils.SPECIAL_PARAMETERS[param]
+                        else []
+                    )
+                else:
+                    # otherwise just load it
+                    params_to_get.append(param)
+            # the parameter does not exist
             else:
-                # otherwise just load it
-                params_to_get.append(param)
+                utils.logger.error("\033[91m'%s' either does not exist in 'par-settings.json' or you mispelled the parameter's name. Try again.\033[0m", param)
+                exit()
 
         # avoid repetition
         params_to_get = list(np.unique(params_to_get))
-
-        self.data = sub_data[params_to_get].copy()
 
         # -------------------------------------------------------------------------
 
@@ -138,7 +141,7 @@ class AnalysisData:
         self.special_parameter()
 
         # calculate channel mean
-        self.channel_mean()
+        self.channel_mean()  
 
         # calculate variation if needed - only works after channel mean
         self.calculate_variation()
@@ -165,8 +168,8 @@ class AnalysisData:
         elif self.evt_type == "all":
             utils.logger.info("... keeping all (pulser + non-pulser) events")
         else:
-            utils.logger.error("Invalid event type!")
-            utils.logger.error(self.__doc__)
+            utils.logger.error("\033[91mInvalid event type!\033[0m")
+            utils.logger.error("\033[91m%s\033[0m", self.__doc__)
             return "bad"
 
     def special_parameter(self):
