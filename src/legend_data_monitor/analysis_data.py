@@ -141,7 +141,7 @@ class AnalysisData:
         self.special_parameter()
 
         # calculate channel mean
-        self.channel_mean()  
+        self.channel_mean()
 
         # calculate variation if needed - only works after channel mean
         self.calculate_variation()

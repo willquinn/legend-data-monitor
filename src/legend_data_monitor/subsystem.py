@@ -91,7 +91,9 @@ class Subsystem:
             utils.logger.error("\033[91m%s\033[0m", self.__doc__)
             return
         if not os.path.exists(data_info["path"]):
-            utils.logger.error("\033[91mThe data path you provided does not exist!\033[0m")
+            utils.logger.error(
+                "\033[91mThe data path you provided does not exist!\033[0m"
+            )
             return
 
         if "version" not in data_info:
