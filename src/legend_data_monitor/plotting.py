@@ -27,9 +27,9 @@ def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: 
 
     # for param in subsys.parameters:
     for plot_title in plots:
-        utils.logger.info("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-        utils.logger.info("~~~ P L O T T I N G  " + plot_title)
-        utils.logger.info("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+        utils.logger.info("\33[95m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\33[0m")
+        utils.logger.info(f"\33[95m~~~ P L O T T I N G : {plot_title}\33[0m")
+        utils.logger.info("\33[95m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\33[0m")
 
         # --- original plot settings provided in json
         # - parameter of interest
@@ -37,11 +37,18 @@ def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: 
         # - variation (bool)
         # - time window (for event rate or vs time plot)
         plot_settings = plots[plot_title]
-        # defaults
+        
+        # --- defaults
+        # default time window None if not parameter event rate will be accounted for in AnalysisData,
+        # here need to account for plot style vs time (None for all others)
         if "time_window" not in plot_settings:
             plot_settings["time_window"] = None
+        # same, here need to account for unit label %
         if "variation" not in plot_settings:
             plot_settings["variation"] = False
+        # !? this is not needed because is checked in AnalysisData
+        # if "cuts" not in plot_settings:
+        #     plot_settings["cuts"] = []
 
         # -------------------------------------------------------------------------
         # set up analysis data
@@ -54,6 +61,9 @@ def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: 
         data_analysis = analysis_data.AnalysisData(
             subsystem.data, selection=plot_settings
         )
+        # cuts will be loaded but not applied; for our purposes, need to apply the cuts right away
+        # currently only K lines cut is used, and only data after cut is plotted -> just replace
+        data_analysis.data = data_analysis.apply_all_cuts()
         utils.logger.debug(data_analysis.data)
 
         # -------------------------------------------------------------------------
@@ -95,15 +105,16 @@ def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: 
         # time window might be needed fort he vs time function
         plot_info["time_window"] = plot_settings["time_window"]
         # threshold values are needed for status map; might be needed for plotting limits on canvas too
-        plot_info["limits"] = (
-            utils.PLOT_INFO[plot_info["parameter"]]["limits"][subsystem.type][
-                "variation"
-            ]
-            if plot_settings["variation"]
-            else utils.PLOT_INFO[plot_info["parameter"]]["limits"][subsystem.type][
-                "absolute"
-            ]
-        )
+        if subsystem.type != "pulser":
+            plot_info["limits"] = (
+                utils.PLOT_INFO[plot_info["parameter"]]["limits"][subsystem.type][
+                    "variation"
+                ]
+                if plot_settings["variation"]
+                else utils.PLOT_INFO[plot_info["parameter"]]["limits"][subsystem.type][
+                    "absolute"
+                ]
+            )
 
         # -------------------------------------------------------------------------
         # call chosen plot structure
@@ -138,10 +149,7 @@ def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: 
     # save in pdf object
     pdf.close()
 
-    utils.logger.info("---------------------------------------------")
-    utils.logger.info("All plots saved in: " + plt_path + ".pdf")
-    utils.logger.info("---------------------------------------------")
-
+    utils.logger.info(f"\33[92mAll plots saved in: {plt_path}.pdf\33[0m")
 
 # -------------------------------------------------------------------------------
 # different plot structure functions, defining figures and subplot layouts
@@ -218,6 +226,10 @@ def plot_per_ch(data_analysis, plot_info, plt_path, pdf):
             # remove automatic y label since there will be a shared one
             axes[ax_idx].set_ylabel("")
 
+            # plot line at 0% for variation
+            if plot_info["unit_label"] == "%":
+                axes[ax_idx].axhline(y=0, color="gray", linestyle="--")
+
             ax_idx += 1
 
         # -------------------------------------------------------------------------------
@@ -284,9 +296,17 @@ def plot_per_string(data_analysis, plot_info, plt_path, pdf):
             labels.append(label)
             col_idx += 1
 
+        # add grid
+        axes[ax_idx].grid("major", linestyle="--")
+        # beautification
         axes[ax_idx].set_title(f"{plot_info['locname']} {location}")
         axes[ax_idx].set_ylabel("")
         axes[ax_idx].legend(labels=labels, loc="center left", bbox_to_anchor=(1, 0.5))
+
+        # plot the position of the two K lines
+        if plot_info["title"] == "K lines":
+            axes[ax_idx].axhline(y=1460.822, color="gray", linestyle="--")
+            axes[ax_idx].axhline(y=1524.6, color="gray", linestyle="--")
         ax_idx += 1
 
     # -------------------------------------------------------------------------------

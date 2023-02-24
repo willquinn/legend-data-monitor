@@ -27,6 +27,7 @@ def status_plot(subsystem, data_analysis, plot_info, pdf):
         + plot_info["parameter"]
         + " set at: "
         + str(low_thr)
+        + " "
         + plot_info["unit_label"]
     )
     utils.logger.debug(
@@ -34,6 +35,7 @@ def status_plot(subsystem, data_analysis, plot_info, pdf):
         + plot_info["parameter"]
         + " set at: "
         + str(high_thr)
+        + " "
         + plot_info["unit_label"]
     )
 
