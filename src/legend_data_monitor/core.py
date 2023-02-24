@@ -97,7 +97,7 @@ def control_plots(user_config_path: str):
 
         # - set up log file for each system
         # file handler
-        file_handler = utils.logging.FileHandler(plt_path + "_" + system + ".log")
+        file_handler = utils.logging.FileHandler(plt_path + "-" + system + ".log")
         file_handler.setLevel(utils.logging.DEBUG)
         # add to logger
         utils.logger.addHandler(file_handler)

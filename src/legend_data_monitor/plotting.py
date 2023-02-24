@@ -1,5 +1,5 @@
 import shelve
-
+import os
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from pandas import DataFrame
@@ -22,7 +22,7 @@ COLORS = []
 
 
 def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: str):
-    pdf = PdfPages(plt_path + "_" + subsystem.type + ".pdf")
+    pdf = PdfPages(plt_path + "-" + subsystem.type + ".pdf")
     out_dict = {}
 
     # for param in subsys.parameters:
@@ -128,7 +128,7 @@ def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: 
         plot_structure = PLOT_STRUCTURE[plot_settings["plot_structure"]]
         utils.logger.debug("Plot structure: " + plot_settings["plot_structure"])
 
-        par_dict = plot_structure(data_analysis, plot_info, plt_path, pdf)
+        par_dict_content = plot_structure(data_analysis, plot_info, plt_path, pdf)
 
         # make a special status plot
         if "status" in plot_settings and plot_settings["status"]:
@@ -140,21 +140,29 @@ def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: 
                 status_fig = status_plot.status_plot(
                     subsystem, data_analysis, plot_info, pdf
                 )
-                par_dict[plot_info["subsystem"] + "_map"] = status_fig
+                par_dict_content[plot_info["subsystem"] + "_map"] = status_fig
 
-        # final saving
-        if plot_info["parameter"] not in out_dict.keys():
-            out_dict[plot_info["parameter"]] = par_dict
+        # saving of param dictionary in the global dictionary that will be stored in the shelve object
+        if plot_settings["event_type"] in out_dict.keys():
+            out_dict[plot_settings["event_type"]] = { plot_info["parameter"]: par_dict_content }
+        else:
+            # empty dictionary (not filled yet)
+            if len(out_dict.keys()) == 0:
+                out_dict = { plot_settings["event_type"]: { plot_info["parameter"]: par_dict_content } }
+            # the dictionary already contains something (but for another event type selection)
+            else:
+                out_dict[plot_settings["event_type"]] = { plot_info["parameter"]: par_dict_content }
 
     # save in shelve object
     out_file = shelve.open(plt_path)
-    out_file[plot_settings["event_type"]] = out_dict
+    out_file["monitoring"] = out_dict
     out_file.close()
+
     # save in pdf object
     pdf.close()
 
     utils.logger.info(
-        f"\33[92mAll plots saved in: {plt_path}_{subsystem.type}.pdf\33[0m"
+        f"\33[92mAll plots saved in: {plt_path}-{subsystem.type}.pdf\33[0m"
     )
 
 
