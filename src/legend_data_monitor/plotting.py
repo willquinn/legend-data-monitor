@@ -153,7 +153,9 @@ def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: 
     # save in pdf object
     pdf.close()
 
-    utils.logger.info(f"\33[92mAll plots saved in: {plt_path}_{subsystem.type}.pdf\33[0m")
+    utils.logger.info(
+        f"\33[92mAll plots saved in: {plt_path}_{subsystem.type}.pdf\33[0m"
+    )
 
 
 # -------------------------------------------------------------------------------
