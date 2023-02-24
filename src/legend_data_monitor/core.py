@@ -105,5 +105,3 @@ def control_plots(user_config_path: str):
         plotting.make_subsystem_plots(
             subsystems[system], config["subsystems"][system], plt_path
         )
-
-    utils.logger.info("D O N E")

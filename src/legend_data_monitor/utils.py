@@ -47,6 +47,8 @@ for param in SPECIAL_PARAMETERS:
         SPECIAL_PARAMETERS[param] = [SPECIAL_PARAMETERS[param]]
 
 # -------------------------------------------------------------------------
+# Subsystem related functions (for getting channel map & status)
+# -------------------------------------------------------------------------
 
 
 def get_query_times(**kwargs):
@@ -224,6 +226,11 @@ def get_query_timerange(**kwargs):
     return time_range
 
 
+# -------------------------------------------------------------------------
+# Plotting related functions
+# -------------------------------------------------------------------------
+
+
 def check_plot_settings(conf: dict):
     from . import plot_styles, plotting
 
@@ -287,9 +294,7 @@ def make_output_paths(config: dict, user_time_range: dict) -> str:
     This does not work if you select more types (eg. both cal and phy) or timestamp intervals (but just runs).
     It can be used for run summary plots, eg during stable data taking.
     """
-    logger.info("----------------------------------------------------")
-    logger.info("--- Setting up plotting")
-    logger.info("----------------------------------------------------")
+    logger.info("Setting up plotting...")
 
     if "output" not in config:
         logger.error(

@@ -135,7 +135,7 @@
     }
   },
   "cuspEmax_ctc_cal": {
-    "label": "cuspEmax_ctc",
+    "label": "cuspEmax_ctc_cal",
     "unit": "keV",
     "facecol": [0.86, 0.86, 0.86],
     "limits": {

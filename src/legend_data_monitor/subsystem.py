@@ -44,9 +44,9 @@ class Subsystem:
     """
 
     def __init__(self, sub_type: str, **kwargs):
-        utils.logger.info(r"\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/")
-        utils.logger.info(r"\/\ Setting up " + sub_type)
-        utils.logger.info(r"\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/")
+        utils.logger.info("\33[35m---------------------------------------------\33[0m")
+        utils.logger.info(f"\33[35m--- S E T T I N G  UP : {sub_type}\33[0m")
+        utils.logger.info("\33[35m---------------------------------------------\33[0m")
 
         self.type = sub_type
 
@@ -464,10 +464,6 @@ class Subsystem:
             else:
                 # otherwise just add the parameter directly
                 params.append(param)
-
-        # add K_lines energy if needed
-        # if 'K_lines' in parameters:
-        #     params.append(SPECIAL_PARAMETERS['K_lines'][0])
 
         # some parameters might be repeated twice - remove
         return list(np.unique(params))

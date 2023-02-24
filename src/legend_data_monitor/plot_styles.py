@@ -158,14 +158,23 @@ def plot_histo(
 def plot_scatter(
     data_channel: DataFrame, fig: Figure, ax: Axes, plot_info: dict, color=None
 ):
+    # plot data
     ax.scatter(
         data_channel["datetime"].dt.to_pydatetime(),
         data_channel[plot_info["parameter"]],
         color=color,
+        # useful if there are overlapping points (but more difficult to see light colour points...)
+        # facecolors='none',
+        # edgecolors=color,
     )
 
+    # TO DO: add major locators (pay attention when you have only one point!)
+
+    # set date format
     ax.xaxis.set_major_formatter(DateFormatter("%Y\n%m/%d\n%H:%M"))
+
     fig.supxlabel("UTC Time")
+    fig.supylabel(f"{plot_info['label']} [{plot_info['unit_label']}]")
 
 
 def plot_heatmap(
