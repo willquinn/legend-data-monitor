@@ -27,9 +27,13 @@ def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: 
 
     # for param in subsys.parameters:
     for plot_title in plots:
-        utils.logger.info("\33[95m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\33[0m")
+        utils.logger.info(
+            "\33[95m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\33[0m"
+        )
         utils.logger.info(f"\33[95m~~~ P L O T T I N G : {plot_title}\33[0m")
-        utils.logger.info("\33[95m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\33[0m")
+        utils.logger.info(
+            "\33[95m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\33[0m"
+        )
 
         # --- original plot settings provided in json
         # - parameter of interest
@@ -37,7 +41,7 @@ def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: 
         # - variation (bool)
         # - time window (for event rate or vs time plot)
         plot_settings = plots[plot_title]
-        
+
         # --- defaults
         # default time window None if not parameter event rate will be accounted for in AnalysisData,
         # here need to account for plot style vs time (None for all others)
@@ -150,6 +154,7 @@ def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: 
     pdf.close()
 
     utils.logger.info(f"\33[92mAll plots saved in: {plt_path}.pdf\33[0m")
+
 
 # -------------------------------------------------------------------------------
 # different plot structure functions, defining figures and subplot layouts

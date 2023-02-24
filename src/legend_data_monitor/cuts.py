@@ -6,8 +6,9 @@ def cut_k_lines(data):
     
 def apply_cut(data, cut):
     cut_function = CUTS[cut]
-    utils.logger.info('...... applying cut: ' + cut)    
-    return cut_function(data)    
+    utils.logger.info("...... applying cut: " + cut)
+    return cut_function(data)
+
 
 CUTS = {
     "K lines": cut_k_lines
