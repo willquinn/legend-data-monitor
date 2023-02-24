@@ -1,6 +1,6 @@
 from . import utils
 
-def cut_K_lines(data):
+def cut_k_lines(data):
     energy = utils.SPECIAL_PARAMETERS['K lines'][0]
     return data[ (data[energy] > 1430) & (data[energy] < 1575)]
     
@@ -10,5 +10,5 @@ def apply_cut(data, cut):
     return cut_function(data)    
 
 CUTS = {
-    "K lines": cut_K_lines
+    "K lines": cut_k_lines
 }
