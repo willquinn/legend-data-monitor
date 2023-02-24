@@ -3,7 +3,7 @@ import pandas as pd
 
 # needed to know which parameters are not in DataLoader
 # but need to be calculated, such as event rate
-from . import utils, cuts
+from . import cuts, utils
 
 # -------------------------------------------------------------------------
 
@@ -53,7 +53,7 @@ class AnalysisData:
             analysis_info["cuts"] = []
 
         # convert single parameter input to list for convenience
-        for input in ['parameters', 'cuts']:
+        for input in ["parameters", "cuts"]:
             if isinstance(analysis_info[input], str):
                 analysis_info[input] = [analysis_info[input]]
 
@@ -95,7 +95,7 @@ class AnalysisData:
         self.evt_type = analysis_info["event_type"]
         self.time_window = analysis_info["time_window"]
         self.variation = analysis_info["variation"]
-        self.cuts = analysis_info['cuts']
+        self.cuts = analysis_info["cuts"]
 
         # -------------------------------------------------------------------------
         # subselect data
@@ -281,7 +281,6 @@ class AnalysisData:
         for cut in self.cuts:
             data_after_cuts = cuts.apply_cut(data_after_cuts, cut)
         return data_after_cuts
-
 
 
 # -------------------------------------------------------------------------

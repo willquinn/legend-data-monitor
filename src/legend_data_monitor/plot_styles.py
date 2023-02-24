@@ -164,8 +164,8 @@ def plot_scatter(
         data_channel[plot_info["parameter"]],
         color=color,
         # useful if there are overlapping points (but more difficult to see light colour points...)
-        #facecolors='none', 
-        #edgecolors=color,
+        # facecolors='none',
+        # edgecolors=color,
     )
 
     # TO DO: add major locators (pay attention when you have only one point!)

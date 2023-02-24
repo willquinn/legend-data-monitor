@@ -50,6 +50,7 @@ for param in SPECIAL_PARAMETERS:
 # Subsystem related functions (for getting channel map & status)
 # -------------------------------------------------------------------------
 
+
 def get_query_times(**kwargs):
     """
     Get time ranges for DataLoader query from user input, as well as first timestamp for channel map/status query.
@@ -224,9 +225,11 @@ def get_query_timerange(**kwargs):
 
     return time_range
 
+
 # -------------------------------------------------------------------------
 # Plotting related functions
 # -------------------------------------------------------------------------
+
 
 def check_plot_settings(conf: dict):
     from . import plot_styles, plotting
