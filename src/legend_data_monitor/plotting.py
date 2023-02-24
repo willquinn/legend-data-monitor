@@ -1,5 +1,5 @@
 import shelve
-import os
+
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from pandas import DataFrame
@@ -144,14 +144,22 @@ def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: 
 
         # saving of param dictionary in the global dictionary that will be stored in the shelve object
         if plot_settings["event_type"] in out_dict.keys():
-            out_dict[plot_settings["event_type"]] = { plot_info["parameter"]: par_dict_content }
+            out_dict[plot_settings["event_type"]] = {
+                plot_info["parameter"]: par_dict_content
+            }
         else:
             # empty dictionary (not filled yet)
             if len(out_dict.keys()) == 0:
-                out_dict = { plot_settings["event_type"]: { plot_info["parameter"]: par_dict_content } }
+                out_dict = {
+                    plot_settings["event_type"]: {
+                        plot_info["parameter"]: par_dict_content
+                    }
+                }
             # the dictionary already contains something (but for another event type selection)
             else:
-                out_dict[plot_settings["event_type"]] = { plot_info["parameter"]: par_dict_content }
+                out_dict[plot_settings["event_type"]] = {
+                    plot_info["parameter"]: par_dict_content
+                }
 
     # save in shelve object
     out_file = shelve.open(plt_path)
