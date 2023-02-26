@@ -4,6 +4,7 @@
 
 # See mapping user plot structure keywords to corresponding functions in the end of this file
 
+import io
 from math import ceil
 
 from matplotlib.axes import Axes
@@ -11,9 +12,6 @@ from matplotlib.dates import DateFormatter, date2num
 from matplotlib.figure import Figure
 from matplotlib.ticker import FixedLocator
 from pandas import DataFrame, Timedelta
-
-
-import io
 
 
 def plot_vs_time(
@@ -121,7 +119,7 @@ def plot_vs_time(
     with io.BytesIO() as buf:
         fig.savefig(buf, format='png', bbox_inches='tight')
         buf.seek(0)
-        ch_dict['figure'] = buf.getvalue()
+        ch_dict["figure"] = buf.getvalue()
 
     return ch_dict
 
@@ -165,7 +163,7 @@ def plot_histo(
     ax.set_yscale("log")
     fig.supxlabel(f"{plot_info['label']} [{plot_info['unit_label']}]")
 
-    # saving x,y data into output files 
+    # saving x,y data into output files
     ch_dict = {
         "values": {},
         "mean": "",
@@ -177,7 +175,7 @@ def plot_histo(
     with io.BytesIO() as buf:
         fig.savefig(buf, format='png', bbox_inches='tight')
         buf.seek(0)
-        ch_dict['figure'] = buf.getvalue()
+        ch_dict["figure"] = buf.getvalue()
 
     return ch_dict
 
@@ -203,7 +201,7 @@ def plot_scatter(
     fig.supxlabel("UTC Time")
     fig.supylabel(f"{plot_info['label']} [{plot_info['unit_label']}]")
 
-    # saving x,y data into output files 
+    # saving x,y data into output files
     ch_dict = {
         "values": {"all": data_channel[plot_info["parameter"]], "resampled": []},
         "mean": "",
@@ -218,7 +216,7 @@ def plot_scatter(
     with io.BytesIO() as buf:
         fig.savefig(buf, format='png', bbox_inches='tight')
         buf.seek(0)
-        ch_dict['figure'] = buf.getvalue()
+        ch_dict["figure"] = buf.getvalue()
 
     return ch_dict
 
