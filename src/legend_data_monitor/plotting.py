@@ -265,7 +265,7 @@ def plot_per_ch(data_analysis, plot_info, pdf):
         fig.suptitle(f"{plot_info['subsystem']} - {plot_info['title']}")
         axes[0].set_title(f"{plot_info['locname']} {location}")
 
-        plt.savefig(pdf, format="pdf", bbox_inches='tight')
+        plt.savefig(pdf, format="pdf", bbox_inches="tight")
         # figures are retained until explicitly closed; close to not consume too much memory
         plt.close()
 
@@ -277,7 +277,7 @@ def plot_per_cc4(data_analysis, plot_info, pdf):
     plot_style = plot_styles.PLOT_STYLE[plot_info["plot_style"]]
     utils.logger.debug("Plot style: " + plot_info["plot_style"])
 
-    par_dict = {} 
+    par_dict = {}
 
     # --- create plot structure
     # number of cc4s
@@ -294,11 +294,13 @@ def plot_per_cc4(data_analysis, plot_info, pdf):
     # -------------------------------------------------------------------------------
     # create label of format hardcoded for geds sXX-pX-chXXX-name-CC4channel
     # -------------------------------------------------------------------------------
-    labels = data_analysis.data.groupby("channel").first()[["name", "position", "location", "cc4_channel", "cc4_id"]]
+    labels = data_analysis.data.groupby("channel").first()[
+        ["name", "position", "location", "cc4_channel", "cc4_id"]
+    ]
     labels["channel"] = labels.index
-    labels["label"] = labels[["location", "position", "channel", "name", "cc4_channel"]].apply(
-        lambda x: f"s{x[0]}-p{x[1]}-ch{str(x[2]).zfill(3)}-{x[3]}-{x[4]}", axis=1
-    )
+    labels["label"] = labels[
+        ["location", "position", "channel", "name", "cc4_channel"]
+    ].apply(lambda x: f"s{x[0]}-p{x[1]}-ch{str(x[2]).zfill(3)}-{x[3]}-{x[4]}", axis=1)
     # put it in the table
     data_analysis.data = data_analysis.data.set_index("channel")
     data_analysis.data["label"] = labels["label"]
@@ -307,7 +309,9 @@ def plot_per_cc4(data_analysis, plot_info, pdf):
     # plot
     # -------------------------------------------------------------------------------
 
-    data_analysis.data = data_analysis.data.sort_values(["cc4_id", "cc4_channel", "label"])
+    data_analysis.data = data_analysis.data.sort_values(
+        ["cc4_id", "cc4_channel", "label"]
+    )
     # new subplot for each string
     ax_idx = 0
     for cc4_id, data_cc4_id in data_analysis.data.groupby("cc4_id"):
@@ -319,11 +323,13 @@ def plot_per_cc4(data_analysis, plot_info, pdf):
         for label, data_channel in data_cc4_id.groupby("label"):
             cc4_channel = (label.split("-"))[-1]
             utils.logger.debug(f"...... channel {cc4_channel}")
-            ch_dict = plot_style(data_channel, fig, axes[ax_idx], plot_info, COLORS[col_idx])
+            ch_dict = plot_style(
+                data_channel, fig, axes[ax_idx], plot_info, COLORS[col_idx]
+            )
             labels.append(label)
             col_idx += 1
 
-            channel = ((label.split("-")[2]).split("ch")[-1]).lstrip('0')
+            channel = ((label.split("-")[2]).split("ch")[-1]).lstrip("0")
             if channel not in par_dict.keys():
                 par_dict[channel] = ch_dict
 
@@ -347,12 +353,12 @@ def plot_per_cc4(data_analysis, plot_info, pdf):
     # -------------------------------------------------------------------------------
     fig.suptitle(f"{plot_info['subsystem']} - {plot_info['title']}")
     # fig.supylabel(f'{plotdata.param.label} [{plotdata.param.unit_label}]') # --> plot style
-    plt.savefig(pdf, format="pdf", bbox_inches='tight')
+    plt.savefig(pdf, format="pdf", bbox_inches="tight")
     # figures are retained until explicitly closed; close to not consume too much memory
     plt.close()
 
     return par_dict
-    
+
 
 # technically per location
 def plot_per_string(data_analysis, plot_info, pdf):
@@ -360,7 +366,7 @@ def plot_per_string(data_analysis, plot_info, pdf):
     plot_style = plot_styles.PLOT_STYLE[plot_info["plot_style"]]
     utils.logger.debug("Plot style: " + plot_info["plot_style"])
 
-    par_dict = {} 
+    par_dict = {}
 
     # --- create plot structure
     # number of strings/fibers
@@ -402,11 +408,13 @@ def plot_per_string(data_analysis, plot_info, pdf):
         col_idx = 0
         labels = []
         for label, data_channel in data_location.groupby("label"):
-            ch_dict = plot_style(data_channel, fig, axes[ax_idx], plot_info, COLORS[col_idx])
+            ch_dict = plot_style(
+                data_channel, fig, axes[ax_idx], plot_info, COLORS[col_idx]
+            )
             labels.append(label)
             col_idx += 1
 
-            channel = ((label.split("-")[1]).split("ch")[-1]).lstrip('0')
+            channel = ((label.split("-")[1]).split("ch")[-1]).lstrip("0")
             if channel not in par_dict.keys():
                 par_dict[channel] = ch_dict
 
@@ -430,7 +438,7 @@ def plot_per_string(data_analysis, plot_info, pdf):
     # -------------------------------------------------------------------------------
     fig.suptitle(f"{plot_info['subsystem']} - {plot_info['title']}")
     # fig.supylabel(f'{plotdata.param.label} [{plotdata.param.unit_label}]') # --> plot style
-    plt.savefig(pdf, format="pdf", bbox_inches='tight')
+    plt.savefig(pdf, format="pdf", bbox_inches="tight")
     # figures are retained until explicitly closed; close to not consume too much memory
     plt.close()
 
