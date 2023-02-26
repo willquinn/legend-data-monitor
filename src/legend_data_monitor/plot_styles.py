@@ -4,6 +4,7 @@
 
 # See mapping user plot structure keywords to corresponding functions in the end of this file
 
+import io
 from math import ceil
 
 from matplotlib.axes import Axes
@@ -31,10 +32,12 @@ def plot_vs_time(
         color=color if plot_info["parameter"] == "event_rate" else "darkgray",
     )
 
+    # save the mean value performed over the first bunch of data
+    mean_value = data_channel[plot_info["parameter"] + "_mean"].iloc[0]
+
     # -------------------------------------------------------------------------
     # plot resampled average
     # -------------------------------------------------------------------------
-    mean_value = data_channel[plot_info["parameter"] + "_mean"].iloc[0]
 
     # unless event rate - already resampled and counted in some time window
     if not plot_info["parameter"] == "event_rate":
@@ -111,6 +114,13 @@ def plot_vs_time(
     fig.supxlabel("UTC Time")
     fig.supylabel(f"{plot_info['label']} [{plot_info['unit_label']}]")
 
+    # To save the axes, this is the only way I managed to save it without errors later on.
+    # Typically, I used to get the error: "TypeError: cannot pickle 'kiwisolver.Solver' object"
+    with io.BytesIO() as buf:
+        fig.savefig(buf, format="pdf", bbox_inches="tight")
+        buf.seek(0)
+        ch_dict["figure"] = buf.getvalue()
+
     return ch_dict
 
 
@@ -150,9 +160,24 @@ def plot_histo(
     )
 
     # -------------------------------------------------------------------------
-
     ax.set_yscale("log")
     fig.supxlabel(f"{plot_info['label']} [{plot_info['unit_label']}]")
+
+    # saving x,y data into output files
+    ch_dict = {
+        "values": {},
+        "mean": "",
+        "plot_info": plot_info,
+        "timestamp": {},
+    }
+
+    # To save the axes
+    with io.BytesIO() as buf:
+        fig.savefig(buf, format="pdf", bbox_inches="tight")
+        buf.seek(0)
+        ch_dict["figure"] = buf.getvalue()
+
+    return ch_dict
 
 
 def plot_scatter(
@@ -176,12 +201,34 @@ def plot_scatter(
     fig.supxlabel("UTC Time")
     fig.supylabel(f"{plot_info['label']} [{plot_info['unit_label']}]")
 
+    # saving x,y data into output files
+    ch_dict = {
+        "values": {"all": data_channel[plot_info["parameter"]], "resampled": []},
+        "mean": "",
+        "plot_info": plot_info,
+        "timestamp": {
+            "all": data_channel["datetime"].dt.to_pydatetime(),
+            "resampled": [],
+        },
+    }
+
+    # To save the axes
+    with io.BytesIO() as buf:
+        fig.savefig(buf, format="pdf", bbox_inches="tight")
+        buf.seek(0)
+        ch_dict["figure"] = buf.getvalue()
+
+    return ch_dict
+
 
 def plot_heatmap(
     data_channel: DataFrame, fig: Figure, ax: Axes, plot_info: dict, color=None
 ):
+    ch_dict = {}
+
     # here will be a function to plot a SiPM heatmap
-    pass
+
+    return ch_dict
 
 
 # -------------------------------------------------------------------------------

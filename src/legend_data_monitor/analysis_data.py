@@ -108,6 +108,8 @@ class AnalysisData:
             "name",
             "location",
             "position",
+            "cc4_id",
+            "cc4_channel",
             "status",
         ]
         # pulser flag is present only if subsystem.flag_pulser_events() was called
