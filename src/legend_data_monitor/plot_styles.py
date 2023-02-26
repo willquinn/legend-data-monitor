@@ -119,7 +119,7 @@ def plot_vs_time(
     # To save the axes, this is the only way I managed to save it without errors later on.
     # Typically, I used to get the error: "TypeError: cannot pickle 'kiwisolver.Solver' object"
     with io.BytesIO() as buf:
-        fig.savefig(buf, format='pdf', bbox_inches='tight')
+        fig.savefig(buf, format='png', bbox_inches='tight')
         buf.seek(0)
         ch_dict['figure'] = buf.getvalue()
 
@@ -175,7 +175,7 @@ def plot_histo(
 
     # To save the axes
     with io.BytesIO() as buf:
-        fig.savefig(buf, format='pdf', bbox_inches='tight')
+        fig.savefig(buf, format='png', bbox_inches='tight')
         buf.seek(0)
         ch_dict['figure'] = buf.getvalue()
 
@@ -216,7 +216,7 @@ def plot_scatter(
 
     # To save the axes
     with io.BytesIO() as buf:
-        fig.savefig(buf, format='pdf', bbox_inches='tight')
+        fig.savefig(buf, format='png', bbox_inches='tight')
         buf.seek(0)
         ch_dict['figure'] = buf.getvalue()
 
