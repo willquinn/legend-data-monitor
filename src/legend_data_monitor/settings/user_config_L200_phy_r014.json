@@ -14,7 +14,7 @@
       "Baselines in pulser events": {
         "parameters": "baseline",
         "event_type": "pulser",
-        "plot_structure": "per channel",
+        "plot_structure": "per string",
         "plot_style": "vs time",
         "variation": true,
         "time_window": "1H",
