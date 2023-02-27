@@ -245,17 +245,30 @@ class AnalysisData:
         utils.logger.info("... getting channel mean")
         # series with index channel, columns of parameters containing mean of each channel;
         # the mean is performed over the first 10% interval of the full time range specified in the config file
-        min_datetime = self.data["datetime"].min()  # first timestamp
-        max_datetime = self.data["datetime"].max()  # last timestamp
-        duration = max_datetime - min_datetime
-        ten_percent_duration = duration * 0.1
-        thr_datetime = min_datetime + ten_percent_duration  # 10% timestamp
-        # get only the rows for datetimes before the 10% of the specified time range
-        self_data_time_cut = self.data.loc[self.data["datetime"] < thr_datetime]
-        # get mean
-        channel_mean = self_data_time_cut.groupby("channel").mean(numeric_only=True)[
-            self.parameters
-        ]
+
+        # get mean (only for non-list parameters; in that case, add a new column with None values)
+        # ToDo: need to iterate over the parameters ??? some of them could be lists, others not
+        # ---> for param in self.parameters:
+
+        # check if the content of paramter's column is a list
+        if isinstance(self.data.iloc[0][self.parameters[0]], list):
+            channels = (self.data["channel"]).unique()
+            channel_mean = pd.DataFrame(
+                {"channel": channels, self.parameters[0]: [None] * len(channels)}
+            )
+            channel_mean = channel_mean.set_index("channel")
+        else:
+            min_datetime = self.data["datetime"].min()  # first timestamp
+            max_datetime = self.data["datetime"].max()  # last timestamp
+            duration = max_datetime - min_datetime
+            ten_percent_duration = duration * 0.1
+            thr_datetime = min_datetime + ten_percent_duration  # 10% timestamp
+            # get only the rows for datetimes before the 10% of the specified time range
+            self_data_time_cut = self.data.loc[self.data["datetime"] < thr_datetime]
+
+            channel_mean = self_data_time_cut.groupby("channel").mean(
+                numeric_only=True
+            )[self.parameters]
         # rename columns to be param_mean
         channel_mean = channel_mean.rename(
             columns={param: param + "_mean" for param in self.parameters}
