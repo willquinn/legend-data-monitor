@@ -33,13 +33,6 @@ class AnalysisData:
     """
 
     def __init__(self, sub_data: pd.DataFrame, **kwargs):
-        utils.logger.info(
-            "\33[95m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\33[0m"
-        )
-        utils.logger.info(f"\33[95m~~~Analysis Data\33[0m")
-        utils.logger.info(
-            "\33[95m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\33[0m"
-        )
         # if selection= was provided, take the dict
         # if kwargs were used directly, kwargs itself is already our dict
         # need to do .copy() or else modifies original config!
