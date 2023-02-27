@@ -144,7 +144,7 @@ def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: 
             else:
                 # For some reason, after some plotting functions the index is set to "channel".
                 # We need to set it back otherwise status_plot.py gets crazy and everything crashes.
-                data_analysis.data = data_analysis.data.reset_index() 
+                data_analysis.data = data_analysis.data.reset_index()
                 status_fig = status_plot.status_plot(
                     subsystem, data_analysis, plot_info, pdf
                 )
@@ -473,13 +473,18 @@ def plot_per_barrel_and_position(
 
     par_dict = {}
     import sys
+
     sys.exit(1)
 
     # UNDER CONSTRUCTION!!!
 
     # re-arrange dataframe to separate location: from location=[IB-015-016] to location=[IB] & fiber=[015-016]
-    data_analysis.data["fiber"] = data_analysis.data["location"].str.split().str[:-7].str.join("")
-    data_analysis.data["location"] = data_analysis.data["location"].str.split().str[2:].str.join("")
+    data_analysis.data["fiber"] = (
+        data_analysis.data["location"].str.split().str[:-7].str.join("")
+    )
+    data_analysis.data["location"] = (
+        data_analysis.data["location"].str.split().str[2:].str.join("")
+    )
 
     # --- create plot structure
     # number of strings/fibers
@@ -492,7 +497,6 @@ def plot_per_barrel_and_position(
         sharey=True,
         constrained_layout=True,
     )
-
 
     # -------------------------------------------------------------------------------
     # create label of format hardcoded for geds pX-chXXX-name
