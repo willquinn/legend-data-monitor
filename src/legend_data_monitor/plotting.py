@@ -142,6 +142,9 @@ def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: 
                     "Thresholds are not enabled for pulser! Use you own eyes to do checks there"
                 )
             else:
+                # For some reason, after some plotting functions the index is set to "channel".
+                # We need to set it back otherwise status_plot.py gets crazy and everything crashes.
+                data_analysis.data = data_analysis.data.reset_index() 
                 status_fig = status_plot.status_plot(
                     subsystem, data_analysis, plot_info, pdf
                 )
@@ -450,7 +453,7 @@ def plot_per_string(data_analysis, plot_info, pdf):
 # -------------------------------------------------------------------------------
 
 
-def plot_per_barrel(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
+def plot_per_fiber_and_barrel(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
     # here will be a function plotting SiPMs with:
     # - one figure for top and one for bottom SiPMs
     # - each figure has subplots with N columns and M rows where N is the number of fibers, and M is the number of positions (top/bottom -> 2)
@@ -463,9 +466,96 @@ def plot_per_barrel_and_position(
     data_analysis: DataFrame, plot_info: dict, pdf: PdfPages
 ):
     # here will be a function plotting SiPMs with:
-    # - one figure for each barrel-position combination (IB-top, IB-bottom, OB-top, OB-bottom; pr IB-top, OB-top, IB-bottom, OB-bottom)
-    # - subplots for each fiber
-    pass
+    # - one figure for each barrel-position combination (IB-top, IB-bottom, OB-top, OB-bottom) = 4 figures in total
+
+    plot_style = plot_styles.PLOT_STYLE[plot_info["plot_style"]]
+    utils.logger.debug("Plot style: " + plot_info["plot_style"])
+
+    par_dict = {}
+    import sys
+    sys.exit(1)
+
+    # UNDER CONSTRUCTION!!!
+
+    # re-arrange dataframe to separate location: from location=[IB-015-016] to location=[IB] & fiber=[015-016]
+    data_analysis.data["fiber"] = data_analysis.data["location"].str.split().str[:-7].str.join("")
+    data_analysis.data["location"] = data_analysis.data["location"].str.split().str[2:].str.join("")
+
+    # --- create plot structure
+    # number of strings/fibers
+    no_location = len(data_analysis.data["location"].unique())
+    # set constrained layout to accommodate figure suptitle
+    fig, axes = plt.subplots(
+        no_location,
+        figsize=(10, no_location * 3),
+        sharex=True,
+        sharey=True,
+        constrained_layout=True,
+    )
+
+
+    # -------------------------------------------------------------------------------
+    # create label of format hardcoded for geds pX-chXXX-name
+    # -------------------------------------------------------------------------------
+
+    labels = data_analysis.data.groupby("channel").first()[["name", "position"]]
+    labels["channel"] = labels.index
+    labels["label"] = labels[["position", "channel", "name"]].apply(
+        lambda x: f"p{x[0]}-ch{str(x[1]).zfill(3)}-{x[2]}", axis=1
+    )
+    # put it in the table
+    data_analysis.data = data_analysis.data.set_index("channel")
+    data_analysis.data["label"] = labels["label"]
+    data_analysis.data = data_analysis.data.sort_values("label")
+
+    # -------------------------------------------------------------------------------
+    # plot
+    # -------------------------------------------------------------------------------
+
+    data_analysis.data = data_analysis.data.sort_values(["location", "label"])
+    # new subplot for each string
+    ax_idx = 0
+    for location, data_location in data_analysis.data.groupby("location"):
+        utils.logger.debug(f"... {plot_info['locname']} {location}")
+
+        # new color for each channel
+        col_idx = 0
+        labels = []
+        for label, data_channel in data_location.groupby("label"):
+            ch_dict = plot_style(
+                data_channel, fig, axes[ax_idx], plot_info, COLORS[col_idx]
+            )
+            labels.append(label)
+            col_idx += 1
+
+            channel = ((label.split("-")[1]).split("ch")[-1]).lstrip("0")
+            if channel not in par_dict.keys():
+                par_dict[channel] = ch_dict
+
+        # add grid
+        axes[ax_idx].grid("major", linestyle="--")
+        # beautification
+        axes[ax_idx].set_title(f"{plot_info['locname']} {location}")
+        axes[ax_idx].set_ylabel("")
+        axes[ax_idx].legend(labels=labels, loc="center left", bbox_to_anchor=(1, 0.5))
+
+        # plot the position of the two K lines
+        if plot_info["title"] == "K lines":
+            axes[ax_idx].axhline(y=1460.822, color="gray", linestyle="--")
+            axes[ax_idx].axhline(y=1524.6, color="gray", linestyle="--")
+
+        # plot line at 0% for variation
+        if plot_info["unit_label"] == "%":
+            axes[ax_idx].axhline(y=0, color="gray", linestyle="--")
+        ax_idx += 1
+
+    # -------------------------------------------------------------------------------
+    fig.suptitle(f"{plot_info['subsystem']} - {plot_info['title']}")
+    # fig.supylabel(f'{plotdata.param.label} [{plotdata.param.unit_label}]') # --> plot style
+    plt.savefig(pdf, format="pdf", bbox_inches="tight")
+    # figures are retained until explicitly closed; close to not consume too much memory
+    plt.close()
+    return par_dict
 
 
 # -------------------------------------------------------------------------------
@@ -476,6 +566,6 @@ PLOT_STRUCTURE = {
     "per channel": plot_per_ch,
     "per cc4": plot_per_cc4,
     "per string": plot_per_string,
-    "per barrel": plot_per_barrel,
-    "top bottom": plot_per_barrel_and_position,
+    "per fiber": plot_per_fiber_and_barrel,
+    "per barrel": plot_per_barrel_and_position,
 }
