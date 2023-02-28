@@ -139,7 +139,7 @@ def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: 
         # We need to set it back otherwise status_plot.py gets crazy and everything crashes.
         data_analysis.data = data_analysis.data.reset_index()
         # saving dataframe
-        par_dict_content["df"] = data_analysis
+        par_dict_content["df_" + plot_info["subsystem"]] = data_analysis
 
         # make a special status plot
         if "status" in plot_settings and plot_settings["status"]:
@@ -152,7 +152,7 @@ def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: 
                     subsystem, data_analysis, plot_info, pdf
                 )
                 # saving status map figure
-                par_dict_content[plot_info["subsystem"] + "_map"] = status_fig
+                par_dict_content["map_" + plot_info["subsystem"]] = status_fig
 
         # saving PARAMETER DICT in the dictionary that will be stored in the shelve object
         # event type key is already there
@@ -546,7 +546,6 @@ def plot_per_barrel_and_position(
                 for axes in ax_row: # this is already the Axes object (no need to add ax_idx)
                     # plot one channel on each axis, ordered by position
                     data_position = data_position[data_position['channel'] == channel[col_idx]] # get only rows for a given channel
-                    print(data_position)
 
                     # plotting...
                     if data_position.empty:
