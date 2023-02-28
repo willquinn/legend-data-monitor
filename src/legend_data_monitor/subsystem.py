@@ -303,8 +303,6 @@ class Subsystem:
 
         self.data = self.data.reset_index()
 
-
-
     def get_channel_map(self):
         """
         Build channel map for given subsystem.

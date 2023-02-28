@@ -134,7 +134,7 @@ def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: 
         utils.logger.debug("Plot structure: " + plot_settings["plot_structure"])
 
         par_dict_content = plot_structure(data_analysis, plot_info, pdf)
-        
+
         # For some reason, after some plotting functions the index is set to "channel".
         # We need to set it back otherwise status_plot.py gets crazy and everything crashes.
         data_analysis.data = data_analysis.data.reset_index()
@@ -158,8 +158,13 @@ def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: 
         # event type key is already there
         if plot_settings["event_type"] in out_dict.keys():
             #  check if the parameter is already there (without this, previous inspected parameters are overwritten)
-            if plot_info["parameter"] not in out_dict[plot_settings["event_type"]].keys():
-                out_dict[plot_settings["event_type"]][plot_info["parameter"]] = par_dict_content
+            if (
+                plot_info["parameter"]
+                not in out_dict[plot_settings["event_type"]].keys()
+            ):
+                out_dict[plot_settings["event_type"]][
+                    plot_info["parameter"]
+                ] = par_dict_content
         # event type key is NOT there
         else:
             # empty dictionary (not filled yet)
@@ -484,21 +489,25 @@ def plot_per_barrel_and_position(
 
     # re-arrange dataframe to separate location: from location=[IB-015-016] to location=[IB] & fiber=[015-016]
     data_analysis.data["fiber"] = (
-        data_analysis.data['location'].str.split('-').str[1].str.join('') + "-" + data_analysis.data['location'].str.split('-').str[2].str.join('')
+        data_analysis.data["location"].str.split("-").str[1].str.join("")
+        + "-"
+        + data_analysis.data["location"].str.split("-").str[2].str.join("")
     )
     data_analysis.data["location"] = (
-        data_analysis.data["location"].str.split('-').str[0].str.join('')
+        data_analysis.data["location"].str.split("-").str[0].str.join("")
     )
 
     # -------------------------------------------------------------------------------
     # create label of format hardcoded for geds pX-chXXX-name
     # -------------------------------------------------------------------------------
 
-    labels = data_analysis.data.groupby("channel").first()[["name", "position", "location", "fiber"]]
+    labels = data_analysis.data.groupby("channel").first()[
+        ["name", "position", "location", "fiber"]
+    ]
     labels["channel"] = labels.index
-    labels["label"] = labels[["position", "location", "fiber", "channel", "name"]].apply(
-        lambda x: f"{x[0]}-{x[1]}-{x[2]}-ch{str(x[3]).zfill(3)}-{x[4]}", axis=1
-    )
+    labels["label"] = labels[
+        ["position", "location", "fiber", "channel", "name"]
+    ].apply(lambda x: f"{x[0]}-{x[1]}-{x[2]}-ch{str(x[3]).zfill(3)}-{x[4]}", axis=1)
     # put it in the table
     data_analysis.data = data_analysis.data.set_index("channel")
     data_analysis.data["label"] = labels["label"]
@@ -543,7 +552,9 @@ def plot_per_barrel_and_position(
             col_idx = 0
             labels = []
             for ax_row in axes:
-                for axes in ax_row: # this is already the Axes object (no need to add ax_idx)
+                for (
+                    axes
+                ) in ax_row:  # this is already the Axes object (no need to add ax_idx)
                     # plot one channel on each axis, ordered by position
                     data_position = data_position[data_position['channel'] == channel[col_idx]] # get only rows for a given channel
 
@@ -568,7 +579,7 @@ def plot_per_barrel_and_position(
                         + f"mean {round(t[plot_info['parameter']+'_mean'],3)} [{plot_info['unit']}]"
                     )"""
                     text = str(channel[col_idx])
-                    #axes.text(1.01, 0.5, text, transform=axes.transAxes)
+                    # axes.text(1.01, 0.5, text, transform=axes.transAxes)
                     axes.set_title(label=text, loc="center")
 
                     # add grid
