@@ -707,6 +707,21 @@
       }
     }
   },
+  "energies": {
+    "label": "Energy",
+    "unit": "a.u.",
+    "facecol": [0.74, 0.87, 0.9],
+    "limits": {
+      "spms": {
+        "variation": [null, null],
+        "absolute": [null, null]
+      },
+      "geds": {
+        "variation": [null, null],
+        "absolute": [null, null]
+      }
+    }
+  },
   "energy_in_pe": {
     "label": "Energy",
     "unit": "P.E.",

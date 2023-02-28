@@ -230,7 +230,6 @@ def get_query_timerange(**kwargs):
 # Plotting related functions
 # -------------------------------------------------------------------------
 
-
 def check_plot_settings(conf: dict):
     from . import plot_styles, plotting
 
@@ -401,6 +400,10 @@ def get_all_plot_parameters(subsystem: str, config: dict):
                 all_parameters.append(parameters)
             else:
                 all_parameters += parameters
+
+            # check if there is any QC entry; if so, add it to the list of parameters to load
+            if "quality_cuts" in config["subsystems"][subsystem][plot]:
+                all_parameters.append(config["subsystems"][subsystem][plot]["quality_cuts"])
 
     return all_parameters
 
