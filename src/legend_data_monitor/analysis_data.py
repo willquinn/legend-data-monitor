@@ -133,7 +133,7 @@ class AnalysisData:
             # the parameter does not exist
             else:
                 utils.logger.error(
-                    "\033[91m'%s' either does not exist in 'par-settings.json' or you misspelled the parameter's name. Try again.\033[0m",
+                    "\033[91m'%s' either does not exist in 'par-settings.json' or you misspelled the parameter's name. TRY AGAIN.\033[0m",
                     param,
                 )
                 exit()
@@ -141,7 +141,15 @@ class AnalysisData:
         # avoid repetition
         params_to_get = list(np.unique(params_to_get))
 
-        self.data = sub_data[params_to_get].copy()
+        # check if there are the corresponding columns in the dataframe; otherwise, exit
+        if (set(params_to_get).issubset(sub_data.columns)):
+            self.data = sub_data[params_to_get].copy()
+        else:
+            utils.logger.error(
+                "\033[91mOne/more entry/entries among %s is/are not present in the dataframe. TRY AGAIN.\033[0m",
+                params_to_get,
+            )
+            exit()
 
         # -------------------------------------------------------------------------
 
