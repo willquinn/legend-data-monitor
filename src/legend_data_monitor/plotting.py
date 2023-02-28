@@ -556,7 +556,9 @@ def plot_per_barrel_and_position(
                     axes
                 ) in ax_row:  # this is already the Axes object (no need to add ax_idx)
                     # plot one channel on each axis, ordered by position
-                    data_position = data_position[data_position['channel'] == channel[col_idx]] # get only rows for a given channel
+                    data_position = data_position[
+                        data_position["channel"] == channel[col_idx]
+                    ]  # get only rows for a given channel
 
                     # plotting...
                     if data_position.empty:
