@@ -20,7 +20,7 @@ def control_plots(user_config_path: str):
     # -------------------------------------------------------------------------
 
     # Format: l200-p02-{run}-{data_type} or l200-p02-timestamp1_timestamp2-{data_type}
-    # One file for all subsystems
+    # One pdf/log file for all subsystems; one common shelve object
 
     try:
         data_types = (

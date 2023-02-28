@@ -402,6 +402,12 @@ def get_all_plot_parameters(subsystem: str, config: dict):
             else:
                 all_parameters += parameters
 
+            # check if there is any QC entry; if so, add it to the list of parameters to load
+            if "quality_cuts" in config["subsystems"][subsystem][plot]:
+                all_parameters.append(
+                    config["subsystems"][subsystem][plot]["quality_cuts"]
+                )
+
     return all_parameters
 
 

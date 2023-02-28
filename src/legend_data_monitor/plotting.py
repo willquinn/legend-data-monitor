@@ -135,6 +135,12 @@ def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: 
 
         par_dict_content = plot_structure(data_analysis, plot_info, pdf)
 
+        # For some reason, after some plotting functions the index is set to "channel".
+        # We need to set it back otherwise status_plot.py gets crazy and everything crashes.
+        data_analysis.data = data_analysis.data.reset_index()
+        # saving dataframe
+        par_dict_content["df_" + plot_info["subsystem"]] = data_analysis
+
         # make a special status plot
         if "status" in plot_settings and plot_settings["status"]:
             if subsystem.type == "pulser":
@@ -142,19 +148,24 @@ def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: 
                     "Thresholds are not enabled for pulser! Use you own eyes to do checks there"
                 )
             else:
-                # For some reason, after some plotting functions the index is set to "channel".
-                # We need to set it back otherwise status_plot.py gets crazy and everything crashes.
-                data_analysis.data = data_analysis.data.reset_index()
                 status_fig = status_plot.status_plot(
                     subsystem, data_analysis, plot_info, pdf
                 )
-                par_dict_content[plot_info["subsystem"] + "_map"] = status_fig
+                # saving status map figure
+                par_dict_content["map_" + plot_info["subsystem"]] = status_fig
 
-        # saving of param dictionary in the global dictionary that will be stored in the shelve object
+        # saving PARAMETER DICT in the dictionary that will be stored in the shelve object
+        # event type key is already there
         if plot_settings["event_type"] in out_dict.keys():
-            out_dict[plot_settings["event_type"]] = {
-                plot_info["parameter"]: par_dict_content
-            }
+            #  check if the parameter is already there (without this, previous inspected parameters are overwritten)
+            if (
+                plot_info["parameter"]
+                not in out_dict[plot_settings["event_type"]].keys()
+            ):
+                out_dict[plot_settings["event_type"]][
+                    plot_info["parameter"]
+                ] = par_dict_content
+        # event type key is NOT there
         else:
             # empty dictionary (not filled yet)
             if len(out_dict.keys()) == 0:
@@ -472,93 +483,121 @@ def plot_per_barrel_and_position(
     utils.logger.debug("Plot style: " + plot_info["plot_style"])
 
     par_dict = {}
-    import sys
 
-    sys.exit(1)
-
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # UNDER CONSTRUCTION!!!
 
     # re-arrange dataframe to separate location: from location=[IB-015-016] to location=[IB] & fiber=[015-016]
     data_analysis.data["fiber"] = (
-        data_analysis.data["location"].str.split().str[:-7].str.join("")
+        data_analysis.data["location"].str.split("-").str[1].str.join("")
+        + "-"
+        + data_analysis.data["location"].str.split("-").str[2].str.join("")
     )
     data_analysis.data["location"] = (
-        data_analysis.data["location"].str.split().str[2:].str.join("")
-    )
-
-    # --- create plot structure
-    # number of strings/fibers
-    no_location = len(data_analysis.data["location"].unique())
-    # set constrained layout to accommodate figure suptitle
-    fig, axes = plt.subplots(
-        no_location,
-        figsize=(10, no_location * 3),
-        sharex=True,
-        sharey=True,
-        constrained_layout=True,
+        data_analysis.data["location"].str.split("-").str[0].str.join("")
     )
 
     # -------------------------------------------------------------------------------
     # create label of format hardcoded for geds pX-chXXX-name
     # -------------------------------------------------------------------------------
 
-    labels = data_analysis.data.groupby("channel").first()[["name", "position"]]
+    labels = data_analysis.data.groupby("channel").first()[
+        ["name", "position", "location", "fiber"]
+    ]
     labels["channel"] = labels.index
-    labels["label"] = labels[["position", "channel", "name"]].apply(
-        lambda x: f"p{x[0]}-ch{str(x[1]).zfill(3)}-{x[2]}", axis=1
-    )
+    labels["label"] = labels[
+        ["position", "location", "fiber", "channel", "name"]
+    ].apply(lambda x: f"{x[0]}-{x[1]}-{x[2]}-ch{str(x[3]).zfill(3)}-{x[4]}", axis=1)
     # put it in the table
     data_analysis.data = data_analysis.data.set_index("channel")
     data_analysis.data["label"] = labels["label"]
     data_analysis.data = data_analysis.data.sort_values("label")
 
-    # -------------------------------------------------------------------------------
-    # plot
-    # -------------------------------------------------------------------------------
-
     data_analysis.data = data_analysis.data.sort_values(["location", "label"])
-    # new subplot for each string
-    ax_idx = 0
+
+    # separate figure for each barrel ("location"= IB, OB)...
     for location, data_location in data_analysis.data.groupby("location"):
-        utils.logger.debug(f"... {plot_info['locname']} {location}")
+        utils.logger.debug(f"... {location} barrel")
+        # ...and position ("position"= bottom, top)
+        for position, data_position in data_location.groupby("position"):
+            utils.logger.debug(f"..... {position}")
 
-        # new color for each channel
-        col_idx = 0
-        labels = []
-        for label, data_channel in data_location.groupby("label"):
-            ch_dict = plot_style(
-                data_channel, fig, axes[ax_idx], plot_info, COLORS[col_idx]
-            )
-            labels.append(label)
-            col_idx += 1
+            # -------------------------------------------------------------------------------
+            # create plot structure: M columns, N rows with subplots for each channel
+            # -------------------------------------------------------------------------------
 
-            channel = ((label.split("-")[1]).split("ch")[-1]).lstrip("0")
-            if channel not in par_dict.keys():
-                par_dict[channel] = ch_dict
+            # number of channels in this barrel
+            if location == "IB":
+                num_rows = 3
+                num_cols = 3
+            if location == "OB":
+                num_rows = 4
+                num_cols = 5
+            # create corresponding number of subplots for each channel, set constrained layout to accommodate figure suptitle
+            fig, axes = plt.subplots(
+                nrows=num_rows,
+                ncols=num_cols,
+                figsize=(10, num_rows * 3),
+                sharex=True,
+                constrained_layout=True,
+            )  # , sharey=True)
 
-        # add grid
-        axes[ax_idx].grid("major", linestyle="--")
-        # beautification
-        axes[ax_idx].set_title(f"{plot_info['locname']} {location}")
-        axes[ax_idx].set_ylabel("")
-        axes[ax_idx].legend(labels=labels, loc="center left", bbox_to_anchor=(1, 0.5))
+            # -------------------------------------------------------------------------------
+            # plot
+            # -------------------------------------------------------------------------------
 
-        # plot the position of the two K lines
-        if plot_info["title"] == "K lines":
-            axes[ax_idx].axhline(y=1460.822, color="gray", linestyle="--")
-            axes[ax_idx].axhline(y=1524.6, color="gray", linestyle="--")
+            data_position = data_position.reset_index()
+            channel = data_position["channel"].unique()
+            det_idx = 0
+            col_idx = 0
+            labels = []
+            for ax_row in axes:
+                for (
+                    axes
+                ) in ax_row:  # this is already the Axes object (no need to add ax_idx)
+                    # plot one channel on each axis, ordered by position
+                    data_position = data_position[
+                        data_position["channel"] == channel[col_idx]
+                    ]  # get only rows for a given channel
 
-        # plot line at 0% for variation
-        if plot_info["unit_label"] == "%":
-            axes[ax_idx].axhline(y=0, color="gray", linestyle="--")
-        ax_idx += 1
+                    # plotting...
+                    if data_position.empty:
+                        det_idx += 1
+                        continue
 
-    # -------------------------------------------------------------------------------
-    fig.suptitle(f"{plot_info['subsystem']} - {plot_info['title']}")
-    # fig.supylabel(f'{plotdata.param.label} [{plotdata.param.unit_label}]') # --> plot style
-    plt.savefig(pdf, format="pdf", bbox_inches="tight")
-    # figures are retained until explicitly closed; close to not consume too much memory
-    plt.close()
+                    ch_dict = plot_style(
+                        data_position, fig, axes, plot_info, color=COLORS[det_idx]
+                    )
+                    labels.append(data_position["label"])
+
+                    if channel[det_idx] not in par_dict.keys():
+                        par_dict[channel[det_idx]] = ch_dict
+
+                    """text = (
+                        data_position.iloc[0]["name"]
+                        + "\n"
+                        + f"channel {channel[col_idx]}\n"
+                        + f"position {t['position']}\n"
+                        + f"mean {round(t[plot_info['parameter']+'_mean'],3)} [{plot_info['unit']}]"
+                    )"""
+                    text = str(channel[col_idx])
+                    # axes.text(1.01, 0.5, text, transform=axes.transAxes)
+                    axes.set_title(label=text, loc="center")
+
+                    # add grid
+                    axes.grid("major", linestyle="--")
+                    # remove automatic y label since there will be a shared one
+                    axes.set_ylabel("")
+
+                    det_idx += 1
+                    col_idx += 1
+
+            fig.suptitle(f"{plot_info['subsystem']} - {plot_info['title']}")
+            # fig.supylabel(f'{plotdata.param.label} [{plotdata.param.unit_label}]') # --> plot style
+            plt.savefig(pdf, format="pdf", bbox_inches="tight")
+            # figures are retained until explicitly closed; close to not consume too much memory
+            plt.close()
+
     return par_dict
 
 

@@ -282,12 +282,12 @@ class Subsystem:
                 self.data.loc[pulser_timestamps, "flag_pulser"] = True
             except KeyError:
                 utils.logger.warning(
-                    "\033[91mWarning: cannot flag pulser events, timestamps don't match!\n \
+                    "\033[93mWarning: cannot flag pulser events, timestamps don't match!\n \
                     If you are you looking at calibration data, it's not possible to flag pulser events in it this way.\n \
                     Contact the developers if you would like them to focus on advanced flagging methods.\033[0m"
                 )
                 utils.logger.warning(
-                    "\033[91m! Proceeding without pulser flag !\033[0m"
+                    "\033[93m! Proceeding without pulser flag !\033[0m"
                 )
 
         else:
