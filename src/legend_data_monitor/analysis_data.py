@@ -142,7 +142,7 @@ class AnalysisData:
         params_to_get = list(np.unique(params_to_get))
 
         # check if there are the corresponding columns in the dataframe; otherwise, exit
-        if (set(params_to_get).issubset(sub_data.columns)):
+        if set(params_to_get).issubset(sub_data.columns):
             self.data = sub_data[params_to_get].copy()
         else:
             utils.logger.error(
