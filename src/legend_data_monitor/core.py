@@ -4,7 +4,7 @@ from . import plotting, subsystem, utils
 
 
 def control_plots(user_config_path: str):
-    """Set the configuration file and the output paths whem a user config file is provided. The function to generate plots is then automatically called."""
+    """Set the configuration file and the output paths when a user config file is provided. The function to generate plots is then automatically called."""
     # -------------------------------------------------------------------------
     # Read user settings
     # -------------------------------------------------------------------------
@@ -61,12 +61,14 @@ def control_plots(user_config_path: str):
     plt_path = output_paths + plt_basename
     plt_path += "-{}".format("_".join(data_types))
 
-    # plot 
-    generate_plots(config, plt_path)    
+    # plot
+    generate_plots(config, plt_path)
 
 
-def auto_control_plots(plot_config: str, file_keys: str, prod_path: str, prod_config: str):
-    """Set the configuration file and the output paths whem a config file is provided during automathic data processing. The function to generate plots is then automatically called."""
+def auto_control_plots(
+    plot_config: str, file_keys: str, prod_path: str, prod_config: str
+):
+    """Set the configuration file and the output paths when a config file is provided during automathic data processing. The function to generate plots is then automatically called."""
     # -------------------------------------------------------------------------
     # Read user settings
     # -------------------------------------------------------------------------
@@ -77,7 +79,7 @@ def auto_control_plots(plot_config: str, file_keys: str, prod_path: str, prod_co
     valid = utils.check_plot_settings(config)
     if not valid:
         return
-    
+
     # -------------------------------------------------------------------------
     # Add missing information (output, dataset) to the config
     # -------------------------------------------------------------------------
@@ -127,7 +129,7 @@ def auto_control_plots(plot_config: str, file_keys: str, prod_path: str, prod_co
     plt_path = output_paths + plt_basename
     plt_path += "-{}".format("_".join(data_types))
 
-    # plot 
+    # plot
     generate_plots(config, plt_path)
 
 

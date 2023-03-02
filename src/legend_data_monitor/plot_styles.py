@@ -5,10 +5,9 @@
 # See mapping user plot structure keywords to corresponding functions in the end of this file
 
 import io
-from math import ceil
-import pandas as pd
-import numpy as np
 
+import numpy as np
+import pandas as pd
 from matplotlib.axes import Axes
 from matplotlib.dates import date2num, num2date
 from matplotlib.figure import Figure
@@ -219,13 +218,22 @@ def plot_scatter(
 
     return ch_dict
 
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # UNDER CONSTRUCTION!!!
 def plot_heatmap(
     data_channel: DataFrame, fig: Figure, ax: Axes, plot_info: dict, color=None
 ):
     # some plotting settings
-    xbin = int(((data_channel.iloc[-1]["datetime"] - data_channel.iloc[0]["datetime"]).total_seconds() * 1.5) / 1e3)
+    xbin = int(
+        (
+            (
+                data_channel.iloc[-1]["datetime"] - data_channel.iloc[0]["datetime"]
+            ).total_seconds()
+            * 1.5
+        )
+        / 1e3
+    )
     if plot_info["parameter"] in ["energies", "energy_in_pe"]:
         col_map = "magma"
         ymin = 0
@@ -238,38 +246,37 @@ def plot_heatmap(
         ybin = 100
 
     # to plot spms data, we need a new dataframe with numeric-datetime column and 'unrolled'-list values column
-    #new_df = pd.DataFrame(columns=['datetime', plot_info["parameter"]])
+    # new_df = pd.DataFrame(columns=['datetime', plot_info["parameter"]])
     new_df = pd.DataFrame()
     for _, row in data_channel.iterrows():
         for value in row[plot_info["parameter"]]:
             # remove nan entries for simplicity (and since we have the possibility here)
-            if value is np.nan: continue 
-            new_row = [[row['datetime'], value]]
+            if value is np.nan:
+                continue
+            new_row = [[row["datetime"], value]]
             new_row = pd.DataFrame(
                 new_row, columns=["datetime", plot_info["parameter"]]
             )
-            new_df = pd.concat(
-                [new_df, new_row], ignore_index=True, axis=0
-            )
+            new_df = pd.concat([new_df, new_row], ignore_index=True, axis=0)
 
-    print("\n", new_df['datetime'].dt.to_pydatetime())
-    x_values = pd.to_numeric(new_df['datetime'].dt.to_pydatetime()).values
+    x_values = pd.to_numeric(new_df["datetime"].dt.to_pydatetime()).values
     y_values = new_df[plot_info["parameter"]]
 
     # plot data
-    from copy import copy
+
     h, xedges, yedges = np.histogram2d(
         x_values,
         y_values,
         bins=[xbin, ybin],
-        range=[[data_channel.iloc[0]["datetime"], data_channel.iloc[-1]["datetime"]], [ymin, ymax]],
+        range=[
+            [data_channel.iloc[0]["datetime"], data_channel.iloc[-1]["datetime"]],
+            [ymin, ymax],
+        ],
     )
-    #cmap = copy(fig.get_cmap(col_map))
-    #cmap.set_bad(cmap(0))
+    # cmap = copy(fig.get_cmap(col_map))
+    # cmap.set_bad(cmap(0))
 
-    ax.pcolor(
-        xedges, yedges, h.T, cmap=col_map # norm=mpl.colors.LogNorm(), 
-    )
+    ax.pcolor(xedges, yedges, h.T, cmap=col_map)  # norm=mpl.colors.LogNorm(),
 
     # TO DO: add major locators (pay attention when you have only one point!)
 

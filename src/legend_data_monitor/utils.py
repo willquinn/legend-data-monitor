@@ -317,7 +317,7 @@ def make_output_paths(config: dict, user_time_range: dict) -> str:
     plt_dir = os.path.join(generated_dir, "plt")
     # 'phy' or 'cal' if one of the two is specified; if both are specified, store data in 'cal_phy/'
     if isinstance(config["dataset"]["type"], list):
-        type_dir = os.path.join(plt_dir, "cal_phy") 
+        type_dir = os.path.join(plt_dir, "cal_phy")
     else:
         type_dir = os.path.join(plt_dir, config["dataset"]["type"])
     # period info
@@ -344,7 +344,7 @@ def make_dir(dir_path):
 
 def get_time_name(user_time_range: dict) -> str:
     """Get a name for each available time selection.
-    
+
     careful handling of folder name depending on the selected time range. The possibilities are:
       1) user_time_range = {'timestamp': {'start': '20220928T080000Z', 'end': '20220928T093000Z'}} => start + end
               -> folder: 20220928T080000Z_20220928T093000Z/
@@ -411,10 +411,12 @@ def get_key(dsp_fname: str) -> str:
     return re.search(r"-\d{8}T\d{6}Z", dsp_fname).group(0)[1:]
 
 
-def add_config_entries(config: dict, file_keys: str, prod_path: str, prod_config: dict) -> dict:
+def add_config_entries(
+    config: dict, file_keys: str, prod_path: str, prod_config: dict
+) -> dict:
     """Add missing information (output, dataset) to the configuration file. This function is generally used during automathic data production, where the initiali config file has only the 'subsystem' entry."""
     # Get the keys
-    with open(file_keys, 'r') as f:
+    with open(file_keys) as f:
         keys = f.readlines()
     # Remove newline characters from each line using strip()
     keys = [key.strip() for key in keys]
@@ -422,7 +424,7 @@ def add_config_entries(config: dict, file_keys: str, prod_path: str, prod_config
     phy_keys = [key for key in keys if "phy" in key]
     cal_keys = [key for key in keys if "cal" in key]
     # get only keys of timestamps
-    timestamp = [key.split('-')[-1] for key in keys]
+    timestamp = [key.split("-")[-1] for key in keys]
 
     # Get the experiment
     experiment = (keys[0].split("-"))[0].upper()
@@ -431,18 +433,26 @@ def add_config_entries(config: dict, file_keys: str, prod_path: str, prod_config
     period = (keys[0].split("-"))[1]
 
     # Get the version
-    version = (prod_path.split("/"))[-2] if prod_path.endswith("/") else (prod_path.split("/"))[-1]
+    version = (
+        (prod_path.split("/"))[-2]
+        if prod_path.endswith("/")
+        else (prod_path.split("/"))[-1]
+    )
 
     # Get the run
     run = (keys[0].split("-"))[2]
 
     # Get the production path
-    path = prod_path.split("prod-ref")[0] + "prod-ref" if prod_path.split("prod-ref")[0].endswith("/") else prod_path.split("prod-ref")[0] + "/prod-ref"
+    path = (
+        prod_path.split("prod-ref")[0] + "prod-ref"
+        if prod_path.split("prod-ref")[0].endswith("/")
+        else prod_path.split("prod-ref")[0] + "/prod-ref"
+    )
 
     # Get data type: phy, cal or [cal, phy]
     if len(phy_keys) == 0 and len(cal_keys) == 0:
         logger.error("\033[91mNo keys to load. Try again.\033[0m")
-        return 
+        return
     if len(phy_keys) != 0 and len(cal_keys) == 0:
         type = "phy"
     if len(phy_keys) == 0 and len(cal_keys) != 0:
@@ -451,11 +461,14 @@ def add_config_entries(config: dict, file_keys: str, prod_path: str, prod_config
         return
     if len(phy_keys) != 0 and len(cal_keys) != 0:
         type = ["cal", "phy"]
-        logger.error("\033[91mBoth cal and phy are still under development! Try again.\033[0m")
+        logger.error(
+            "\033[91mBoth cal and phy are still under development! Try again.\033[0m"
+        )
         return
 
     # create the dataset dictionary
-    dataset_dict = {"experiment": experiment,
+    dataset_dict = {
+        "experiment": experiment,
         "period": period,
         "version": version,
         "path": path,
@@ -464,7 +477,7 @@ def add_config_entries(config: dict, file_keys: str, prod_path: str, prod_config
         "timestamps": timestamp,
     }
 
-    more_info = { "output": prod_path, "dataset": dataset_dict }
+    more_info = {"output": prod_path, "dataset": dataset_dict}
 
     config.update(more_info)
 
