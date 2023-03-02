@@ -310,46 +310,27 @@ def make_output_paths(config: dict, user_time_range: dict) -> str:
         logger.error("\033[91mMaybe you don't have rights to create this path?\033[0m")
         return
 
-    # output subfolders
-    output_paths = {}
-
     # create subfolders for the fixed path
     logger.info("config[output]:" + config["output"])
-    version_dir = config["output"] + "/" + config["dataset"]["version"] + "/"
-    generated_dir = version_dir + "generated/"
-    plt_dir = generated_dir + "plt/"
+    version_dir = os.path.join(config["output"], config["dataset"]["version"])
+    generated_dir = os.path.join(version_dir, "generated")
+    plt_dir = os.path.join(generated_dir, "plt")
     # 'phy' or 'cal' if one of the two is specified; if both are specified, store data in 'cal_phy/'
     if isinstance(config["dataset"]["type"], list):
-        type_dir = plt_dir + "cal_phy" + "/"
+        type_dir = os.path.join(plt_dir, "cal_phy") 
     else:
-        type_dir = plt_dir + config["dataset"]["type"] + "/"
+        type_dir = os.path.join(plt_dir, config["dataset"]["type"])
     # period info
-    period_dir = type_dir + config["dataset"]["period"] + "/"
+    period_dir = os.path.join(type_dir, config["dataset"]["period"]) + "/"
 
-    # careful handling of folder name depending on the selected time range. The possibilities are:
-    #   1) user_time_range = {'timestamp': {'start': '20220928T080000Z', 'end': '20220928T093000Z'}} => start + end
-    #           -> folder: 20220928T080000Z_20220928T093000Z/
-    #   2) user_time_range = {'timestamp': ['20230207T103123Z']} => one key
-    #           -> folder: 20230207T103123Z/
-    #   3) user_time_range = {'timestamp': ['20230207T103123Z', '20230207T141123Z', '20230207T083323Z']} => multiple keys
-    #           -> get min/max and use in the folder name
-    #           -> folder: 20230207T083323Z_20230207T141123Z/
-    #   4) user_time_range = {'run': ['r010']} => one run
-    #           -> folder: r010/
-    #   5) user_time_range = {'run': ['r010', 'r014']} => multiple runs
-    #           -> folder: r010_r014/
-    name_time = get_time_name(user_time_range)
-
-    output_paths = period_dir + name_time + "/"
-
+    # output subfolders
     make_dir(version_dir)
     make_dir(generated_dir)
     make_dir(plt_dir)
     make_dir(type_dir)
     make_dir(period_dir)
-    make_dir(output_paths)
 
-    return output_paths
+    return period_dir
 
 
 def make_dir(dir_path):
@@ -362,7 +343,21 @@ def make_dir(dir_path):
 
 
 def get_time_name(user_time_range: dict) -> str:
-    """Get a name for each available time selection."""
+    """Get a name for each available time selection.
+    
+    careful handling of folder name depending on the selected time range. The possibilities are:
+      1) user_time_range = {'timestamp': {'start': '20220928T080000Z', 'end': '20220928T093000Z'}} => start + end
+              -> folder: 20220928T080000Z_20220928T093000Z/
+      2) user_time_range = {'timestamp': ['20230207T103123Z']} => one key
+              -> folder: 20230207T103123Z/
+      3) user_time_range = {'timestamp': ['20230207T103123Z', '20230207T141123Z', '20230207T083323Z']} => multiple keys
+              -> get min/max and use in the folder name
+              -> folder: 20230207T083323Z_20230207T141123Z/
+      4) user_time_range = {'run': ['r010']} => one run
+              -> folder: r010/
+      5) user_time_range = {'run': ['r010', 'r014']} => multiple runs
+              -> folder: r010_r014/
+    """
     name_time = ""
     if "timestamp" in user_time_range.keys():
         time_range = list(user_time_range.values())[0]
@@ -414,3 +409,63 @@ def get_all_plot_parameters(subsystem: str, config: dict):
 def get_key(dsp_fname: str) -> str:
     """Extract key from lh5 filename."""
     return re.search(r"-\d{8}T\d{6}Z", dsp_fname).group(0)[1:]
+
+
+def add_config_entries(config: dict, file_keys: str, prod_path: str, prod_config: dict) -> dict:
+    """Add missing information (output, dataset) to the configuration file. This function is generally used during automathic data production, where the initiali config file has only the 'subsystem' entry."""
+    # Get the keys
+    with open(file_keys, 'r') as f:
+        keys = f.readlines()
+    # Remove newline characters from each line using strip()
+    keys = [key.strip() for key in keys]
+    # get phy/cal lists
+    phy_keys = [key for key in keys if "phy" in key]
+    cal_keys = [key for key in keys if "cal" in key]
+    # get only keys of timestamps
+    timestamp = [key.split('-')[-1] for key in keys]
+
+    # Get the experiment
+    experiment = (keys[0].split("-"))[0].upper()
+
+    # Get the period
+    period = (keys[0].split("-"))[1]
+
+    # Get the version
+    version = (prod_path.split("/"))[-2] if prod_path.endswith("/") else (prod_path.split("/"))[-1]
+
+    # Get the run
+    run = (keys[0].split("-"))[2]
+
+    # Get the production path
+    path = prod_path.split("prod-ref")[0] + "prod-ref" if prod_path.split("prod-ref")[0].endswith("/") else prod_path.split("prod-ref")[0] + "/prod-ref"
+
+    # Get data type: phy, cal or [cal, phy]
+    if len(phy_keys) == 0 and len(cal_keys) == 0:
+        logger.error("\033[91mNo keys to load. Try again.\033[0m")
+        return 
+    if len(phy_keys) != 0 and len(cal_keys) == 0:
+        type = "phy"
+    if len(phy_keys) == 0 and len(cal_keys) != 0:
+        type = "cal"
+        logger.error("\033[91mcal is still under development! Try again.\033[0m")
+        return
+    if len(phy_keys) != 0 and len(cal_keys) != 0:
+        type = ["cal", "phy"]
+        logger.error("\033[91mBoth cal and phy are still under development! Try again.\033[0m")
+        return
+
+    # create the dataset dictionary
+    dataset_dict = {"experiment": experiment,
+        "period": period,
+        "version": version,
+        "path": path,
+        "type": type,
+        "run": run,
+        "timestamps": timestamp,
+    }
+
+    more_info = { "output": prod_path, "dataset": dataset_dict }
+
+    config.update(more_info)
+
+    return config
