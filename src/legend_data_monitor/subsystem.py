@@ -203,6 +203,7 @@ class Subsystem:
         # !!!! QUICKFIX FOR R010
         query += " and (timestamp != '20230125T222013Z')"
         query += " and (timestamp != '20230126T015308Z')"
+        query += " and (timestamp != '20230222T231553Z')"
 
         utils.logger.info(
             "...... querying DataLoader (includes quickfix-removed faulty files for r010)"

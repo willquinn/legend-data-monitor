@@ -79,6 +79,22 @@ def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: 
         # - find number of unique positions in each string
         # - get maximum occurring
         if plot_settings["plot_structure"] == "per cc4":
+            if (
+                data_analysis.data.iloc[0]["cc4_id"] is None
+                or data_analysis.data.iloc[0]["cc4_channel"] is None
+            ):
+                if subsystem.type in ["spms", "pulser"]:
+                    utils.logger.error(
+                        "\033[91mPlotting per CC4 is not available for %s. Try again!\033[0m",
+                        subsystem.type,
+                    )
+                    exit()
+                else:
+                    utils.logger.error(
+                        "\033[91mPlotting per CC4 is not available because CC4 ID or/and CC4 channel are 'None'.\nTry again!\033[0m"
+                    )
+                    exit()
+            # ...if cc4 are present, group by them
             max_ch_per_string = (
                 data_analysis.data.groupby("cc4_id")["cc4_channel"].nunique().max()
             )
@@ -276,8 +292,11 @@ def plot_per_ch(data_analysis, plot_info, pdf):
 
         # -------------------------------------------------------------------------------
 
-        fig.suptitle(f"{plot_info['subsystem']} - {plot_info['title']}")
-        axes[0].set_title(f"{plot_info['locname']} {location}")
+        fig.suptitle(f"{plot_info['subsystem']} - {plot_info['title']}", y=1.15)
+        if plot_info["subsystem"] == "pulser":
+            axes[0].set_title("")
+        else:
+            axes[0].set_title(f"{plot_info['locname']} {location}")
 
         plt.savefig(pdf, format="pdf", bbox_inches="tight")
         # figures are retained until explicitly closed; close to not consume too much memory
@@ -287,6 +306,11 @@ def plot_per_ch(data_analysis, plot_info, pdf):
 
 
 def plot_per_cc4(data_analysis, plot_info, pdf):
+    if plot_info["subsystem"] == "pulser":
+        utils.logger.error(
+            "\033[91mPlotting per CC4 is not available for the pulser channel.\nTry again with a different plot structure!\033[0m"
+        )
+        exit()
     # --- choose plot function based on user requested style e.g. vs time or histogram
     plot_style = plot_styles.PLOT_STYLE[plot_info["plot_style"]]
     utils.logger.debug("Plot style: " + plot_info["plot_style"])
@@ -365,7 +389,7 @@ def plot_per_cc4(data_analysis, plot_info, pdf):
         ax_idx += 1
 
     # -------------------------------------------------------------------------------
-    fig.suptitle(f"{plot_info['subsystem']} - {plot_info['title']}")
+    fig.suptitle(f"{plot_info['subsystem']} - {plot_info['title']}", y=1.15)
     # fig.supylabel(f'{plotdata.param.label} [{plotdata.param.unit_label}]') # --> plot style
     plt.savefig(pdf, format="pdf", bbox_inches="tight")
     # figures are retained until explicitly closed; close to not consume too much memory
@@ -376,6 +400,11 @@ def plot_per_cc4(data_analysis, plot_info, pdf):
 
 # technically per location
 def plot_per_string(data_analysis, plot_info, pdf):
+    if plot_info["subsystem"] == "pulser":
+        utils.logger.error(
+            "\033[91mPlotting per string is not available for the pulser channel.\nTry again with a different plot structure!\033[0m"
+        )
+        exit()
     # --- choose plot function based on user requested style e.g. vs time or histogram
     plot_style = plot_styles.PLOT_STYLE[plot_info["plot_style"]]
     utils.logger.debug("Plot style: " + plot_info["plot_style"])
@@ -450,7 +479,7 @@ def plot_per_string(data_analysis, plot_info, pdf):
         ax_idx += 1
 
     # -------------------------------------------------------------------------------
-    fig.suptitle(f"{plot_info['subsystem']} - {plot_info['title']}")
+    fig.suptitle(f"{plot_info['subsystem']} - {plot_info['title']}", y=1.15)
     # fig.supylabel(f'{plotdata.param.label} [{plotdata.param.unit_label}]') # --> plot style
     plt.savefig(pdf, format="pdf", bbox_inches="tight")
     # figures are retained until explicitly closed; close to not consume too much memory
@@ -465,6 +494,11 @@ def plot_per_string(data_analysis, plot_info, pdf):
 
 
 def plot_per_fiber_and_barrel(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
+    if plot_info["subsystem"] != "spms":
+        utils.logger.error(
+            "\033[91mPlotting per fiber-barrel is available ONLY for spms.\nTry again!\033[0m"
+        )
+        exit()
     # here will be a function plotting SiPMs with:
     # - one figure for top and one for bottom SiPMs
     # - each figure has subplots with N columns and M rows where N is the number of fibers, and M is the number of positions (top/bottom -> 2)
@@ -473,9 +507,16 @@ def plot_per_fiber_and_barrel(data_analysis: DataFrame, plot_info: dict, pdf: Pd
     pass
 
 
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# UNDER CONSTRUCTION!!!
 def plot_per_barrel_and_position(
     data_analysis: DataFrame, plot_info: dict, pdf: PdfPages
 ):
+    if plot_info["subsystem"] != "spms":
+        utils.logger.error(
+            "\033[91mPlotting per barrel-position is available ONLY for spms.\nTry again!\033[0m"
+        )
+        exit()
     # here will be a function plotting SiPMs with:
     # - one figure for each barrel-position combination (IB-top, IB-bottom, OB-top, OB-bottom) = 4 figures in total
 
@@ -483,9 +524,6 @@ def plot_per_barrel_and_position(
     utils.logger.debug("Plot style: " + plot_info["plot_style"])
 
     par_dict = {}
-
-    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    # UNDER CONSTRUCTION!!!
 
     # re-arrange dataframe to separate location: from location=[IB-015-016] to location=[IB] & fiber=[015-016]
     data_analysis.data["fiber"] = (
@@ -592,7 +630,7 @@ def plot_per_barrel_and_position(
                     det_idx += 1
                     col_idx += 1
 
-            fig.suptitle(f"{plot_info['subsystem']} - {plot_info['title']}")
+            fig.suptitle(f"{plot_info['subsystem']} - {plot_info['title']}", y=1.15)
             # fig.supylabel(f'{plotdata.param.label} [{plotdata.param.unit_label}]') # --> plot style
             plt.savefig(pdf, format="pdf", bbox_inches="tight")
             # figures are retained until explicitly closed; close to not consume too much memory
