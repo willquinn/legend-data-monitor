@@ -1,15 +1,15 @@
 {
-    "subsystems": {       
-      "geds": {
-          "Baselines in pulser events":{
-              "parameters": "baseline",
-              "event_type": "pulser",
-              "plot_structure": "per channel",
-              "plot_style" : "vs time",
-              "variation": true,
-              "time_window": "1H",
-              "status": false
-          }
+  "subsystems": {
+    "geds": {
+      "Baselines in pulser events": {
+        "parameters": "baseline",
+        "event_type": "pulser",
+        "plot_structure": "per channel",
+        "plot_style": "vs time",
+        "variation": true,
+        "time_window": "1H",
+        "status": false
       }
+    }
   }
 }
