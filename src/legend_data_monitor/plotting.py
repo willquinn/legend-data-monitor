@@ -277,7 +277,10 @@ def plot_per_ch(data_analysis, plot_info, pdf):
         # -------------------------------------------------------------------------------
 
         fig.suptitle(f"{plot_info['subsystem']} - {plot_info['title']}")
-        axes[0].set_title(f"{plot_info['locname']} {location}")
+        if plot_info['subsystem'] == "pulser":
+            axes[0].set_title("")
+        else:
+            axes[0].set_title(f"{plot_info['locname']} {location}")
 
         plt.savefig(pdf, format="pdf", bbox_inches="tight")
         # figures are retained until explicitly closed; close to not consume too much memory
@@ -472,7 +475,8 @@ def plot_per_fiber_and_barrel(data_analysis: DataFrame, plot_info: dict, pdf: Pd
     # add a check in config settings check to make sure geds are not called with this structure to avoid crash
     pass
 
-
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# UNDER CONSTRUCTION!!!
 def plot_per_barrel_and_position(
     data_analysis: DataFrame, plot_info: dict, pdf: PdfPages
 ):
@@ -483,9 +487,6 @@ def plot_per_barrel_and_position(
     utils.logger.debug("Plot style: " + plot_info["plot_style"])
 
     par_dict = {}
-
-    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    # UNDER CONSTRUCTION!!!
 
     # re-arrange dataframe to separate location: from location=[IB-015-016] to location=[IB] & fiber=[015-016]
     data_analysis.data["fiber"] = (
