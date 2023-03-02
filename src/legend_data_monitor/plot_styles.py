@@ -6,11 +6,12 @@
 
 import io
 from math import ceil
+import pandas as pd
+import numpy as np
 
 from matplotlib.axes import Axes
-from matplotlib.dates import DateFormatter, date2num
+from matplotlib.dates import date2num, num2date
 from matplotlib.figure import Figure
-from matplotlib.ticker import FixedLocator
 from pandas import DataFrame, Timedelta
 
 
@@ -94,21 +95,14 @@ def plot_vs_time(
     # -------------------------------------------------------------------------
 
     # --- time ticks/labels on x-axis
-    # index step width for taking every 10th time point
-    every_10th_index_step = ceil(len(data_channel) / 10.0)
-    # get corresponding time points
-    # if there are less than 10 points in total in the frame, the step will be 0 -> take all points
-    timepoints = (
-        data_channel.iloc[::every_10th_index_step]["datetime"]
-        if every_10th_index_step
-        else data_channel["datetime"]
-    )
+    min_x = date2num(data_channel.iloc[0]["datetime"])
+    max_x = date2num(data_channel.iloc[-1]["datetime"])
+    time_points = np.linspace(min_x, max_x, 10)
+    labels = [num2date(time).strftime("%Y\n%m/%d\n%H:%M") for time in time_points]
 
-    # set ticks and date format
-    ax.xaxis.set_major_locator(
-        FixedLocator([date2num(x) for x in timepoints.dt.to_pydatetime()])
-    )
-    ax.xaxis.set_major_formatter(DateFormatter("%Y\n%m/%d\n%H:%M"))
+    # set ticks
+    ax.set_xticks(time_points)
+    ax.set_xticklabels(labels)
 
     # --- set labels
     fig.supxlabel("UTC Time")
@@ -193,10 +187,15 @@ def plot_scatter(
         # edgecolors=color,
     )
 
-    # TO DO: add major locators (pay attention when you have only one point!)
+    # --- time ticks/labels on x-axis
+    min_x = date2num(data_channel.iloc[0]["datetime"])
+    max_x = date2num(data_channel.iloc[-1]["datetime"])
+    time_points = np.linspace(min_x, max_x, 10)
+    labels = [num2date(time).strftime("%Y\n%m/%d\n%H:%M") for time in time_points]
 
-    # set date format
-    ax.xaxis.set_major_formatter(DateFormatter("%Y\n%m/%d\n%H:%M"))
+    # set ticks
+    ax.set_xticks(time_points)
+    ax.set_xticklabels(labels)
 
     fig.supxlabel("UTC Time")
     fig.supylabel(f"{plot_info['label']} [{plot_info['unit_label']}]")
@@ -220,13 +219,90 @@ def plot_scatter(
 
     return ch_dict
 
-
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# UNDER CONSTRUCTION!!!
 def plot_heatmap(
     data_channel: DataFrame, fig: Figure, ax: Axes, plot_info: dict, color=None
 ):
-    ch_dict = {}
+    # some plotting settings
+    xbin = int(((data_channel.iloc[-1]["datetime"] - data_channel.iloc[0]["datetime"]).total_seconds() * 1.5) / 1e3)
+    if plot_info["parameter"] in ["energies", "energy_in_pe"]:
+        col_map = "magma"
+        ymin = 0
+        ymax = 10
+        ybin = 100
+    if plot_info["parameter"] == "trigger_pos":
+        col_map = "viridis"
+        ymin = -200
+        ymax = 10000
+        ybin = 100
 
-    # here will be a function to plot a SiPM heatmap
+    # to plot spms data, we need a new dataframe with numeric-datetime column and 'unrolled'-list values column
+    #new_df = pd.DataFrame(columns=['datetime', plot_info["parameter"]])
+    new_df = pd.DataFrame()
+    for _, row in data_channel.iterrows():
+        for value in row[plot_info["parameter"]]:
+            # remove nan entries for simplicity (and since we have the possibility here)
+            if value is np.nan: continue 
+            new_row = [[row['datetime'], value]]
+            new_row = pd.DataFrame(
+                new_row, columns=["datetime", plot_info["parameter"]]
+            )
+            new_df = pd.concat(
+                [new_df, new_row], ignore_index=True, axis=0
+            )
+
+    print("\n", new_df['datetime'].dt.to_pydatetime())
+    x_values = pd.to_numeric(new_df['datetime'].dt.to_pydatetime()).values
+    y_values = new_df[plot_info["parameter"]]
+
+    # plot data
+    from copy import copy
+    h, xedges, yedges = np.histogram2d(
+        x_values,
+        y_values,
+        bins=[xbin, ybin],
+        range=[[data_channel.iloc[0]["datetime"], data_channel.iloc[-1]["datetime"]], [ymin, ymax]],
+    )
+    #cmap = copy(fig.get_cmap(col_map))
+    #cmap.set_bad(cmap(0))
+
+    ax.pcolor(
+        xedges, yedges, h.T, cmap=col_map # norm=mpl.colors.LogNorm(), 
+    )
+
+    # TO DO: add major locators (pay attention when you have only one point!)
+
+    # set date format
+    # --- time ticks/labels on x-axis
+    min_x = date2num(data_channel.iloc[0]["datetime"])
+    max_x = date2num(data_channel.iloc[-1]["datetime"])
+    time_points = np.linspace(min_x, max_x, 10)
+    labels = [num2date(time).strftime("%Y\n%m/%d\n%H:%M") for time in time_points]
+
+    # set ticks
+    ax.set_xticks(time_points)
+    ax.set_xticklabels(labels)
+
+    fig.supxlabel("UTC Time")
+    fig.supylabel(f"{plot_info['label']} [{plot_info['unit_label']}]")
+
+    # saving x,y data into output files
+    ch_dict = {
+        "values": {"all": {}, "resampled": []},
+        "mean": "",
+        "plot_info": plot_info,
+        "timestamp": {
+            "all": {},
+            "resampled": [],
+        },
+    }
+
+    # To save the axes
+    with io.BytesIO() as buf:
+        fig.savefig(buf, format="png", bbox_inches="tight")
+        buf.seek(0)
+        ch_dict["figure"] = buf.getvalue()
 
     return ch_dict
 
