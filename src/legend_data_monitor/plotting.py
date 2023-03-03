@@ -157,7 +157,9 @@ def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: 
         # saving dataframe
         par_dict_content["df_" + plot_info["subsystem"]] = data_analysis
 
-        # make a special status plot
+        # -------------------------------------------------------------------------
+        # call status plot 
+        # -------------------------------------------------------------------------
         if "status" in plot_settings and plot_settings["status"]:
             if subsystem.type == "pulser":
                 utils.logger.debug(
@@ -205,7 +207,7 @@ def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: 
     pdf.close()
 
     utils.logger.info(
-        f"\33[92mAll plots saved in: {plt_path}-{subsystem.type}.pdf\33[0m"
+        f"All plots saved in: \33[4m{plt_path}-{subsystem.type}.pdf\33[0m"
     )
 
 
