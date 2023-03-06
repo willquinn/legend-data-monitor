@@ -10,9 +10,11 @@ import numpy as np
 import pandas as pd
 from matplotlib.axes import Axes
 from matplotlib.dates import date2num, num2date
+from matplotlib.dates import DateFormatter
 from matplotlib.figure import Figure
 from pandas import DataFrame, Timedelta
 
+from . import utils
 
 def plot_vs_time(
     data_channel: DataFrame, fig: Figure, ax: Axes, plot_info: dict, color=None
@@ -116,6 +118,48 @@ def plot_vs_time(
 
     return ch_dict
 
+def par_vs_ch(
+    data_channel: DataFrame, fig: Figure, ax: Axes, plot_info: dict, color=None
+):
+    if len(data_channel[plot_info["parameter"]].unique()) > 1:
+        utils.logger.error(
+            "\033[91mYou are trying to plot multiple values for a given channel.\nThis is not possible, there should be only one unique value! Try again.\033[0m"
+        )
+        return
+    
+    # -------------------------------------------------------------------------
+    # plot data vs channel ID
+    # -------------------------------------------------------------------------
+    ax.scatter(
+        data_channel.index.values[0],
+        data_channel[plot_info["parameter"]].unique()[0],
+        color=color,
+    )
+    
+    # saving x,y data into output files (absolute data only)
+    ch_dict = {
+        "values": data_channel[plot_info["parameter"]].unique()[0],
+        "plot_info": plot_info,
+        "channel": data_channel.index.values[0],
+    }
+
+    # -------------------------------------------------------------------------
+    # beautification
+    # -------------------------------------------------------------------------
+    ax.set_ylabel("")
+    ax.set_xlabel("")
+
+    # --- set labels
+    fig.supxlabel("Channel ID")
+    fig.supylabel(f"{plot_info['label']} [{plot_info['unit_label']}]")
+
+    with io.BytesIO() as buf:
+        fig.savefig(buf, format="png", bbox_inches="tight")
+        buf.seek(0)
+        ch_dict["figure"] = buf.getvalue()
+
+    return ch_dict
+
 
 def plot_histo(
     data_channel: DataFrame, fig: Figure, ax: Axes, plot_info: dict, color=None
@@ -187,14 +231,7 @@ def plot_scatter(
     )
 
     # --- time ticks/labels on x-axis
-    min_x = date2num(data_channel.iloc[0]["datetime"])
-    max_x = date2num(data_channel.iloc[-1]["datetime"])
-    time_points = np.linspace(min_x, max_x, 10)
-    labels = [num2date(time).strftime("%Y\n%m/%d\n%H:%M") for time in time_points]
-
-    # set ticks
-    ax.set_xticks(time_points)
-    ax.set_xticklabels(labels)
+    ax.xaxis.set_major_formatter(DateFormatter("%Y\n%m/%d\n%H:%M"))
 
     fig.supxlabel("UTC Time")
     fig.supylabel(f"{plot_info['label']} [{plot_info['unit_label']}]")
@@ -320,6 +357,7 @@ def plot_heatmap(
 
 PLOT_STYLE = {
     "vs time": plot_vs_time,
+    "vs ch": par_vs_ch,
     "histogram": plot_histo,
     "scatter": plot_scatter,
     "heatmap": plot_heatmap,
