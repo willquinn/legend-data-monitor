@@ -9,12 +9,12 @@ import io
 import numpy as np
 import pandas as pd
 from matplotlib.axes import Axes
-from matplotlib.dates import date2num, num2date
-from matplotlib.dates import DateFormatter
+from matplotlib.dates import DateFormatter, date2num, num2date
 from matplotlib.figure import Figure
 from pandas import DataFrame, Timedelta
 
 from . import utils
+
 
 def plot_vs_time(
     data_channel: DataFrame, fig: Figure, ax: Axes, plot_info: dict, color=None
@@ -118,6 +118,7 @@ def plot_vs_time(
 
     return ch_dict
 
+
 def par_vs_ch(
     data_channel: DataFrame, fig: Figure, ax: Axes, plot_info: dict, color=None
 ):
@@ -126,7 +127,7 @@ def par_vs_ch(
             "\033[91mYou are trying to plot multiple values for a given channel.\nThis is not possible, there should be only one unique value! Try again.\033[0m"
         )
         return
-    
+
     # -------------------------------------------------------------------------
     # plot data vs channel ID
     # -------------------------------------------------------------------------
@@ -135,7 +136,7 @@ def par_vs_ch(
         data_channel[plot_info["parameter"]].unique()[0],
         color=color,
     )
-    
+
     # saving x,y data into output files (absolute data only)
     ch_dict = {
         "values": data_channel[plot_info["parameter"]].unique()[0],

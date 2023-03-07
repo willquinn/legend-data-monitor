@@ -251,17 +251,25 @@ class AnalysisData:
                 # put the channel back as column
                 self.data = self.data.reset_index()
             elif param == "FWHM":
-                self.data = self.data.reset_index() # doesn't change anything putting it or not .. still I don't get the right FWHM
+                self.data = (
+                    self.data.reset_index()
+                )  # doesn't change anything putting it or not .. still I don't get the right FWHM
 
-                # calculate FWHM for each channel (substitute 'param' column with it) 
-                channel_FWHM = self.data.groupby('channel')[utils.SPECIAL_PARAMETERS[param][0]].apply(lambda x: 2.355*np.sqrt(np.mean((x-np.mean(x,axis=0))**2, axis=0))).reset_index(name='FWHM')
+                # calculate FWHM for each channel (substitute 'param' column with it)
+                channel_FWHM = (
+                    self.data.groupby("channel")[utils.SPECIAL_PARAMETERS[param][0]]
+                    .apply(
+                        lambda x: 2.355
+                        * np.sqrt(np.mean((x - np.mean(x, axis=0)) ** 2, axis=0))
+                    )
+                    .reset_index(name="FWHM")
+                )
 
                 # join the calculated RMS values to the original dataframe
-                self.data = self.data.merge(channel_FWHM, on='channel')
-                
+                self.data = self.data.merge(channel_FWHM, on="channel")
+
                 # put channel back in
                 self.data.reset_index()
-
 
     def channel_mean(self):
         utils.logger.info("... getting channel mean")
@@ -273,8 +281,12 @@ class AnalysisData:
         # ---> for param in self.parameters:
 
         # check if the content of paramter's column is a list
-        #if isinstance(self.data.iloc[0][self.parameters[0]], list): # ---> gives problems
-        if not isinstance(self.data.iloc[0]["location"], int) and not isinstance(self.data.iloc[0]["position"], int) or "FWHM" in self.parameters : # NEW (it's a spms)
+        # if isinstance(self.data.iloc[0][self.parameters[0]], list): # ---> gives problems
+        if (
+            not isinstance(self.data.iloc[0]["location"], int)
+            and not isinstance(self.data.iloc[0]["position"], int)
+            or "FWHM" in self.parameters
+        ):  # NEW (it's a spms)
             channels = (self.data["channel"]).unique()
             channel_mean = pd.DataFrame(
                 {"channel": channels, self.parameters[0]: [None] * len(channels)}
