@@ -274,10 +274,10 @@ class AnalysisData:
         # check if the content of paramter's column is a list
         # if isinstance(self.data.iloc[0][self.parameters[0]], list): # ---> gives problems
         if (
-            not isinstance(self.data.iloc[0]["location"], int)
-            and not isinstance(self.data.iloc[0]["position"], int)
+            (not isinstance(self.data.iloc[0]["location"], np.int64)
+            and not isinstance(self.data.iloc[0]["position"], np.int64))
             or "FWHM" in self.parameters
-        ):  # NEW (it's a spms)
+        ):  # NEW (it's a spms or we are evaluating a special parameter)
             channels = (self.data["channel"]).unique()
             channel_mean = pd.DataFrame(
                 {"channel": channels, self.parameters[0]: [None] * len(channels)}
