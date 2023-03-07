@@ -60,10 +60,10 @@ The output object ``<experiment>-<period>-<time_selection>-<type>.{dat,bak,dir}`
             ├── pulser // event type
             │   └── cuspEmax_ctc_cal // parameter
             │   	├── 4 // this is the channel FC id
-            │   	│       ├── values // these are y plot-values shown 
+            │   	│       ├── values // these are y plot-values shown
             │     │       │     ├── all // every timestamp entry
             │     │       │     └── resampled // after the resampling
-            │     │	      ├── timestamp // these are plot-x values shown 
+            │     │	      ├── timestamp // these are plot-x values shown
             │     │       │     ├── all
             │     │       │     └── resampled
             │     │ 	    ├── mean // mean over the first 10% of data within the range inspected by the user
