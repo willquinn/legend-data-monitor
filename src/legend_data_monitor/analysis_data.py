@@ -262,7 +262,6 @@ class AnalysisData:
                 # put channel back in
                 self.data.reset_index()
 
-
     def channel_mean(self):
         utils.logger.info("... getting channel mean")
         # series with index channel, columns of parameters containing mean of each channel;
@@ -273,8 +272,12 @@ class AnalysisData:
         # ---> for param in self.parameters:
 
         # check if the content of paramter's column is a list
-        #if isinstance(self.data.iloc[0][self.parameters[0]], list): # ---> gives problems
-        if not isinstance(self.data.iloc[0]["location"], int) and not isinstance(self.data.iloc[0]["position"], int) or "FWHM" in self.parameters : # NEW (it's a spms)
+        # if isinstance(self.data.iloc[0][self.parameters[0]], list): # ---> gives problems
+        if (
+            not isinstance(self.data.iloc[0]["location"], int)
+            and not isinstance(self.data.iloc[0]["position"], int)
+            or "FWHM" in self.parameters
+        ):  # NEW (it's a spms)
             channels = (self.data["channel"]).unique()
             channel_mean = pd.DataFrame(
                 {"channel": channels, self.parameters[0]: [None] * len(channels)}

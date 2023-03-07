@@ -119,11 +119,15 @@ def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: 
         }
 
         # --- information needed for plot style
-        plot_info["parameter"] = plot_settings["parameters"]  # could be multiple in the future!
+        plot_info["parameter"] = plot_settings[
+            "parameters"
+        ]  # could be multiple in the future!
         plot_info["label"] = utils.PLOT_INFO[plot_info["parameter"]]["label"]
         # unit label should be % if variation was asked
-        plot_info["unit_label"] = ( "%" if plot_settings["variation"] else plot_info["unit"] )
-        plot_info["cuts"] = ( plot_settings["cuts"] if "cuts" in plot_settings else "" )
+        plot_info["unit_label"] = (
+            "%" if plot_settings["variation"] else plot_info["unit"]
+        )
+        plot_info["cuts"] = plot_settings["cuts"] if "cuts" in plot_settings else ""
         # time window might be needed fort he vs time function
         plot_info["time_window"] = plot_settings["time_window"]
         # threshold values are needed for status map; might be needed for plotting limits on canvas too
@@ -155,7 +159,7 @@ def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: 
         par_dict_content["df_" + plot_info["subsystem"]] = data_analysis
 
         # -------------------------------------------------------------------------
-        # call status plot 
+        # call status plot
         # -------------------------------------------------------------------------
         if "status" in plot_settings and plot_settings["status"]:
             if subsystem.type == "pulser":
@@ -495,7 +499,7 @@ def plot_array(data_analysis, plot_info, pdf):
 
     import matplotlib.patches as mpatches
 
-    # --- choose plot function based on user requested style 
+    # --- choose plot function based on user requested style
     plot_style = plot_styles.PLOT_STYLE[plot_info["plot_style"]]
     utils.logger.debug("Plot style: " + plot_info["plot_style"])
 
@@ -503,7 +507,7 @@ def plot_array(data_analysis, plot_info, pdf):
 
     # --- create plot structure
     fig, axes = plt.subplots(
-        1, # no of location
+        1,  # no of location
         figsize=(10, 3),
         sharex=True,
         sharey=True,
@@ -513,7 +517,9 @@ def plot_array(data_analysis, plot_info, pdf):
     # -------------------------------------------------------------------------------
     # create label of format hardcoded for geds sX-pX-chXXX-name
     # -------------------------------------------------------------------------------
-    labels = data_analysis.data.groupby("channel").first()[["name", "location", "position"]]
+    labels = data_analysis.data.groupby("channel").first()[
+        ["name", "location", "position"]
+    ]
     labels["channel"] = labels.index
     labels["label"] = labels[["location", "position", "channel", "name"]].apply(
         lambda x: f"s{x[0]}-p{x[1]}-ch{str(x[2]).zfill(3)}-{x[3]}", axis=1
@@ -539,13 +545,11 @@ def plot_array(data_analysis, plot_info, pdf):
     for location, data_location in data_analysis.data.groupby("location"):
         utils.logger.debug(f"... {plot_info['locname']} {location}")
 
-        values_per_string = []    # y values - in each string
+        values_per_string = []  # y values - in each string
         channels_per_string = []  # x values - in each string
         # group by channel
         for label, data_channel in data_location.groupby("label"):
-            ch_dict = plot_style(
-                data_channel, fig, axes, plot_info, COLORS[col_idx]
-            )
+            ch_dict = plot_style(data_channel, fig, axes, plot_info, COLORS[col_idx])
 
             channel = ((label.split("-")[2]).split("ch")[-1]).lstrip("0")
             if channel not in par_dict.keys():
@@ -557,10 +561,17 @@ def plot_array(data_analysis, plot_info, pdf):
             channels_per_string.append(int(channel))
 
         # get average of plotted parameter per string (print horizontal line)
-        avg_of_string = sum(values_per_string)/len(values_per_string)
-        axes.hlines(y=avg_of_string, xmin=min(channels_per_string), xmax=max(channels_per_string), color='k', linestyle='-', linewidth=1) 
+        avg_of_string = sum(values_per_string) / len(values_per_string)
+        axes.hlines(
+            y=avg_of_string,
+            xmin=min(channels_per_string),
+            xmax=max(channels_per_string),
+            color="k",
+            linestyle="-",
+            linewidth=1,
+        )
         utils.logger.debug(f"..... average: {round(avg_of_string, 2)}")
-        
+
         # get legend entry (print string + colour)
         legend.append(
             mpatches.Patch(
@@ -591,7 +602,7 @@ def plot_array(data_analysis, plot_info, pdf):
     axes.set_xticks(channels)
     axes.set_xticklabels(labels, fontsize=6)
     # rotate x labels
-    plt.xticks(rotation=70, ha='right')
+    plt.xticks(rotation=70, ha="right")
     # title/label
     fig.supxlabel("")
     fig.suptitle(f"{plot_info['subsystem']} - {plot_info['title']}", y=1.15)
@@ -603,10 +614,10 @@ def plot_array(data_analysis, plot_info, pdf):
     return par_dict
 
 
-
 # -------------------------------------------------------------------------------
 # SiPM specific structures
 # -------------------------------------------------------------------------------
+
 
 def plot_per_fiber_and_barrel(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
     if plot_info["subsystem"] != "spms":

@@ -97,7 +97,9 @@ def main():
     """
 
     if args.version:
-        legend_data_monitor.utils.logger.info("Version: %s", legend_data_monitor.__version__)
+        legend_data_monitor.utils.logger.info(
+            "Version: %s", legend_data_monitor.__version__
+        )
         sys.exit()
 
     args.func(args)
