@@ -150,6 +150,11 @@ def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: 
         plot_structure = PLOT_STRUCTURE[plot_settings["plot_structure"]]
         utils.logger.debug("Plot structure: " + plot_settings["plot_structure"])
 
+        # writing data_analys and plot_info to file to be later plotted by the dashboard
+        out_dict["data"] = data_analysis
+        out_dict["plot_info"] = plot_info
+
+        # plotting
         par_dict_content = plot_structure(data_analysis, plot_info, pdf)
 
         # For some reason, after some plotting functions the index is set to "channel".
@@ -172,6 +177,7 @@ def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: 
                 )
                 # saving status map figure
                 par_dict_content["map_" + plot_info["subsystem"]] = status_fig
+
 
         # saving PARAMETER DICT in the dictionary that will be stored in the shelve object
         # event type key is already there
@@ -406,29 +412,20 @@ def plot_per_cc4(data_analysis, plot_info, pdf):
 
 
 # technically per location
-def plot_per_string(data_analysis, plot_info, pdf):
+
+def plot_per_string(data_analysis, plot_info, pdf, *string):
     if plot_info["subsystem"] == "pulser":
         utils.logger.error(
             "\033[91mPlotting per string is not available for the pulser channel.\nTry again with a different plot structure!\033[0m"
         )
         exit()
+
     # --- choose plot function based on user requested style e.g. vs time or histogram
     plot_style = plot_styles.PLOT_STYLE[plot_info["plot_style"]]
-    utils.logger.debug("Plot style: " + plot_info["plot_style"])
+    if not string:
+        utils.logger.debug("Plot style: " + plot_info["plot_style"])
 
     par_dict = {}
-
-    # --- create plot structure
-    # number of strings/fibers
-    no_location = len(data_analysis.data["location"].unique())
-    # set constrained layout to accommodate figure suptitle
-    fig, axes = plt.subplots(
-        no_location,
-        figsize=(10, no_location * 3),
-        sharex=True,
-        sharey=True,
-        constrained_layout=True,
-    )
 
     # -------------------------------------------------------------------------------
     # create label of format hardcoded for geds pX-chXXX-name
@@ -450,48 +447,65 @@ def plot_per_string(data_analysis, plot_info, pdf):
 
     data_analysis.data = data_analysis.data.sort_values(["location", "label"])
     # new subplot for each string
-    ax_idx = 0
     for location, data_location in data_analysis.data.groupby("location"):
-        utils.logger.debug(f"... {plot_info['locname']} {location}")
+        # if string number specified, this function is being called by external code
+        # and is not invoked by make_subsystem_plots()
+        if string:
+            if string[0] != location:
+                continue
+            max_ch_per_string = (
+                data_analysis.data.groupby("location")["position"].nunique().max()
+            )
+            global COLORS
+            COLORS = color_palette("hls", max_ch_per_string).as_hex()
+
+        # otherwise just go on with standard code
+        else:
+            utils.logger.debug(f"... {plot_info['locname']} {location}")
+        # create one different figure per string
+        fig, axes = plt.subplots(figsize=(15, 5))
 
         # new color for each channel
         col_idx = 0
         labels = []
         for label, data_channel in data_location.groupby("label"):
             ch_dict = plot_style(
-                data_channel, fig, axes[ax_idx], plot_info, COLORS[col_idx]
+                data_channel, fig, axes, plot_info, color=COLORS[col_idx]
             )
             labels.append(label)
             col_idx += 1
-
             channel = ((label.split("-")[1]).split("ch")[-1]).lstrip("0")
             if channel not in par_dict.keys():
                 par_dict[channel] = ch_dict
 
         # add grid
-        axes[ax_idx].grid("major", linestyle="--")
+        axes.grid("major", linestyle="--")
         # beautification
-        axes[ax_idx].set_title(f"{plot_info['locname']} {location}")
-        axes[ax_idx].set_ylabel("")
-        axes[ax_idx].legend(labels=labels, loc="center left", bbox_to_anchor=(1, 0.5))
+        axes.set_title(f"{plot_info['locname']} {location}")
+        axes.set_ylabel("")
+        axes.legend(labels=labels, loc="center left", bbox_to_anchor=(1, 0.5))
 
         # plot the position of the two K lines
-        if plot_info["cuts"] == "K lines":
-            axes[ax_idx].axhline(y=1460.822, color="gray", linestyle="--")
-            axes[ax_idx].axhline(y=1524.6, color="gray", linestyle="--")
+        if plot_info["title"] == "K lines":
+            axes.axhline(y=1460.822, color="gray", linestyle="--")
+            axes.axhline(y=1524.6, color="gray", linestyle="--")
 
         # plot line at 0% for variation
         if plot_info["unit_label"] == "%":
-            axes[ax_idx].axhline(y=0, color="gray", linestyle="--")
-        ax_idx += 1
+            axes.axhline(y=0, color="gray", linestyle="--")
 
-    # -------------------------------------------------------------------------------
-    fig.suptitle(f"{plot_info['subsystem']} - {plot_info['title']}", y=1.15)
-    plt.savefig(pdf, format="pdf", bbox_inches="tight")
-    # figures are retained until explicitly closed; close to not consume too much memory
-    plt.close()
+        # -------------------------------------------------------------------------------
+        fig.suptitle(f"{plot_info['subsystem']} - {plot_info['title']}")
+        # fig.supylabel(f'{plotdata.param.label} [{plotdata.param.unit_label}]') # --> plot style
+        if not string:
+            plt.savefig(pdf, format="pdf", bbox_inches="tight")
+        # figures are retained until explicitly closed; close to not consume too much memory
+        plt.close()
 
-    return par_dict
+    if string:
+        return fig
+    else:
+        return par_dict
 
 
 def plot_array(data_analysis, plot_info, pdf):
