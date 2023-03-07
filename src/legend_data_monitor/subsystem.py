@@ -193,7 +193,7 @@ class Subsystem:
         query += " and (timestamp != '20230222T231553Z')"
 
         utils.logger.info(
-            "...... querying DataLoader (includes quickfix-removed faulty files for r010)"
+            "...... querying DataLoader (includes quickfix-removed faulty files)"
         )
         utils.logger.info(query)
 
