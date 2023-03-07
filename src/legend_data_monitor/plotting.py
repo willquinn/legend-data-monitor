@@ -178,7 +178,6 @@ def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: 
                 # saving status map figure
                 par_dict_content["map_" + plot_info["subsystem"]] = status_fig
 
-
         # saving PARAMETER DICT in the dictionary that will be stored in the shelve object
         # event type key is already there
         if plot_settings["event_type"] in out_dict.keys():
