@@ -59,10 +59,10 @@ The output object ``<experiment>-<period>-<time_selection>-<type>.{dat,bak,dir}`
             ├── pulser // event type
             │   └── cuspEmax_ctc_cal // parameter
             │   	├── 4 // this is the channel FC id
-            │   	│       ├── values // these are y plot-values shown 
+            │   	│       ├── values // these are y plot-values shown
             │     │       │     ├── all // every timestamp entry
             │     │       │     └── resampled // after the resampling
-            │     │	      ├── timestamp // these are plot-x values shown 
+            │     │	      ├── timestamp // these are plot-x values shown
             │     │       │     ├── all
             │     │       │     └── resampled
             │     │ 	    ├── mean // mean over the first 10% of data within the range inspected by the user
@@ -70,15 +70,15 @@ The output object ``<experiment>-<period>-<time_selection>-<type>.{dat,bak,dir}`
             │   	├── 5
             │   	│ └── ...
             │   	├── ... other individual channels...
-            │   	├── df_geds // dataframe containing all geds channels for a given parameter 
+            │   	├── df_geds // dataframe containing all geds channels for a given parameter
             │   	└── map_geds // geds status map (if present)
             ├─all
             │   └── baseline
             │   	├── ...individual channels data/info...
-            │   	└── df_geds // dataframe containing all geds channels for a given parameter 
+            │   	└── df_geds // dataframe containing all geds channels for a given parameter
             │   └── wf_max
             │   	├── ...individual channels data/info...
-            │   	└── df_geds // dataframe containing all geds channels for a given parameter 
+            │   	└── df_geds // dataframe containing all geds channels for a given parameter
             └──phy
                   └── ...
 
@@ -88,7 +88,7 @@ One way to open it and inspect the saved objects is to do
   import shelve
 
   with shelve.open("<experiment>-<period>-<time_selection>-<type>"") as file:
-    # get y values 
+    # get y values
     all_data_ch4 = file['monitoring']['pulser']['baseline']['4']['values']['all']
     resampled_data_ch4 = file['monitoring']['pulser']['baseline']['4']['values']['resampled']
     # get info for plotting data
