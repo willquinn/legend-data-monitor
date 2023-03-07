@@ -1,463 +1,179 @@
 from __future__ import annotations
 
-import importlib.resources
+import argparse
 import json
-import logging
-import os
-from datetime import datetime
+import sys
 
-from matplotlib.backends.backend_pdf import PdfPages
-
-from . import analysis, map, plot, timecut
-
-log = logging.getLogger(__name__)
-
-# config JSON info
-j_config, j_par, _ = analysis.read_json_files()
-exp = j_config[0]["exp"]
-files_path = j_config[0]["path"]["lh5-files"]
-version = j_config[0]["path"]["version"]
-period = j_config[1]
-run = j_config[2]
-filelist = j_config[3]
-datatype = j_config[4]
-det_type = j_config[5]
-par_to_plot = j_config[6]
-three_dim_pars = j_config[7]["three_dim_pars"]
-time_window = j_config[8]
-last_hours = j_config[9]
-verbose = j_config[12]
-
-pkg = importlib.resources.files("legend_data_monitor")
+import legend_data_monitor
 
 
 def main():
-    start_code = (datetime.now()).strftime("%d/%m/%Y %H:%M:%S")  # common starting time
-    path = files_path + version + "/generated/tier"
-    out_path = str(pkg / ".." / ".." / "out")
+    """legend-data-monitor's starting point.
 
-    # output folders
-    if os.path.isdir(out_path) is False:
-        os.mkdir(out_path)
-    pdf_path = os.path.join(out_path, "pdf-files")
-    log_path = os.path.join(out_path, "log-files")
-    json_path = os.path.join(out_path, "json-files")
-    for out_dir in ["log-files", "pdf-files", "pkl-files", "json-files"]:
-        if out_dir not in os.listdir(out_path):
-            os.mkdir(os.path.join(out_path, out_dir))
-        if out_dir in ["pdf-files", "pkl-files"]:
-            for out_subdir in ["par-vs-time", "heatmaps"]:
-                if os.path.isdir(f"{out_path}/{out_dir}/{out_subdir}") is False:
-                    os.mkdir(f"{out_path}/{out_dir}/{out_subdir}")
-    plot_path = pdf_path + "/par-vs-time"
-    map_path = pdf_path + "/heatmaps"
+    Here you define the path to the JSON configuration file you want to use when generating the plots.
+    To learn more, have a look at the help section:
 
-    # output log-filenames
-    time_cut = timecut.build_timecut_list(time_window, last_hours)
-    if len(time_cut) != 0:
-        start, end = timecut.time_dates(time_cut, start_code)
-        log_name = f"{log_path}/{exp}-{period}-{run}-{datatype}_{start}_{end}.log"
+    .. code-block:: console
+      $ legend-data-monitor --help # help section
+
+    Example JSON configuration file:
+    .. code-block:: json
+        {
+            "dataset": {
+                "exp": "l60",
+                "period": "p01",
+                "version": "v06.00",
+                "path": "/data1/shared/l60/l60-prodven-v1/prod-ref",
+                "type": "phy",
+                "selection": {
+                    "runs": 25
+                }
+            },
+            "subsystems": {
+                "pulser": {
+                    "quality_cut": false,
+                    "parameters": ["baseline"],
+                    "status": "problematic / all ?"
+                }
+            },
+            "plotting": {
+                "output": "dm_out",
+                "sampling": "3T",
+                "parameters": {
+                    "baseline": {
+                        "events": "all",
+                        "plot_style" : "histogram",
+                        "some_name": "absolute"
+                    }
+                }
+            },
+            "verbose": true
+        }
+
+    Otherwise, you can provide a path to a file containing a list of keys of the format: {exp}-{period}-{run}-{data_type}-{timestamp}.
+    """
+    parser = argparse.ArgumentParser(
+        prog="legend-data-monitor", description="Software's command-line interface."
+    )
+
+    # global options
+    parser.add_argument(
+        "--version",
+        action="store_true",
+        help="""Print version and exit.""",
+    )
+    parser.add_argument(
+        "--verbose",
+        "-v",
+        action="store_true",
+        help="""Increase the program verbosity (NOT IMPLEMENTED).""",
+    )
+    parser.add_argument(
+        "--debug",
+        "-d",
+        action="store_true",
+        help="""Increase the program verbosity to maximum (NOT IMPLEMENTED).""",
+    )
+
+    subparsers = parser.add_subparsers()
+
+    # functions for different purpouses
+    add_user_config_parser(subparsers)
+    add_auto_prod_parser(subparsers)
+
+    if len(sys.argv) < 2:
+        parser.print_usage(sys.stderr)
+        sys.exit(1)
+
+    args = parser.parse_args()
+
+    """
+    if args.verbose:
+        legend_data_monitor.logging.setup(logging.DEBUG)
+    elif args.debug:
+        legend_data_monitor.logging.setup(logging.DEBUG, logging.root)
     else:
-        log_name = f"{log_path}/{exp}-{period}-{run}-{datatype}.log"
+        legend_data_monitor.logging.setup()
+    """
 
-    # set up logging to file
-    logging.basicConfig(
-        filename=log_name,
-        level=logging.INFO,
-        filemode="w",
-        format="%(levelname)s: %(message)s",
+    if args.version:
+        legend_data_monitor.utils.logger.info(
+            "Version: %s", legend_data_monitor.__version__
+        )
+        sys.exit()
+
+    args.func(args)
+
+
+def add_user_config_parser(subparsers):
+    """Configure :func:`.core.control_plots` command line interface."""
+    parser_auto_prod = subparsers.add_parser(
+        "user_prod",
+        description="""Inspect LEGEND HDF5 (LH5) processed data by giving a full config file with parameters/subsystems info to plot.""",
     )
-    # set up logging to console
-    console = logging.StreamHandler()
-    console.setLevel(logging.ERROR)
-    formatter = logging.Formatter("%(asctime)s:  %(message)s")
-    console.setFormatter(formatter)
-    logging.getLogger("").addHandler(console)
-
-    logging.error(
-        f'Started compiling at {(datetime.now()).strftime("%d/%m/%Y %H:%M:%S")}'
+    parser_auto_prod.add_argument(
+        "--config",
+        help="""Path to config file (e.g. \"some_path/config_L200_r001_phy.json\").""",
     )
+    parser_auto_prod.set_defaults(func=user_config_cli)
 
-    # start analysis
-    select_and_plot_run(path, json_path, plot_path, map_path, start_code)
 
-    logging.error(
-        f'Finished compiling at {(datetime.now()).strftime("%d/%m/%Y %H:%M:%S")}'
+def user_config_cli(args):
+    """Pass command line arguments to :func:`.core.control_plots`."""
+    # get the path to the user config file
+    config_file = args.config
+
+    # start loading data & generating plots
+    legend_data_monitor.core.control_plots(config_file)
+
+
+def add_auto_prod_parser(subparsers):
+    """Configure :func:`.core.auto_control_plots` command line interface."""
+    parser_auto_prod = subparsers.add_parser(
+        "auto_prod",
+        description="""Inspect LEGEND HDF5 (LH5) processed data by giving a partial config file with parameters/subsystems info to plot,\na file with a list of keys to load, and a path to the production environment.""",
     )
+    parser_auto_prod.add_argument(
+        "--plot_config",
+        help="""Path to config file with parameters/subsystems info to plot (e.g. \"some_path/plot_config.json\").""",
+    )
+    parser_auto_prod.add_argument(
+        "--filekeylist",
+        help="""File-keylist name (e.g. \"all-l200-p02-r001-phy.filekeylist\").""",
+    )
+    parser_auto_prod.add_argument(
+        "--prod_path",
+        help="""Path to production environment (e.g. \"/data1/shared/l200/l200-prodenv/prod-ref/vXX.YY/\").\nHere, you should find \"config.json\" containing input/output folders info.""",
+    )  # what if the file is not there?
+    parser_auto_prod.set_defaults(func=auto_prod_cli)
 
 
-def select_and_plot_run(
-    path: str, json_path: str, plot_path: str, map_path: str, start_code: str
-) -> None:
-    """
-    Select run and call dump_all_plots_together().
+def auto_prod_cli(args):
+    """Pass command line arguments to :func:`.core.auto_control_plots`."""
+    # get the path to the user config file
+    plot_config = args.plot_config
+    file_keys = args.filekeylist
+    prod_path = args.prod_path
 
-    Parameters
-    ----------
-    path
-                Path to lh5 folders
-    json_path
-                Path where to save mean of perentage variations plots
-    plot_path
-                Path where to save output plots
-    map_path
-                Path where to save output heatmaps
-    start_code
-                Starting time of the code
-    """
-    # get time cuts info
-    time_cut = timecut.build_timecut_list(time_window, last_hours)
+    # get the production config file
+    prod_config_file = (
+        f"{prod_path}config.json"
+        if prod_path.endswith("/")
+        else f"{prod_path}/config.json"
+    )
+    with open(prod_config_file) as f:
+        prod_config = json.load(f)
 
-    run_name = ""
-    if isinstance(run, str):
-        run_name = run
-    elif isinstance(run, list):
-        for r in run:
-            run_name = run_name + r + "-"
-        run_name = run_name[:-1]
+    # get the filelist file path
+    folder_filelists = prod_config["setups"]["l200"]["paths"]["tmp_filelists"][3:]
+    file_keys = (
+        f"{prod_path}{folder_filelists}"
+        if prod_path.endswith("/")
+        else f"{prod_path}/{folder_filelists}"
+    )
+    file_keys += args.filekeylist if file_keys.endswith("/") else f"/{args.filekeylist}"
 
-    if run:
-        # time analysis: set output-pdf filenames
-        if len(time_cut) != 0:  # time cuts
-            start, end = timecut.time_dates(time_cut, start_code)
-            path = os.path.join(
-                plot_path, f"{exp}-{period}-{run_name}-{datatype}_{start}_{end}.pdf"
-            )
-            json_path = os.path.join(
-                json_path, f"{exp}-{period}-{run_name}-{datatype}_{start}_{end}.json"
-            )
-            map_path = os.path.join(
-                map_path, f"{exp}-{period}-{run_name}-{datatype}_{start}_{end}.pdf"
-            )
-        else:  # no time cuts
-            path = os.path.join(plot_path, f"{exp}-{period}-{run_name}-{datatype}.pdf")
-            json_path = os.path.join(
-                json_path, f"{exp}-{period}-{run_name}-{datatype}.json"
-            )
-            map_path = os.path.join(
-                map_path, f"{exp}-{period}-{run_name}-{datatype}.pdf"
-            )
-    else:
-        # time analysis: set output-pdf filenames
-        if len(time_cut) != 0:  # time cuts
-            start, end = timecut.time_dates(time_cut, start_code)
-            path = os.path.join(
-                plot_path, f"{exp}-{period}-{datatype}_{start}_{end}.pdf"
-            )
-            json_path = os.path.join(
-                json_path, f"{exp}-{period}-{datatype}_{start}_{end}.json"
-            )
-            map_path = os.path.join(
-                map_path, f"{exp}-{period}-{datatype}_{start}_{end}.pdf"
-            )
-        else:  # no time cuts
-            path = os.path.join(plot_path, f"{exp}-{period}-{datatype}.pdf")
-            json_path = os.path.join(json_path, f"{exp}-{period}-{datatype}.json")
-            map_path = os.path.join(map_path, f"{exp}-{period}-{datatype}.pdf")
-
-    dump_all_plots_together(time_cut, path, json_path, map_path, start_code)
-
-
-def dump_all_plots_together(
-    time_cut: list[str],
-    path: str,
-    json_path: str,
-    map_path: str,
-    start_code: str,
-) -> None:
-    """
-    Create and fill plots in a single pdf and multiple pkl files.
-
-    Parameters
-    ----------
-    time_cut
-                List with info about time cuts
-    path
-                Path where to save output files
-    json_path
-                Path where to save mean of perentage variations plots
-    map_path
-                Path where to save output heatmaps
-    start_code
-                Starting time of the code
-    """
-    geds_dict = analysis.load_geds()
-    spms_dict = analysis.load_spms()
-    mean_dict = {}
-
-    query = analysis.set_query(time_cut, start_code, run)
-
-    # get pulser-events indices
-    all_ievt, puls_only_ievt, not_puls_ievt = analysis.get_puls_ievt(query)
-
-    with PdfPages(path) as pdf:
-        with PdfPages(map_path) as pdf_map:
-            if (
-                det_type["geds"] is False
-                and det_type["spms"] is False
-                and det_type["ch000"] is False
-            ):
-                logging.error(
-                    "NO detectors have been selected! Enable geds and/or spms and/or ch000 in config.json"
-                )
-                return
-
-            # geds plots
-            if det_type["geds"] is True:
-                string_geds, string_geds_name = analysis.read_geds(geds_dict)
-                geds_par = par_to_plot["geds"]
-                if len(geds_par) == 0:
-                    logging.error("Geds: NO parameters have been enabled!")
-                else:
-                    db_parameters = analysis.load_df_cols(geds_par, "geds")
-                    dbconfig_filename, dlconfig_filename = analysis.write_config(
-                        files_path, version, string_geds, db_parameters, "geds"
-                    )
-                    data = analysis.read_from_dataloader(
-                        dbconfig_filename, dlconfig_filename, query, db_parameters
-                    )
-
-                    logging.error("Geds will be plotted...")
-                    if "timestamp" in geds_par:
-                        geds_par.remove("timestamp")
-                    for par in geds_par:
-                        det_status_dict = {}
-                        if par != "timestamp":
-                            for (det_list, string) in zip(
-                                string_geds, string_geds_name
-                            ):
-
-                                if len(det_list) == 0:
-                                    continue
-
-                                if par in three_dim_pars:
-                                    string_mean_dict, map_dict = plot.plot_wtrfll(
-                                        data,
-                                        det_list,
-                                        par,
-                                        time_cut,
-                                        "geds",
-                                        string,
-                                        geds_dict,
-                                        all_ievt,
-                                        puls_only_ievt,
-                                        not_puls_ievt,
-                                        start_code,
-                                        pdf,
-                                    )
-                                else:
-                                    if par == "K_lines":
-                                        (
-                                            string_mean_dict,
-                                            map_dict,
-                                        ) = plot.plot_par_vs_time(
-                                            data,
-                                            det_list,
-                                            par,
-                                            time_cut,
-                                            "geds",
-                                            string,
-                                            geds_dict,
-                                            all_ievt,
-                                            puls_only_ievt,
-                                            not_puls_ievt,
-                                            start_code,
-                                            pdf,
-                                        )
-                                    else:
-                                        (
-                                            string_mean_dict,
-                                            map_dict,
-                                        ) = plot.plot_ch_par_vs_time(
-                                            data,
-                                            det_list,
-                                            par,
-                                            time_cut,
-                                            "geds",
-                                            string,
-                                            geds_dict,
-                                            all_ievt,
-                                            puls_only_ievt,
-                                            not_puls_ievt,
-                                            start_code,
-                                            pdf,
-                                        )
-                                if map_dict is not None:
-                                    for det, status in map_dict.items():
-                                        det_status_dict[det] = status
-
-                                if string_mean_dict is not None:
-                                    for k in string_mean_dict:
-                                        if k in mean_dict:
-                                            mean_dict[k].update(string_mean_dict[k])
-                                        else:
-                                            mean_dict[k] = string_mean_dict[k]
-
-                                if verbose is True:
-                                    if map_dict is not None:
-                                        logging.error(
-                                            f"\t...{par} for geds (string #{string}) has been plotted!"
-                                        )
-                                    else:
-                                        logging.error(
-                                            f"\t...no {par} plots for geds - string #{string}!"
-                                        )
-                            if det_status_dict != []:
-                                map.geds_map(
-                                    par,
-                                    geds_dict,
-                                    string_geds,
-                                    string_geds_name,
-                                    det_status_dict,
-                                    time_cut,
-                                    map_path,
-                                    start_code,
-                                    pdf_map,
-                                )
-
-            # spms plots
-            if det_type["spms"] is True:
-                if datatype == "cal":
-                    logging.error("No SiPMs for calibration data!")
-                else:
-                    (
-                        spms_merged,
-                        spms_name_merged,
-                        string_spms,
-                        string_spms_name,
-                    ) = analysis.read_spms(spms_dict)
-
-                    spms_par = par_to_plot["spms"]
-                    if len(spms_par) == 0:
-                        logging.error("Spms: NO parameters have been enabled!")
-                    else:
-                        db_parameters = analysis.load_df_cols(spms_par, "spms")
-                        dbconfig_filename, dlconfig_filename = analysis.write_config(
-                            files_path, version, string_spms, db_parameters, "spms"
-                        )
-                        data = analysis.read_from_dataloader(
-                            dbconfig_filename, dlconfig_filename, query, db_parameters
-                        )
-
-                        logging.error("Spms will be plotted...")
-                        if "timestamp" in spms_par:
-                            spms_par.remove("timestamp")
-                        for par in spms_par:
-                            if par in ["energy_in_pe", "trigger_pos"]:
-                                for (det_list, string) in zip(
-                                    spms_merged, spms_name_merged
-                                ):
-                                    # if string=="top_IB":
-                                    plot.plot_par_vs_time_2d(
-                                        data,
-                                        det_list,
-                                        par,
-                                        time_cut,
-                                        "spms",
-                                        string,
-                                        spms_dict,
-                                        all_ievt,
-                                        puls_only_ievt,
-                                        not_puls_ievt,
-                                        start_code,
-                                        pdf,
-                                    )
-                                    if verbose is True:
-                                        logging.error(
-                                            f"\t...{par} for spms ({string}) has been plotted!"
-                                        )
-                            else:
-                                det_status_dict = {}
-                                for (det_list, string) in zip(
-                                    string_spms, string_spms_name
-                                ):
-                                    if len(det_list) == 0:
-                                        continue
-                                    if len(string) != 0:
-                                        (
-                                            string_mean_dict,
-                                            map_dict,
-                                        ) = plot.plot_ch_par_vs_time(
-                                            data,
-                                            det_list,
-                                            par,
-                                            time_cut,
-                                            "spms",
-                                            string,
-                                            spms_dict,
-                                            all_ievt,
-                                            puls_only_ievt,
-                                            not_puls_ievt,
-                                            start_code,
-                                            pdf,
-                                        )
-                                    if map_dict is not None:
-                                        for det, status in map_dict.items():
-                                            det_status_dict[det] = status
-
-                                    if verbose is True:
-                                        if map_dict is not None:
-                                            logging.error(
-                                                f"\t...{par} for spms ({string}) has been plotted!"
-                                            )
-                                        else:
-                                            logging.error(
-                                                f"\t...no {par} plots for spms - {string}!"
-                                            )
-                                """
-                                if det_status_dict != []:
-                                    map.spms_map(
-                                        par,
-                                        spms_dict,
-                                        spms_merged,
-                                        spms_name_merged,
-                                        det_status_dict,
-                                        time_cut,
-                                        map_path,
-                                        start_code,
-                                        pdf_map,
-                                    )
-                                """
-
-            # ch000 plots
-            if det_type["ch000"] is True:
-                ch000_par = par_to_plot["ch000"]
-                if len(ch000_par) == 0:
-                    logging.error("ch000: NO parameters have been enabled!")
-                else:
-                    db_parameters = analysis.load_df_cols(ch000_par, "ch000")
-                    dbconfig_filename, dlconfig_filename = analysis.write_config(
-                        files_path, version, [["ch00"]], db_parameters, "ch000"
-                    )
-                    data = analysis.read_from_dataloader(
-                        dbconfig_filename, dlconfig_filename, query, db_parameters
-                    )
-
-                    logging.error("ch000 will be plotted...")
-                    if "timestamp" in ch000_par:
-                        ch000_par.remove("timestamp")
-                    for par in ch000_par:
-                        map_dict = plot.plot_par_vs_time_ch000(
-                            data,
-                            par,
-                            time_cut,
-                            "ch000",
-                            all_ievt,
-                            puls_only_ievt,
-                            not_puls_ievt,
-                            start_code,
-                            pdf,
-                        )
-                        if verbose is True:
-                            if map_dict is not None:
-                                logging.error(f"\t...{par} for ch000 has been plotted!")
-                            else:
-                                logging.error(f"\t...no {par} plots for ch000!")
-
-    with open(json_path, "w") as f:
-        json.dump(mean_dict, f)
-
-    if verbose is True:
-        logging.error(f"Means are saved in {json_path}")
-        logging.error(f"Plots are saved in {path}")
-        logging.error(f"Heatmaps are saved in {map_path}")
+    # start loading data & generating plots
+    legend_data_monitor.core.auto_control_plots(
+        plot_config, file_keys, prod_path, prod_config
+    )
