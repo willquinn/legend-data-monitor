@@ -85,9 +85,3 @@ New notebooks can be simply implemented by the users themselves, based on the al
 .. attention::
   During normal data taking, the offline monitoring is performed on 2D plots only.
   The option of having 3D plots too was left for a personal usage.
-
-
-Heroku + Panel
-~~~~~~~~~~~~~~
-
-*Under development...*
