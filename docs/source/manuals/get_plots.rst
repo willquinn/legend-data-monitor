@@ -4,17 +4,17 @@ How to produce plots
 How to run legend-data-monitor
 ------------------------------
 After the installation, a executable is available at ``~/.local/bin``.
-To automatically generate plots, two different methods are available. 
+To automatically generate plots, two different methods are available.
 All methods rely on the existence of a config file containing the output folder (``output``)
 where to store results, the ``dataset`` you want to inspect, and the ``subsystems`` (pulser, geds, spms)
-you want to study and for which you want to load data. 
+you want to study and for which you want to load data.
 
 You can either run it by importing the ``legend-data-monitor`` module:
 
 .. code-block:: python
   import legend-data-monitor as ldm
   user_config = <path_to_config.json>
-  ldm.control_plots(user_config) 
+  ldm.control_plots(user_config)
 
 Or run it by parsing to the executable the path to the config file:
 
@@ -41,8 +41,8 @@ Example config
  {
   "output": "<some_path>/out", // output folder
   "dataset": {
-    "experiment": "L200", 
-    "period": "p02", 
+    "experiment": "L200",
+    "period": "p02",
     "version": "v06.00",
     "path": "/data1/users/marshall/prod-ref",
     "type": "phy",// data type (either cal, phy, or ["cal", "phy"])
@@ -51,14 +51,14 @@ Example config
   },
   "subsystems": {
     "geds": { // type of subsystem to plot (geds, spms, pulser)
-      "Baselines in pulser events": { 
-        "parameters": "baseline",  
-        "event_type": "pulser", 
-        "plot_structure": "per channel", 
+      "Baselines in pulser events": {
+        "parameters": "baseline",
+        "event_type": "pulser",
+        "plot_structure": "per channel",
         "plot_style": "vs time",
-        "variation": true, 
-        "time_window": "1H", 
-        "status": true 
+        "variation": true,
+        "time_window": "1H",
+        "status": true
       }
     }
   }
@@ -90,7 +90,7 @@ In particular, ``dataset`` settings are:
   The same happens with run selection.
 
 
-Then, ``subsystems`` can either be ``pulser``, ``geds`` or ``spms`` (note, 2023-03-07: spms plots are not implemented yet, but DataLoader can load the respective data if needed). 
+Then, ``subsystems`` can either be ``pulser``, ``geds`` or ``spms`` (note, 2023-03-07: spms plots are not implemented yet, but DataLoader can load the respective data if needed).
 
 For each subsystem to be plotted, specify
 
@@ -101,7 +101,7 @@ For each subsystem to be plotted, specify
     - ``"wf_max_rel"``: relative difference between ``wf_max`` and baseline
     - ``"event_rate"``: event rate calculated in windows specified in the field ``"sampling"`` under ``plotting.parameters``.
 - ``"event_type"``: which events to plot. Choose among ``pulser``  (events flagged as pulser based on AUX channel), ``phy`` (physical, i.e. non-pulser events), ``K_lines`` (K lines selected based on energy) or ``all``. See **6.** **How to add new event types** to add a new selection.
-- ``"plot_structure"``: plot arrangement. Choose among 
+- ``"plot_structure"``: plot arrangement. Choose among
     - ``per channel`` (pulser, geds): group plots by channel (ie each channel has its own AxesSubplot)
     - ``per cc4`` (geds): group plots by CC4 (ie all channels belonging to the same CC4 are in the same AxesSubplot)
     - ``per string`` (geds): group plots by string (ie all channels belonging to the same string are in the same AxesSubplot)
@@ -166,7 +166,7 @@ K lines
 To plot events having energies within 1430 and 1575 keV (ie, around the 40K and 42K area), grouping channels by stirng and selecting phy (=not-pulser) events, use
 
 .. code-block::
-    "subsystems": {       
+    "subsystems": {
         "geds": {
           "K events":{
               "parameters": "cuspEmax_ctc_cal",
@@ -183,7 +183,7 @@ FWHM
 To plot FWHM values for each channel, gropuing them by strings, selecting only pulser events, use
 
 .. code-block::
-    "subsystems": {       
+    "subsystems": {
         "geds": {
           "FWHM in pulser events":{
               "parameters": "FWHM",
@@ -207,7 +207,7 @@ To plot the relative difference between ``wf_max`` and ``baseline``, use
                 "plot_structure": "per channel",
                 "plot_style": "vs time",
                 "variation": true, // optional
-                "time_window": "5T" 
+                "time_window": "5T"
             }
         }
     }
