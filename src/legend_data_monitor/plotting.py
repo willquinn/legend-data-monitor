@@ -278,8 +278,11 @@ def plot_per_ch(data_analysis, plot_info, pdf):
                 + "\n"
                 + f"channel {t['channel']}\n"
                 + f"position {t['position']}\n"
-                + (f"mean {round(t[plot_info['parameter']+'_mean'],3)} [{plot_info['unit']}]"
-                if t[plot_info['parameter']+'_mean'] is not None else "") # handle with care mean='None' situations
+                + (
+                    f"mean {round(t[plot_info['parameter']+'_mean'],3)} [{plot_info['unit']}]"
+                    if t[plot_info["parameter"] + "_mean"] is not None
+                    else ""
+                )  # handle with care mean='None' situations
             )
             axes[ax_idx].text(1.01, 0.5, text, transform=axes[ax_idx].transAxes)
 
