@@ -270,6 +270,11 @@ class AnalysisData:
                 self.data.reset_index()
 
     def channel_mean(self):
+        '''
+        Get mean value of each parameter of interest in each channel in the first 10% of the dataset.
+
+        Ignore in case of SiPMs, as each entry is a list of values, not a single value.
+        '''
         utils.logger.info("... getting channel mean")
         # series with index channel, columns of parameters containing mean of each channel;
         # the mean is performed over the first 10% interval of the full time range specified in the config file
@@ -278,12 +283,14 @@ class AnalysisData:
         # ToDo: need to iterate over the parameters ??? some of them could be lists, others not
         # ---> for param in self.parameters:
 
-        # check if the content of paramter's column is a list
+        # ToDo: check if the content of paramter's column is a list (can happen not only for SiPMs, but for loading waveforms)
         # if isinstance(self.data.iloc[0][self.parameters[0]], list): # ---> gives problems
+        # check if we are looking at SiPMs -> do not get mean because entries are lists
         if (
-            not isinstance(self.data.iloc[0]["location"], np.int64)
-            and not isinstance(self.data.iloc[0]["position"], np.int64)
-        ) or "FWHM" in self.parameters:  # NEW (it's a spms or we are evaluating a special parameter)
+            # not isinstance(self.data.iloc[0]["location"], np.int64)
+            isinstance(self.data.iloc[0]["location"], str)
+            and isinstance(self.data.iloc[0]["position"], str)
+        ):
             channels = (self.data["channel"]).unique()
             channel_mean = pd.DataFrame(
                 {"channel": channels, self.parameters[0]: [None] * len(channels)}
@@ -301,6 +308,10 @@ class AnalysisData:
             channel_mean = self_data_time_cut.groupby("channel").mean(
                 numeric_only=True
             )[self.parameters]
+
+            # FWHM mean is meaningless -> drop (special parameter for SiPMs)
+            if "FWHM" in self.parameters:
+                channel_mean.drop('FWHM', axis=1)
 
         # rename columns to be param_mean
         channel_mean = channel_mean.rename(
