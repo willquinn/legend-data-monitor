@@ -47,6 +47,58 @@ Files are usually saved using the following format: ``exp-period-datatype-time_i
   * if ``{'runs': [1, 2, 3]}`` (multiple runs), then <time_selection> = ``r001_r002_r003``
 
 
+Shelve output objects
+~~~~~~~~~~~~~~~~~~~~~
+*Under construction... (structure might change over time, but content should remain the same)*
+
+The output object ``<experiment>-<period>-<time_selection>-<type>.{dat,bak,dir}`` has the following structure:
+
+.. code-block::
+  <experiment>-<period>-<time_selection>-<type>
+      └── monitoring
+            ├── pulser // event type
+            │   └── cuspEmax_ctc_cal // parameter
+            │   	├── 4 // this is the channel FC id
+            │   	│       ├── values // these are y plot-values shown 
+            │     │       │     ├── all // every timestamp entry
+            │     │       │     └── resampled // after the resampling
+            │     │	      ├── timestamp // these are plot-x values shown 
+            │     │       │     ├── all
+            │     │       │     └── resampled
+            │     │ 	    ├── mean // mean over the first 10% of data within the range inspected by the user
+            │   	│	      └── plot_info // some useful plot-info: ['title', 'subsystem', 'locname', 'unit', 'plot_style', 'parameter', 'label', 'unit_label', 'time_window', 'limits']
+            │   	├── 5
+            │   	│ └── ...
+            │   	├── ... other individual channels...
+            │   	├── df_geds // dataframe containing all geds channels for a given parameter 
+            │   	└── map_geds // geds status map (if present)
+            ├─all
+            │   └── baseline
+            │   	├── ...individual channels data/info...
+            │   	└── df_geds // dataframe containing all geds channels for a given parameter 
+            │   └── wf_max
+            │   	├── ...individual channels data/info...
+            │   	└── df_geds // dataframe containing all geds channels for a given parameter 
+            └──phy
+                  └── ...
+
+One way to open it and inspect the saved objects is to do
+
+.. code-block:: python
+  import shelve
+
+  with shelve.open("<experiment>-<period>-<time_selection>-<type>"") as file:
+    # get y values 
+    all_data_ch4 = file['monitoring']['pulser']['baseline']['4']['values']['all']
+    resampled_data_ch4 = file['monitoring']['pulser']['baseline']['4']['values']['resampled']
+    # get info for plotting data
+    plot_info_ch4 = file['monitoring']['pulser']['baseline']['4']['plot_info']
+    # get the dataframe
+    df_geds = file['monitoring']['pulser']['baseline']['df_geds']
+
+
+
+
 Inspect plots
 -------------
 

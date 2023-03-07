@@ -163,7 +163,7 @@ More attention must be paid to the following special parameters, for which a par
 
 K lines
 ~~~~~~~
-To plot events having energies within 1430 and 1575 keV (ie, around the 40K and 42K area), grouping channels by stirng and selecting phy (=not-pulser) events, use
+To plot events having energies within 1430 and 1575 keV (ie, around the 40K and 42K area), grouping channels by string and selecting phy (=not-pulser) events, use
 
 .. code-block::
     "subsystems": {       
