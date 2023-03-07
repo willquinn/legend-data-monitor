@@ -270,11 +270,11 @@ class AnalysisData:
                 self.data.reset_index()
 
     def channel_mean(self):
-        '''
+        """
         Get mean value of each parameter of interest in each channel in the first 10% of the dataset.
 
         Ignore in case of SiPMs, as each entry is a list of values, not a single value.
-        '''
+        """
         utils.logger.info("... getting channel mean")
         # series with index channel, columns of parameters containing mean of each channel;
         # the mean is performed over the first 10% interval of the full time range specified in the config file
@@ -311,7 +311,7 @@ class AnalysisData:
 
             # FWHM mean is meaningless -> drop (special parameter for SiPMs)
             if "FWHM" in self.parameters:
-                channel_mean.drop('FWHM', axis=1)
+                channel_mean.drop("FWHM", axis=1)
 
         # rename columns to be param_mean
         channel_mean = channel_mean.rename(
