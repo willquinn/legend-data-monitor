@@ -1,80 +1,87 @@
 How to produce plots
 ====================
 
-How to run it
--------------
+How to run legend-data-monitor
+------------------------------
 After the installation, a executable is available at ``~/.local/bin``.
-The instruction for plotting given parameters of given detector types and within a given time
-range are collected in a configuration files under ``src/legend_data_monitor/settings/``.
-There, one can find other json files that do not
-need any modification containing either style info for plots or info for available parameters one can plot.
-Run it via:
+To automatically generate plots, two different methods are available. 
+All methods rely on the existence of a config file containing the output folder (``output``)
+where to store results, the ``dataset`` you want to inspect, and the ``subsystems`` (pulser, geds, spms)
+you want to study and for which you want to load data. 
+
+You can either run it by importing the ``legend-data-monitor`` module:
+
+.. code-block:: python
+  import legend-data-monitor as ldm
+  user_config = <path_to_config.json>
+  ldm.control_plots(user_config) 
+
+Or run it by parsing to the executable the path to the config file:
 
 .. code-block::
-  $ legend-data-monitor <user_config_of_choice.json>
+  $ legend-data-monitor user_prod --config <path_to_config.json>
+
+.. warning::
+  Use the ``user_prod`` command line interface for generating your own plots.
+
+.. note::
+  ``auto_prod`` was designed to be used during automatic data production, for generating
+  monitoring plots on the fly when processing data. For the moment, no documentation will be provided.
 
 
 Configuration file
 ------------------
-The core of *legend-data-monitor* is the configuration file. If modified, one can plot either
-the time variation or distribution of parameters specified in the configuration file.
-In the following, we describe the structure of this configuration file in detail.
+In the following, we describe the structure of the configuration file in detail.
 
 
 Example config
 ~~~~~~~~~~~~~~
 .. code-block:: json
+
  {
-     "dataset": {
-         "exp": "l200",
-         "period": "p02", // period
-         "version": "v06.00", // processing version
-         "path": "/data1/users/marshall/prod-ref", // absolute path to processed lh5 files
-         "type": "cal", // data type (either cal, phy, or ["cal", "phy"])
-         "selection": {
-             "start": "2023/01/26 03:30:00", // time cut (here based on start&stop)
-             "end": "2023/01/26 08:00:00"
-         }
-     },
-     "subsystems": {
-         "pulser": { // type of detector to plot (geds, spms, pulser)
-             "quality_cut": false,
-             "parameters": "wf_max_rel", // parameters to plot
-             "status": "problematic / all ?"
-         }
-     },
-     "plotting": {
-         "output": "/home/redchuk/data_monitor/dm_out", // output folder
-         "sampling": "3T",
-         "parameters": {
-             "wf_max_rel": {
-                 "events": "all",
-                 "plot_style" : "per channel",
-                 "some_name": "absolute"
-             }
-         }
-     },
-     "verbose": true
- }
+  "output": "<some_path>/out", // output folder
+  "dataset": {
+    "experiment": "L200", 
+    "period": "p02", 
+    "version": "v06.00",
+    "path": "/data1/users/marshall/prod-ref",
+    "type": "phy",// data type (either cal, phy, or ["cal", "phy"])
+    "start": "2023-02-07 02:00:00",  // time cut (here based on start+end)
+    "end": "2023-02-07 03:30:00"
+  },
+  "subsystems": {
+    "geds": { // type of subsystem to plot (geds, spms, pulser)
+      "Baselines in pulser events": { 
+        "parameters": "baseline",  
+        "event_type": "pulser", 
+        "plot_structure": "per channel", 
+        "plot_style": "vs time",
+        "variation": true, 
+        "time_window": "1H", 
+        "status": true 
+      }
+    }
+  }
+}
 
+The argument ``output`` is the path to where plots and inspected data will be saved. Will create subfolders in given path for different outputs. Will be created if does not exist.
 
-``dataset`` settings
-~~~~~~~~~~~~~~~~~~
+In particular, ``dataset`` settings are:
 
-- ``exp``: experiment, in lowercase (``l60`` or ``l200``)
-- ``period``: format ``p0X``. Note: not needed for ``DataLoader`` as it finds period by itself based on provided selection (see below), only used in output filename -> may be removed
-- ``version``: version of ``pygama`` (?), needed for ``DataLoader`` to look in the desired path
-- ``path``: path to ``prod-ref``
-- ``type``: type of data, physics (``phy``) or calibration (``cal``). Possible to use one (``"phy"``) or both to make one dataset (``["phy", "cal"]``)
-- ``selection``: time window to select data1
+- ``experiment``: experiment, in uppercase (``L60`` or ``L200``)
+- ``period``: format ``pXX``. Note: not needed for ``DataLoader`` as it finds period by itself based on provided selection (see below), only used in output filename
+- ``version``: version of production cycle, format ``vXX.YY``. Note: needed for ``DataLoader`` to look in the desired path
+- ``path``: path to ``prod-ref`` folder
+- ``type``: type of data, physics (``phy``) or calibration (``cal``). Possible to use one or both to make one dataset (``["phy", "cal"]``)
+- ``selection``: time window to select data
 
 .. note::
   Time selection is based on:
-  - ``"start"`` and ``"end"`` in format ``YYYY/MM/DD hh:mm:ss``;
-  - ``"timestamps"`` in format ``YYYYMMDDThhmmssZ``, either single or a list of timestamps;
-  - ``"runs"``: run in integer format, single (e.g., ``10``) or a list of runs (e.g., ``[10, 11]``)
+  - ``'start': '2023-02-07 02:00:00', 'end': '2023-02-07 03:30:00'`` (start + end) in format ``YYYY-MM-DD hh:mm:ss``
+  - ``'timestamps': ['20230207T103123Z', '20230207T141123Z', ...]`` (list of keys) in format ``YYYYMMDDThhmmssZ``
+  - ``'runs': 1`` (one run) or ``'runs': [1, 2, 3]`` (list of runs) in integer format
 
-.. note::
+..
   Note: currently taking range between earliest and latest i.e. also including the ones in between that are not listed, will be modified to either
 
   1. require only two timestamps as start and end, or
@@ -82,256 +89,143 @@ Example config
 
   The same happens with run selection.
 
-.. note::
-  If you load L200 data but accidentally mark ``exp`` as ``l200``, L200 channel map will be loaded, and the code may or may not crash,
-  most likely not but the mapping would simply be wrong.
-Subsystems to be plotted: ``geds`` or ``pulser``, ``spms`` (not implemented yet due to ``DataLoader`` not loading SiPM data). For each subsystem to be plotted, specify
 
-- ``"quality_cut"``: boolean, applying quality cut to data or not. Note: might be per parameter, not per subsystem, in that case would be moved to ``plotting.parameters`` (see below). Functionality not tested yet
-- ``"parameters"``: one or multiple parameters of interest to be plotted for this subsystem. Specify type of events to select from data, plot style etc. for this parameter in ``plotting.parameters``  (see **2.4. ``plotting`` settings**). In addition to any parameter present in ``lh5``, the following special parameters are implemented:
+Then, ``subsystems`` can either be ``pulser``, ``geds`` or ``spms`` (note, 2023-03-07: spms plots are not implemented yet, but DataLoader can load the respective data if needed). 
+
+For each subsystem to be plotted, specify
+
+- ``"<some title>"``: the title of the plot you want to generate. eg. "Baselines in pulser events"
+- ``parameters``: one or multiple parameters of interest to be plotted for this subsystem. In addition to any parameter present in ``lh5``, the following special parameters are implemented (see provided examples below for more details on how to select these parameters):
+    - ``"K_lines"``: events whose energy is contained within 1430 and 1575 keV (40K and 42K regions)
+    - ``"FWHM"``: FWHM values for each channel
     - ``"wf_max_rel"``: relative difference between ``wf_max`` and baseline
-    - ``"event_rate"``: event rate calculated in windows specified in the field ``"sampling"`` under ``plotting.parameters``. See **How to add new parameters** to define your own one
-- ``"status"``: which channels to plot: all, problematic, or good. Not implemented yet
+    - ``"event_rate"``: event rate calculated in windows specified in the field ``"sampling"`` under ``plotting.parameters``.
+- ``"event_type"``: which events to plot. Choose among ``pulser``  (events flagged as pulser based on AUX channel), ``phy`` (physical, i.e. non-pulser events), ``K_lines`` (K lines selected based on energy) or ``all``. See **6.** **How to add new event types** to add a new selection.
+- ``"plot_structure"``: plot arrangement. Choose among 
+    - ``per channel`` (pulser, geds): group plots by channel (ie each channel has its own AxesSubplot)
+    - ``per cc4`` (geds): group plots by CC4 (ie all channels belonging to the same CC4 are in the same AxesSubplot)
+    - ``per string`` (geds): group plots by string (ie all channels belonging to the same string are in the same AxesSubplot)
+    - ``array`` (geds): group all channels in the same AxesSubplot
+    - ``per fiber`` (spms): group channels separating them into IB and OB, and put top/bottom channels of a given fiber together to look for correlations within the fiber and among neighbouring fibers
+    - ``per barrel`` (spms): group channels separating them into top/bottom IB/OB
+- ``"plot_style"``: plot style. Choose among
+    - ``vs time``: plot parameter VS time, as well as resampled values in window given in plot settings (see ``time_window``)
+    - ``vs ch``: plot parameter VS channel ID
+    - ``histogram``: plot distribution of given parameter
+    - ``scatter``: plot all entries of a parameter with points
+    - ``heatmap``: plot 2d histos, with time on x axis
+- ``"variation"``: set it to ``True`` if you want % variation instead of absolute values for your parameter. Percentage variations are evaluated as: ``(param/mean - 1)*100``, where ``mean`` is the mean of the parameter under study evaluated over the first 10% of the time interval you specified in the ``dataset`` entry
+- ``"time_window"``: resampling time (``T``=minutes, ``H``=hours, ``D``=days) used to print resampled values (useful to spot trends over time)
+- ``"status"``: set it to ``True`` if you want to generate a status map for the subsystem and parameter under study (note, 2023-03-07: this works only for geds). In order to work, you first need to specify the limits you want to set as a either low or high threshold (or both) for the parameter under study by adding the % or absolute threshoold for the subsystem of interest in ``settings/par-setting.json``.
 
-More that one subsystem can be entered. Example:
+..
+    "variation": Only implemented for ``"per_channel"`` plot style. Currently required even if the plot style is not ``"per_channel"``, will be fixed in the future.
+
+More that one subsystem can be entered, for instance:
 
 .. code-block:: json
-    "subsystems": {
-        "pulser": {
-            "quality_cut": false,
-            "parameters": "wf_max_rel",
-            "status": "problematic / all ?"
-        },
+  "subsystems": {
+    "pulser": {
+      "Pulser event rate": {
+        "parameters": "event_rate",
+        "event_type": "pulser",
+        "plot_structure": "per channel",
+        "plot_style": "vs time",
+        "variation": false,
+        "time_window": "1H"
+      },
+      "AUX channel waveform maximum": {
+        "parameters": "wf_max",
+        "event_type": "all",
+        "plot_structure": "per channel",
+        "plot_style": "histogram",
+        "variation": false
+      }
+    },
+    "geds": {
+      "Baselines in pulser events": {
+        "parameters": "baseline",
+        "event_type": "pulser",
+        "plot_structure": "per channel",
+        "plot_style": "vs time",
+        "variation": true,
+        "time_window": "1H"
+      }
+    }
+
+More examples can be found under ``examples/`` folder present in the Github repository.
+
+
+
+Special parameters
+------------------
+More attention must be paid to the following special parameters, for which a particular ``subsystem`` entry is required.
+
+K lines
+~~~~~~~
+To plot events having energies within 1430 and 1575 keV (ie, around the 40K and 42K area), grouping channels by stirng and selecting phy (=not-pulser) events, use
+
+.. code-block::
+    "subsystems": {       
         "geds": {
-            "quality_cut": false,
-            "parameters": "baseline",
-            "status": "problematic / all ?"
+          "K events":{
+              "parameters": "cuspEmax_ctc_cal",
+              "event_type": "phy",
+              "cuts": "K lines",
+              "plot_structure": "per string",
+              "plot_style" : "scatter"
+          }
         }
     }
 
+FWHM
+~~~~
+To plot FWHM values for each channel, gropuing them by strings, selecting only pulser events, use
 
-``plotting`` settings
-~~~~~~~~~~~~~~~~~~~
+.. code-block::
+    "subsystems": {       
+        "geds": {
+          "FWHM in pulser events":{
+              "parameters": "FWHM",
+              "event_type": "pulser",
+              "plot_structure": "array",
+              "plot_style" : "vs ch"
+          }
+        }
+    }
 
-- ``"output"``: path to where plots will be saved. Will create subfolders in given path for different outputs. Will be created if does not exist.
-- ``"sampling"``: what time window to take for averaging in time. Format ``"NA"`` where ``N`` is an integer, and ``A`` is D for days, H for hours, T for minutes (since M stands for months). Corresponds to the format required for ``DataFrame.resample()`` function, might be changed to more human-like format (e.g. ``"3 minutes"``). Applies only to the ``"per_channel"`` and ``"event_rate"`` style plots (see below), but required to be entered even if different plot style is used. Will be changed in the future i.e. moved to ``plotting.parameters`` (see below) and will apply only for relevant plot styles.
-- ``"parameters"``: settings for plotting a given parameter
-  - ``"events"``: what events to keep, ``"all"``, ``"pulser"`` (events flagged as pulser based on AUX channel), ``"phy"`` (physical i.e. non-pulser events), or ``"K_lines"`` (K lines selected based on energy). See **6.** **How to add new event types** to add a new selection.
-  - ``"plot_style"``: style of plotting. Available styles:
-    - ``"per_channel"``: plot parameter VS time for each channel grouped by location (string or fiber), as well as mean sampled in window given in plot settings
-    - ``"histogram"``: plot distribution of given parameter. Currently for all channels (used only for pulser which only has one channel present). Will be modified to plot per channel
-    - ``"all channels"``: same as "per channel" but all channels in one plot with labels in legend (works for small selections of data)
-  - ``"some_name"``: plot absolute value of the parameter, or variation from the mean. Only implemented for ``"per_channel"`` plot style. Currently required even if the plot style is not ``"per_channel"``, will be fixed in the future. Also looking for a suitable name for this json field
+Relative maximum of the waveform
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+To plot the relative difference between ``wf_max`` and ``baseline``, use
 
-If multiple parameters are plotted for the same subsystem, or multiple subsystems, specify settings for both; example:
-
-.. code-block:: json
-    "plotting": {
-        "output": "/home/redchuk/data_monitor/dm_out",
-        "sampling": "3T",
-        "parameters": {
-            "wf_max_rel": {
-                "events": "all",
-                "plot_style" : "histogram",
-                "some_name": "absolute"
-            },
-            "baseline": {
-                "events": "pulser",
-                "plot_style" : "per channel",
-                "some_name": "variation"
+.. code-block::
+    "subsystems": {
+        "pulser": {
+            "Relative wf_max": {
+                "parameters": "wf_max_rel",
+                "event_type": "pulser", // or phy, all, ...
+                "plot_structure": "per channel",
+                "plot_style": "vs time",
+                "variation": true, // optional
+                "time_window": "5T" 
             }
         }
     }
 
+Event rate
+~~~~~~~~~~
+To plot the event rate, by sampling over a period of time equal to ``<time_window>`` (``T``=minutes, ``H``=hours, ``D``=days), use:
 
-How to add new plot styles
---------------------------
-
-Define config keyword
-~~~~~~~~~~~~~~~~~~~~~
-
-Each plot style is described by a unique keyword. Define user config keyword for the new plot style under ``plotting.parameters`` for the given parameter under ``plot_style``. For example, ``"per channel"``:
-
-.. code-block:: json
-    "plotting": {
-        "parameters": {
-            "baseline": {
-                "events": "pulser",
-                "plot_style" : "per channel",
-                "some_name": "variation"
+.. code-block::
+    "subsystems": {
+        "geds": {
+            "Event rate": {
+                "parameters": "event_rate",
+                "event_type": "pulser",
+                "plot_structure": "per channel",
+                "plot_style": "vs time",
+                "variation": false,
+                "time_window": "5T"
+            }
+        }
     }
-
-
-Write a plotting function
-~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Write a function that makes a plot in the new style in ``plotting.py``, for example ``plot_ch_par_vs_time()``. Each plotting function must take exactly two arguments: a ``ParamData`` object, and a ``PdfPages`` object.
-.. code-block:: python
-def plot_ch_par_vs_time(pardata, pdf)
-
-The function plots a single parameter data among the ones provided in the user config json under ``"parameters"``, also using other standard columns loaded for any parameter (see below).
-
-This is done to provide a homogeneous and therefore flexible pattern in the code that allows automatically calling respective plotting functions based on the keyword, independently of the plotting style (see step 3.2).
-
-In order to write this function, you need to know the structure of the ``ParamData`` class defined in ``parameter_data.py``. In short, ``ParamData.data`` is a ``DataFrame`` containing a column with data for given parameter + channel, name, location, position and datetime. The ``ParamData`` object also contains other attributes useful for plotting in addition to the data table (see **4. Parameter Data class**).
-
-Map the keyword to the function
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Map the newly written function to the corresponding keyword in the dictionary ``PLOT_STYLE`` in the bottom of ``plotting.py``.
-
-For example, plot style "per channel" corresponds to the function ``plot_ch_par_vs_time(pardata, pdf)``.
-
-.. code-block:: python
-PLOT_STYLE = {
-    'per channel': plot_ch_par_vs_time,
-}
-
-Parameter Data class
---------------------
-
-The ``ParamData`` class contains the following attributes:
-
-1. ``param``: the name of the parameter in question e.g. ``"baseline"``
-
-2. ``subsys``: the name of the subsystem (``"geds"``, ``"spms"``, or ``"pulser"``) the parameter data is taken from
-
-3. ``locname``: the name of the "location" for the subsystem (``"string"`` for geds, ``"fiber"`` for spms, ``""`` empty string for pulser)
-
-4. ``plot_settings``: plot settings for given parameter, taken from the user config json e.g.
-
-  .. code-block:: python
-   {
-       "events": "pulser",
-       "plot_style" : "per channel",
-       "some_name": "variation"
-   }
-
-5. ``sampling``: sampling taken from user config json e.g. ``"3T"`` for 3 minutes
-
-6. ``data``: a ``DataFrame`` table with data for given parameter, containing the following columns:
-
-   - ``datetime``: a python ``datetime`` type column in UTC
-
-   - ``channel``: FlashCam channel number
-
-   - ``name``: name of the channel, depending on subsystem: ``DOOXXXM`` for geds, ``SXXX`` for spms, ``AUXXX`` for pulser
-
-   - ``location``: number of string/fiber for geds/spms, 0 for pulser (dummy)
-
-   - ``position``: position of geds/spms in string/fiber, 0 for pulser (dummy)
-
-   - ``flag_pulser``: a boolean flag that marks the event as pulser; the events in this table are already subselected based on user config json plotting settings for this parameter: pulser events (all column will be ``True``), physical i.e. non-pulser events (all column will be ``False``), or all events (mixed values in column)
-
-   - ``<parameter>``: a column with data for the single selected parameter (only one-at-a-time parameter plotting is set up in ``control_plots.py``)
-
-Example
-
-.. code-block:: bash
-       channel                      datetime  flag_pulser  baseline     name  location  position
-0            2 2022-09-28 09:11:50.208880901         True     15138  V08682B         8         1
-1            2 2022-09-28 09:12:10.207568884         True     15149  V08682B         8         1
-2            2 2022-09-28 09:12:30.206283808         True     15125  V08682B         8         1
-3            2 2022-09-28 09:12:50.205015898         True     15134  V08682B         8         1
-4            2 2022-09-28 09:13:10.203716755         True     15093  V08682B         8         1
-...        ...                           ...          ...       ...      ...       ...       ...
-16095       43 2022-10-02 20:37:13.169144869         True     14746  V07647B         7         8
-16096       43 2022-10-02 20:37:33.167859793         True     14930  V07647B         7         8
-16097       43 2022-10-02 20:37:53.166505814         True     15312  V07647B         7         8
-16098       43 2022-10-02 20:38:13.165241718         True     15008  V07647B         7         8
-16099       43 2022-10-02 20:38:33.163988829         True     15264  V07647B         7         8
-
-[16100 rows x 7 columns]
-
-This class is constructed in such a way to provide **everything a plotting function needs to know to make a plot**. If something is missing for a plot you need, feel free to add an attribute or method to ``ParamData``, or contact @sagitta42 (Mariia Redchuk) with technical assistance on how to best implement what you need.
-
-[*Example*] since ``ParamData`` contains only one parameter of interest, if you want to define a plotting function that need to parameters (e.g. one parameter VS the other), there might be two ways of going about it:
-
-- modify ``ParamData`` to contain two parameters in the table (corresponding modifications to user config keywords needed as well)
-- create a function different to ``control_plots.py`` that would loop over parameters and create two ``ParamData`` objects
-- ...
-
-@sagitta42 can help you figure out the most convenient way and the technicalities.
-
-How to add new parameters
--------------------------
-
-- Add plot info to ``settings/par-settings.json``
-
-  .. code-block:: json
-  "<param_name>":{
-      "label": "<label>",
-      "units": "<unit>"
-    },
-
-  In principle this should be optional, and if not provided, parameter name should be taken as label with no units (WIP)
-
-- If this is an lh5 parameter, that's all that's needed.
-
-- If this is a special custom parameter (such as "event_rate" or "wf_max_rel")
-
-  - Specify in ``subsystem.py`` dictionary ``SPECIAL_PARAMETERS`` which lh5 parameters are needed to be loaded to calculate the special parameter, for example
-
-    .. code-block:: python
-    SPECIAL_PARAMETERS = {
-        'wf_max_rel': ['wf_max', 'baseline'],
-        'event_rate': None
-    }
-
-  - Define the calculation in ``parameter_data.ParamData.special_parameters()``. For example, "wf_max_rel" is defined as follows:
-
-    .. code-block:: python
-    def special_parameters(self):
-        if self.param == 'wf_max_rel':
-            # calculate wf max relative to baseline
-            self.data['wf_max_rel'] = self.data['wf_max'] - self.data['baseline']
-        elif self.param == ... :
-            ...
-
-## 6. How to add new event types
-
-Define selection under ``parameter_data.ParamData.special_parameters()`` based on the keyword for the new event type. For example, selecting pulser/physical events only is defined as follows
-
-.. code-block:: python
-def select_events(self):
-    # do we want to keep all, phy or pulser events?
-    if self.plot_settings['events'] == 'pulser':
-        print('... keeping only pulser events')
-        self.data = self.data[ self.data['flag_pulser'] ]
-    elif self.plot_settings['events'] == 'phy':
-        self.data = self.data[ ~self.data['flag_pulser'] ]
-
-Note that selecting K lines is a bit more complex, because in order to do that in ``ParamData``, already before that ``Subsystem`` should be notified to load energy column. Current implementation a bit cumbersome, feel free to ask for tips if your new event type involves lh5 parameters or is complex in some other way. Currently K lines is implemented as follows:
-- in ``subsystem.py`` define what parameter is needed to loaded from lh5 to do the selection
-
-  .. code-block:: python
-  SPECIAL_PARAMETERS = {
-      "K_lines": 'cuspEmax_ctc_cal',
-      ...
-  }
-
-- in ``Subsystem`` remember that for later by creating a bool whether we need to load that parameter or not
-
-  .. code-block:: python
-  self.k_lines = False
-  for param in self.parameters:
-      # if K lines is asked, set to true
-      self.k_lines = self.k_lines or (config.plotting.parameters[param]['events'] == 'K_lines')
-
-- In ``Subsystem.get_data()`` check that bool and add column to be loaded if needed
-
-  .. code-block:: python
-  # add K_lines energy if needed
-  if self.k_lines:
-      params.append(SPECIAL_PARAMETERS['K_lines'][0])
-
-- Then, as for non-complex parameters, add a condition in ``ParamData.select_events()``
-
-  .. code-block:: python
-  elif self.plot_settings['events'] == 'K_lines':
-      # non-pulser events only
-      self.data = self.data[ ~self.data['flag_pulser'] ]
-      # energy can be flexibly defined, not always cusp Emax
-      energy = SPECIAL_PARAMETERS['K_lines'][0]
-      # energy cut
-      self.data = self.data[ (self.data[energy] > 1430) & (self.data[energy] < 1575)]
