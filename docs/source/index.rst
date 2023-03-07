@@ -11,11 +11,6 @@ In particular, this tool helps
 * plotting heatmaps with status info (e.g., ON/OFF/...) for each channel, spotting those that are problematic when overcoming/undercoming given thresholds
 * visualizing the obtained plots and heatmaps through a jupyter notebook
 
-.. attention::
-
-   Heatmap plots are implemented within the source code but not included in the output.
-   They will be included later on once we are in a stable condition and we can fix thresholds for each inspected parameter.
-
 Getting started
 ---------------
 *legend-data-monitor* can be installed with `pip <https://pip.pypa.io/en/stable/getting-started>`_:
