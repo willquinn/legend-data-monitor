@@ -119,13 +119,8 @@ def plot_vs_time(
     return ch_dict
 
 
-
 def plot_vs_time_resampled(
-    data_channel: DataFrame,
-    fig: Figure,
-    ax: Axes,
-    plot_info: dict,
-    color=None
+    data_channel: DataFrame, fig: Figure, ax: Axes, plot_info: dict, color=None
 ):
     ch_dict = {}
 
@@ -157,11 +152,11 @@ def plot_vs_time_resampled(
             marker="o",
             linestyle="-",
         )
-        
+
     # -------------------------------------------------------------------------
     # beautification
     # -------------------------------------------------------------------------
-    
+
     # --- time ticks/labels on x-axis
     # index step width for taking every 10th time point
     every_10th_index_step = ceil(len(data_channel) / 10.0)
@@ -191,7 +186,7 @@ def plot_vs_time_resampled(
         ch_dict["figure"] = buf.getvalue()
 
     return ch_dict
-        
+
 
 def par_vs_ch(
     data_channel: DataFrame, fig: Figure, ax: Axes, plot_info: dict, color=None
@@ -217,7 +212,7 @@ def par_vs_ch(
         "plot_info": plot_info,
         "channel": data_channel.index.values[0],
     }
-    
+
     # -------------------------------------------------------------------------
     # beautification
     # -------------------------------------------------------------------------
@@ -227,7 +222,6 @@ def par_vs_ch(
     # --- set labels
     fig.supxlabel("Channel ID")
     fig.supylabel(f"{plot_info['label']} [{plot_info['unit_label']}]")
-
 
     with io.BytesIO() as buf:
         fig.savefig(buf, format="png", bbox_inches="tight")

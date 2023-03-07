@@ -178,7 +178,6 @@ def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: 
                 # saving status map figure
                 par_dict_content["map_" + plot_info["subsystem"]] = status_fig
 
-
         # saving PARAMETER DICT in the dictionary that will be stored in the shelve object
         # event type key is already there
         if plot_settings["event_type"] in out_dict.keys():
@@ -489,7 +488,6 @@ def plot_per_string(data_analysis, plot_info, pdf, *string):
         if plot_info["title"] == "K lines":
             axes.axhline(y=1460.822, color="gray", linestyle="--")
             axes.axhline(y=1524.6, color="gray", linestyle="--")
-
 
         # plot line at 0% for variation
         if plot_info["unit_label"] == "%":
