@@ -4,7 +4,9 @@
 
 # See mapping user plot structure keywords to corresponding functions in the end of this file
 
+
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import seaborn as sns
 from pandas import Timedelta
@@ -16,6 +18,9 @@ def status_plot(subsystem, data_analysis, plot_info, pdf):
     # -------------------------------------------------------------------------
     # plot a map with statuses of channels
     # -------------------------------------------------------------------------
+    utils.logger.info("\33[95m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\33[0m")
+    utils.logger.info("\33[95m~~~ S T A T U S  M A P : %s\33[0m", plot_info["title"])
+    utils.logger.info("\33[95m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\33[0m")
 
     data_analysis = data_analysis.data.sort_values(["location", "position"])
 
@@ -76,19 +81,47 @@ def status_plot(subsystem, data_analysis, plot_info, pdf):
                 data_per_ch["datetime"] + Timedelta(plot_info["time_window"]) / 2
             )
 
-        status = 0  # -> OK detector
+        status = 0  # -> OK detector (update it if it's out of threshold)
+        # get timestamp where the interval is out of threshold
+        out_thr_datetimes = np.array([], dtype="datetime64")
         if low_thr is not None or high_thr is not None:
             if low_thr is None and high_thr is not None:
                 if (data_per_ch[plot_info["parameter"]] > high_thr).any():
                     status = 1  # -> problematic detector
+                    out_thr_datetimes = np.append(
+                        out_thr_datetimes,
+                        data_per_ch.loc[
+                            data_per_ch[plot_info["parameter"]] > high_thr, "datetime"
+                        ].values,
+                    )
+
             if low_thr is not None and high_thr is None:
                 if (data_per_ch[plot_info["parameter"]] < low_thr).any():
                     status = 1  # -> problematic detector
+                    out_thr_datetimes = np.append(
+                        out_thr_datetimes,
+                        data_per_ch.loc[
+                            data_per_ch[plot_info["parameter"]] < low_thr, "datetime"
+                        ].values,
+                    )
+
             if low_thr is not None and high_thr is not None:
                 if (data_per_ch[plot_info["parameter"]] < low_thr).any() or (
                     data_per_ch[plot_info["parameter"]] > high_thr
                 ).any():
                     status = 1  # -> problematic detector
+                    out_thr_datetimes = np.append(
+                        out_thr_datetimes,
+                        data_per_ch.loc[
+                            data_per_ch[plot_info["parameter"]] > high_thr, "datetime"
+                        ].values,
+                    )
+                    out_thr_datetimes = np.append(
+                        out_thr_datetimes,
+                        data_per_ch.loc[
+                            data_per_ch[plot_info["parameter"]] < low_thr, "datetime"
+                        ].values,
+                    )
 
             # create a new row in the new dataframe with essential info (ie: channel, name, location, position, status)
             new_row = [[channel, name, location, position, status]]
@@ -97,6 +130,19 @@ def status_plot(subsystem, data_analysis, plot_info, pdf):
             )
             new_dataframe = pd.concat(
                 [new_dataframe, new_df], ignore_index=True, axis=0
+            )
+
+        # print message with timestamps where the detector is out of threshold
+        if len(out_thr_datetimes) != 0:
+            out_thr_datetimes = [
+                str(time).replace("T", " ")[:-10] for time in out_thr_datetimes
+            ]
+            utils.logger.warning(
+                "\033[93mChannel %s (str. %s, pos. %s) is out of threshold at:\n%s\033[0m",
+                channel,
+                location,
+                position,
+                out_thr_datetimes,
             )
 
     # --------------------------------------------------------------------------------------------------------------------------

@@ -60,7 +60,7 @@ def main():
     parser.add_argument(
         "--version",
         action="store_true",
-        help="""Print version and exit (NOT IMPLEMENTED).""",
+        help="""Print version and exit.""",
     )
     parser.add_argument(
         "--verbose",
@@ -94,11 +94,13 @@ def main():
         legend_data_monitor.logging.setup(logging.DEBUG, logging.root)
     else:
         legend_data_monitor.logging.setup()
+    """
 
     if args.version:
-        print(legend_data_monitor.__version__)
+        legend_data_monitor.utils.logger.info(
+            "Version: %s", legend_data_monitor.__version__
+        )
         sys.exit()
-    """
 
     args.func(args)
 

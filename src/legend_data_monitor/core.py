@@ -1,4 +1,5 @@
 import json
+import re
 
 from . import plotting, subsystem, utils
 
@@ -184,3 +185,17 @@ def generate_plots(config: dict, plt_path: str):
         plotting.make_subsystem_plots(
             subsystems[system], config["subsystems"][system], plt_path
         )
+
+        # -------------------------------------------------------------------------
+        # beautification of the log file
+        # -------------------------------------------------------------------------
+        # Read the log file into a string
+        with open(plt_path + "-" + system + ".log") as f:
+            log_text = f.read()
+        # Define a regular expression pattern to match escape sequences for color codes
+        pattern = re.compile(r"\033\[[0-9;]+m")
+        # Remove the color codes from the log text using the pattern
+        clean_text = pattern.sub("", log_text)
+        # Write the cleaned text to a new file
+        with open(plt_path + "-" + system + ".log", "w") as f:
+            f.write(clean_text)
