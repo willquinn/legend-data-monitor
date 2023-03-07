@@ -251,14 +251,21 @@ class AnalysisData:
                 # put the channel back as column
                 self.data = self.data.reset_index()
             elif param == "FWHM":
-                self.data = self.data.reset_index() 
+                self.data = self.data.reset_index()
 
-                # calculate FWHM for each channel (substitute 'param' column with it) 
-                channel_fwhm = self.data.groupby('channel')[utils.SPECIAL_PARAMETERS[param][0]].apply(lambda x: 2.355*np.sqrt(np.mean((x-np.mean(x,axis=0))**2, axis=0))).reset_index(name='FWHM')
+                # calculate FWHM for each channel (substitute 'param' column with it)
+                channel_fwhm = (
+                    self.data.groupby("channel")[utils.SPECIAL_PARAMETERS[param][0]]
+                    .apply(
+                        lambda x: 2.355
+                        * np.sqrt(np.mean((x - np.mean(x, axis=0)) ** 2, axis=0))
+                    )
+                    .reset_index(name="FWHM")
+                )
 
                 # join the calculated RMS values to the original dataframe
-                self.data = self.data.merge(channel_fwhm, on='channel')
-                
+                self.data = self.data.merge(channel_fwhm, on="channel")
+
                 # put channel back in
                 self.data.reset_index()
 
