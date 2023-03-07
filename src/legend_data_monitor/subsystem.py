@@ -58,10 +58,6 @@ class Subsystem:
         # otherwise kwargs is itself already the dict we need with experiment= and period=
         data_info = kwargs["dataset"] if "dataset" in kwargs else kwargs
 
-        # -------------------------------------------------------------------------
-        # check validity
-        # -------------------------------------------------------------------------
-
         if "experiment" not in data_info:
             utils.logger.error("\033[91mProvide experiment name!\033[0m")
             utils.logger.error("\033[91m%s\033[0m", self.__doc__)
@@ -136,17 +132,8 @@ class Subsystem:
         self.get_channel_status()
 
         # -------------------------------------------------------------------------
-        # K lines
-        # -------------------------------------------------------------------------
-
-        # # a bit cumbersome, but we need to know if K_lines was requested to select specified energy parameter
-        # self.k_lines = False
-        # for plot in self.plots:
-        #     # if K lines is asked, set to true
-        #     self.k_lines = self.k_lines or (self.plots[plot]['events'] == 'K_lines')
-
-        # -------------------------------------------------------------------------
         # have something before get_data() is called just in case
+
         self.data = pd.DataFrame()
 
     def get_data(self, parameters: typing.Union[str, list_of_str, tuple_of_str] = ()):
