@@ -298,13 +298,13 @@ def plot_per_ch(data_analysis, plot_info, pdf):
             ax_idx += 1
 
         # -------------------------------------------------------------------------------
-
-        fig.suptitle(f"{plot_info['subsystem']} - {plot_info['title']}", y=1.15)
         if plot_info["subsystem"] == "pulser":
+            y_title = 1.05
             axes[0].set_title("")
         else:
+            y_title = 1.01
             axes[0].set_title(f"{plot_info['locname']} {location}")
-
+        fig.suptitle(f"{plot_info['subsystem']} - {plot_info['title']}", y=y_title)
         plt.savefig(pdf, format="pdf", bbox_inches="tight")
         # figures are retained until explicitly closed; close to not consume too much memory
         plt.close()
@@ -396,7 +396,8 @@ def plot_per_cc4(data_analysis, plot_info, pdf):
         ax_idx += 1
 
     # -------------------------------------------------------------------------------
-    fig.suptitle(f"{plot_info['subsystem']} - {plot_info['title']}", y=1.15)
+    y_title = 1.05 if plot_info["subsystem"] == "pulser" else 1.01
+    fig.suptitle(f"{plot_info['subsystem']} - {plot_info['title']}", y=y_title)
     # fig.supylabel(f'{plotdata.param.label} [{plotdata.param.unit_label}]') # --> plot style
     plt.savefig(pdf, format="pdf", bbox_inches="tight")
     # figures are retained until explicitly closed; close to not consume too much memory
@@ -486,7 +487,8 @@ def plot_per_string(data_analysis, plot_info, pdf):
         ax_idx += 1
 
     # -------------------------------------------------------------------------------
-    fig.suptitle(f"{plot_info['subsystem']} - {plot_info['title']}", y=1.15)
+    y_title = 1.05 if plot_info["subsystem"] == "pulser" else 1.01
+    fig.suptitle(f"{plot_info['subsystem']} - {plot_info['title']}", y=y_title)
     plt.savefig(pdf, format="pdf", bbox_inches="tight")
     # figures are retained until explicitly closed; close to not consume too much memory
     plt.close()
@@ -609,7 +611,7 @@ def plot_array(data_analysis, plot_info, pdf):
     plt.xticks(rotation=70, ha="right")
     # title/label
     fig.supxlabel("")
-    fig.suptitle(f"{plot_info['subsystem']} - {plot_info['title']}", y=1.15)
+    fig.suptitle(f"{plot_info['subsystem']} - {plot_info['title']}", y=1.05)
 
     # -------------------------------------------------------------------------------
     plt.savefig(pdf, format="pdf", bbox_inches="tight")

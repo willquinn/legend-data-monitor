@@ -5,7 +5,8 @@ Output files
 ------------
 
 After the code has run, shelve object files containing the data and plots generated for the inspected parameters/subsystems
-are produced, together with a pdf file containing all the generated plots and a log file containing running information.
+are produced, together with a pdf file containing all the generated plots and a log file containing running information. In particular,
+the last two files are created for each inspected subsystem (pulser, geds, spms).
 
 Files are usually collected in the output folder specified in the ``output`` config entry:
 
@@ -27,7 +28,7 @@ different output folders can be created. In general, the output folder is struct
             └── <type>
               └── <period>
                 └── <time_selection>
-                  ├── <experiment>-<period>-<time_selection>-<type>.pdf
+                  ├── <experiment>-<period>-<time_selection>-<type>-<subsystem>.pdf
                   ├── <experiment>-<period>-<time_selection>-<type>-<subsystem>.log
                   └── <experiment>-<period>-<time_selection>-<type>.{dat,bak,dir}
 
@@ -66,28 +67,28 @@ The output object ``<experiment>-<period>-<time_selection>-<type>.{dat,bak,dir}`
             │     │       │     ├── all
             │     │       │     └── resampled
             │     │ 	    ├── mean // mean over the first 10% of data within the range inspected by the user
-            │   	│	      └── plot_info // some useful plot-info: ['title', 'subsystem', 'locname', 'unit', 'plot_style', 'parameter', 'label', 'unit_label', 'time_window', 'limits']
+            │   	│	      ├── plot_info // some useful plot-info: ['title', 'subsystem', 'locname', 'unit', 'plot_style', 'parameter', 'label', 'unit_label', 'time_window', 'limits']
+            │   	│	      └── figure // AxesSubplot object
             │   	├── 5
             │   	│ └── ...
-            │   	├── ... other individual channels...
+            │   	├── ...other channels...
             │   	├── df_geds // dataframe containing all geds channels for a given parameter 
             │   	└── map_geds // geds status map (if present)
             ├─all
             │   └── baseline
-            │   	├── ...individual channels data/info...
-            │   	└── df_geds // dataframe containing all geds channels for a given parameter 
+            │   	├── ...channels data/info...
+            │   	└── ...other summary objects (df/status map/figures)...
             │   └── wf_max
-            │   	├── ...individual channels data/info...
-            │   	└── df_geds // dataframe containing all geds channels for a given parameter 
+            │   	└── ...
             └──phy
-                  └── ...
+                └── ...
 
 One way to open it and inspect the saved objects is to do
 
 .. code-block:: python
   import shelve
 
-  with shelve.open("<experiment>-<period>-<time_selection>-<type>"") as file:
+  with shelve.open("<experiment>-<period>-<time_selection>-<type>") as file:
     # get y values 
     all_data_ch4 = file['monitoring']['pulser']['baseline']['4']['values']['all']
     resampled_data_ch4 = file['monitoring']['pulser']['baseline']['4']['values']['resampled']
@@ -96,7 +97,19 @@ One way to open it and inspect the saved objects is to do
     # get the dataframe
     df_geds = file['monitoring']['pulser']['baseline']['df_geds']
 
+To open the saved figure for a given channel, eg ID='4', one way to do it is through 
 
+.. code-block:: python
+  import io
+  with io.BytesIO(shelf['monitoring']['pulser']['baseline']['4']['figure']) as obj:
+    fig = plt.figure()
+    plt.imshow(plt.imread(obj))
+    plt.savefig("ch4_figure.pdf",  bbox_inches='tight')
+
+.. note::
+  There is no need to create one shelve object for each inspected subsystem. 
+  Indeed, one way to separate among pulser, geds and spms is to look at channel IDs.
+  In any case, the subsystem info is saved under ``["monitoring"][<event_type>][<parameter>]["plot_info"]["subsystem"]``.
 
 
 Inspect plots
