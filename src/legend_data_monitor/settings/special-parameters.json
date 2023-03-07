@@ -1,5 +1,6 @@
 {
   "K lines": "cuspEmax_ctc_cal",
+  "FWHM": "cuspEmax_ctc_cal",
   "wf_max_rel": ["wf_max", "baseline"],
   "event_rate": null
 }
