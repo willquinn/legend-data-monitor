@@ -116,7 +116,7 @@ For each subsystem to be plotted, specify
 - ``"status"``: set it to ``True`` if you want to generate a status map for the subsystem and parameter under study (note, 2023-03-07: this works only for geds). In order to work, you first need to specify the limits you want to set as a either low or high threshold (or both) for the parameter under study by adding the % or absolute threshoold for the subsystem of interest in ``settings/par-setting.json``.
 
 .. warning::
-  There is no event type selection ready for calibration data. 
+  There is no event type selection ready for calibration data.
   This means you always have to use ``"event_type": "all"`` as long as the different event selections are not properly implemented for calibration data too.
 
 ..

@@ -92,7 +92,7 @@ One way to open it and inspect the saved objects for a given channel, eg. ID='4'
     resampled_data_ch4 = file['monitoring']['pulser']['baseline']['4']['values']['resampled']
     # get info for plotting data
     plot_info_ch4 = file['monitoring']['pulser']['baseline']['4']['plot_info']
-    
+
 To get the corresponding dataframe (containing all channels with map/status info and loaded parameters), you can use
 
 .. code-block:: python
