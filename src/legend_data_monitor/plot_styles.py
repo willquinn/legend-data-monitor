@@ -5,14 +5,12 @@
 # See mapping user plot structure keywords to corresponding functions in the end of this file
 
 import io
-from math import ceil
 
 import numpy as np
 import pandas as pd
 from matplotlib.axes import Axes
 from matplotlib.dates import DateFormatter, date2num, num2date
 from matplotlib.figure import Figure
-from matplotlib.ticker import FixedLocator
 from pandas import DataFrame, Timedelta
 
 from . import utils
