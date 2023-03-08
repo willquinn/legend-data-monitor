@@ -78,6 +78,7 @@ In particular, ``dataset`` settings are:
 .. note::
 
   Time selection is based on:
+  
   - ``'start': '2023-02-07 02:00:00', 'end': '2023-02-07 03:30:00'`` (start + end) in format ``YYYY-MM-DD hh:mm:ss``;
   - ``'timestamps': ['20230207T103123Z', '20230207T141123Z', ...]`` (list of keys) in format ``YYYYMMDDThhmmssZ``;
   - ``'runs': 1`` (one run) or ``'runs': [1, 2, 3]`` (list of runs) in integer format.
@@ -101,7 +102,7 @@ For each subsystem to be plotted, specify
     - ``"FWHM"``: FWHM values for each channel
     - ``"wf_max_rel"``: relative difference between ``wf_max`` and baseline
     - ``"event_rate"``: event rate calculated in windows specified in the field ``"sampling"`` under ``plotting.parameters``.
-- ``"event_type"``: which events to plot. Choose among ``pulser``  (events flagged as pulser based on AUX channel), ``phy`` (physical, i.e. non-pulser events), ``K_lines`` (K lines selected based on energy) or ``all``. See **6.** **How to add new event types** to add a new selection.
+- ``"event_type"``: which events to plot. Choose among ``pulser``  (events flagged as pulser based on AUX channel), ``phy`` (physical, i.e. non-pulser events), ``K_lines`` (K lines selected based on energy) or ``all``.
 - ``"plot_structure"``: plot arrangement. Choose among
     - ``per channel`` (pulser, geds): group plots by channel (ie each channel has its own AxesSubplot)
     - ``per cc4`` (geds): group plots by CC4 (ie all channels belonging to the same CC4 are in the same AxesSubplot)
@@ -224,7 +225,7 @@ To plot the relative difference between ``wf_max`` and ``baseline``, use
 
 Event rate
 ~~~~~~~~~~
-To plot the event rate, by sampling over a period of time equal to ``<time_window>`` (``T``=minutes, ``H``=hours, ``D``=days), use:
+To plot the event rate, by sampling over a period of time equal to ``<time_window>`` (T=minutes, H=hours, D=days), use:
 
 .. code-block:: json
 
