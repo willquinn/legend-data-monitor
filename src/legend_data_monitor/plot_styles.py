@@ -4,8 +4,6 @@
 
 # See mapping user plot structure keywords to corresponding functions in the end of this file
 
-import io
-
 import numpy as np
 import pandas as pd
 from matplotlib.axes import Axes
@@ -109,13 +107,6 @@ def plot_vs_time(
     fig.supxlabel("UTC Time")
     fig.supylabel(f"{plot_info['label']} [{plot_info['unit_label']}]")
 
-    # To save the axes, this is the only way I managed to save it without errors later on.
-    # Typically, I used to get the error: "TypeError: cannot pickle 'kiwisolver.Solver' object"
-    with io.BytesIO() as buf:
-        fig.savefig(buf, format="png", bbox_inches="tight")
-        buf.seek(0)
-        ch_dict["figure"] = buf.getvalue()
-
     return ch_dict
 
 
@@ -153,11 +144,6 @@ def par_vs_ch(
     # --- set labels
     fig.supxlabel("Channel ID")
     fig.supylabel(f"{plot_info['label']} [{plot_info['unit_label']}]")
-
-    with io.BytesIO() as buf:
-        fig.savefig(buf, format="png", bbox_inches="tight")
-        buf.seek(0)
-        ch_dict["figure"] = buf.getvalue()
 
     return ch_dict
 
@@ -209,12 +195,6 @@ def plot_histo(
         "timestamp": {},
     }
 
-    # To save the axes
-    with io.BytesIO() as buf:
-        fig.savefig(buf, format="png", bbox_inches="tight")
-        buf.seek(0)
-        ch_dict["figure"] = buf.getvalue()
-
     return ch_dict
 
 
@@ -247,12 +227,6 @@ def plot_scatter(
             "resampled": [],
         },
     }
-
-    # To save the axes
-    with io.BytesIO() as buf:
-        fig.savefig(buf, format="png", bbox_inches="tight")
-        buf.seek(0)
-        ch_dict["figure"] = buf.getvalue()
 
     return ch_dict
 
@@ -342,12 +316,6 @@ def plot_heatmap(
             "resampled": [],
         },
     }
-
-    # To save the axes
-    with io.BytesIO() as buf:
-        fig.savefig(buf, format="png", bbox_inches="tight")
-        buf.seek(0)
-        ch_dict["figure"] = buf.getvalue()
 
     return ch_dict
 
