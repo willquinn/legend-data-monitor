@@ -409,8 +409,6 @@ def plot_per_cc4(data_analysis, plot_info, pdf):
 
 
 # technically per location
-
-
 def plot_per_string(data_analysis, plot_info, pdf, *string):
     if plot_info["subsystem"] == "pulser":
         utils.logger.error(
@@ -494,7 +492,6 @@ def plot_per_string(data_analysis, plot_info, pdf, *string):
 
         # -------------------------------------------------------------------------------
         fig.suptitle(f"{plot_info['subsystem']} - {plot_info['title']}")
-        # fig.supylabel(f'{plotdata.param.label} [{plotdata.param.unit_label}]') # --> plot style
         if not string:
             plt.savefig(pdf, format="pdf", bbox_inches="tight")
         # figures are retained until explicitly closed; close to not consume too much memory
