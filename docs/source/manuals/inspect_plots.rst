@@ -72,7 +72,7 @@ The output object ``<experiment>-<period>-<time_selection>-<type>.{dat,bak,dir}`
             │   	├── 5
             │   	│ └── ...
             │   	├── ...other channels...
-            │   	├── df_geds // dataframe containing all geds channels for a given parameter 
+            │   	├── df_geds // dataframe containing all geds channels for a given parameter
             │   	└── map_geds // geds status map (if present)
             ├─all
             │   └── baseline
@@ -89,7 +89,7 @@ One way to open it and inspect the saved objects is to do
   import shelve
 
   with shelve.open("<experiment>-<period>-<time_selection>-<type>") as file:
-    # get y values 
+    # get y values
     all_data_ch4 = file['monitoring']['pulser']['baseline']['4']['values']['all']
     resampled_data_ch4 = file['monitoring']['pulser']['baseline']['4']['values']['resampled']
     # get info for plotting data
@@ -97,7 +97,7 @@ One way to open it and inspect the saved objects is to do
     # get the dataframe
     df_geds = file['monitoring']['pulser']['baseline']['df_geds']
 
-To open the saved figure for a given channel, eg ID='4', one way to do it is through 
+To open the saved figure for a given channel, eg ID='4', one way to do it is through
 
 .. code-block:: python
   import io
@@ -107,7 +107,7 @@ To open the saved figure for a given channel, eg ID='4', one way to do it is thr
     plt.savefig("ch4_figure.pdf",  bbox_inches='tight')
 
 .. note::
-  There is no need to create one shelve object for each inspected subsystem. 
+  There is no need to create one shelve object for each inspected subsystem.
   Indeed, one way to separate among pulser, geds and spms is to look at channel IDs.
   In any case, the subsystem info is saved under ``["monitoring"][<event_type>][<parameter>]["plot_info"]["subsystem"]``.
 
