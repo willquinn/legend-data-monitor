@@ -1,3 +1,4 @@
+import io
 import shelve
 
 import matplotlib.pyplot as plt
@@ -171,7 +172,10 @@ def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: 
                     subsystem, data_analysis, plot_info, pdf
                 )
                 # saving status map figure
-                par_dict_content["map_" + plot_info["subsystem"]] = status_fig
+                with io.BytesIO() as buf:
+                    status_fig.savefig(buf, bbox_inches="tight")
+                    buf.seek(0)
+                    par_dict_content["map_" + plot_info["subsystem"]] = buf.getvalue()
 
         # saving PARAMETER DICT in the dictionary that will be stored in the shelve object
         # event type key is already there
@@ -288,6 +292,7 @@ def plot_per_ch(data_analysis, plot_info, pdf):
 
             # add grid
             axes[ax_idx].grid("major", linestyle="--")
+            axes[ax_idx].set_axisbelow(True)
             # remove automatic y label since there will be a shared one
             axes[ax_idx].set_ylabel("")
 
@@ -298,16 +303,23 @@ def plot_per_ch(data_analysis, plot_info, pdf):
             ax_idx += 1
 
         # -------------------------------------------------------------------------------
-
-        fig.suptitle(f"{plot_info['subsystem']} - {plot_info['title']}", y=1.15)
         if plot_info["subsystem"] == "pulser":
+            y_title = 1.05
             axes[0].set_title("")
         else:
+            y_title = 1.01
             axes[0].set_title(f"{plot_info['locname']} {location}")
-
+        fig.suptitle(f"{plot_info['subsystem']} - {plot_info['title']}", y=y_title)
         plt.savefig(pdf, format="pdf", bbox_inches="tight")
         # figures are retained until explicitly closed; close to not consume too much memory
         plt.close()
+
+        # To save the axes, this is the only way I managed to save it without errors later on.
+        # Typically, I used to get the error: "TypeError: cannot pickle 'kiwisolver.Solver' object"
+        with io.BytesIO() as buf:
+            fig.savefig(buf, bbox_inches="tight")
+            buf.seek(0)
+            par_dict[f"figure_plot_{plot_info['locname']}_{location}"] = buf.getvalue()
 
     return par_dict
 
@@ -380,8 +392,9 @@ def plot_per_cc4(data_analysis, plot_info, pdf):
 
         # add grid
         axes[ax_idx].grid("major", linestyle="--")
+        axes[ax_idx].set_axisbelow(True)
         # beautification
-        axes[ax_idx].set_title(f"{plot_info['locname']} {cc4_id}")
+        axes[ax_idx].set_title(f"CC4 {cc4_id}")
         axes[ax_idx].set_ylabel("")
         axes[ax_idx].legend(labels=labels, loc="center left", bbox_to_anchor=(1, 0.5))
 
@@ -396,16 +409,20 @@ def plot_per_cc4(data_analysis, plot_info, pdf):
         ax_idx += 1
 
     # -------------------------------------------------------------------------------
-    fig.suptitle(f"{plot_info['subsystem']} - {plot_info['title']}", y=1.15)
-    # fig.supylabel(f'{plotdata.param.label} [{plotdata.param.unit_label}]') # --> plot style
+    y_title = 1.05 if plot_info["subsystem"] == "pulser" else 1.01
+    fig.suptitle(f"{plot_info['subsystem']} - {plot_info['title']}", y=y_title)
     plt.savefig(pdf, format="pdf", bbox_inches="tight")
     # figures are retained until explicitly closed; close to not consume too much memory
     plt.close()
 
+    with io.BytesIO() as buf:
+        fig.savefig(buf, bbox_inches="tight")
+        buf.seek(0)
+        par_dict["figure_plot"] = buf.getvalue()
+
     return par_dict
 
 
-# technically per location
 def plot_per_string(data_analysis, plot_info, pdf):
     if plot_info["subsystem"] == "pulser":
         utils.logger.error(
@@ -470,6 +487,7 @@ def plot_per_string(data_analysis, plot_info, pdf):
 
         # add grid
         axes[ax_idx].grid("major", linestyle="--")
+        axes[ax_idx].set_axisbelow(True)
         # beautification
         axes[ax_idx].set_title(f"{plot_info['locname']} {location}")
         axes[ax_idx].set_ylabel("")
@@ -486,10 +504,16 @@ def plot_per_string(data_analysis, plot_info, pdf):
         ax_idx += 1
 
     # -------------------------------------------------------------------------------
-    fig.suptitle(f"{plot_info['subsystem']} - {plot_info['title']}", y=1.15)
+    y_title = 1.05 if plot_info["subsystem"] == "pulser" else 1.01
+    fig.suptitle(f"{plot_info['subsystem']} - {plot_info['title']}", y=y_title)
     plt.savefig(pdf, format="pdf", bbox_inches="tight")
     # figures are retained until explicitly closed; close to not consume too much memory
     plt.close()
+
+    with io.BytesIO() as buf:
+        fig.savefig(buf, bbox_inches="tight")
+        buf.seek(0)
+        par_dict["figure_plot"] = buf.getvalue()
 
     return par_dict
 
@@ -599,6 +623,8 @@ def plot_array(data_analysis, plot_info, pdf):
     )
     # add grid
     axes.grid("major", linestyle="--")
+    # set the grid behind the points
+    axes.set_axisbelow(True)
     # beautification
     axes.ylabel = None
     axes.xlabel = None
@@ -609,11 +635,16 @@ def plot_array(data_analysis, plot_info, pdf):
     plt.xticks(rotation=70, ha="right")
     # title/label
     fig.supxlabel("")
-    fig.suptitle(f"{plot_info['subsystem']} - {plot_info['title']}", y=1.15)
+    fig.suptitle(f"{plot_info['subsystem']} - {plot_info['title']}", y=1.05)
 
     # -------------------------------------------------------------------------------
     plt.savefig(pdf, format="pdf", bbox_inches="tight")
     plt.close()
+
+    with io.BytesIO() as buf:
+        fig.savefig(buf, bbox_inches="tight")
+        buf.seek(0)
+        par_dict["figure_plot"] = buf.getvalue()
 
     return par_dict
 
@@ -754,6 +785,7 @@ def plot_per_barrel_and_position(
 
                     # add grid
                     axes.grid("major", linestyle="--")
+                    axes.set_axisbelow(True)
                     # remove automatic y label since there will be a shared one
                     axes.set_ylabel("")
 
@@ -765,6 +797,11 @@ def plot_per_barrel_and_position(
             plt.savefig(pdf, format="pdf", bbox_inches="tight")
             # figures are retained until explicitly closed; close to not consume too much memory
             plt.close()
+
+            with io.BytesIO() as buf:
+                fig.savefig(buf, bbox_inches="tight")
+                buf.seek(0)
+                par_dict[f"figure_plot_{location}_{position}"] = buf.getvalue()
 
     return par_dict
 
