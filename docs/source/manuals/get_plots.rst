@@ -12,16 +12,19 @@ you want to study and for which you want to load data.
 You can either run it by importing the ``legend-data-monitor`` module:
 
 .. code-block:: python
+
   import legend-data-monitor as ldm
-  user_config = <path_to_config>.json
+  user_config = path_to_config.json
   ldm.control_plots(user_config)
 
 Or run it by parsing to the executable the path to the config file:
 
-.. code-block::
-  $ legend-data-monitor user_prod --config <path_to_config>.json
+.. code-block:: bash
+
+  $ legend-data-monitor user_prod --config path_to_config.json
 
 .. warning::
+
   Use the ``user_prod`` command line interface for generating your own plots; ``auto_prod`` was designed to be used during automatic data production, for generating
   monitoring plots on the fly when processing data. For the moment, no documentation will be provided.
 
@@ -56,10 +59,10 @@ Example config
         "variation": true,
         "time_window": "1H",
         "status": true
+        }
       }
     }
   }
-}
 
 The argument ``output`` is the path to where plots and inspected data will be saved. Will create subfolders in given path for different outputs. Will be created if does not exist.
 
@@ -73,7 +76,9 @@ In particular, ``dataset`` settings are:
 - ``selection``: time window to select data;
 
 .. note::
+
   Time selection is based on:
+  
   - ``'start': '2023-02-07 02:00:00', 'end': '2023-02-07 03:30:00'`` (start + end) in format ``YYYY-MM-DD hh:mm:ss``;
   - ``'timestamps': ['20230207T103123Z', '20230207T141123Z', ...]`` (list of keys) in format ``YYYYMMDDThhmmssZ``;
   - ``'runs': 1`` (one run) or ``'runs': [1, 2, 3]`` (list of runs) in integer format.
@@ -97,7 +102,7 @@ For each subsystem to be plotted, specify
     - ``"FWHM"``: FWHM values for each channel
     - ``"wf_max_rel"``: relative difference between ``wf_max`` and baseline
     - ``"event_rate"``: event rate calculated in windows specified in the field ``"sampling"`` under ``plotting.parameters``.
-- ``"event_type"``: which events to plot. Choose among ``pulser``  (events flagged as pulser based on AUX channel), ``phy`` (physical, i.e. non-pulser events), ``K_lines`` (K lines selected based on energy) or ``all``. See **6.** **How to add new event types** to add a new selection.
+- ``"event_type"``: which events to plot. Choose among ``pulser``  (events flagged as pulser based on AUX channel), ``phy`` (physical, i.e. non-pulser events), ``K_lines`` (K lines selected based on energy) or ``all``.
 - ``"plot_structure"``: plot arrangement. Choose among
     - ``per channel`` (pulser, geds): group plots by channel (ie each channel has its own AxesSubplot)
     - ``per cc4`` (geds): group plots by CC4 (ie all channels belonging to the same CC4 are in the same AxesSubplot)
@@ -116,6 +121,7 @@ For each subsystem to be plotted, specify
 - ``"status"``: set it to ``True`` if you want to generate a status map for the subsystem and parameter under study (note, 2023-03-07: this works only for geds). In order to work, you first need to specify the limits you want to set as a either low or high threshold (or both) for the parameter under study by adding the % or absolute threshoold for the subsystem of interest in ``settings/par-setting.json``.
 
 .. warning::
+
   There is no event type selection ready for calibration data.
   This means you always have to use ``"event_type": "all"`` as long as the different event selections are not properly implemented for calibration data too.
 
@@ -125,6 +131,7 @@ For each subsystem to be plotted, specify
 More that one subsystem can be entered, for instance:
 
 .. code-block:: json
+
   "subsystems": {
     "pulser": {
       "Pulser event rate": {
@@ -166,7 +173,8 @@ K lines
 ~~~~~~~
 To plot events having energies within 1430 and 1575 keV (ie, around the 40K and 42K area), grouping channels by string and selecting phy (=not-pulser) events, use
 
-.. code-block::
+.. code-block:: json
+
     "subsystems": {
         "geds": {
           "K events":{
@@ -183,7 +191,8 @@ FWHM
 ~~~~
 To plot FWHM values for each channel, gropuing them by strings, selecting only pulser events, use
 
-.. code-block::
+.. code-block:: json
+
     "subsystems": {
         "geds": {
           "FWHM in pulser events":{
@@ -199,7 +208,8 @@ Relative maximum of the waveform
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 To plot the relative difference between ``wf_max`` and ``baseline``, use
 
-.. code-block::
+.. code-block:: json
+
     "subsystems": {
         "pulser": {
             "Relative wf_max": {
@@ -215,9 +225,10 @@ To plot the relative difference between ``wf_max`` and ``baseline``, use
 
 Event rate
 ~~~~~~~~~~
-To plot the event rate, by sampling over a period of time equal to ``<time_window>`` (``T``=minutes, ``H``=hours, ``D``=days), use:
+To plot the event rate, by sampling over a period of time equal to ``<time_window>`` (T=minutes, H=hours, D=days), use:
 
-.. code-block::
+.. code-block:: json
+
     "subsystems": {
         "geds": {
             "Event rate": {
