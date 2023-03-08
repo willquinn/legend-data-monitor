@@ -129,75 +129,6 @@ def plot_vs_time(
     return ch_dict
 
 
-def plot_vs_time_resampled(
-    data_channel: DataFrame, fig: Figure, ax: Axes, plot_info: dict, color=None
-):
-    ch_dict = {}
-
-    # -------------------------------------------------------------------------
-    # plot resampled average
-    # -------------------------------------------------------------------------
-
-    # unless event rate - already resampled and counted in some time window
-    if not plot_info["parameter"] == "event_rate":
-        # resample in given time window, as start pick the first timestamp in table
-        resampled = (
-            data_channel.set_index("datetime")
-            .resample(plot_info["time_window"], origin="start")
-            .mean(numeric_only=True)
-        )
-        # will have datetime as index after resampling -> put back
-        resampled = resampled.reset_index()
-        # the timestamps in the resampled table will start from the first timestamp, and go with sampling intervals
-        # I want to shift them by half sampling window, so that the resampled value is plotted in the middle time window in which it was calculated
-        resampled["datetime"] = (
-            resampled["datetime"] + Timedelta(plot_info["time_window"]) / 2
-        )
-
-        ax.plot(
-            resampled["datetime"].dt.to_pydatetime(),
-            resampled[plot_info["parameter"]],
-            color=color,
-            zorder=1,
-            marker="o",
-            linestyle="-",
-        )
-
-    # -------------------------------------------------------------------------
-    # beautification
-    # -------------------------------------------------------------------------
-
-    # --- time ticks/labels on x-axis
-    # index step width for taking every 10th time point
-    every_10th_index_step = ceil(len(data_channel) / 10.0)
-    # get corresponding time points
-    # if there are less than 10 points in total in the frame, the step will be 0 -> take all points
-    timepoints = (
-        data_channel.iloc[::every_10th_index_step]["datetime"]
-        if every_10th_index_step
-        else data_channel["datetime"]
-    )
-
-    # set ticks and date format
-    ax.xaxis.set_major_locator(
-        FixedLocator([date2num(x) for x in timepoints.dt.to_pydatetime()])
-    )
-    ax.xaxis.set_major_formatter(DateFormatter("%Y\n%m/%d\n%H:%M"))
-
-    # --- set labels
-    fig.supxlabel("UTC Time")
-    fig.supylabel(f"{plot_info['label']} [{plot_info['unit_label']}]")
-
-    # To save the axes, this is the only way I managed to save it without errors later on.
-    # Typically, I used to get the error: "TypeError: cannot pickle 'kiwisolver.Solver' object"
-    with io.BytesIO() as buf:
-        fig.savefig(buf, format="png", bbox_inches="tight")
-        buf.seek(0)
-        ch_dict["figure"] = buf.getvalue()
-
-    return ch_dict
-
-
 def par_vs_ch(
     data_channel: DataFrame, fig: Figure, ax: Axes, plot_info: dict, color=None
 ):
@@ -437,7 +368,6 @@ def plot_heatmap(
 
 PLOT_STYLE = {
     "vs time": plot_vs_time,
-    "vs time - resampled": plot_vs_time_resampled,
     "vs ch": par_vs_ch,
     "histogram": plot_histo,
     "scatter": plot_scatter,
