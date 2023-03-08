@@ -120,6 +120,10 @@ def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: 
 
         if plot_settings["plot_style"] == "vs time":
             plot_info["resampled"] = plot_settings["resampled"]
+        elif plot_settings["resampled"]:
+            utils.logger.warning(
+                "\033[93mYou're using the option 'resampled' for a plot style that does not need it. For this reason, that option will be ignored.\033[0m"
+            )
 
         # --- information needed for plot style
         plot_info["parameter"] = plot_settings[
