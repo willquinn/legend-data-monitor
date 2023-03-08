@@ -42,7 +42,7 @@ Available parameters
   But you can also pick some given entries (see the config file), eg.
   * you can pick only ``pulser``, ``phy``, ``K_lines`` or ``all`` entries
 
-.. note::
+.. important::
 
   Special parameters are typically saved under ``settings/special-parameters.json`` and carefully handled when loading data.
 

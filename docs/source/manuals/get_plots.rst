@@ -13,19 +13,16 @@ You can either run it by importing the ``legend-data-monitor`` module:
 
 .. code-block:: python
   import legend-data-monitor as ldm
-  user_config = <path_to_config.json>
+  user_config = <path_to_config>.json
   ldm.control_plots(user_config)
 
 Or run it by parsing to the executable the path to the config file:
 
 .. code-block::
-  $ legend-data-monitor user_prod --config <path_to_config.json>
+  $ legend-data-monitor user_prod --config <path_to_config>.json
 
 .. warning::
-  Use the ``user_prod`` command line interface for generating your own plots.
-
-.. note::
-  ``auto_prod`` was designed to be used during automatic data production, for generating
+  Use the ``user_prod`` command line interface for generating your own plots; ``auto_prod`` was designed to be used during automatic data production, for generating
   monitoring plots on the fly when processing data. For the moment, no documentation will be provided.
 
 
@@ -68,18 +65,18 @@ The argument ``output`` is the path to where plots and inspected data will be sa
 
 In particular, ``dataset`` settings are:
 
-- ``experiment``: experiment, in uppercase (``L60`` or ``L200``)
-- ``period``: format ``pXX``. Note: not needed for ``DataLoader`` as it finds period by itself based on provided selection (see below), only used in output filename
-- ``version``: version of production cycle, format ``vXX.YY``. Note: needed for ``DataLoader`` to look in the desired path
-- ``path``: path to ``prod-ref`` folder
-- ``type``: type of data, physics (``phy``) or calibration (``cal``). Possible to use one or both to make one dataset (``["phy", "cal"]``)
-- ``selection``: time window to select data
+- ``experiment``: experiment, in uppercase (``L60`` or ``L200``);
+- ``period``: format ``pXX``. Note: not needed for ``DataLoader`` as it finds period by itself based on provided selection (see below), only used in output filename;
+- ``version``: version of production cycle, format ``vXX.YY``. Note: needed for ``DataLoader`` to look in the desired path;
+- ``path``: path to ``prod-ref`` folder;
+- ``type``: type of data, physics (``phy``) or calibration (``cal``). Possible to use one or both to make one dataset (``["phy", "cal"]``);
+- ``selection``: time window to select data;
 
 .. note::
   Time selection is based on:
-  - ``'start': '2023-02-07 02:00:00', 'end': '2023-02-07 03:30:00'`` (start + end) in format ``YYYY-MM-DD hh:mm:ss``
-  - ``'timestamps': ['20230207T103123Z', '20230207T141123Z', ...]`` (list of keys) in format ``YYYYMMDDThhmmssZ``
-  - ``'runs': 1`` (one run) or ``'runs': [1, 2, 3]`` (list of runs) in integer format
+  - ``'start': '2023-02-07 02:00:00', 'end': '2023-02-07 03:30:00'`` (start + end) in format ``YYYY-MM-DD hh:mm:ss``;
+  - ``'timestamps': ['20230207T103123Z', '20230207T141123Z', ...]`` (list of keys) in format ``YYYYMMDDThhmmssZ``;
+  - ``'runs': 1`` (one run) or ``'runs': [1, 2, 3]`` (list of runs) in integer format.
 
 ..
   Note: currently taking range between earliest and latest i.e. also including the ones in between that are not listed, will be modified to either
@@ -117,6 +114,10 @@ For each subsystem to be plotted, specify
 - ``"variation"``: set it to ``True`` if you want % variation instead of absolute values for your parameter. Percentage variations are evaluated as: ``(param/mean - 1)*100``, where ``mean`` is the mean of the parameter under study evaluated over the first 10% of the time interval you specified in the ``dataset`` entry
 - ``"time_window"``: resampling time (``T``=minutes, ``H``=hours, ``D``=days) used to print resampled values (useful to spot trends over time)
 - ``"status"``: set it to ``True`` if you want to generate a status map for the subsystem and parameter under study (note, 2023-03-07: this works only for geds). In order to work, you first need to specify the limits you want to set as a either low or high threshold (or both) for the parameter under study by adding the % or absolute threshoold for the subsystem of interest in ``settings/par-setting.json``.
+
+.. warning::
+  There is no event type selection ready for calibration data. 
+  This means you always have to use ``"event_type": "all"`` as long as the different event selections are not properly implemented for calibration data too.
 
 ..
     "variation": Only implemented for ``"per_channel"`` plot style. Currently required even if the plot style is not ``"per_channel"``, will be fixed in the future.
