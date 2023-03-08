@@ -34,15 +34,17 @@ different output folders can be created. In general, the output folder is struct
                   └── <experiment>-<period>-<time_selection>-<type>.{dat,bak,dir}
 
 
-Files are usually saved using the following format: ``exp-period-datatype-time_interval``:
-  - ``experiment`` identifies the experiment (e.g. *l200*);
-  - ``period`` identifies a certain period of data taking (e.g. *p01*);
-  - ``time_selection`` can differ depending on the selected time range (see below for more details);
-  - ``type`` denotes the run type (e.g. *phy*, *cal*, or *cal_phy* if multiple types are selected in a row).
+Files are usually saved using the following format ``exp-period-datatype-time_interval``:
+
+- ``experiment`` identifies the experiment (e.g. *l200*);
+- ``period`` identifies a certain period of data taking (e.g. *p01*);
+- ``time_selection`` can differ depending on the selected time range (see below for more details);
+- ``type`` denotes the run type (e.g. *phy*, *cal*, or *cal_phy* if multiple types are selected in a row).
 
 .. note::
 
   ``time_selection`` can assume one of the following formats, depending on what we put as a time range into ``dataset``:
+  
   - if ``{'start': '20220928T080000Z', 'end': '20220928T093000Z'}`` (start + end), then <time_selection> = ``20220928T080000Z_20220928T093000Z``;
   - if ``{'timestamps': ['20230207T103123Z']}`` (one key), then <time_selection> = ``20230207T103123Z``;
   - if ``{'timestamps': ['20230207T103123Z', '20230207T141123Z', '20230207T083323Z']}`` (multiple keys), then <time_selection> = ``20230207T083323Z_20230207T141123Z`` (min/max timestamp interval)
@@ -122,10 +124,11 @@ To open the saved figure for a given parameter, one way to do it is through
 
 .. important::
 
-  The key name ``<figure>`` changes depending on the used ``plot_style`` for producing that plot. In particular,
-  - if you use ``"plot_style": "per channel"``, then ``<figure> = figure_plot_string_<string_no>``, where ``string_no`` is the number of one of the available strings;
-  - if you use ``"plot_style": "per cc4"`` or ``"per string"`` or ``"array"``, then ``<figure> = figure_plot``;
-  - if you use ``"plot_style": "per barrel"``, then ``<figure> = figure_plot_<location>_<position>``, where ``<location>`` is either "IB" or "OB, while ``<position>`` is either "top" or "bottom".
+The key name ``<figure>`` changes depending on the used ``plot_style`` for producing that plot. In particular,
+
+- if you use ``"plot_style": "per channel"``, then ``<figure> = figure_plot_string_<string_no>``, where ``string_no`` is the number of one of the available strings;
+- if you use ``"plot_style": "per cc4"`` or ``"per string"`` or ``"array"``, then ``<figure> = figure_plot``;
+- if you use ``"plot_style": "per barrel"``, then ``<figure> = figure_plot_<location>_<position>``, where ``<location>`` is either "IB" or "OB, while ``<position>`` is either "top" or "bottom".
 
 .. note::
 
