@@ -5,14 +5,12 @@
 # See mapping user plot structure keywords to corresponding functions in the end of this file
 
 import io
-from math import ceil
 
 import numpy as np
 import pandas as pd
 from matplotlib.axes import Axes
 from matplotlib.dates import DateFormatter, date2num, num2date
 from matplotlib.figure import Figure
-from matplotlib.ticker import FixedLocator
 from pandas import DataFrame, Timedelta
 
 from . import utils
@@ -29,12 +27,14 @@ def plot_vs_time(
     # plotting this way, to_pydatetime() converts it to type datetime which is needed for DateFormatter
     # changing the type of the column itself with the table does not work
     data_channel = data_channel.sort_values("datetime")
-    ax.plot(
-        data_channel["datetime"].dt.to_pydatetime(),
-        data_channel[plot_info["parameter"]],
-        zorder=0,
-        color=color if plot_info["parameter"] == "event_rate" else "darkgray",
-    )
+
+    if plot_info["resampled"] == "also":
+        ax.plot(
+            data_channel["datetime"].dt.to_pydatetime(),
+            data_channel[plot_info["parameter"]],
+            zorder=0,
+            color=color if plot_info["parameter"] == "event_rate" else "darkgray",
+        )
 
     # save the mean value performed over the first bunch of data
     mean_value = data_channel[plot_info["parameter"] + "_mean"].iloc[0]

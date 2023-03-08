@@ -1,5 +1,5 @@
 {
-  "output": "/data1/users/calgaro/prod-ref",
+  "output": "/data1/users/morella/testing-dev-michele",
   "dataset": {
     "experiment": "L200",
     "period": "p02",
@@ -10,31 +10,24 @@
     "end": "2023-01-26 07:00:00"
   },
   "subsystems": {
-    "pulser": {
-      "Pulser event rate": {
-        "parameters": "event_rate",
-        "event_type": "pulser",
-        "plot_structure": "per channel",
-        "plot_style": "vs time",
-        "variation": false,
-        "time_window": "1H"
-      },
-      "AUX channel waveform maximum": {
-        "parameters": "wf_max",
-        "event_type": "all",
-        "plot_structure": "per channel",
-        "plot_style": "histogram",
-        "variation": false
-      }
-    },
     "geds": {
+      "Pulser Gain in pulser events": {
+        "parameters": "cuspEmax",
+        "event_type": "pulser",
+        "plot_structure": "per string",
+        "plot_style": "vs time",
+        "resampled": "only",
+        "variation": true,
+        "time_window": "5T"
+      },
       "Baselines in pulser events": {
         "parameters": "baseline",
         "event_type": "pulser",
-        "plot_structure": "per channel",
+        "plot_structure": "per string",
         "plot_style": "vs time",
+        "resampled": "also",
         "variation": true,
-        "time_window": "1H"
+        "time_window": "5T"
       }
     }
   }
