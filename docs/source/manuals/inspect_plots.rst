@@ -4,84 +4,132 @@ How to inspect plots
 Output files
 ------------
 
-After the code has run, pickle files containing the plots for given parameters as a function
-of time are produced, together with a pdf file containing all the generated plots.
+After the code has run, shelve object files containing the data and plots generated for the inspected parameters/subsystems
+are produced, together with a pdf file containing all the generated plots and a log file containing running information. In particular,
+the last two files are created for each inspected subsystem (pulser, geds, spms).
 
-Files are usually collected in the output folder ``out/``, whose path can be specified
-in ``src/legend_data_monitor/settings/lngs-config.json``:
+Files are usually collected in the output folder specified in the ``output`` config entry:
 
 .. code-block:: json
 
   {
-  "run_info": {
-    // ...
-    "path": {
-      // ...
-      "output": "/data1/users/calgaro/legend-data-monitor/out/"
-    }
-  },
+  "output": "<some_path>/out",
   // ...
 
-
-The output folder is structured as it follows (note: here we are assuming to plot the baseline
-for all germanium strings using L60 data):
+Then, depending on the chosen dataset (``experiment``, ``period``, ``version``, ``type``, time selection),
+different output folders can be created. In general, the output folder is structured as it follows:
 
 ::
+  <some_path>/out/
+    └── prod-ref
+      └── <version>
+        └── generated
+          └── plt
+            └── <type>
+              └── <period>
+                └── <time_selection>
+                  ├── <experiment>-<period>-<time_selection>-<type>-<subsystem>.pdf
+                  ├── <experiment>-<period>-<time_selection>-<type>-<subsystem>.log
+                  └── <experiment>-<period>-<time_selection>-<type>.{dat,bak,dir}
 
-    out/
-    ├── json-files/
-    │   └── l60-p01-phy_20220922T093400Z_20220922T161000Z.json
-    ├── log-files/
-    │   └── l60-p01-phy_20220922T093400Z_20220922T161000Z.log
-    ├── pdf-files/
-    │   ├── heatmaps/
-    │   │   └── l60-p01-phy_20220922T093400Z_20220922T161000Z.pdf
-    │   └── par-vs-time/
-    │       └── l60-p01-phy_20220922T093400Z_20220922T161000Z.pdf
-    └── pkl-files/
-        ├── heatmaps/
-        │   └── l60-p01-phy-20220922T093400Z_20220922T161000Z-baseline.pkl
-        └── par-vs-time/
-            └── l60-p01-phy-20220922T093400Z_20220922T161000Z-baseline-S1.pkl
-            └── l60-p01-phy-20220922T093400Z_20220922T161000Z-baseline-S2.pkl
-            └── l60-p01-phy-20220922T093400Z_20220922T161000Z-baseline-S7.pkl
-            └── l60-p01-phy-20220922T093400Z_20220922T161000Z-baseline-S8.pkl
 
-In particular,
-
-* ``out/json-files/`` stores json files containing info about mean values for those parameters that were chosen to be plotted not in absolute value, but computing the percentage variations with respect to an average value evaluated over the first entries. The mean values are stored separately for each channel and parameter. The mean values listed in these files are the same ones that appear in the legend of plots.
-* ``out/log-files/`` stores files with detailed info about the code compilation.
-* ``out/pdf-files/`` stores pdf files collecting plots for the plotted parameters and for the enabled detector types.
-* ``out/pkl-files/`` stores pkl files collecting plots for the plotted parameters and for the enabled detector types, separately for each parameter and string/barrel.
-* ``heatmaps/``  files store maps containing info about statuses of each HPGe/SiPM channel; ``par-vs-time/`` files store time evolutions of given parameters.
+Files are usually saved using the following format: ``exp-period-datatype-time_interval``:
+  - ``experiment`` identifies the experiment (e.g. *l200*);
+  - ``period`` identifies a certain period of data taking (e.g. *p01*);
+  - ``time_selection`` can differ depending on the selected time range (see below for more details);
+  - ``type`` denotes the run type (e.g. *phy*, *cal*, or *cal_phy* if multiple types are selected in a row).
 
 .. note::
-  Files are usually saved using the following format: ``exp-period-datatype-time_interval``:
+  ``time_selection`` can assume one of the following formats, depending on what we put as a time range into ``dataset``:
+  - if ``{'start': '20220928T080000Z', 'end': '20220928T093000Z'}`` (start + end), then <time_selection> = ``20220928T080000Z_20220928T093000Z``;
+  - if ``{'timestamps': ['20230207T103123Z']}`` (one key), then <time_selection> = ``20230207T103123Z``;
+  - if ``{'timestamps': ['20230207T103123Z', '20230207T141123Z', '20230207T083323Z']}`` (multiple keys), then <time_selection> = ``20230207T083323Z_20230207T141123Z`` (min/max timestamp interval)
+  - if ``{'runs': 1}`` (one run), then <time_selection> = ``r001``;
+  - if ``{'runs': [1, 2, 3]}`` (multiple runs), then <time_selection> = ``r001_r002_r003``.
 
-  * ``exp`` identifies the experiment (e.g. *l60*)
-  * ``period`` identifies a certain period of data taking (e.g. *p01*)
-  * ``datatype`` denotes the run type (e.g. *phy*, *cal*, ...)
-  * ``time_interval`` has the format ``start_stop``, where ``start`` is the initial timestamp in UTC+00 format (e.g. *20220922T093400Z*), while ``stop`` is the final timestamp in UTC+00 format (e.g. *20220922T161000Z*)
+
+Shelve output objects
+~~~~~~~~~~~~~~~~~~~~~
+*Under construction... (structure might change over time, but content should remain the same)*
+
+The output object ``<experiment>-<period>-<time_selection>-<type>.{dat,bak,dir}`` has the following structure:
+
+.. code-block::
+  <experiment>-<period>-<time_selection>-<type>
+      └── monitoring
+            ├── pulser // event type
+            │   └── cuspEmax_ctc_cal // parameter
+            │   	├── 4 // this is the channel FC id
+            │   	│       ├── values // these are y plot-values shown
+            │     │       │     ├── all // every timestamp entry
+            │     │       │     └── resampled // after the resampling
+            │     │	      ├── timestamp // these are plot-x values shown
+            │     │       │     ├── all
+            │     │       │     └── resampled
+            │     │ 	    ├── mean // mean over the first 10% of data within the range inspected by the user
+            │   	│	      └── plot_info // some useful plot-info: ['title', 'subsystem', 'locname', 'unit', 'plot_style', 'parameter', 'label', 'unit_label', 'time_window', 'limits']
+            │   	├── ...other channels...
+            │   	├── df_geds // dataframe containing all geds channels for a given parameter
+            │   	├── <figure> // Figure object
+            │   	└── map_geds // geds status map (if present)
+            ├─all
+            │   └── baseline
+            │   	├── ...channels data/info...
+            │   	└── ...other summary objects (df/status map/figures)...
+            │   └── wf_max
+            │   	└── ...
+            └──phy
+                └── ...
+
+One way to open it and inspect the saved objects for a given channel, eg. ID='4', is to do
+
+.. code-block:: python
+  import shelve
+
+  with shelve.open("<experiment>-<period>-<time_selection>-<type>") as file:
+    # get y values
+    all_data_ch4 = file['monitoring']['pulser']['baseline']['4']['values']['all']
+    resampled_data_ch4 = file['monitoring']['pulser']['baseline']['4']['values']['resampled']
+    # get info for plotting data
+    plot_info_ch4 = file['monitoring']['pulser']['baseline']['4']['plot_info']
+
+To get the corresponding dataframe (containing all channels with map/status info and loaded parameters), you can use
+
+.. code-block:: python
+  import shelve
+
+  with shelve.open("<experiment>-<period>-<time_selection>-<type>") as file:
+    df_geds = file['monitoring']['pulser']['baseline']['df_geds'].data
+
+To open the saved figure for a given parameter, one way to do it is through
+
+.. code-block:: python
+  import io
+  from PIL import Image
+  with io.BytesIO(shelf['monitoring']['pulser']['baseline']['<figure>']) as obj:
+    # create a PIL Image object from the bytes
+    pil_image = Image.open(obj)
+    # convert the image to RGB color space (to enable PDF saving)
+    pil_image = pil_image.convert('RGB')
+    # save image to disk
+    pil_image.save('figure.pdf', bbox_inches="tight")
+
+.. important::
+  The key name ``<figure>`` changes depending on the used ``plot_style`` for producing that plot. In particular,
+  - if you use ``"plot_style": "per channel"``, then ``<figure> = figure_plot_string_<string_no>``, where ``string_no`` is the number of one of the available strings;
+  - if you use ``"plot_style": "per cc4"`` or ``"per string"`` or ``"array"``, then ``<figure> = figure_plot``;
+  - if you use ``"plot_style": "per barrel"``, then ``<figure> = figure_plot_<location>_<position>``, where ``<location>`` is either "IB" or "OB, while ``<position>`` is either "top" or "bottom".
+
+.. note::
+  There is no need to create one shelve object for each inspected subsystem.
+  Indeed, one way to separate among pulser, geds and spms is to look at channel IDs.
+  In any case, the subsystem info is saved under ``["monitoring"][<event_type>][<parameter>]["plot_info"]["subsystem"]``.
+
 
 Inspect plots
 -------------
 
-Jupyter Notebook
-~~~~~~~~~~~~~~~~
+*Under construction*
 
-``legend-data-monitor/notebook`` contains a notebook that one can use to read and plot pickle files containing plots of given parameters and detectors.
-
-In that folder, you find:
-
-* ``monitor-par-vs-time-2D.ipynb`` that helps plotting separately *geds*, *spms* and *ch000*. Some widget buttons are present on top of plots that let you inspect different parameters and strings/barrels. A box containing info about applied time cuts is present too on the left side of widget buttons (e.g. *2022/09/22 09:34 -> 2022/09/22 16:10*); selecting a given time cut, you can inspect different time intervals. This notebook does not work if we use a 3D-plot representation.
-* ``monitor-par-vs-time-3D.ipynb`` that helps plotting *geds*. This notebook does not visualize SiPMs parameter plots since their parameters (e.g. energy in PE, trigger position) are plotted as maps. Even ch000 is left out from this notebook since there is not advantage in plotting the channel in 3D. If necessary, it can be implemented in the future.
-
-New notebooks can be simply implemented by the users themselves, based on the already available ones. The main functions used to define widgets and plot results are in ``src/legend_data_monitor/ipynb_info.py``.
-
-.. note::
-  The plots are interactive: you can perform zooms (x-axis is shared among different channels, while y-axis is not shared) and
-  separately save each canvas to your local environment.
-
-.. attention::
-  During normal data taking, the offline monitoring is performed on 2D plots only.
-  The option of having 3D plots too was left for a personal usage.
+- Near future: `Dashboard <https://legend-exp.atlassian.net/wiki/spaces/LEGEND/pages/637861889/Monitoring+Dashboard+Manual>`_ tool
+- Future: notebook to interactively inspect plots (with buttons?)

@@ -1,8 +1,6 @@
 Available parameters
 ====================
-| *Under construction...*
 | The following table shows which parameter are available (and tested) separately for each detector type.
-| In general, the full list of dsp/hit variables that were generated within a given version vXX.YY can be found at legend-login LNGS machine under ``/data1/shared/l60/l60-prodven-v1/prod-ref/vXX.YY/inputs/config/``.
 
 
 .. list-table::
@@ -29,18 +27,25 @@ Available parameters
     - ✓
     - x
     - x
-  * - ``uncal_puls``
+  * - ``FWHM``
     - ✓
     - x
-    - ✓
-  * - ``cal_puls``
+    - x
+  * - ``wf_max_rel``
     - ✓
     - x
     - ✓
 
 .. note::
 
-  In general, all entries will be plotted.
+  In general, all saved timestamps will be plotted.
   But you can also pick some given entries (see the config file), eg.
-  * you can pick only pulser, physical or all entries
-  * you can apply quality cuts, keeping only given entries
+  * you can pick only ``pulser``, ``phy``, ``K_lines`` or ``all`` entries
+
+.. important::
+
+  Special parameters are typically saved under ``settings/special-parameters.json`` and carefully handled when loading data.
+
+.. warning::
+
+  Quality cuts have not been introduced!
