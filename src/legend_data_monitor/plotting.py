@@ -116,8 +116,10 @@ def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: 
             ],
             "unit": utils.PLOT_INFO[plot_settings["parameters"]]["unit"],
             "plot_style": plot_settings["plot_style"],
-            "resampled": plot_settings["resampled"],
         }
+
+        if plot_settings["plot_style"] == "vs time":
+            plot_info["resampled"] = plot_settings["resampled"]
 
         # --- information needed for plot style
         plot_info["parameter"] = plot_settings[
