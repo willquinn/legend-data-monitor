@@ -116,6 +116,7 @@ def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: 
             ],
             "unit": utils.PLOT_INFO[plot_settings["parameters"]]["unit"],
             "plot_style": plot_settings["plot_style"],
+            "resampled": plot_settings["resampled"],
         }
 
         # --- information needed for plot style
@@ -150,18 +151,15 @@ def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: 
         plot_structure = PLOT_STRUCTURE[plot_settings["plot_structure"]]
         utils.logger.debug("Plot structure: " + plot_settings["plot_structure"])
 
-        # writing data_analys and plot_info to file to be later plotted by the dashboard
-        out_dict["data"] = data_analysis
-        out_dict["plot_info"] = plot_info
-
         # plotting
         par_dict_content = plot_structure(data_analysis, plot_info, pdf)
+
+        # saving dataframe for each parameter
+        par_dict_content["df_" + plot_info["subsystem"]] = data_analysis
 
         # For some reason, after some plotting functions the index is set to "channel".
         # We need to set it back otherwise status_plot.py gets crazy and everything crashes.
         data_analysis.data = data_analysis.data.reset_index()
-        # saving dataframe
-        par_dict_content["df_" + plot_info["subsystem"]] = data_analysis
 
         # -------------------------------------------------------------------------
         # call status plot
@@ -484,7 +482,6 @@ def plot_per_string(data_analysis, plot_info, pdf, *string):
         axes.legend(labels=labels, loc="center left", bbox_to_anchor=(1, 0.5))
 
         # plot the position of the two K lines
-
         if plot_info["title"] == "K lines":
             axes.axhline(y=1460.822, color="gray", linestyle="--")
             axes.axhline(y=1524.6, color="gray", linestyle="--")
