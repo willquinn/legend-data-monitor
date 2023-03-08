@@ -30,7 +30,9 @@ def plot_vs_time(
     # changing the type of the column itself with the table does not work
     data_channel = data_channel.sort_values("datetime")
 
-    if plot_info["resampled"] == "also":
+    ch_dict = {}
+
+    if plot_info["resampled"] != "only":
         ax.plot(
             data_channel["datetime"].dt.to_pydatetime(),
             data_channel[plot_info["parameter"]],
@@ -45,55 +47,59 @@ def plot_vs_time(
     # plot resampled average
     # -------------------------------------------------------------------------
 
-    # unless event rate - already resampled and counted in some time window
-    if not plot_info["parameter"] == "event_rate":
-        # resample in given time window, as start pick the first timestamp in table
-        resampled = (
-            data_channel.set_index("datetime")
-            .resample(plot_info["time_window"], origin="start")
-            .mean(numeric_only=True)
-        )
-        # will have datetime as index after resampling -> put back
-        resampled = resampled.reset_index()
-        # the timestamps in the resampled table will start from the first timestamp, and go with sampling intervals
-        # I want to shift them by half sampling window, so that the resampled value is plotted in the middle time window in which it was calculated
-        resampled["datetime"] = (
-            resampled["datetime"] + Timedelta(plot_info["time_window"]) / 2
-        )
+    if plot_info["resampled"] != "no":
+        # unless event rate - already resampled and counted in some time window
+        if not plot_info["parameter"] == "event_rate":
+            # resample in given time window, as start pick the first timestamp in table
+            resampled = (
+                data_channel.set_index("datetime")
+                .resample(plot_info["time_window"], origin="start")
+                .mean(numeric_only=True)
+            )
+            # will have datetime as index after resampling -> put back
+            resampled = resampled.reset_index()
+            # the timestamps in the resampled table will start from the first timestamp, and go with sampling intervals
+            # I want to shift them by half sampling window, so that the resampled value is plotted in the middle time window in which it was calculated
+            resampled["datetime"] = (
+                resampled["datetime"] + Timedelta(plot_info["time_window"]) / 2
+            )
 
-        ax.plot(
-            resampled["datetime"].dt.to_pydatetime(),
-            resampled[plot_info["parameter"]],
-            color=color,
-            zorder=1,
-            marker="o",
-            linestyle="-",
-        )
+            ax.plot(
+                resampled["datetime"].dt.to_pydatetime(),
+                resampled[plot_info["parameter"]],
+                color=color,
+                zorder=1,
+                marker="o",
+                linestyle="-",
+            )
 
-        # saving x,y data into output files (absolute + resampled data)
-        ch_dict = {
-            "values": {
-                "all": data_channel[plot_info["parameter"]],
-                "resampled": resampled[plot_info["parameter"]],
-            },
-            "mean": mean_value,
-            "plot_info": plot_info,
-            "timestamp": {
-                "all": data_channel["datetime"].dt.to_pydatetime(),
-                "resampled": resampled["datetime"].dt.to_pydatetime(),
-            },
-        }
-    # saving x,y data into output files (absolute data only)
-    else:
-        ch_dict = {
-            "values": {"all": data_channel[plot_info["parameter"]], "resampled": []},
-            "mean": mean_value,
-            "plot_info": plot_info,
-            "timestamp": {
-                "all": data_channel["datetime"].dt.to_pydatetime(),
-                "resampled": [],
-            },
-        }
+            # saving x,y data into output files (absolute + resampled data)
+            ch_dict = {
+                "values": {
+                    "all": data_channel[plot_info["parameter"]],
+                    "resampled": resampled[plot_info["parameter"]],
+                },
+                "mean": mean_value,
+                "plot_info": plot_info,
+                "timestamp": {
+                    "all": data_channel["datetime"].dt.to_pydatetime(),
+                    "resampled": resampled["datetime"].dt.to_pydatetime(),
+                },
+            }
+        # saving x,y data into output files (absolute data only)
+        else:
+            ch_dict = {
+                "values": {
+                    "all": data_channel[plot_info["parameter"]],
+                    "resampled": [],
+                },
+                "mean": mean_value,
+                "plot_info": plot_info,
+                "timestamp": {
+                    "all": data_channel["datetime"].dt.to_pydatetime(),
+                    "resampled": [],
+                },
+            }
 
     # -------------------------------------------------------------------------
     # beautification

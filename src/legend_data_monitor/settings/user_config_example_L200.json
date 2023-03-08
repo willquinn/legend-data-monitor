@@ -16,16 +16,25 @@
         "event_type": "pulser",
         "plot_structure": "per string",
         "plot_style": "vs time",
-        "resampled": "only",
+        "resampled": "yes",
         "variation": true,
         "time_window": "5T"
       },
-      "Baselines in pulser events": {
+      "Baseline in pulser events": {
         "parameters": "baseline",
         "event_type": "pulser",
         "plot_structure": "per string",
         "plot_style": "vs time",
-        "resampled": "also",
+        "resampled": "no",
+        "variation": true,
+        "time_window": "5T"
+      },
+      "Noise in pulser events": {
+        "parameters": "bl_std",
+        "event_type": "pulser",
+        "plot_structure": "per string",
+        "plot_style": "vs time",
+        "resampled": "only",
         "variation": true,
         "time_window": "5T"
       }
