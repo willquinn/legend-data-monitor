@@ -119,7 +119,12 @@ def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: 
         }
 
         if plot_settings["plot_style"] == "vs time":
-            plot_info["resampled"] = plot_settings["resampled"]
+            if plot_info["resampled"]:
+                plot_info["resampled"] = plot_settings["resampled"]
+            else:
+                utils.logger.warning("\033[91mNo 'resampled' option was specified. Data for both every timestamp and resampled will be plotted\033[0m")
+                utils.logger.warning("\033[93m(note: you can pick among 'no', 'only', 'also')\033[0m")
+                
         elif plot_settings["resampled"]:
             utils.logger.warning(
                 "\033[93mYou're using the option 'resampled' for a plot style that does not need it. For this reason, that option will be ignored.\033[0m"
@@ -160,12 +165,12 @@ def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: 
         # plotting
         par_dict_content = plot_structure(data_analysis, plot_info, pdf)
 
-        # saving dataframe for each parameter
-        par_dict_content["df_" + plot_info["subsystem"]] = data_analysis
-
         # For some reason, after some plotting functions the index is set to "channel".
         # We need to set it back otherwise status_plot.py gets crazy and everything crashes.
         data_analysis.data = data_analysis.data.reset_index()
+        
+        # saving dataframe for each parameter
+        par_dict_content["df_" + plot_info["subsystem"]] = data_analysis
 
         # -------------------------------------------------------------------------
         # call status plot
@@ -415,7 +420,7 @@ def plot_per_cc4(data_analysis, plot_info, pdf):
 
 
 # technically per location
-def plot_per_string(data_analysis, plot_info, pdf, *string):
+def plot_per_string(data_analysis, plot_info, pdf):
     if plot_info["subsystem"] == "pulser":
         utils.logger.error(
             "\033[91mPlotting per string is not available for the pulser channel.\nTry again with a different plot structure!\033[0m"
@@ -424,8 +429,7 @@ def plot_per_string(data_analysis, plot_info, pdf, *string):
 
     # --- choose plot function based on user requested style e.g. vs time or histogram
     plot_style = plot_styles.PLOT_STYLE[plot_info["plot_style"]]
-    if not string:
-        utils.logger.debug("Plot style: " + plot_info["plot_style"])
+    utils.logger.debug("Plot style: " + plot_info["plot_style"])
 
     par_dict = {}
 
@@ -450,21 +454,15 @@ def plot_per_string(data_analysis, plot_info, pdf, *string):
     data_analysis.data = data_analysis.data.sort_values(["location", "label"])
     # new subplot for each string
     for location, data_location in data_analysis.data.groupby("location"):
-        # if string number specified, this function is being called by external code
-        # and is not invoked by make_subsystem_plots()
-        if string:
-            if string[0] != location:
-                continue
-            max_ch_per_string = (
-                data_analysis.data.groupby("location")["position"].nunique().max()
-            )
-            global COLORS
-            COLORS = color_palette("hls", max_ch_per_string).as_hex()
-
-        # otherwise just go on with standard code
-        else:
-            utils.logger.debug(f"... {plot_info['locname']} {location}")
-        # create one different figure per string
+        
+        # define what colors are needed 
+        max_ch_per_string = (data_analysis.data.groupby("location")["position"].nunique().max())
+        global COLORS
+        COLORS = color_palette("hls", max_ch_per_string).as_hex()
+        
+        utils.logger.debug(f"... {plot_info['locname']} {location}")
+        
+        # create one figure per string
         fig, axes = plt.subplots(figsize=(15, 5))
 
         # new color for each channel
@@ -488,7 +486,7 @@ def plot_per_string(data_analysis, plot_info, pdf, *string):
         axes.legend(labels=labels, loc="center left", bbox_to_anchor=(1, 0.5))
 
         # plot the position of the two K lines
-        if plot_info["title"] == "K lines":
+        if plot_info["cuts"] == "K lines":
             axes.axhline(y=1460.822, color="gray", linestyle="--")
             axes.axhline(y=1524.6, color="gray", linestyle="--")
 
@@ -503,10 +501,7 @@ def plot_per_string(data_analysis, plot_info, pdf, *string):
         # figures are retained until explicitly closed; close to not consume too much memory
         plt.close()
 
-    if string:
-        return fig
-    else:
-        return par_dict
+    return fig
 
 
 def plot_array(data_analysis, plot_info, pdf):
