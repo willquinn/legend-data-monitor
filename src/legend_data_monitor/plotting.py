@@ -122,9 +122,13 @@ def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: 
             if plot_info["resampled"]:
                 plot_info["resampled"] = plot_settings["resampled"]
             else:
-                utils.logger.warning("\033[91mNo 'resampled' option was specified. Data for both every timestamp and resampled will be plotted\033[0m")
-                utils.logger.warning("\033[93m(note: you can pick among 'no', 'only', 'also')\033[0m")
-                
+                utils.logger.warning(
+                    "\033[91mNo 'resampled' option was specified. Data for both every timestamp and resampled will be plotted\033[0m"
+                )
+                utils.logger.warning(
+                    "\033[93m(note: you can pick among 'no', 'only', 'also')\033[0m"
+                )
+
         elif plot_settings["resampled"]:
             utils.logger.warning(
                 "\033[93mYou're using the option 'resampled' for a plot style that does not need it. For this reason, that option will be ignored.\033[0m"
@@ -168,7 +172,7 @@ def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: 
         # For some reason, after some plotting functions the index is set to "channel".
         # We need to set it back otherwise status_plot.py gets crazy and everything crashes.
         data_analysis.data = data_analysis.data.reset_index()
-        
+
         # saving dataframe for each parameter
         par_dict_content["df_" + plot_info["subsystem"]] = data_analysis
 
@@ -454,14 +458,15 @@ def plot_per_string(data_analysis, plot_info, pdf):
     data_analysis.data = data_analysis.data.sort_values(["location", "label"])
     # new subplot for each string
     for location, data_location in data_analysis.data.groupby("location"):
-        
-        # define what colors are needed 
-        max_ch_per_string = (data_analysis.data.groupby("location")["position"].nunique().max())
+        # define what colors are needed
+        max_ch_per_string = (
+            data_analysis.data.groupby("location")["position"].nunique().max()
+        )
         global COLORS
         COLORS = color_palette("hls", max_ch_per_string).as_hex()
-        
+
         utils.logger.debug(f"... {plot_info['locname']} {location}")
-        
+
         # create one figure per string
         fig, axes = plt.subplots(figsize=(15, 5))
 
