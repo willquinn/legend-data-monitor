@@ -122,6 +122,7 @@ def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: 
             if plot_info["resampled"]:
                 plot_info["resampled"] = plot_settings["resampled"]
             else:
+                plot_info["resampled"] = "yes"
                 utils.logger.warning(
                     "\033[91mNo 'resampled' option was specified. Data for both every timestamp and resampled will be plotted\033[0m"
                 )
