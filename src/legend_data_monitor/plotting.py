@@ -501,8 +501,7 @@ def plot_per_string(data_analysis, plot_info, pdf):
 
         # -------------------------------------------------------------------------------
         fig.suptitle(f"{plot_info['subsystem']} - {plot_info['title']}")
-        if not string:
-            plt.savefig(pdf, format="pdf", bbox_inches="tight")
+        plt.savefig(pdf, format="pdf", bbox_inches="tight")
         # figures are retained until explicitly closed; close to not consume too much memory
         plt.close()
 
