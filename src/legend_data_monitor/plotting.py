@@ -119,6 +119,23 @@ def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: 
             "plot_style": plot_settings["plot_style"],
         }
 
+        if plot_settings["plot_style"] == "vs time":
+            if plot_info["resampled"]:
+                plot_info["resampled"] = plot_settings["resampled"]
+            else:
+                plot_info["resampled"] = "yes"
+                utils.logger.warning(
+                    "\033[91mNo 'resampled' option was specified. Data for both every timestamp and resampled will be plotted\033[0m"
+                )
+                utils.logger.warning(
+                    "\033[93m(note: you can pick among 'no', 'only', 'also')\033[0m"
+                )
+
+        elif plot_settings["resampled"]:
+            utils.logger.warning(
+                "\033[93mYou're using the option 'resampled' for a plot style that does not need it. For this reason, that option will be ignored.\033[0m"
+            )
+
         # --- information needed for plot style
         plot_info["parameter"] = plot_settings[
             "parameters"
@@ -151,12 +168,14 @@ def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: 
         plot_structure = PLOT_STRUCTURE[plot_settings["plot_structure"]]
         utils.logger.debug("Plot structure: " + plot_settings["plot_structure"])
 
+        # plotting
         par_dict_content = plot_structure(data_analysis, plot_info, pdf)
 
         # For some reason, after some plotting functions the index is set to "channel".
         # We need to set it back otherwise status_plot.py gets crazy and everything crashes.
         data_analysis.data = data_analysis.data.reset_index()
-        # saving dataframe
+
+        # saving dataframe for each parameter
         par_dict_content["df_" + plot_info["subsystem"]] = data_analysis
 
         # -------------------------------------------------------------------------
@@ -429,23 +448,12 @@ def plot_per_string(data_analysis, plot_info, pdf):
             "\033[91mPlotting per string is not available for the pulser channel.\nTry again with a different plot structure!\033[0m"
         )
         exit()
+
     # --- choose plot function based on user requested style e.g. vs time or histogram
     plot_style = plot_styles.PLOT_STYLE[plot_info["plot_style"]]
     utils.logger.debug("Plot style: " + plot_info["plot_style"])
 
     par_dict = {}
-
-    # --- create plot structure
-    # number of strings/fibers
-    no_location = len(data_analysis.data["location"].unique())
-    # set constrained layout to accommodate figure suptitle
-    fig, axes = plt.subplots(
-        no_location,
-        figsize=(10, no_location * 3),
-        sharex=True,
-        sharey=True,
-        constrained_layout=True,
-    )
 
     # -------------------------------------------------------------------------------
     # create label of format hardcoded for geds pX-chXXX-name
@@ -467,20 +475,28 @@ def plot_per_string(data_analysis, plot_info, pdf):
 
     data_analysis.data = data_analysis.data.sort_values(["location", "label"])
     # new subplot for each string
-    ax_idx = 0
     for location, data_location in data_analysis.data.groupby("location"):
+        # define what colors are needed
+        max_ch_per_string = (
+            data_analysis.data.groupby("location")["position"].nunique().max()
+        )
+        global COLORS
+        COLORS = color_palette("hls", max_ch_per_string).as_hex()
+
         utils.logger.debug(f"... {plot_info['locname']} {location}")
+
+        # create one figure per string
+        fig, axes = plt.subplots(figsize=(15, 5))
 
         # new color for each channel
         col_idx = 0
         labels = []
         for label, data_channel in data_location.groupby("label"):
             ch_dict = plot_style(
-                data_channel, fig, axes[ax_idx], plot_info, COLORS[col_idx]
+                data_channel, fig, axes, plot_info, color=COLORS[col_idx]
             )
             labels.append(label)
             col_idx += 1
-
             channel = ((label.split("-")[1]).split("ch")[-1]).lstrip("0")
             if channel not in par_dict.keys():
                 par_dict[channel] = ch_dict
@@ -489,33 +505,26 @@ def plot_per_string(data_analysis, plot_info, pdf):
         axes[ax_idx].grid("major", linestyle="--")
         axes[ax_idx].set_axisbelow(True)
         # beautification
-        axes[ax_idx].set_title(f"{plot_info['locname']} {location}")
-        axes[ax_idx].set_ylabel("")
-        axes[ax_idx].legend(labels=labels, loc="center left", bbox_to_anchor=(1, 0.5))
+        axes.set_title(f"{plot_info['locname']} {location}")
+        axes.set_ylabel("")
+        axes.legend(labels=labels, loc="center left", bbox_to_anchor=(1, 0.5))
 
         # plot the position of the two K lines
         if plot_info["cuts"] == "K lines":
-            axes[ax_idx].axhline(y=1460.822, color="gray", linestyle="--")
-            axes[ax_idx].axhline(y=1524.6, color="gray", linestyle="--")
+            axes.axhline(y=1460.822, color="gray", linestyle="--")
+            axes.axhline(y=1524.6, color="gray", linestyle="--")
 
         # plot line at 0% for variation
         if plot_info["unit_label"] == "%":
-            axes[ax_idx].axhline(y=0, color="gray", linestyle="--")
-        ax_idx += 1
+            axes.axhline(y=0, color="gray", linestyle="--")
 
-    # -------------------------------------------------------------------------------
-    y_title = 1.05 if plot_info["subsystem"] == "pulser" else 1.01
-    fig.suptitle(f"{plot_info['subsystem']} - {plot_info['title']}", y=y_title)
-    plt.savefig(pdf, format="pdf", bbox_inches="tight")
-    # figures are retained until explicitly closed; close to not consume too much memory
-    plt.close()
+        # -------------------------------------------------------------------------------
+        fig.suptitle(f"{plot_info['subsystem']} - {plot_info['title']}", y=1.01)
+        plt.savefig(pdf, format="pdf", bbox_inches="tight")
+        # figures are retained until explicitly closed; close to not consume too much memory
+        plt.close()
 
-    with io.BytesIO() as buf:
-        fig.savefig(buf, bbox_inches="tight")
-        buf.seek(0)
-        par_dict["figure_plot"] = buf.getvalue()
-
-    return par_dict
+    return fig
 
 
 def plot_array(data_analysis, plot_info, pdf):
