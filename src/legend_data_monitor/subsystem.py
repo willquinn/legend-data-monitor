@@ -187,7 +187,7 @@ class Subsystem:
         # )
         query += f" and (type == '{self.datatype}')"
 
-        # !!!! QUICKFIX FOR R010
+        # !!!! QUICKFIX
         query += " and (timestamp != '20230125T222013Z')"
         query += " and (timestamp != '20230126T015308Z')"
         query += " and (timestamp != '20230222T231553Z')"
