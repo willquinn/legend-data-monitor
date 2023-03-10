@@ -7,10 +7,9 @@
 
 import matplotlib.pyplot as plt
 import numpy as np
-from pandas import DataFrame, concat
-from matplotlib.backends.backend_pdf import PdfPages
 import seaborn as sns
-from pandas import Timedelta
+from matplotlib.backends.backend_pdf import PdfPages
+from pandas import DataFrame, Timedelta, concat
 
 from . import utils
 
@@ -129,9 +128,7 @@ def status_plot(subsystem, data_analysis: DataFrame, plot_info: dict, pdf: PdfPa
             new_df = DataFrame(
                 new_row, columns=["channel", "name", "location", "position", "status"]
             )
-            new_dataframe = concat(
-                [new_dataframe, new_df], ignore_index=True, axis=0
-            )
+            new_dataframe = concat([new_dataframe, new_df], ignore_index=True, axis=0)
 
         # print message with timestamps where the detector is out of threshold
         if len(out_thr_datetimes) != 0:

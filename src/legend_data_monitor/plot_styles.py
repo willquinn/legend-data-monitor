@@ -29,7 +29,11 @@ def plot_vs_time(
     ch_dict = {}
 
     res_col = color
-    all_col = color if plot_info["resampled"] == "no" or plot_info["parameter"] == "event_rate" else "darkgray"
+    all_col = (
+        color
+        if plot_info["resampled"] == "no" or plot_info["parameter"] == "event_rate"
+        else "darkgray"
+    )
 
     if plot_info["resampled"] != "only":
         ax.plot(
@@ -66,7 +70,7 @@ def plot_vs_time(
             ax.plot(
                 resampled["datetime"].dt.to_pydatetime(),
                 resampled[plot_info["parameter"]],
-                color=res_col, 
+                color=res_col,
                 zorder=1,
                 marker="o",
                 linestyle="-",

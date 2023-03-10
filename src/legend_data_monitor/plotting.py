@@ -120,7 +120,9 @@ def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: 
         }
 
         # information for having the resampled or all entries (needed only for 'vs time' style option)
-        plot_info["resampled"] = plot_settings["resampled"] if "resampled" in plot_settings else ""
+        plot_info["resampled"] = (
+            plot_settings["resampled"] if "resampled" in plot_settings else ""
+        )
 
         if plot_settings["plot_style"] == "vs time":
             if plot_info["resampled"] == "":
@@ -383,9 +385,7 @@ def plot_per_cc4(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
     # plot
     # -------------------------------------------------------------------------------
 
-    data_analysis = data_analysis.sort_values(
-        ["cc4_id", "cc4_channel", "label"]
-    )
+    data_analysis = data_analysis.sort_values(["cc4_id", "cc4_channel", "label"])
     # new subplot for each string
     ax_idx = 0
     for cc4_id, data_cc4_id in data_analysis.groupby("cc4_id"):
@@ -528,7 +528,7 @@ def plot_per_string(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
     plt.savefig(pdf, format="pdf", bbox_inches="tight")
     # figures are retained until explicitly closed; close to not consume too much memory
     plt.close()
-    
+
     return par_dict
     # return fig ---> need to modify make_subsystem_plots too!!!
     # if you don't return a dictionary, you cannot save anything (eg the dataframe) in make_subsystem_plots
@@ -561,9 +561,7 @@ def plot_array(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
     # -------------------------------------------------------------------------------
     # create label of format hardcoded for geds sX-pX-chXXX-name
     # -------------------------------------------------------------------------------
-    labels = data_analysis.groupby("channel").first()[
-        ["name", "location", "position"]
-    ]
+    labels = data_analysis.groupby("channel").first()[["name", "location", "position"]]
     labels["channel"] = labels.index
     labels["label"] = labels[["location", "position", "channel", "name"]].apply(
         lambda x: f"s{x[0]}-p{x[1]}-ch{str(x[2]).zfill(3)}-{x[3]}", axis=1
