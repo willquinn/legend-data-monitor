@@ -167,14 +167,14 @@ def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: 
         utils.logger.debug("Plot structure: " + plot_settings["plot_structure"])
 
         # plotting
-        par_dict_content = plot_structure(data_analysis, plot_info, pdf)
+        par_dict_content = plot_structure(data_analysis.data, plot_info, pdf)
 
         # For some reason, after some plotting functions the index is set to "channel".
         # We need to set it back otherwise status_plot.py gets crazy and everything crashes.
         data_analysis.data = data_analysis.data.reset_index()
 
-        # saving dataframe for each parameter
-        par_dict_content["df_" + plot_info["subsystem"]] = data_analysis
+        # saving dataframe data for each parameter
+        par_dict_content["df_" + plot_info["subsystem"]] = data_analysis.data
 
         # -------------------------------------------------------------------------
         # call status plot
@@ -186,7 +186,7 @@ def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: 
                 )
             else:
                 status_fig = status_plot.status_plot(
-                    subsystem, data_analysis, plot_info, pdf
+                    subsystem, data_analysis.data, plot_info, pdf
                 )
                 # saving status map figure
                 with io.BytesIO() as buf:
@@ -240,18 +240,18 @@ def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: 
 # See mapping user plot structure keywords to corresponding functions in the end of this file
 
 
-def plot_per_ch(data_analysis, plot_info, pdf):
+def plot_per_ch(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
     # --- choose plot function based on user requested style e.g. vs time or histogram
     plot_style = plot_styles.PLOT_STYLE[plot_info["plot_style"]]
     utils.logger.debug("Plot style: " + plot_info["plot_style"])
 
     par_dict = {}
-    data_analysis.data = data_analysis.data.sort_values(["location", "position"])
+    data_analysis = data_analysis.sort_values(["location", "position"])
 
     # -------------------------------------------------------------------------------
 
     # separate figure for each string/fiber ("location")
-    for location, data_location in data_analysis.data.groupby("location"):
+    for location, data_location in data_analysis.groupby("location"):
         utils.logger.debug(f"... {plot_info['locname']} {location}")
 
         # -------------------------------------------------------------------------------
@@ -341,7 +341,7 @@ def plot_per_ch(data_analysis, plot_info, pdf):
     return par_dict
 
 
-def plot_per_cc4(data_analysis, plot_info, pdf):
+def plot_per_cc4(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
     if plot_info["subsystem"] == "pulser":
         utils.logger.error(
             "\033[91mPlotting per CC4 is not available for the pulser channel.\nTry again with a different plot structure!\033[0m"
@@ -355,7 +355,7 @@ def plot_per_cc4(data_analysis, plot_info, pdf):
 
     # --- create plot structure
     # number of cc4s
-    no_cc4_id = len(data_analysis.data["cc4_id"].unique())
+    no_cc4_id = len(data_analysis["cc4_id"].unique())
     # set constrained layout to accommodate figure suptitle
     fig, axes = plt.subplots(
         no_cc4_id,
@@ -368,7 +368,7 @@ def plot_per_cc4(data_analysis, plot_info, pdf):
     # -------------------------------------------------------------------------------
     # create label of format hardcoded for geds sXX-pX-chXXX-name-CC4channel
     # -------------------------------------------------------------------------------
-    labels = data_analysis.data.groupby("channel").first()[
+    labels = data_analysis.groupby("channel").first()[
         ["name", "position", "location", "cc4_channel", "cc4_id"]
     ]
     labels["channel"] = labels.index
@@ -376,19 +376,19 @@ def plot_per_cc4(data_analysis, plot_info, pdf):
         ["location", "position", "channel", "name", "cc4_channel"]
     ].apply(lambda x: f"s{x[0]}-p{x[1]}-ch{str(x[2]).zfill(3)}-{x[3]}-{x[4]}", axis=1)
     # put it in the table
-    data_analysis.data = data_analysis.data.set_index("channel")
-    data_analysis.data["label"] = labels["label"]
+    data_analysis = data_analysis.set_index("channel")
+    data_analysis["label"] = labels["label"]
 
     # -------------------------------------------------------------------------------
     # plot
     # -------------------------------------------------------------------------------
 
-    data_analysis.data = data_analysis.data.sort_values(
+    data_analysis = data_analysis.sort_values(
         ["cc4_id", "cc4_channel", "label"]
     )
     # new subplot for each string
     ax_idx = 0
-    for cc4_id, data_cc4_id in data_analysis.data.groupby("cc4_id"):
+    for cc4_id, data_cc4_id in data_analysis.groupby("cc4_id"):
         utils.logger.debug(f"... CC4 {cc4_id}")
 
         # new color for each channel
@@ -440,7 +440,7 @@ def plot_per_cc4(data_analysis, plot_info, pdf):
     return par_dict
 
 
-def plot_per_string(data_analysis, plot_info, pdf):
+def plot_per_string(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
     # --- choose plot function based on user requested style e.g. vs time or histogram
     plot_style = plot_styles.PLOT_STYLE[plot_info["plot_style"]]
     utils.logger.debug("Plot style: " + plot_info["plot_style"])
@@ -449,7 +449,7 @@ def plot_per_string(data_analysis, plot_info, pdf):
 
     # --- create plot structure
     # number of strings/fibers
-    no_location = len(data_analysis.data["location"].unique())
+    no_location = len(data_analysis["location"].unique())
     # set constrained layout to accommodate figure suptitle
     fig, axes = plt.subplots(
         no_location,
@@ -463,27 +463,27 @@ def plot_per_string(data_analysis, plot_info, pdf):
     # create label of format hardcoded for geds pX-chXXX-name
     # -------------------------------------------------------------------------------
 
-    labels = data_analysis.data.groupby("channel").first()[["name", "position"]]
+    labels = data_analysis.groupby("channel").first()[["name", "position"]]
     labels["channel"] = labels.index
     labels["label"] = labels[["position", "channel", "name"]].apply(
         lambda x: f"p{x[0]}-ch{str(x[1]).zfill(3)}-{x[2]}", axis=1
     )
     # put it in the table
-    data_analysis.data = data_analysis.data.set_index("channel")
-    data_analysis.data["label"] = labels["label"]
-    data_analysis.data = data_analysis.data.sort_values("label")
+    data_analysis = data_analysis.set_index("channel")
+    data_analysis["label"] = labels["label"]
+    data_analysis = data_analysis.sort_values("label")
 
     # -------------------------------------------------------------------------------
     # plot
     # -------------------------------------------------------------------------------
 
-    data_analysis.data = data_analysis.data.sort_values(["location", "label"])
+    data_analysis = data_analysis.sort_values(["location", "label"])
     # new subplot for each string
     ax_idx = 0
-    for location, data_location in data_analysis.data.groupby("location"):
+    for location, data_location in data_analysis.groupby("location"):
         # define what colors are needed
         max_ch_per_string = (
-            data_analysis.data.groupby("location")["position"].nunique().max()
+            data_analysis.groupby("location")["position"].nunique().max()
         )
         global COLORS
         COLORS = color_palette("hls", max_ch_per_string).as_hex()
@@ -534,7 +534,7 @@ def plot_per_string(data_analysis, plot_info, pdf):
     # if you don't return a dictionary, you cannot save anything (eg the dataframe) in make_subsystem_plots
 
 
-def plot_array(data_analysis, plot_info, pdf):
+def plot_array(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
     if plot_info["subsystem"] == "spms":
         utils.logger.error(
             "\033[91mPlotting per array is not available for the spms.\nTry again!\033[0m"
@@ -561,7 +561,7 @@ def plot_array(data_analysis, plot_info, pdf):
     # -------------------------------------------------------------------------------
     # create label of format hardcoded for geds sX-pX-chXXX-name
     # -------------------------------------------------------------------------------
-    labels = data_analysis.data.groupby("channel").first()[
+    labels = data_analysis.groupby("channel").first()[
         ["name", "location", "position"]
     ]
     labels["channel"] = labels.index
@@ -569,14 +569,14 @@ def plot_array(data_analysis, plot_info, pdf):
         lambda x: f"s{x[0]}-p{x[1]}-ch{str(x[2]).zfill(3)}-{x[3]}", axis=1
     )
     # put it in the table
-    data_analysis.data = data_analysis.data.set_index("channel")
-    data_analysis.data["label"] = labels["label"]
-    data_analysis.data = data_analysis.data.sort_values("label")
+    data_analysis = data_analysis.set_index("channel")
+    data_analysis["label"] = labels["label"]
+    data_analysis = data_analysis.sort_values("label")
 
     # -------------------------------------------------------------------------------
     # plot
     # -------------------------------------------------------------------------------
-    data_analysis.data = data_analysis.data.sort_values(["location", "label"])
+    data_analysis = data_analysis.sort_values(["location", "label"])
 
     # one color for each string
     col_idx = 0
@@ -586,7 +586,7 @@ def plot_array(data_analysis, plot_info, pdf):
     legend = []
 
     # group by string
-    for location, data_location in data_analysis.data.groupby("location"):
+    for location, data_location in data_analysis.groupby("location"):
         utils.logger.debug(f"... {plot_info['locname']} {location}")
 
         values_per_string = []  # y values - in each string
@@ -703,20 +703,20 @@ def plot_per_barrel_and_position(
     par_dict = {}
 
     # re-arrange dataframe to separate location: from location=[IB-015-016] to location=[IB] & fiber=[015-016]
-    data_analysis.data["fiber"] = (
-        data_analysis.data["location"].str.split("-").str[1].str.join("")
+    data_analysis["fiber"] = (
+        data_analysis["location"].str.split("-").str[1].str.join("")
         + "-"
-        + data_analysis.data["location"].str.split("-").str[2].str.join("")
+        + data_analysis["location"].str.split("-").str[2].str.join("")
     )
-    data_analysis.data["location"] = (
-        data_analysis.data["location"].str.split("-").str[0].str.join("")
+    data_analysis["location"] = (
+        data_analysis["location"].str.split("-").str[0].str.join("")
     )
 
     # -------------------------------------------------------------------------------
     # create label of format hardcoded for geds pX-chXXX-name
     # -------------------------------------------------------------------------------
 
-    labels = data_analysis.data.groupby("channel").first()[
+    labels = data_analysis.groupby("channel").first()[
         ["name", "position", "location", "fiber"]
     ]
     labels["channel"] = labels.index
@@ -724,14 +724,14 @@ def plot_per_barrel_and_position(
         ["position", "location", "fiber", "channel", "name"]
     ].apply(lambda x: f"{x[0]}-{x[1]}-{x[2]}-ch{str(x[3]).zfill(3)}-{x[4]}", axis=1)
     # put it in the table
-    data_analysis.data = data_analysis.data.set_index("channel")
-    data_analysis.data["label"] = labels["label"]
-    data_analysis.data = data_analysis.data.sort_values("label")
+    data_analysis = data_analysis.set_index("channel")
+    data_analysis["label"] = labels["label"]
+    data_analysis = data_analysis.sort_values("label")
 
-    data_analysis.data = data_analysis.data.sort_values(["location", "label"])
+    data_analysis = data_analysis.sort_values(["location", "label"])
 
     # separate figure for each barrel ("location"= IB, OB)...
-    for location, data_location in data_analysis.data.groupby("location"):
+    for location, data_location in data_analysis.groupby("location"):
         utils.logger.debug(f"... {location} barrel")
         # ...and position ("position"= bottom, top)
         for position, data_position in data_location.groupby("position"):
