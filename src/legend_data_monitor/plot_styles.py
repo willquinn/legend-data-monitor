@@ -28,12 +28,19 @@ def plot_vs_time(
 
     ch_dict = {}
 
+    res_col = color
+    all_col = (
+        color
+        if plot_info["resampled"] == "no" or plot_info["parameter"] == "event_rate"
+        else "darkgray"
+    )
+
     if plot_info["resampled"] != "only":
         ax.plot(
             data_channel["datetime"].dt.to_pydatetime(),
             data_channel[plot_info["parameter"]],
             zorder=0,
-            color=color if plot_info["parameter"] == "event_rate" else "darkgray",
+            color=all_col,
         )
 
     # save the mean value performed over the first bunch of data
@@ -63,7 +70,7 @@ def plot_vs_time(
             ax.plot(
                 resampled["datetime"].dt.to_pydatetime(),
                 resampled[plot_info["parameter"]],
-                color=color,
+                color=res_col,
                 zorder=1,
                 marker="o",
                 linestyle="-",

@@ -44,7 +44,7 @@ Files are usually saved using the following format ``exp-period-datatype-time_in
 .. note::
 
   ``time_selection`` can assume one of the following formats, depending on what we put as a time range into ``dataset``:
-  
+
   - if ``{'start': '20220928T080000Z', 'end': '20220928T093000Z'}`` (start + end), then <time_selection> = ``20220928T080000Z_20220928T093000Z``;
   - if ``{'timestamps': ['20230207T103123Z']}`` (one key), then <time_selection> = ``20230207T103123Z``;
   - if ``{'timestamps': ['20230207T103123Z', '20230207T141123Z', '20230207T083323Z']}`` (multiple keys), then <time_selection> = ``20230207T083323Z_20230207T141123Z`` (min/max timestamp interval)
