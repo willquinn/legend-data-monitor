@@ -26,8 +26,6 @@ def plot_vs_time(
     # changing the type of the column itself with the table does not work
     data_channel = data_channel.sort_values("datetime")
 
-    ch_dict = {}
-
     res_col = color
     all_col = (
         color
@@ -42,9 +40,6 @@ def plot_vs_time(
             zorder=0,
             color=all_col,
         )
-
-    # save the mean value performed over the first bunch of data
-    mean_value = data_channel[plot_info["parameter"] + "_mean"].iloc[0]
 
     # -------------------------------------------------------------------------
     # plot resampled average
@@ -76,34 +71,6 @@ def plot_vs_time(
                 linestyle="-",
             )
 
-            # saving x,y data into output files (absolute + resampled data)
-            ch_dict = {
-                "values": {
-                    "all": data_channel[plot_info["parameter"]],
-                    "resampled": resampled[plot_info["parameter"]],
-                },
-                "mean": mean_value,
-                "plot_info": plot_info,
-                "timestamp": {
-                    "all": data_channel["datetime"].dt.to_pydatetime(),
-                    "resampled": resampled["datetime"].dt.to_pydatetime(),
-                },
-            }
-        # saving x,y data into output files (absolute data only)
-        else:
-            ch_dict = {
-                "values": {
-                    "all": data_channel[plot_info["parameter"]],
-                    "resampled": [],
-                },
-                "mean": mean_value,
-                "plot_info": plot_info,
-                "timestamp": {
-                    "all": data_channel["datetime"].dt.to_pydatetime(),
-                    "resampled": [],
-                },
-            }
-
     # -------------------------------------------------------------------------
     # beautification
     # -------------------------------------------------------------------------
@@ -121,8 +88,6 @@ def plot_vs_time(
     # --- set labels
     fig.supxlabel("UTC Time")
     fig.supylabel(f"{plot_info['label']} [{plot_info['unit_label']}]")
-
-    return ch_dict
 
 
 def par_vs_ch(
