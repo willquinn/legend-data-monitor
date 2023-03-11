@@ -169,14 +169,17 @@ def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: 
         utils.logger.debug("Plot structure: " + plot_settings["plot_structure"])
 
         # plotting
-        par_dict_content = plot_structure(data_analysis.data, plot_info, pdf)
+        plot_structure(data_analysis.data, plot_info, pdf)
 
         # For some reason, after some plotting functions the index is set to "channel".
         # We need to set it back otherwise status_plot.py gets crazy and everything crashes.
         data_analysis.data = data_analysis.data.reset_index()
 
+        par_dict_content = {}
+
         # saving dataframe data for each parameter
         par_dict_content["df_" + plot_info["subsystem"]] = data_analysis.data
+        par_dict_content["plot_info"] = plot_info
 
         # -------------------------------------------------------------------------
         # call status plot
@@ -271,8 +274,7 @@ def plot_per_ch(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
             constrained_layout=True,
         )  # , sharey=True)
         # in case of pulser, axes will be not a list but one axis -> convert to list
-        if numch == 1:
-            axes = [axes]
+        axes = [axes] if numch == 1 else axes
 
         # -------------------------------------------------------------------------------
         # plot
@@ -282,6 +284,14 @@ def plot_per_ch(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
         # plot one channel on each axis, ordered by position
         for position, data_channel in data_location.groupby("position"):
             utils.logger.debug(f"...... position {position}")
+            # define what colors are needed
+            # if this function is not called by makes_subsystem_plot() need to define colors locally
+            # to be included in a separate function to be called every time (maybe in utils?)
+            max_ch_per_string = (
+                data_analysis.groupby("location")["position"].nunique().max()
+            )
+            global COLORS
+            COLORS = color_palette("hls", max_ch_per_string).as_hex()
 
             # plot selected style on this axis
             ch_dict = plot_style(
@@ -329,18 +339,22 @@ def plot_per_ch(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
             y_title = 1.01
             axes[0].set_title(f"{plot_info['locname']} {location}")
         fig.suptitle(f"{plot_info['subsystem']} - {plot_info['title']}", y=y_title)
-        plt.savefig(pdf, format="pdf", bbox_inches="tight")
-        # figures are retained until explicitly closed; close to not consume too much memory
-        plt.close()
 
-        # To save the axes, this is the only way I managed to save it without errors later on.
-        # Typically, I used to get the error: "TypeError: cannot pickle 'kiwisolver.Solver' object"
-        with io.BytesIO() as buf:
-            fig.savefig(buf, bbox_inches="tight")
-            buf.seek(0)
-            par_dict[f"figure_plot_{plot_info['locname']}_{location}"] = buf.getvalue()
+        if pdf:
+            plt.savefig(pdf, format="pdf", bbox_inches="tight")
+            # figures are retained until explicitly closed; close to not consume too much memory
+            plt.close()
 
-    return par_dict
+            # To save the axes, this is the only way I managed to save it without errors later on.
+            # Typically, I used to get the error: "TypeError: cannot pickle 'kiwisolver.Solver' object"
+            with io.BytesIO() as buf:
+                fig.savefig(buf, bbox_inches="tight")
+                buf.seek(0)
+                par_dict[
+                    f"figure_plot_{plot_info['locname']}_{location}"
+                ] = buf.getvalue()
+
+    return axes
 
 
 def plot_per_cc4(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
@@ -458,6 +472,8 @@ def plot_per_string(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
         sharey=True,
         constrained_layout=True,
     )
+    # in case of pulser, axes will be not a list but one axis -> convert to list
+    axes = [axes] if no_location == 1 else axes
 
     # -------------------------------------------------------------------------------
     # create label of format hardcoded for geds pX-chXXX-name
@@ -482,6 +498,8 @@ def plot_per_string(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
     ax_idx = 0
     for location, data_location in data_analysis.groupby("location"):
         # define what colors are needed
+        # if this function is not called by makes_subsystem_plot() need to define colors
+        # to be included in a separate function to be called every time (maybe in utils?)
         max_ch_per_string = (
             data_analysis.groupby("location")["position"].nunique().max()
         )
@@ -525,13 +543,14 @@ def plot_per_string(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
     # -------------------------------------------------------------------------------
     y_title = 1.05 if plot_info["subsystem"] == "pulser" else 1.01
     fig.suptitle(f"{plot_info['subsystem']} - {plot_info['title']}", y=y_title)
-    plt.savefig(pdf, format="pdf", bbox_inches="tight")
-    # figures are retained until explicitly closed; close to not consume too much memory
-    plt.close()
 
-    return par_dict
-    # return fig ---> need to modify make_subsystem_plots too!!!
-    # if you don't return a dictionary, you cannot save anything (eg the dataframe) in make_subsystem_plots
+    # if no pdf is specified, then the function is not being called by make_subsystem_plots()
+    if pdf:
+        plt.savefig(pdf, format="pdf", bbox_inches="tight")
+        # figures are retained until explicitly closed; close to not consume too much memory
+        plt.close()
+
+    return axes
 
 
 def plot_array(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
