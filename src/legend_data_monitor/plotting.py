@@ -354,7 +354,7 @@ def plot_per_ch(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
                     f"figure_plot_{plot_info['locname']}_{location}"
                 ] = buf.getvalue()
 
-    return axes
+    return fig
 
 
 def plot_per_cc4(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
@@ -550,7 +550,7 @@ def plot_per_string(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
         # figures are retained until explicitly closed; close to not consume too much memory
         plt.close()
 
-    return axes
+    return fig
 
 
 def plot_array(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
