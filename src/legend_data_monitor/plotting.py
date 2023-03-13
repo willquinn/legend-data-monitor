@@ -786,15 +786,9 @@ def plot_per_barrel_and_position(
                     if channel[det_idx] not in par_dict.keys():
                         par_dict[channel[det_idx]] = ch_dict
 
-                    """text = (
-                        data_position.iloc[0]["name"]
-                        + "\n"
-                        + f"channel {channel[col_idx]}\n"
-                        + f"position {t['position']}\n"
-                        + f"mean {round(t[plot_info['parameter']+'_mean'],3)} [{plot_info['unit']}]"
-                    )"""
-                    text = str(channel[col_idx])
-                    # axes.text(1.01, 0.5, text, transform=axes.transAxes)
+                    # set label as title for each axes
+                    text = data_position["label"][0][4:] if position == "top" else data_position["label"][0][7:]
+                    print("***********", text)
                     axes.set_title(label=text, loc="center")
 
                     # add grid
@@ -806,7 +800,7 @@ def plot_per_barrel_and_position(
                     det_idx += 1
                     col_idx += 1
 
-            fig.suptitle(f"{plot_info['subsystem']} - {plot_info['title']}", y=1.15)
+            fig.suptitle(f"{plot_info['subsystem']} - {plot_info['title']}\n{position} {location}", y=1.15)
             # fig.supylabel(f'{plotdata.param.label} [{plotdata.param.unit_label}]') # --> plot style
             plt.savefig(pdf, format="pdf", bbox_inches="tight")
             # figures are retained until explicitly closed; close to not consume too much memory
