@@ -806,16 +806,7 @@ def plot_per_barrel_and_position(
                         par_dict[channel[det_idx]] = ch_dict
 
                     # set label as title for each axes
-<<<<<<< HEAD
                     text = data_position["label"][0][4:] if position == "top" else data_position["label"][0][7:]
-=======
-                    text = (
-                        data_position["label"][0][4:]
-                        if position == "top"
-                        else data_position["label"][0][7:]
-                    )
-                    print("***********", text)
->>>>>>> e4fb4e8d73cc54f96c84ac2275a21369183aa94a
                     axes.set_title(label=text, loc="center")
 
                     # add grid
