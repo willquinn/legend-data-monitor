@@ -275,8 +275,9 @@ class AnalysisData:
                 self.data.reset_index()
             elif param == "K_events":
                 self.data = self.data.reset_index()
-                self.data = self.data.rename(columns={utils.SPECIAL_PARAMETERS[param][0]: 'K_events'})
-
+                self.data = self.data.rename(
+                    columns={utils.SPECIAL_PARAMETERS[param][0]: "K_events"}
+                )
 
     def channel_mean(self):
         """

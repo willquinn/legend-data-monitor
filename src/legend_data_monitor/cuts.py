@@ -8,10 +8,12 @@ def cut_k_lines(data):
         energy = utils.SPECIAL_PARAMETERS["K_events"][0]
     # when we are plotting "K_events", then we already re-named the energy column with the parameter's name (due to how the code was built)
     if "K_events" in data.columns:
-            energy = "K_events"
+        energy = "K_events"
     # if something is not properly working, exit from the code
     else:
-        utils.logger.error("\033[91mThe cut over K lines entries is not working. Check again your subsystem options!\033[0m")
+        utils.logger.error(
+            "\033[91mThe cut over K lines entries is not working. Check again your subsystem options!\033[0m"
+        )
         exit()
 
     return data[(data[energy] > 1430) & (data[energy] < 1575)]

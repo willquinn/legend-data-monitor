@@ -175,7 +175,7 @@ To plot events having energies within 1430 and 1575 keV (ie, around the 40K and 
 
 .. code-block:: json
 
-    "subsystems": {       
+    "subsystems": {
       "geds": {
           "K events":{
               "parameters": "K_events",
