@@ -10,7 +10,7 @@
       },
       "geds": {
         "variation": [-5, 5],
-        "absolute": [null, 15050]
+        "absolute": [null, null]
       }
     }
   },
@@ -707,7 +707,7 @@
       }
     }
   },
-  "K lines": {
+  "K_events": {
     "label": "Energy",
     "unit": "keV",
     "facecol": [0.94, 0.87, 0.8],

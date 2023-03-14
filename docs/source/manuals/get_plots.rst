@@ -176,15 +176,14 @@ To plot events having energies within 1430 and 1575 keV (ie, around the 40K and 
 .. code-block:: json
 
     "subsystems": {
-        "geds": {
+      "geds": {
           "K events":{
-              "parameters": "cuspEmax_ctc_cal",
-              "event_type": "phy",
-              "cuts": "K lines",
+              "parameters": "K_events",
+              "event_type": "K_lines",
               "plot_structure": "per string",
               "plot_style" : "scatter"
-          }
         }
+      }
     }
 
 FWHM
