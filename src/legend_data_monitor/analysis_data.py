@@ -110,6 +110,11 @@ class AnalysisData:
             "position",
             "cc4_id",
             "cc4_channel",
+            "daq_crate",
+            "daq_card",
+            "HV_card",
+            "HV_channel",
+            "det_type",
             "status",
         ]
         # pulser flag is present only if subsystem.flag_pulser_events() was called
@@ -118,7 +123,7 @@ class AnalysisData:
             params_to_get.append("flag_pulser")
 
         # if special parameter, get columns needed to calculate it
-        for param in self.parameters + self.cuts:
+        for param in self.parameters:
             # check if the parameter is within the par-settings.json file
             if param in utils.PLOT_INFO.keys():
                 # check if it is a special parameter
@@ -184,7 +189,7 @@ class AnalysisData:
         elif self.evt_type == "K_lines":
             utils.logger.info("... selecting K lines in physical (non-pulser) events")
             self.data = self.data[~self.data["flag_pulser"]]
-            energy = utils.SPECIAL_PARAMETERS["K_lines"][0]
+            energy = utils.SPECIAL_PARAMETERS["K_events"][0]
             self.data = self.data[
                 (self.data[energy] > 1430) & (self.data[energy] < 1575)
             ]
@@ -268,6 +273,10 @@ class AnalysisData:
 
                 # put channel back in
                 self.data.reset_index()
+            elif param == "K_events":
+                self.data = self.data.reset_index()
+                self.data = self.data.rename(columns={utils.SPECIAL_PARAMETERS[param][0]: 'K_events'})
+
 
     def channel_mean(self):
         """
@@ -312,6 +321,8 @@ class AnalysisData:
             # FWHM mean is meaningless -> drop (special parameter for SiPMs)
             if "FWHM" in self.parameters:
                 channel_mean.drop("FWHM", axis=1)
+            if "K_events" in self.parameters:
+                channel_mean.drop("K_events", axis=1)
 
         # rename columns to be param_mean
         channel_mean = channel_mean.rename(

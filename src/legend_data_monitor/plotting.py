@@ -51,9 +51,6 @@ def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: 
         # same, here need to account for unit label %
         if "variation" not in plot_settings:
             plot_settings["variation"] = False
-        # !? this is not needed because is checked in AnalysisData
-        # if "cuts" not in plot_settings:
-        #     plot_settings["cuts"] = []
 
         # -------------------------------------------------------------------------
         # set up analysis data
@@ -430,7 +427,7 @@ def plot_per_cc4(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
         axes[ax_idx].legend(labels=labels, loc="center left", bbox_to_anchor=(1, 0.5))
 
         # plot the position of the two K lines
-        if plot_info["cuts"] == "K lines":
+        if plot_info["parameter"] == "K_events":
             axes[ax_idx].axhline(y=1460.822, color="gray", linestyle="--")
             axes[ax_idx].axhline(y=1524.6, color="gray", linestyle="--")
 
@@ -531,7 +528,7 @@ def plot_per_string(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
         axes[ax_idx].legend(labels=labels, loc="center left", bbox_to_anchor=(1, 0.5))
 
         # plot the position of the two K lines
-        if plot_info["cuts"] == "K lines":
+        if plot_info["parameter"] == "K_events":
             axes[ax_idx].axhline(y=1460.822, color="gray", linestyle="--")
             axes[ax_idx].axhline(y=1524.6, color="gray", linestyle="--")
 
