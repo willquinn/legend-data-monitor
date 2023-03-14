@@ -806,7 +806,11 @@ def plot_per_barrel_and_position(
                         par_dict[channel[det_idx]] = ch_dict
 
                     # set label as title for each axes
-                    text = data_position["label"][0][4:] if position == "top" else data_position["label"][0][7:]
+                    text = (
+                        data_position["label"][0][4:]
+                        if position == "top"
+                        else data_position["label"][0][7:]
+                    )
                     print("***********", text)
                     axes.set_title(label=text, loc="center")
 
@@ -819,7 +823,10 @@ def plot_per_barrel_and_position(
                     det_idx += 1
                     col_idx += 1
 
-            fig.suptitle(f"{plot_info['subsystem']} - {plot_info['title']}\n{position} {location}", y=1.15)
+            fig.suptitle(
+                f"{plot_info['subsystem']} - {plot_info['title']}\n{position} {location}",
+                y=1.15,
+            )
             # fig.supylabel(f'{plotdata.param.label} [{plotdata.param.unit_label}]') # --> plot style
             plt.savefig(pdf, format="pdf", bbox_inches="tight")
             # figures are retained until explicitly closed; close to not consume too much memory
