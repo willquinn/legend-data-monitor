@@ -807,7 +807,6 @@ def plot_per_barrel_and_position(
 
                     # set label as title for each axes
                     text = data_position["label"][0][4:] if position == "top" else data_position["label"][0][7:]
-                    print("***********", text)
                     axes.set_title(label=text, loc="center")
 
                     # add grid
