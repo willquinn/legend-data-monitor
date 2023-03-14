@@ -313,11 +313,19 @@ class Subsystem:
         )
 
         df_map = pd.DataFrame(
-            columns=["name", "location", "channel", "position", 
-                    "cc4_id", "cc4_channel", 
-                    "daq_crate", "daq_card", 
-                    "HV_card", "HV_channel",
-                    "det_type"],
+            columns=[
+                "name",
+                "location",
+                "channel",
+                "position",
+                "cc4_id",
+                "cc4_channel",
+                "daq_crate",
+                "daq_card",
+                "HV_card",
+                "HV_channel",
+                "det_type",
+            ],
         )
         df_map = df_map.set_index("channel")
 
@@ -338,7 +346,7 @@ class Subsystem:
         loc_code = {"geds": "string", "spms": "fiber"}
 
         # detector type for geds in the channel map
-        type_code = { "B": "bege", "C": "coax", "V": "icpc", "P": "ppc" }
+        type_code = {"B": "bege", "C": "coax", "V": "icpc", "P": "ppc"}
 
         # -------------------------------------------------------------------------
         # loop over entries and find out subsystem
@@ -391,7 +399,11 @@ class Subsystem:
             )
             # detector type for geds (based on channel's name)
             if self.type == "geds":
-                df_map.at[ch, "det_type"] = type_code[entry_info["name"][0]] if entry_info["name"][0] in type_code.keys() else None
+                df_map.at[ch, "det_type"] = (
+                    type_code[entry_info["name"][0]]
+                    if entry_info["name"][0] in type_code.keys()
+                    else None
+                )
             else:
                 df_map.at[ch, "det_type"] = None
 
@@ -399,7 +411,16 @@ class Subsystem:
 
         # -------------------------------------------------------------------------
         # stupid dataframe, can use dtype somehow to fix it?
-        for col in ["channel", "location", "position", "cc4_channel", "daq_crate", "daq_card", "HV_card", "HV_channel"]:
+        for col in [
+            "channel",
+            "location",
+            "position",
+            "cc4_channel",
+            "daq_crate",
+            "daq_card",
+            "HV_card",
+            "HV_channel",
+        ]:
             if isinstance(df_map[col].loc[0], float):
                 df_map[col] = df_map[col].astype(int)
 
