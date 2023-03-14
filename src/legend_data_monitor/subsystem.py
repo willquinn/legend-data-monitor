@@ -293,13 +293,12 @@ class Subsystem:
 
     def get_channel_map(self):
         """
-        Build channel map for given subsystem.
+        Build channel map for given subsystem with info like name, position, cc4, HV, DAQ, detector type, ... for each channel.
 
         setup_info: dict with the keys 'experiment' and 'period'
 
         Later will probably be changed to get channel map by timestamp (or hopefully run, if possible)
         Planning to add:
-            - CC4 name
             - barrel column for SiPMs special case
         """
         utils.logger.info("... getting channel map")
@@ -314,7 +313,11 @@ class Subsystem:
         )
 
         df_map = pd.DataFrame(
-            columns=["name", "location", "channel", "position", "cc4_id", "cc4_channel"]
+            columns=["name", "location", "channel", "position", 
+                    "cc4_id", "cc4_channel", 
+                    "daq_crate", "daq_card", 
+                    "HV_card", "HV_channel",
+                    "det_type"],
         )
         df_map = df_map.set_index("channel")
 
@@ -334,18 +337,21 @@ class Subsystem:
         # name of location in the channel map
         loc_code = {"geds": "string", "spms": "fiber"}
 
+        # detector type for geds in the channel map
+        type_code = { "B": "bege", "C": "coax", "V": "icpc", "P": "ppc" }
+
         # -------------------------------------------------------------------------
         # loop over entries and find out subsystem
         # -------------------------------------------------------------------------
 
         # config.channel_map is already a dict read from the channel map json
         for entry in full_channel_map:
-            # skip 'BF' don't even know what it is
-            # ! not needed since BF is auxs
+            # skip 'BF' (! not needed since BF is auxs)
             if "BF" in entry:
                 continue
 
             entry_info = full_channel_map[entry]
+
             # skip if this is not our system
             if not is_subsystem(entry_info):
                 continue
@@ -364,7 +370,7 @@ class Subsystem:
             df_map.at[ch, "position"] = (
                 0 if self.type == "pulser" else entry_info["location"]["position"]
             )
-            # CC4 information - will be None for L60 or spms -> put an if condition to avoid?
+            # CC4 information - will be None for L60 (set tu 'null') or spms (there, but no CC4s)
             df_map.at[ch, "cc4_id"] = (
                 entry_info["electronics"]["cc4"]["id"] if self.type == "geds" else None
             )
@@ -373,13 +379,27 @@ class Subsystem:
                 if self.type == "geds"
                 else None
             )
+            # DAQ information - present even in L60 and spms
+            df_map.at[ch, "daq_crate"] = entry_info["daq"]["crate"]
+            df_map.at[ch, "daq_card"] = entry_info["daq"]["card"]["id"]
+            # voltage = not for pulser/spms (just daq and electronics)
+            df_map.at[ch, "HV_card"] = (
+                entry_info["voltage"]["card"]["id"] if self.type == "geds" else None
+            )
+            df_map.at[ch, "HV_channel"] = (
+                entry_info["voltage"]["channel"] if self.type == "geds" else None
+            )
+            # detector type for geds (based on channel's name)
+            if self.type == "geds":
+                df_map.at[ch, "det_type"] = type_code[entry_info["name"][0]] if entry_info["name"][0] in type_code.keys() else None
+            else:
+                df_map.at[ch, "det_type"] = None
 
         df_map = df_map.reset_index()
 
         # -------------------------------------------------------------------------
-
         # stupid dataframe, can use dtype somehow to fix it?
-        for col in ["channel", "location", "position", "cc4_channel"]:
+        for col in ["channel", "location", "position", "cc4_channel", "daq_crate", "daq_card", "HV_card", "HV_channel"]:
             if isinstance(df_map[col].loc[0], float):
                 df_map[col] = df_map[col].astype(int)
 
