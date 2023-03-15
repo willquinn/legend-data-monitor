@@ -110,8 +110,9 @@ class Subsystem:
         # get channel info for this subsystem
         # -------------------------------------------------------------------------
 
-        # needed to know which AUX channel is pulser
+        # needed to know for making 'if' statement over different experiments/periods
         self.experiment = data_info["experiment"]
+        self.period = data_info["period"]
         # need to remember for channel status query
         # ! now needs to be single !
         self.datatype = data_info["type"]
@@ -366,9 +367,13 @@ class Subsystem:
             if not is_subsystem(entry_info):
                 continue
 
-            # --- add info for this channel
-            # FlashCam channel, unique for geds/spms/pulser
-            ch = entry_info["daq"]["fcid"]
+            # --- add info for this channel - Raw/FlashCam ID, unique for geds/spms/pulser
+            # for L60-p01 and L200-p02, keep using 'fcid' channel
+            if int(self.period[-1]) < 3:
+                ch = entry_info["daq"]["fcid"]
+            # from L200-p03 included, uses 'rawid' channel
+            if int(self.period[-1]) >= 3:
+                ch = entry_info["daq"]["rawid"]
             df_map.at[ch, "name"] = entry_info["name"]
             # number/name of string/fiber for geds/spms, dummy for pulser
             df_map.at[ch, "location"] = (
