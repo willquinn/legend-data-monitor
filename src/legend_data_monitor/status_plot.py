@@ -145,7 +145,7 @@ def status_plot(subsystem, data_analysis: DataFrame, plot_info: dict, pdf: PdfPa
 
     # --------------------------------------------------------------------------------------------------------------------------
     # include OFF channels and see what is their status
-    off_channels = subsystem.channel_map[subsystem.channel_map["status"] == "Off"][
+    off_channels = subsystem.channel_map[subsystem.channel_map["status"] == "off"][
         "channel"
     ].unique()
 
@@ -158,7 +158,7 @@ def status_plot(subsystem, data_analysis: DataFrame, plot_info: dict, pdf: PdfPa
                 ]["status"].iloc[0]
 
                 # get status info
-                if status_info == "Off":
+                if status_info == "off":
                     status = 3
                 if status_info == "AC":
                     status = 2  # is at "AC"? CHECK IT!

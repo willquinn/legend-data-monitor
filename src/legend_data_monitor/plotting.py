@@ -109,7 +109,7 @@ def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: 
         plot_info = {
             "title": plot_title,
             "subsystem": subsystem.type,
-            "locname": {"geds": "string", "spms": "fiber", "pulser": "aux"}[
+            "locname": {"geds": "string", "spms": "fiber", "pulser": "puls"}[
                 subsystem.type
             ],
             "unit": utils.PLOT_INFO[plot_settings["parameters"]]["unit"],
