@@ -87,7 +87,11 @@ def plot_vs_time(
 
     # --- set labels
     fig.supxlabel("UTC Time")
-    y_label = f"{plot_info['label']}, {plot_info['unit_label']} [{plot_info['unit']}]" if plot_info['unit_label'] == "%" else f"{plot_info['label']} [{plot_info['unit_label']}]"
+    y_label = (
+        f"{plot_info['label']}, {plot_info['unit_label']} [{plot_info['unit']}]"
+        if plot_info["unit_label"] == "%"
+        else f"{plot_info['label']} [{plot_info['unit_label']}]"
+    )
     fig.supylabel(y_label)
 
 
@@ -124,7 +128,11 @@ def par_vs_ch(
 
     # --- set labels
     fig.supxlabel("Channel ID")
-    y_label = f"{plot_info['label']}, {plot_info['unit_label']} [{plot_info['unit']}]" if plot_info['unit_label'] == "%" else f"{plot_info['label']} [{plot_info['unit_label']}]"
+    y_label = (
+        f"{plot_info['label']}, {plot_info['unit_label']} [{plot_info['unit']}]"
+        if plot_info["unit_label"] == "%"
+        else f"{plot_info['label']} [{plot_info['unit_label']}]"
+    )
     fig.supylabel(y_label)
 
     return ch_dict
@@ -167,7 +175,11 @@ def plot_histo(
 
     # -------------------------------------------------------------------------
     ax.set_yscale("log")
-    x_label = f"{plot_info['label']}, {plot_info['unit_label']} [{plot_info['unit']}]" if plot_info['unit_label'] == "%" else f"{plot_info['label']} [{plot_info['unit_label']}]"
+    x_label = (
+        f"{plot_info['label']}, {plot_info['unit_label']} [{plot_info['unit']}]"
+        if plot_info["unit_label"] == "%"
+        else f"{plot_info['label']} [{plot_info['unit_label']}]"
+    )
     fig.supylabel(x_label)
 
     # saving x,y data into output files
@@ -198,7 +210,11 @@ def plot_scatter(
     ax.xaxis.set_major_formatter(DateFormatter("%Y\n%m/%d\n%H:%M"))
 
     fig.supxlabel("UTC Time")
-    y_label = f"{plot_info['label']}, {plot_info['unit_label']} [{plot_info['unit']}]" if plot_info['unit_label'] == "%" else f"{plot_info['label']} [{plot_info['unit_label']}]"
+    y_label = (
+        f"{plot_info['label']}, {plot_info['unit_label']} [{plot_info['unit']}]"
+        if plot_info["unit_label"] == "%"
+        else f"{plot_info['label']} [{plot_info['unit_label']}]"
+    )
     fig.supylabel(y_label)
 
     # saving x,y data into output files
