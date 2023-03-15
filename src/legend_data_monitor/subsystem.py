@@ -110,8 +110,9 @@ class Subsystem:
         # get channel info for this subsystem
         # -------------------------------------------------------------------------
 
-        # needed to know which AUX channel is pulser
+        # needed to know for making 'if' statement over different experiments/periods
         self.experiment = data_info["experiment"]
+        self.period = data_info["period"]
         # need to remember for channel status query
         # ! now needs to be single !
         self.datatype = data_info["type"]
@@ -128,7 +129,7 @@ class Subsystem:
 
         self.channel_map = self.get_channel_map()  # pd.DataFrame
 
-        # add column status to channel map stating On/Off
+        # add column status to channel map stating on/off
         self.get_channel_status()
 
         # -------------------------------------------------------------------------
@@ -337,8 +338,10 @@ class Subsystem:
         def is_subsystem(entry):
             # special case for pulser
             if self.type == "pulser":
-                pulser_ch = 0 if self.experiment == "L60" else 1
-                return entry["system"] == "auxs" and entry["daq"]["fcid"] == pulser_ch
+                if self.experiment == "L60":
+                    return entry["system"] == "auxs" and entry["daq"]["fcid"] == 0
+                if self.experiment == "L200":
+                    return entry["system"] == "puls" and entry["daq"]["fcid"] == 1
             # for geds or spms
             return entry["system"] == self.type
 
@@ -364,9 +367,13 @@ class Subsystem:
             if not is_subsystem(entry_info):
                 continue
 
-            # --- add info for this channel
-            # FlashCam channel, unique for geds/spms/pulser
-            ch = entry_info["daq"]["fcid"]
+            # --- add info for this channel - Raw/FlashCam ID, unique for geds/spms/pulser
+            # for L60-p01 and L200-p02, keep using 'fcid' channel
+            if int(self.period[-1]) < 3:
+                ch = entry_info["daq"]["fcid"]
+            # from L200-p03 included, uses 'rawid' channel
+            if int(self.period[-1]) >= 3:
+                ch = entry_info["daq"]["rawid"]
             df_map.at[ch, "name"] = entry_info["name"]
             # number/name of string/fiber for geds/spms, dummy for pulser
             df_map.at[ch, "location"] = (
@@ -430,7 +437,7 @@ class Subsystem:
 
     def get_channel_status(self):
         """
-        Add status column to channel map with On/Off for software status.
+        Add status column to channel map with on/off for software status.
 
         setup_info: dict with the keys 'experiment' and 'period'
 
@@ -445,19 +452,17 @@ class Subsystem:
         lmeta = LegendMetadata()
         full_status_map = lmeta.dataprod.config.on(
             timestamp=self.first_timestamp, system=self.datatype
-        )["hardware_configuration"]["channel_map"]
+        )["analysis"]
 
-        # AUX channels are not in status map, so at least for pulser need default On
-        self.channel_map["status"] = "On"
+        # AUX channels are not in status map, so at least for pulser need default on
+        self.channel_map["status"] = "on"
         self.channel_map = self.channel_map.set_index("channel")
-        for channel in full_status_map:
-            # convert string channel ('ch005') to integer (5)
-            ch = int(channel[2:])
+        for channel_name in full_status_map:
             # status map contains all channels, check if this channel is in our subsystem
-            if ch in self.channel_map.index:
-                self.channel_map.at[ch, "status"] = full_status_map[channel][
-                    "software_status"
-                ]
+            if channel_name in self.channel_map.index:
+                self.channel_map.at[channel_name, "status"] = full_status_map[
+                    channel_name
+                ]["usability"]
 
         self.channel_map = self.channel_map.reset_index()
 
@@ -537,12 +542,12 @@ class Subsystem:
         # -------------------------------------------------------------------------
         # set up tiers depending on what parameters we need
 
-        # ronly load channels that are On (Off channels will crash DataLoader)
-        chlist = list(self.channel_map[self.channel_map["status"] == "On"]["channel"])
+        # ronly load channels that are on (off channels will crash DataLoader)
+        chlist = list(self.channel_map[self.channel_map["status"] == "on"]["channel"])
         removed_chs = list(
-            self.channel_map[self.channel_map["status"] == "Off"]["channel"]
+            self.channel_map[self.channel_map["status"] == "off"]["channel"]
         )
-        utils.logger.info(f"...... not loading channels with status Off: {removed_chs}")
+        utils.logger.info(f"...... not loading channels with status off: {removed_chs}")
 
         # --- settings for each tier
         for tier, tier_params in param_tiers.groupby("tier"):

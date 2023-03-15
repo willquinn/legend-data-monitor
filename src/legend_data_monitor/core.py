@@ -161,7 +161,7 @@ def generate_plots(config: dict, plt_path: str):
 
         # set up if wasn't already set up (meaning, not pulser, previously already set up)
         if system not in subsystems:
-            # Subsystem: knows its channel map & software status (On/Off channels)
+            # Subsystem: knows its channel map & software status (on/off channels)
             subsystems[system] = subsystem.Subsystem(system, dataset=config["dataset"])
             # get list of parameters needed for all requested plots, if any
             parameters = utils.get_all_plot_parameters(system, config)
