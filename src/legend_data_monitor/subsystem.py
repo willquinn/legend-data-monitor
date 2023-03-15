@@ -460,9 +460,9 @@ class Subsystem:
         for channel_name in full_status_map:
             # status map contains all channels, check if this channel is in our subsystem
             if channel_name in self.channel_map.index:
-                self.channel_map.at[channel_name, "status"] = full_status_map[channel_name][
-                    "usability"
-                ]
+                self.channel_map.at[channel_name, "status"] = full_status_map[
+                    channel_name
+                ]["usability"]
 
         self.channel_map = self.channel_map.reset_index()
 
