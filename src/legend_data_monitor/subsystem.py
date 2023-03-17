@@ -134,7 +134,6 @@ class Subsystem:
 
         # -------------------------------------------------------------------------
         # have something before get_data() is called just in case
-
         self.data = pd.DataFrame()
 
     def get_data(self, parameters: typing.Union[str, list_of_str, tuple_of_str] = ()):
@@ -368,10 +367,10 @@ class Subsystem:
                 continue
 
             # --- add info for this channel - Raw/FlashCam ID, unique for geds/spms/pulser
-            # for L60-p01 and L200-p02, keep using 'fcid' channel
+            # for L60-p01 and L200-p02, keep using 'fcid' as channel
             if int(self.period[-1]) < 3:
                 ch = entry_info["daq"]["fcid"]
-            # from L200-p03 included, uses 'rawid' channel
+            # from L200-p03 included, uses 'rawid' as channel
             if int(self.period[-1]) >= 3:
                 ch = entry_info["daq"]["rawid"]
             df_map.at[ch, "name"] = entry_info["name"]

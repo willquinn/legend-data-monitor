@@ -12,7 +12,7 @@ def control_plots(user_config_path: str):
     with open(user_config_path) as f:
         config = json.load(f)
 
-    # check validity
+    # check validity of plot settings
     valid = utils.check_plot_settings(config)
     if not valid:
         return
@@ -51,14 +51,14 @@ def control_plots(user_config_path: str):
     # create output folders for plots
     period_dir = utils.make_output_paths(config, user_time_range)
     # get correct time info for subfolder's name
-    name_time = utils.get_time_name(user_time_range)
+    name_time = "r014_prova" #utils.get_time_name(user_time_range)
     output_paths = period_dir + name_time + "/"
     utils.make_dir(output_paths)
     if not output_paths:
         return
 
     # we don't care here about the time keyword timestamp/run -> just get the value
-    plt_basename += utils.get_time_name(user_time_range)
+    plt_basename += "r014_prova" #utils.get_time_name(user_time_range)
     plt_path = output_paths + plt_basename
     plt_path += "-{}".format("_".join(data_types))
 
@@ -66,9 +66,7 @@ def control_plots(user_config_path: str):
     generate_plots(config, plt_path)
 
 
-def auto_control_plots(
-    plot_config: str, file_keys: str, prod_path: str, prod_config: str
-):
+def auto_control_plots(xplot_config: str, file_keys: str, prod_path: str, prod_config: str):
     """Set the configuration file and the output paths when a config file is provided during automathic data processing. The function to generate plots is then automatically called."""
     # -------------------------------------------------------------------------
     # Read user settings
@@ -76,7 +74,7 @@ def auto_control_plots(
     with open(plot_config) as f:
         config = json.load(f)
 
-    # check validity (only in the 'subsystems' config entry)
+    # check validity of plot settings
     valid = utils.check_plot_settings(config)
     if not valid:
         return
@@ -140,6 +138,23 @@ def generate_plots(config: dict, plt_path: str):
     # Get pulser first - needed to flag pulser events
     # -------------------------------------------------------------------------
 
+    # get saving option
+    if "saving" in config:
+        saving = config["saving"]
+    else:
+        saving = None
+
+    # some output messages, just to warn the user...
+    if saving is None:
+        utils.logger.warning("\033[93mData will not be saed, but the pdf will be.\033[0m")
+    elif saving == "append":
+        utils.logger.warning("\033[93mYou're going to append new data to already existing data. If not present, you first create the output file as a very first step.\033[0m")
+    elif saving == "overwrite":
+        utils.logger.warning("\033[93mYou have accepted to overwrite already generated files, there's no way back until you manually stop the code NOW!\033[0m")
+    else:
+        utils.logger.error("\033[91mThe selected saving option in the config file is wrong. Try again with 'overwrite', 'append' or nothing!\033[0m")
+        exit()
+
     # put it in a dict, so that later, if pulser is also wanted to be plotted, we don't have to load it twice
     subsystems = {"pulser": subsystem.Subsystem("pulser", dataset=config["dataset"])}
     # get list of all parameters needed for all requested plots, if any
@@ -183,7 +198,7 @@ def generate_plots(config: dict, plt_path: str):
         utils.logger.addHandler(file_handler)
 
         plotting.make_subsystem_plots(
-            subsystems[system], config["subsystems"][system], plt_path
+            subsystems[system], config["subsystems"][system], plt_path, saving
         )
 
         # -------------------------------------------------------------------------
