@@ -93,12 +93,18 @@ class Subsystem:
             return
 
         if "version" not in data_info:
-            utils.logger.error("\033[91mProvide pygama version!\033[0m")
+            utils.logger.error(
+                '\033[91mProvide processing version! If not needed, just put an empty string, "".\033[0m'
+            )
             utils.logger.error("\033[91m%s\033[0m", self.__doc__)
             return
 
-        if not os.path.exists(os.path.join(data_info["path"], data_info["version"])):
-            utils.logger.error("\033[91mProvide valid pygama version!\033[0m")
+        # in p03 things change again!!!!
+        # There is no version in '/data2/public/prodenv/prod-blind/tmp/auto/generated/tier/dsp/phy/p03', so for the moment we skip this check...
+        if data_info["period"] != "p03" and not os.path.exists(
+            os.path.join(data_info["path"], data_info["version"])
+        ):
+            utils.logger.error("\033[91mProvide valid processing version!\033[0m")
             utils.logger.error("\033[91m%s\033[0m", self.__doc__)
             return
 
@@ -134,7 +140,6 @@ class Subsystem:
 
         # -------------------------------------------------------------------------
         # have something before get_data() is called just in case
-
         self.data = pd.DataFrame()
 
     def get_data(self, parameters: typing.Union[str, list_of_str, tuple_of_str] = ()):
@@ -334,6 +339,13 @@ class Subsystem:
         # helper function to determine which channel map entry belongs to this subsystem
         # -------------------------------------------------------------------------
 
+        # for L60-p01 and L200-p02, keep using 'fcid' as channel
+        if int(self.period[-1]) < 3:
+            ch_flag = "fcid"
+        # from L200-p03 included, uses 'rawid' as channel
+        if int(self.period[-1]) >= 3:
+            ch_flag = "rawid"
+
         # dct_key is the subdict corresponding to one chmap entry
         def is_subsystem(entry):
             # special case for pulser
@@ -341,7 +353,13 @@ class Subsystem:
                 if self.experiment == "L60":
                     return entry["system"] == "auxs" and entry["daq"]["fcid"] == 0
                 if self.experiment == "L200":
-                    return entry["system"] == "puls" and entry["daq"]["fcid"] == 1
+                    if self.period != "p03":
+                        return entry["system"] == "puls" and entry["daq"][ch_flag] == 1
+                    if self.period == "p03":
+                        return (
+                            entry["system"] == "puls"
+                            and entry["daq"][ch_flag] == 1027201
+                        )
             # for geds or spms
             return entry["system"] == self.type
 
@@ -368,12 +386,7 @@ class Subsystem:
                 continue
 
             # --- add info for this channel - Raw/FlashCam ID, unique for geds/spms/pulser
-            # for L60-p01 and L200-p02, keep using 'fcid' channel
-            if int(self.period[-1]) < 3:
-                ch = entry_info["daq"]["fcid"]
-            # from L200-p03 included, uses 'rawid' channel
-            if int(self.period[-1]) >= 3:
-                ch = entry_info["daq"]["rawid"]
+            ch = entry_info["daq"][ch_flag]
             df_map.at[ch, "name"] = entry_info["name"]
             # number/name of string/fiber for geds/spms, dummy for pulser
             df_map.at[ch, "location"] = (

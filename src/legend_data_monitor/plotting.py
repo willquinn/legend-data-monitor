@@ -22,7 +22,9 @@ COLORS = []
 # for example, this structure won't work to plot one parameter VS the other
 
 
-def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: str):
+def make_subsystem_plots(
+    subsystem: subsystem.Subsystem, plots: dict, plt_path: str, saving=None
+):
     pdf = PdfPages(plt_path + "-" + subsystem.type + ".pdf")
     out_dict = {}
 
@@ -181,51 +183,32 @@ def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: 
         # -------------------------------------------------------------------------
         # call status plot
         # -------------------------------------------------------------------------
+
         if "status" in plot_settings and plot_settings["status"]:
             if subsystem.type == "pulser":
                 utils.logger.debug(
                     "Thresholds are not enabled for pulser! Use you own eyes to do checks there"
                 )
             else:
-                status_fig = status_plot.status_plot(
+                _ = status_plot.status_plot(
                     subsystem, data_analysis.data, plot_info, pdf
                 )
-                # saving status map figure
-                with io.BytesIO() as buf:
-                    status_fig.savefig(buf, bbox_inches="tight")
-                    buf.seek(0)
-                    par_dict_content["map_" + plot_info["subsystem"]] = buf.getvalue()
 
-        # saving PARAMETER DICT in the dictionary that will be stored in the shelve object
-        # event type key is already there
-        if plot_settings["event_type"] in out_dict.keys():
-            #  check if the parameter is already there (without this, previous inspected parameters are overwritten)
-            if (
-                plot_info["parameter"]
-                not in out_dict[plot_settings["event_type"]].keys()
-            ):
-                out_dict[plot_settings["event_type"]][
-                    plot_info["parameter"]
-                ] = par_dict_content
-        # event type key is NOT there
-        else:
-            # empty dictionary (not filled yet)
-            if len(out_dict.keys()) == 0:
-                out_dict = {
-                    plot_settings["event_type"]: {
-                        plot_info["parameter"]: par_dict_content
-                    }
-                }
-            # the dictionary already contains something (but for another event type selection)
-            else:
-                out_dict[plot_settings["event_type"]] = {
-                    plot_info["parameter"]: par_dict_content
-                }
+        # -------------------------------------------------------------------------
+        # save results
+        # -------------------------------------------------------------------------
 
-    # save in shelve object
-    out_file = shelve.open(plt_path)
-    out_file["monitoring"] = out_dict
-    out_file.close()
+        # building a dictionary with dataframe/plot_info to be later stored in a shelve object
+        if saving is not None:
+            out_dict = utils.build_out_dict(
+                plot_settings, plot_info, par_dict_content, out_dict, saving, plt_path
+            )
+
+    # save in shelve object, overwriting the already existing file with new content (either completely new or new bunches)
+    if saving is not None:
+        out_file = shelve.open(plt_path + f"-{subsystem.type}")
+        out_file["monitoring"] = out_dict
+        out_file.close()
 
     # save in pdf object
     pdf.close()
@@ -342,15 +325,6 @@ def plot_per_ch(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
             # figures are retained until explicitly closed; close to not consume too much memory
             plt.close()
 
-            # To save the axes, this is the only way I managed to save it without errors later on.
-            # Typically, I used to get the error: "TypeError: cannot pickle 'kiwisolver.Solver' object"
-            with io.BytesIO() as buf:
-                fig.savefig(buf, bbox_inches="tight")
-                buf.seek(0)
-                par_dict[
-                    f"figure_plot_{plot_info['locname']}_{location}"
-                ] = buf.getvalue()
-
     return fig
 
 
@@ -442,11 +416,6 @@ def plot_per_cc4(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
     plt.savefig(pdf, format="pdf", bbox_inches="tight")
     # figures are retained until explicitly closed; close to not consume too much memory
     plt.close()
-
-    with io.BytesIO() as buf:
-        fig.savefig(buf, bbox_inches="tight")
-        buf.seek(0)
-        par_dict["figure_plot"] = buf.getvalue()
 
     return par_dict
 
@@ -670,11 +639,6 @@ def plot_array(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
     # -------------------------------------------------------------------------------
     plt.savefig(pdf, format="pdf", bbox_inches="tight")
     plt.close()
-
-    with io.BytesIO() as buf:
-        fig.savefig(buf, bbox_inches="tight")
-        buf.seek(0)
-        par_dict["figure_plot"] = buf.getvalue()
 
     return par_dict
 

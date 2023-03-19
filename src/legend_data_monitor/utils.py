@@ -4,9 +4,12 @@ import json
 import logging
 import os
 import re
+import shelve
 
 # for getting DataLoader time range
 from datetime import datetime, timedelta
+
+from pandas import concat
 
 # -------------------------------------------------------------------------
 
@@ -101,7 +104,7 @@ def get_query_times(**kwargs):
         # if setup= keyword was used, get dict; otherwise kwargs is already the dict we need
         path_info = kwargs["dataset"] if "dataset" in kwargs else kwargs
 
-        # format to search /path/to/prod-ref/v06.00/generated/tier/**/phy/**/r027
+        # format to search /path_to_prod-ref[/v06.00]/generated/tier/**/phy/**/r027 (version might not be there)
         glob_path = os.path.join(
             path_info["path"],
             path_info["version"],
@@ -342,6 +345,12 @@ def make_dir(dir_path):
     logger.info(message)
 
 
+def get_multiple_run_id(user_time_range: dict) -> str:
+    time_range = list(user_time_range.values())[0]
+    name_time = "{}".format("_".join(time_range))
+    return name_time
+
+
 def get_time_name(user_time_range: dict) -> str:
     """Get a name for each available time selection.
 
@@ -376,14 +385,71 @@ def get_time_name(user_time_range: dict) -> str:
                 name_time += time_range[min_idx] + "_" + time_range[max_idx]
 
     elif "run" in user_time_range.keys():
-        time_range = list(user_time_range.values())[0]
-        name_time += "{}".format("_".join(time_range))
+        name_time = get_multiple_run_id(user_time_range)
 
     else:
         logger.error("\033[91mInvalid time selection!\033[0m")
         return
 
     return name_time
+
+
+def get_timestamp(filename):
+    # Assumes that the timestamp is in the format YYYYMMDDTHHMMSSZ
+    return filename.split("-")[-2]
+
+
+def get_run_name(config, user_time_range: dict) -> str:
+    """Get the run ID given start/end timestamps."""
+    # this is the root directory to search in the timestamps
+    main_folder = os.path.join(
+        config["dataset"]["path"], config["dataset"]["version"], "generated/tier"
+    )
+
+    # start/end timestamps of the selected time range of interest
+    start_timestamp = user_time_range["timestamp"]["start"]
+    end_timestamp = user_time_range["timestamp"]["end"]
+
+    run_list = []  # this will be updated with the run ID
+
+    # start to look for timestamps inside subfolders
+    def search_for_timestamp(folder):
+        run_id = ""
+        for subfolder in os.listdir(folder):
+            subfolder_path = os.path.join(folder, subfolder)
+            if os.path.isdir(subfolder_path):
+                files = sorted(glob.glob(os.path.join(subfolder_path, "*")))
+                for i, file in enumerate(files):
+                    if (
+                        get_timestamp(files[i - 1])
+                        <= start_timestamp
+                        <= get_timestamp(file)
+                    ) or (
+                        get_timestamp(files[i - 1])
+                        <= end_timestamp
+                        <= get_timestamp(file)
+                    ):
+                        run_id = file.split("/")[-2]
+                        run_list.append(run_id)
+                        break
+
+                if len(run_list) == 0:
+                    search_for_timestamp(subfolder_path)
+                else:
+                    break
+        return
+
+    search_for_timestamp(main_folder)
+
+    if len(run_list) == 0:
+        logger.error(
+            "\033[91mThe selected timestamps were not find anywhere. Try again with another time range!\033[0m"
+        )
+        exit()
+    if len(run_list) > 1:
+        return get_multiple_run_id(user_time_range)
+
+    return run_list[0]
 
 
 def get_all_plot_parameters(subsystem: str, config: dict):
@@ -411,8 +477,13 @@ def get_key(dsp_fname: str) -> str:
     return re.search(r"-\d{8}T\d{6}Z", dsp_fname).group(0)[1:]
 
 
+# -------------------------------------------------------------------------
+# Config file related functions (for building files)
+# -------------------------------------------------------------------------
+
+
 def add_config_entries(
-    config: dict, file_keys: str, prod_path: str, prod_config: dict
+    config: dict, file_keys: str, prod_path: str, prod_config: dict, saving: str
 ) -> dict:
     """Add missing information (output, dataset) to the configuration file. This function is generally used during automathic data production, where the initiali config file has only the 'subsystem' entry."""
     # Get the keys
@@ -479,6 +550,102 @@ def add_config_entries(
 
     more_info = {"output": prod_path, "dataset": dataset_dict}
 
+    # 'saving' and 'subsystem' info must be already there
     config.update(more_info)
 
+    # let's make a check that everything we need is inside the config, otherwise exit
+    if not all(key in config for key in ["output", "dataset", "saving", "subsystems"]):
+        logger.error(
+            '\033[91mThere are missing entries in the config file. Try again and check you start with "output" and "dataset" info!\033[0m'
+        )
+        exit()
+
     return config
+
+
+# -------------------------------------------------------------------------
+# Saving related functions
+# -------------------------------------------------------------------------
+
+
+def build_out_dict(
+    plot_settings: list,
+    plot_info: list,
+    par_dict_content: dict,
+    out_dict: dict,
+    saving: str,
+    plt_path: str,
+):
+    """Build the dictionary in the correct format for being saved in the final shelve object."""
+    # we overwrite the object with a new one
+    if saving == "overwrite":
+        out_dict = save_dict(plot_settings, plot_info, par_dict_content, out_dict)
+
+    # we retrieve the already existing shelve object, and we append new things to it; the parameter here is fixed
+    if saving == "append":
+        # the file does not exist, so first we create it and then, at the next step, we'll append things
+        if not os.path.exists(plt_path + "-" + plot_info["subsystem"] + ".dat"):
+            logger.warning(
+                "\033[93mYou selected 'append' when saving, but the file with already saved data does not exist. For this reason, it will be created first.\033[0m"
+            )
+            out_dict = save_dict(plot_settings, plot_info, par_dict_content, out_dict)
+
+        # the file exists, so we are going to append data
+        else:
+            logger.info(
+                "There is already a file containing output data. Appending new data to it right now..."
+            )
+            # open already existing shelve file
+            with shelve.open(plt_path + "-" + plot_info["subsystem"], "r") as shelf:
+                old_dict = dict(shelf)
+
+            # the parameter is there
+            if old_dict["monitoring"]["pulser"][plot_info["parameter"]]:
+                # get already present df
+                old_df = old_dict["monitoring"]["pulser"][plot_info["parameter"]][
+                    "df_" + plot_info["subsystem"]
+                ]
+                # get new df (plot_info object is the same as before, no need to get it and update it)
+                new_df = par_dict_content["df_" + plot_info["subsystem"]]
+                # concatenate the two dfs (channels are no more grouped; not a problem)
+                merged_df = concat([old_df, new_df], ignore_index=True, axis=0)
+                merged_df = merged_df.reset_index()
+                merged_df = merged_df.drop(
+                    columns=["level_0"]
+                )  # why does this column appear? remove it in any case
+
+                # redefine the dict containing the df and plot_info
+                par_dict_content = {}
+                par_dict_content["df_" + plot_info["subsystem"]] = merged_df
+                par_dict_content["plot_info"] = plot_info
+
+                # saved the merged df as usual
+                out_dict = save_dict(
+                    plot_settings, plot_info, par_dict_content, old_dict
+                )
+
+    return out_dict
+
+
+def save_dict(plot_settings, plot_info, par_dict_content, out_dict):
+    # event type key is already there
+    if plot_settings["event_type"] in out_dict.keys():
+        #  check if the parameter is already there (without this, previous inspected parameters are overwritten)
+        if plot_info["parameter"] not in out_dict[plot_settings["event_type"]].keys():
+            out_dict[plot_settings["event_type"]][
+                plot_info["parameter"]
+            ] = par_dict_content
+    # event type key is NOT there
+    else:
+        # empty dictionary (not filled yet)
+        if len(out_dict.keys()) == 0:
+            out_dict = {
+                plot_settings["event_type"]: {plot_info["parameter"]: par_dict_content}
+            }
+        # the dictionary already contains something (but for another event type selection)
+        else:
+            out_dict[plot_settings["event_type"]] = {
+                plot_info["parameter"]: par_dict_content
+            }
+
+    return out_dict
