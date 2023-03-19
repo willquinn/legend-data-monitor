@@ -161,7 +161,9 @@ def status_plot(subsystem, data_analysis: DataFrame, plot_info: dict, pdf: PdfPa
                 if status_info == "off":
                     status = 3
                 if status_info == "AC":
-                    status = 2  # not there at the moment, leave it as a future option...
+                    status = (
+                        2  # not there at the moment, leave it as a future option...
+                    )
 
                 # get position within the array + other necessary info
                 name = subsystem.channel_map.loc[

@@ -50,14 +50,22 @@ def control_plots(user_config_path: str):
     # create output folders for plots
     period_dir = utils.make_output_paths(config, user_time_range)
     # get correct time info for subfolder's name
-    name_time = utils.get_run_name(config, user_time_range) if "timestamp" in user_time_range.keys() else utils.get_time_name(user_time_range)
+    name_time = (
+        utils.get_run_name(config, user_time_range)
+        if "timestamp" in user_time_range.keys()
+        else utils.get_time_name(user_time_range)
+    )
     output_paths = period_dir + name_time + "/"
     utils.make_dir(output_paths)
     if not output_paths:
         return
 
     # we don't care here about the time keyword timestamp/run -> just get the value
-    plt_basename += utils.get_run_name(config, user_time_range) if "timestamp" in user_time_range.keys() else utils.get_time_name(user_time_range)
+    plt_basename += (
+        utils.get_run_name(config, user_time_range)
+        if "timestamp" in user_time_range.keys()
+        else utils.get_time_name(user_time_range)
+    )
     plt_path = output_paths + plt_basename
     plt_path += "-{}".format("_".join(data_types))
 
@@ -65,7 +73,9 @@ def control_plots(user_config_path: str):
     generate_plots(config, plt_path)
 
 
-def auto_control_plots(xplot_config: str, file_keys: str, prod_path: str, prod_config: str):
+def auto_control_plots(
+    xplot_config: str, file_keys: str, prod_path: str, prod_config: str
+):
     """Set the configuration file and the output paths when a config file is provided during automathic data processing. The function to generate plots is then automatically called."""
     # -------------------------------------------------------------------------
     # Read user settings
@@ -144,13 +154,21 @@ def generate_plots(config: dict, plt_path: str):
 
     # some output messages, just to warn the user...
     if saving is None:
-        utils.logger.warning("\033[93mData will not be saed, but the pdf will be.\033[0m")
+        utils.logger.warning(
+            "\033[93mData will not be saed, but the pdf will be.\033[0m"
+        )
     elif saving == "append":
-        utils.logger.warning("\033[93mYou're going to append new data to already existing data. If not present, you first create the output file as a very first step.\033[0m")
+        utils.logger.warning(
+            "\033[93mYou're going to append new data to already existing data. If not present, you first create the output file as a very first step.\033[0m"
+        )
     elif saving == "overwrite":
-        utils.logger.warning("\033[93mYou have accepted to overwrite already generated files, there's no way back until you manually stop the code NOW!\033[0m")
+        utils.logger.warning(
+            "\033[93mYou have accepted to overwrite already generated files, there's no way back until you manually stop the code NOW!\033[0m"
+        )
     else:
-        utils.logger.error("\033[91mThe selected saving option in the config file is wrong. Try again with 'overwrite', 'append' or nothing!\033[0m")
+        utils.logger.error(
+            "\033[91mThe selected saving option in the config file is wrong. Try again with 'overwrite', 'append' or nothing!\033[0m"
+        )
         exit()
 
     # put it in a dict, so that later, if pulser is also wanted to be plotted, we don't have to load it twice
