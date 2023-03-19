@@ -402,8 +402,10 @@ def get_timestamp(filename):
 def get_run_name(config, user_time_range: dict) -> str:
     """Get the run ID given start/end timestamps."""
     # this is the root directory to search in the timestamps
-    main_folder = os.path.join(config["dataset"]["path"], config["dataset"]["version"], "generated/tier")
-    
+    main_folder = os.path.join(
+        config["dataset"]["path"], config["dataset"]["version"], "generated/tier"
+    )
+
     # start/end timestamps of the selected time range of interest
     start_timestamp = user_time_range["timestamp"]["start"]
     end_timestamp = user_time_range["timestamp"]["end"]
@@ -566,7 +568,14 @@ def add_config_entries(
 # -------------------------------------------------------------------------
 
 
-def build_out_dict(plot_settings: list, plot_info: list, par_dict_content: dict, out_dict: dict, saving: str, plt_path:str):
+def build_out_dict(
+    plot_settings: list,
+    plot_info: list,
+    par_dict_content: dict,
+    out_dict: dict,
+    saving: str,
+    plt_path: str,
+):
     """Build the dictionary in the correct format for being saved in the final shelve object."""
     # we overwrite the object with a new one
     if saving == "overwrite":
