@@ -188,7 +188,7 @@ def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: 
                     "Thresholds are not enabled for pulser! Use you own eyes to do checks there"
                 )
             else:
-                status_fig = status_plot.status_plot(
+                _ = status_plot.status_plot(
                     subsystem, data_analysis.data, plot_info, pdf
                 )
 

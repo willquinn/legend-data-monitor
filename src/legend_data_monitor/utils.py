@@ -345,7 +345,7 @@ def make_dir(dir_path):
     logger.info(message)
 
 
-def get_multiple_run_IDs(user_time_range: dict) -> str:
+def get_multiple_run_id(user_time_range: dict) -> str:
     time_range = list(user_time_range.values())[0]
     name_time = "{}".format("_".join(time_range))
     return name_time
@@ -385,7 +385,7 @@ def get_time_name(user_time_range: dict) -> str:
                 name_time += time_range[min_idx] + "_" + time_range[max_idx]
 
     elif "run" in user_time_range.keys():
-        name_time = get_multiple_run_IDs(user_time_range)
+        name_time = get_multiple_run_id(user_time_range)
 
     else:
         logger.error("\033[91mInvalid time selection!\033[0m")
@@ -403,8 +403,6 @@ def get_run_name(config, user_time_range: dict) -> str:
     """Get the run ID given start/end timestamps."""
     # this is the root directory to search in the timestamps
     main_folder = os.path.join(config["dataset"]["path"], config["dataset"]["version"], "generated/tier")
-    # subfolders contained in the main folder
-    subfolders = [f.path for f in os.scandir(main_folder) if f.is_dir()]
     
     # start/end timestamps of the selected time range of interest
     start_timestamp = user_time_range['timestamp']['start']
@@ -436,7 +434,7 @@ def get_run_name(config, user_time_range: dict) -> str:
         logger.error("\033[91mThe selected timestamps were not find anywhere. Try again with another time range!\033[0m")
         exit()
     if len(run_list) > 1:
-        return get_multiple_run_IDs(user_time_range)
+        return get_multiple_run_id(user_time_range)
 
     return run_list[0]
 
@@ -556,7 +554,7 @@ def add_config_entries(
 
 
 def build_out_dict(plot_settings: list, plot_info: list, par_dict_content: dict, out_dict: dict, saving: str, plt_path:str):
-    """Build the dictionary in the corret format for being saved in the final shelve object."""
+    """Build the dictionary in the correct format for being saved in the final shelve object."""
     # we overwrite the object with a new one
     if saving == "overwrite":
         out_dict = save_dict(plot_settings, plot_info, par_dict_content, out_dict)
