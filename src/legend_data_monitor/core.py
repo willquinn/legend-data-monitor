@@ -21,8 +21,7 @@ def control_plots(user_config_path: str):
     # Define PDF file basename
     # -------------------------------------------------------------------------
 
-    # Format: l200-p02-{run}-{data_type} or l200-p02-timestamp1_timestamp2-{data_type}
-    # One pdf/log file for all subsystems; one common shelve object
+    # Format: l200-p02-{run}-{data_type}; One pdf/log/shelve file for each subsystem
 
     try:
         data_types = (
@@ -51,14 +50,14 @@ def control_plots(user_config_path: str):
     # create output folders for plots
     period_dir = utils.make_output_paths(config, user_time_range)
     # get correct time info for subfolder's name
-    name_time = "r014_prova" #utils.get_time_name(user_time_range)
+    name_time = utils.get_run_name(config, user_time_range) if "timestamp" in user_time_range.keys() else utils.get_time_name(user_time_range)
     output_paths = period_dir + name_time + "/"
     utils.make_dir(output_paths)
     if not output_paths:
         return
 
     # we don't care here about the time keyword timestamp/run -> just get the value
-    plt_basename += "r014_prova" #utils.get_time_name(user_time_range)
+    plt_basename += utils.get_run_name(config, user_time_range) if "timestamp" in user_time_range.keys() else utils.get_time_name(user_time_range)
     plt_path = output_paths + plt_basename
     plt_path += "-{}".format("_".join(data_types))
 
@@ -87,8 +86,7 @@ def auto_control_plots(xplot_config: str, file_keys: str, prod_path: str, prod_c
     # -------------------------------------------------------------------------
     # Define PDF file basename
     # -------------------------------------------------------------------------
-    # Format: l200-p02-{run}-{data_type} or l200-p02-timestamp1_timestamp2-{data_type}
-    # One pdf/log file for all subsystems; one common shelve object
+    # Format: l200-p02-{run}-{data_type}; One pdf/log/shelve file for each subsystem
 
     try:
         data_types = (

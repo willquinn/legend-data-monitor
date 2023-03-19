@@ -3,6 +3,7 @@ import importlib.resources
 import json
 import shelve
 import logging
+import fnmatch
 import os
 import re
 from pandas import concat
@@ -103,7 +104,7 @@ def get_query_times(**kwargs):
         # if setup= keyword was used, get dict; otherwise kwargs is already the dict we need
         path_info = kwargs["dataset"] if "dataset" in kwargs else kwargs
 
-        # format to search /path/to/prod-ref/v06.00/generated/tier/**/phy/**/r027
+        # format to search /path_to_prod-ref[/v06.00]/generated/tier/**/phy/**/r027 (version might not be there)
         glob_path = os.path.join(
             path_info["path"],
             path_info["version"],
@@ -344,6 +345,12 @@ def make_dir(dir_path):
     logger.info(message)
 
 
+def get_multiple_run_IDs(user_time_range: dict) -> str:
+    time_range = list(user_time_range.values())[0]
+    name_time = "{}".format("_".join(time_range))
+    return name_time
+
+
 def get_time_name(user_time_range: dict) -> str:
     """Get a name for each available time selection.
 
@@ -378,14 +385,60 @@ def get_time_name(user_time_range: dict) -> str:
                 name_time += time_range[min_idx] + "_" + time_range[max_idx]
 
     elif "run" in user_time_range.keys():
-        time_range = list(user_time_range.values())[0]
-        name_time += "{}".format("_".join(time_range))
+        name_time = get_multiple_run_IDs(user_time_range)
 
     else:
         logger.error("\033[91mInvalid time selection!\033[0m")
         return
 
     return name_time
+
+
+def get_timestamp(filename):
+        # Assumes that the timestamp is in the format YYYYMMDDTHHMMSSZ
+        return filename.split('-')[-2]
+
+
+def get_run_name(config, user_time_range: dict) -> str:
+    """Get the run ID given start/end timestamps."""
+    # this is the root directory to search in the timestamps
+    main_folder = os.path.join(config["dataset"]["path"], config["dataset"]["version"], "generated/tier")
+    # subfolders contained in the main folder
+    subfolders = [f.path for f in os.scandir(main_folder) if f.is_dir()]
+    
+    # start/end timestamps of the selected time range of interest
+    start_timestamp = user_time_range['timestamp']['start']
+    end_timestamp = user_time_range['timestamp']['end']
+
+    run_list = [] # this will be updated with the run ID 
+    # start to look for timestamps inside subfolders
+    def search_for_timestamp(folder):
+        run_id = ""
+        for subfolder in os.listdir(folder):
+            subfolder_path = os.path.join(folder, subfolder)
+            if os.path.isdir(subfolder_path):
+                files = sorted(glob.glob(os.path.join(subfolder_path, '*')))
+                for i, file in enumerate(files):
+                    if (get_timestamp(files[i-1]) <= start_timestamp <= get_timestamp(file)) or (get_timestamp(files[i-1]) <= end_timestamp <= get_timestamp(file)):
+                        run_id = file.split("/")[-2]
+                        run_list.append(run_id)
+                        break
+
+                if len(run_list) == 0:
+                    search_for_timestamp(subfolder_path)
+                else:
+                    break
+        return 
+
+    search_for_timestamp(main_folder)
+
+    if len(run_list) == 0:
+        logger.error("\033[91mThe selected timestamps were not find anywhere. Try again with another time range!\033[0m")
+        exit()
+    if len(run_list) > 1:
+        return get_multiple_run_IDs(user_time_range)
+
+    return run_list[0]
 
 
 def get_all_plot_parameters(subsystem: str, config: dict):
