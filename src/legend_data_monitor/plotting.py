@@ -22,7 +22,9 @@ COLORS = []
 # for example, this structure won't work to plot one parameter VS the other
 
 
-def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: str, saving=None):
+def make_subsystem_plots(
+    subsystem: subsystem.Subsystem, plots: dict, plt_path: str, saving=None
+):
     pdf = PdfPages(plt_path + "-" + subsystem.type + ".pdf")
     out_dict = {}
 
@@ -195,10 +197,13 @@ def make_subsystem_plots(subsystem: subsystem.Subsystem, plots: dict, plt_path: 
         # -------------------------------------------------------------------------
         # save results
         # -------------------------------------------------------------------------
-        
+
         # building a dictionary with dataframe/plot_info to be later stored in a shelve object
-        if saving is not None: out_dict = utils.build_out_dict(plot_settings, plot_info, par_dict_content, out_dict, saving, plt_path)
-        
+        if saving is not None:
+            out_dict = utils.build_out_dict(
+                plot_settings, plot_info, par_dict_content, out_dict, saving, plt_path
+            )
+
     # save in shelve object, overwriting the already existing file with new content (either completely new or new bunches)
     if saving is not None:
         out_file = shelve.open(plt_path + f"-{subsystem.type}")

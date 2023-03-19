@@ -93,13 +93,17 @@ class Subsystem:
             return
 
         if "version" not in data_info:
-            utils.logger.error("\033[91mProvide processing version! If not needed, just put an empty string, \"\".\033[0m")
+            utils.logger.error(
+                '\033[91mProvide processing version! If not needed, just put an empty string, "".\033[0m'
+            )
             utils.logger.error("\033[91m%s\033[0m", self.__doc__)
             return
 
-        # in p03 things change again!!!! 
+        # in p03 things change again!!!!
         # There is no version in '/data2/public/prodenv/prod-blind/tmp/auto/generated/tier/dsp/phy/p03', so for the moment we skip this check...
-        if data_info["period"] != "p03" and not os.path.exists(os.path.join(data_info["path"], data_info["version"])):
+        if data_info["period"] != "p03" and not os.path.exists(
+            os.path.join(data_info["path"], data_info["version"])
+        ):
             utils.logger.error("\033[91mProvide valid processing version!\033[0m")
             utils.logger.error("\033[91m%s\033[0m", self.__doc__)
             return
@@ -120,7 +124,7 @@ class Subsystem:
         self.datatype = data_info["type"]
         # need to remember for DataLoader config
         self.path = data_info["path"]
-        self.version = data_info["version"] 
+        self.version = data_info["version"]
 
         self.timerange, self.first_timestamp = utils.get_query_times(**kwargs)
 
@@ -352,7 +356,10 @@ class Subsystem:
                     if self.period != "p03":
                         return entry["system"] == "puls" and entry["daq"][ch_flag] == 1
                     if self.period == "p03":
-                        return entry["system"] == "puls" and entry["daq"][ch_flag] == 1027201
+                        return (
+                            entry["system"] == "puls"
+                            and entry["daq"][ch_flag] == 1027201
+                        )
             # for geds or spms
             return entry["system"] == self.type
 
