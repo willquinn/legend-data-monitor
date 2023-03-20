@@ -194,6 +194,7 @@ class Subsystem:
         query += f" and (type == '{self.datatype}')"
 
         # !!!! QUICKFIX
+        # p02 keys (missing ch068)
         query += " and (timestamp != '20230125T222013Z')"
         query += " and (timestamp != '20230126T015308Z')"
         query += " and (timestamp != '20230222T231553Z')"
@@ -387,6 +388,7 @@ class Subsystem:
 
             # --- add info for this channel - Raw/FlashCam ID, unique for geds/spms/pulser
             ch = entry_info["daq"][ch_flag]
+
             df_map.at[ch, "name"] = entry_info["name"]
             # number/name of string/fiber for geds/spms, dummy for pulser
             df_map.at[ch, "location"] = (
@@ -469,7 +471,8 @@ class Subsystem:
 
         # AUX channels are not in status map, so at least for pulser need default on
         self.channel_map["status"] = "on"
-        self.channel_map = self.channel_map.set_index("channel")
+        self.channel_map = self.channel_map.set_index("name")
+        # 'channel_name', for instance, has the format 'DNNXXXS' (= "name" column)
         for channel_name in full_status_map:
             # status map contains all channels, check if this channel is in our subsystem
             if channel_name in self.channel_map.index:
@@ -554,12 +557,14 @@ class Subsystem:
 
         # -------------------------------------------------------------------------
         # set up tiers depending on what parameters we need
+        # -------------------------------------------------------------------------
 
         # ronly load channels that are on (off channels will crash DataLoader)
         chlist = list(self.channel_map[self.channel_map["status"] == "on"]["channel"])
         removed_chs = list(
             self.channel_map[self.channel_map["status"] == "off"]["channel"]
         )
+
         utils.logger.info(f"...... not loading channels with status off: {removed_chs}")
 
         # --- settings for each tier
