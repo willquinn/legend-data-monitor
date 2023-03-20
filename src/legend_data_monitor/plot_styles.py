@@ -107,8 +107,13 @@ def par_vs_ch(
     # -------------------------------------------------------------------------
     # plot data vs channel ID
     # -------------------------------------------------------------------------
+    # trick to get a correct position of channels, independently from the 'channel' entry
+    # (everything was ok when using 'fcid'; but using 'rawid' as 'channel', we loose the possibility to order channels over x-axis in a decent way)
+    map_dict = utils.MAP_DICT
+    location = data_channel["location"].unique()[0]
+    position = data_channel["position"].unique()[0]
     ax.scatter(
-        data_channel.index.values[0],
+        map_dict[str(location)][str(position)],
         data_channel[plot_info["parameter"]].unique()[0],
         color=color,
     )
@@ -159,7 +164,7 @@ def plot_histo(
 
     # --- bin width
     bwidth = {"keV": 2.5}  # what to do with binning???
-    bin_width = bwidth[plot_info["unit"]] if plot_info["unit"] in bwidth else None
+    bin_width = bwidth[plot_info["unit"]] if plot_info["unit"] in bwidth else 1
     no_bins = int((x_max - x_min) / bin_width) if bin_width else 50
 
     # -------------------------------------------------------------------------

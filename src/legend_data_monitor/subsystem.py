@@ -400,7 +400,7 @@ class Subsystem:
             df_map.at[ch, "position"] = (
                 0 if self.type == "pulser" else entry_info["location"]["position"]
             )
-            # CC4 information - will be None for L60 (set tu 'null') or spms (there, but no CC4s)
+            # CC4 information - will be None for L60 (set to 'null') or spms (there, but no CC4s)
             df_map.at[ch, "cc4_id"] = (
                 entry_info["electronics"]["cc4"]["id"] if self.type == "geds" else None
             )

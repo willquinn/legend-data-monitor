@@ -44,6 +44,10 @@ with open(pkg / "settings" / "parameter-tiers.json") as f:
 with open(pkg / "settings" / "special-parameters.json") as f:
     SPECIAL_PARAMETERS = json.load(f)
 
+# dictionary map (helpful when we want to map channels based on their location/position)
+with open(pkg / "settings" / "map-channels.json") as f:
+    MAP_DICT = json.load(f)
+
 # convert all to lists for convenience
 for param in SPECIAL_PARAMETERS:
     if isinstance(SPECIAL_PARAMETERS[param], str):
@@ -223,7 +227,9 @@ def get_query_timerange(**kwargs):
         time_range["run"] = ["r" + str(run).zfill(3) for run in runs]
 
     else:
-        logger.error("\033[91mInvalid time selection!\033[0m")
+        logger.error(
+            "\033[91mInvalid time selection. Choose among: runs, timestamps, window, start+end - try again!\033[0m"
+        )
         return
 
     return time_range
