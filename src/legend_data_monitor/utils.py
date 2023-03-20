@@ -227,7 +227,9 @@ def get_query_timerange(**kwargs):
         time_range["run"] = ["r" + str(run).zfill(3) for run in runs]
 
     else:
-        logger.error("\033[91mInvalid time selection. Choose among: runs, timestamps, window, start+end - try again!\033[0m")
+        logger.error(
+            "\033[91mInvalid time selection. Choose among: runs, timestamps, window, start+end - try again!\033[0m"
+        )
         return
 
     return time_range

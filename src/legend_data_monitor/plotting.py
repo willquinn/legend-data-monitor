@@ -578,7 +578,7 @@ def plot_array(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
         for label, data_channel in data_location.groupby("label"):
             ch_dict = plot_style(data_channel, fig, axes, plot_info, COLORS[col_idx])
 
-            channel = ((label.split("-")[1]).split("ch")[-1])
+            channel = (label.split("-")[1]).split("ch")[-1]
             if channel not in par_dict.keys():
                 par_dict[channel] = ch_dict
 
