@@ -227,7 +227,7 @@ def status_plot(subsystem, data_analysis: DataFrame, plot_info: dict, pdf: PdfPa
 
     # labels definition (AFTER having included OFF detectors too)
     # LOCATION:
-    x_axis_labels = [f"S{no}" for no in new_dataframe["location"].unique()]
+    x_axis_labels = [f"S{no}" for no in sorted(new_dataframe["location"].unique())]
     # POSITION:
     y_axis_labels = [
         no

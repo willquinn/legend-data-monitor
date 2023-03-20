@@ -549,7 +549,7 @@ def plot_array(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
     labels = data_analysis.groupby("channel").first()[["name", "location", "position"]]
     labels["channel"] = labels.index
     labels["label"] = labels[["location", "position", "channel", "name"]].apply(
-        lambda x: f"s{x[0]}-p{x[1]}-ch{str(x[2]).zfill(3)}-{x[3]}", axis=1
+        lambda x: f"p{x[1]}-ch{str(x[2])}-{x[3]}", axis=1
     )
     # put it in the table
     data_analysis = data_analysis.set_index("channel")
@@ -578,14 +578,18 @@ def plot_array(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
         for label, data_channel in data_location.groupby("label"):
             ch_dict = plot_style(data_channel, fig, axes, plot_info, COLORS[col_idx])
 
-            channel = ((label.split("-")[2]).split("ch")[-1]).lstrip("0")
+            channel = ((label.split("-")[1]).split("ch")[-1])
             if channel not in par_dict.keys():
                 par_dict[channel] = ch_dict
 
+            MAP_DICT = utils.MAP_DICT
+            location = data_channel["location"].unique()[0]
+            position = data_channel["position"].unique()[0]
+
             labels.append(label)
-            channels.append(int(channel))
+            channels.append(MAP_DICT[str(location)][str(position)])
             values_per_string.append(ch_dict["values"])
-            channels_per_string.append(int(channel))
+            channels_per_string.append(MAP_DICT[str(location)][str(position)])
 
         # get average of plotted parameter per string (print horizontal line)
         avg_of_string = sum(values_per_string) / len(values_per_string)
@@ -629,7 +633,7 @@ def plot_array(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
     axes.xlabel = None
     # add x labels
     axes.set_xticks(channels)
-    axes.set_xticklabels(labels, fontsize=6)
+    axes.set_xticklabels(labels, fontsize=5)
     # rotate x labels
     plt.xticks(rotation=70, ha="right")
     # title/label
