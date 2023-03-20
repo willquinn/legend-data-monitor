@@ -582,14 +582,14 @@ def plot_array(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
             if channel not in par_dict.keys():
                 par_dict[channel] = ch_dict
 
-            MAP_DICT = utils.MAP_DICT
+            map_dict = utils.MAP_DICT
             location = data_channel["location"].unique()[0]
             position = data_channel["position"].unique()[0]
 
             labels.append(label)
-            channels.append(MAP_DICT[str(location)][str(position)])
+            channels.append(map_dict[str(location)][str(position)])
             values_per_string.append(ch_dict["values"])
-            channels_per_string.append(MAP_DICT[str(location)][str(position)])
+            channels_per_string.append(map_dict[str(location)][str(position)])
 
         # get average of plotted parameter per string (print horizontal line)
         avg_of_string = sum(values_per_string) / len(values_per_string)

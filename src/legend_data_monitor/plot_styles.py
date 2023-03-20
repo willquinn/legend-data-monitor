@@ -109,11 +109,11 @@ def par_vs_ch(
     # -------------------------------------------------------------------------
     # trick to get a correct position of channels, independently from the 'channel' entry
     # (everything was ok when using 'fcid'; but using 'rawid' as 'channel', we loose the possibility to order channels over x-axis in a decent way)
-    MAP_DICT = utils.MAP_DICT
+    map_dict = utils.MAP_DICT
     location = data_channel["location"].unique()[0]
     position = data_channel["position"].unique()[0]
     ax.scatter(
-        MAP_DICT[str(location)][str(position)],
+        map_dict[str(location)][str(position)],
         data_channel[plot_info["parameter"]].unique()[0],
         color=color,
     )
