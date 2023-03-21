@@ -381,9 +381,7 @@ def plot_per_cc4(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
         for label, data_channel in data_cc4_id.groupby("label"):
             cc4_channel = (label.split("-"))[-1]
             utils.logger.debug(f"...... channel {cc4_channel}")
-            _ = plot_style(
-                data_channel, fig, axes[ax_idx], plot_info, COLORS[col_idx]
-            )
+            _ = plot_style(data_channel, fig, axes[ax_idx], plot_info, COLORS[col_idx])
             labels.append(label)
             col_idx += 1
 
@@ -473,9 +471,7 @@ def plot_per_string(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
         col_idx = 0
         labels = []
         for label, data_channel in data_location.groupby("label"):
-            _ = plot_style(
-                data_channel, fig, axes[ax_idx], plot_info, COLORS[col_idx]
-            )
+            _ = plot_style(data_channel, fig, axes[ax_idx], plot_info, COLORS[col_idx])
             labels.append(label)
             col_idx += 1
 
