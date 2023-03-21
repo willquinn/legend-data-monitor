@@ -273,7 +273,7 @@ def plot_per_ch(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
             COLORS = color_palette("hls", max_ch_per_string).as_hex()
 
             # plot selected style on this axis
-            ch_dict = plot_style(
+            _ = plot_style(
                 data_channel, fig, axes[ax_idx], plot_info, color=COLORS[ax_idx]
             )
 
@@ -383,7 +383,7 @@ def plot_per_cc4(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
         for label, data_channel in data_cc4_id.groupby("label"):
             cc4_channel = (label.split("-"))[-1]
             utils.logger.debug(f"...... channel {cc4_channel}")
-            ch_dict = plot_style(
+            _ = plot_style(
                 data_channel, fig, axes[ax_idx], plot_info, COLORS[col_idx]
             )
             labels.append(label)
@@ -475,13 +475,11 @@ def plot_per_string(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
         col_idx = 0
         labels = []
         for label, data_channel in data_location.groupby("label"):
-            ch_dict = plot_style(
+            _ = plot_style(
                 data_channel, fig, axes[ax_idx], plot_info, COLORS[col_idx]
             )
             labels.append(label)
             col_idx += 1
-
-            channel = ((label.split("-")[1]).split("ch")[-1]).lstrip("0")
 
         # add grid
         axes[ax_idx].grid("major", linestyle="--")
