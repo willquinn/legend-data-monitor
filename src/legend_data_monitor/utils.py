@@ -616,10 +616,10 @@ def build_out_dict(
                 # concatenate the two dfs (channels are no more grouped; not a problem)
                 merged_df = concat([old_df, new_df], ignore_index=True, axis=0)
                 merged_df = merged_df.reset_index()
-                merged_df = merged_df.drop(
-                    columns=["level_0"]
-                )  # why does this column appear? remove it in any case
-
+                # why does this column appear? remove it in any case
+                if "level_0" in merged_df.columns:
+                    merged_df = merged_df.drop(columns=["level_0"])  
+                
                 # redefine the dict containing the df and plot_info
                 par_dict_content = {}
                 par_dict_content["df_" + plot_info["subsystem"]] = merged_df
