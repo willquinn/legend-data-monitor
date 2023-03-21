@@ -1,5 +1,6 @@
 import os
 import shelve
+
 import numpy as np
 import pandas as pd
 from pandas import DataFrame, concat
@@ -300,14 +301,14 @@ class AnalysisData:
         # check if we are looking at SiPMs -> do not get mean because entries are usually lists
         # ToDo: need to iterate over the parameters (some of them could be lists, others not)
 
-        # congratulations, it's a sipm! 
+        # congratulations, it's a sipm!
         if self.is_spms():
             channels = (self.data["channel"]).unique()
             channel_mean = pd.DataFrame(
                 {"channel": channels, self.parameters[0]: [None] * len(channels)}
             )
             channel_mean = channel_mean.set_index("channel")
-        # otherwise, it's either the pulser or geds 
+        # otherwise, it's either the pulser or geds
         else:
             if self.saving is None or self.saving == "overwrite":
                 # get the dataframe for timestamps below 10% of data present in the selected time window
@@ -333,9 +334,11 @@ class AnalysisData:
                     with shelve.open(self.plt_path + "-" + subsys, "r") as shelf:
                         old_dict = dict(shelf)
                     # get old dataframe (we are interested only in the column with mean values)
-                    old_df = old_dict["monitoring"][self.evt_type][self.parameters[0]]["df_" + subsys]
+                    old_df = old_dict["monitoring"][self.evt_type][self.parameters[0]][
+                        "df_" + subsys
+                    ]
 
-                    """ 
+                    """
                     # to use in the future for a more refined version of updated mean values...
 
                     # if previously we chose to plot % variations, we do not have anymore the absolute values to use when computing this new mean;
@@ -348,19 +351,28 @@ class AnalysisData:
                     merged_df = merged_df.reset_index()
                     # why does this column appear? remove it in any case
                     if "level_0" in merged_df.columns:
-                        merged_df = merged_df.drop(columns=["level_0"])  
+                        merged_df = merged_df.drop(columns=["level_0"])
 
                     self_data_time_cut = cut_dataframe(merged_df)
 
                     # ...still we have to re-compute the % variations of previous time windows because now the mean estimate is different!!!
                     """
                     # a column of mean values
-                    mean_df = DataFrame(old_df[self.parameters[0] + "_mean"].unique(), columns=[self.parameters[0] + "_mean"])
+                    mean_df = DataFrame(
+                        old_df[self.parameters[0] + "_mean"].unique(),
+                        columns=[self.parameters[0] + "_mean"],
+                    )
                     # a column of channels
-                    channels = DataFrame(old_df["channel"].unique(), columns=["channel"])
+                    channels = DataFrame(
+                        old_df["channel"].unique(), columns=["channel"]
+                    )
                     # two columns: one of channels, one of mean values
-                    channel_mean = concat([channels, mean_df], ignore_index=True, axis=1).rename(columns={0: "channel", 1: self.parameters[0] + "_mean"})
-                    channel_mean = channel_mean.set_index("channel") # it contains mean values evaluated the first time ever running this run!
+                    channel_mean = concat(
+                        [channels, mean_df], ignore_index=True, axis=1
+                    ).rename(columns={0: "channel", 1: self.parameters[0] + "_mean"})
+                    channel_mean = channel_mean.set_index(
+                        "channel"
+                    )  # it contains mean values evaluated the first time ever running this run!
 
             # FWHM mean is meaningless -> drop (special parameter for SiPMs)
             if "FWHM" in self.parameters:
@@ -397,11 +409,13 @@ class AnalysisData:
 
     def is_spms(self) -> bool:
         """Returns True if 'location' (=fiber) and 'position' (=top, bottom) are strings."""
-        if isinstance(self.data.iloc[0]["location"], str) and isinstance(self.data.iloc[0]["position"], str):
+        if isinstance(self.data.iloc[0]["location"], str) and isinstance(
+            self.data.iloc[0]["position"], str
+        ):
             return True
         else:
             return False
-            
+
     def is_geds(self) -> bool:
         """Returns True if 'location' (=string) and 'position' are NOT strings."""
         if not self.is_spms():
@@ -412,7 +426,10 @@ class AnalysisData:
     def is_pulser(self) -> bool:
         """Returns True if 'location' (=string) and 'position' are NOT strings."""
         if self.is_geds():
-            if self.data.iloc[0]["location"] == 0 and self.data.iloc[0]["position"] == 0:
+            if (
+                self.data.iloc[0]["location"] == 0
+                and self.data.iloc[0]["position"] == 0
+            ):
                 return True
             else:
                 return False
@@ -460,5 +477,3 @@ def cut_dataframe(data: DataFrame) -> DataFrame:
     thr_datetime = min_datetime + ten_percent_duration  # 10% timestamp
     # get only the rows for datetimes before the 10% of the specified time range
     return data.loc[data["datetime"] < thr_datetime]
-
-
