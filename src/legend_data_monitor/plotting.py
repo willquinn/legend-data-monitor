@@ -230,7 +230,6 @@ def plot_per_ch(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
     plot_style = plot_styles.PLOT_STYLE[plot_info["plot_style"]]
     utils.logger.debug("Plot style: " + plot_info["plot_style"])
 
-    par_dict = {}
     data_analysis = data_analysis.sort_values(["location", "position"])
 
     # -------------------------------------------------------------------------------
@@ -283,8 +282,6 @@ def plot_per_ch(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
             t = data_channel.iloc[0][
                 ["channel", "position", "name", plot_info["parameter"] + "_mean"]
             ]
-            if t["channel"] not in par_dict.keys():
-                par_dict[str(t["channel"])] = ch_dict
 
             text = (
                 t["name"]
@@ -295,7 +292,7 @@ def plot_per_ch(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
                     f"mean {round(t[plot_info['parameter']+'_mean'],3)} [{plot_info['unit']}]"
                     if t[plot_info["parameter"] + "_mean"] is not None
                     else ""
-                )  # handle with care mean='None' situations
+                )  # handle with care mean='None' situationsF_
             )
             axes[ax_idx].text(1.01, 0.5, text, transform=axes[ax_idx].transAxes)
 
@@ -338,8 +335,6 @@ def plot_per_cc4(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
     plot_style = plot_styles.PLOT_STYLE[plot_info["plot_style"]]
     utils.logger.debug("Plot style: " + plot_info["plot_style"])
 
-    par_dict = {}
-
     # --- create plot structure
     # number of cc4s
     no_cc4_id = len(data_analysis["cc4_id"].unique())
@@ -375,6 +370,12 @@ def plot_per_cc4(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
     ax_idx = 0
     for cc4_id, data_cc4_id in data_analysis.groupby("cc4_id"):
         utils.logger.debug(f"... CC4 {cc4_id}")
+        # set colors
+        max_ch_per_cc4 = (
+            data_analysis.groupby("cc4_id")["cc4_channel"].nunique().max()
+        )
+        global COLORS
+        COLORS = color_palette("hls", max_ch_per_cc4).as_hex()
 
         # new color for each channel
         col_idx = 0
@@ -387,10 +388,6 @@ def plot_per_cc4(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
             )
             labels.append(label)
             col_idx += 1
-
-            channel = ((label.split("-")[2]).split("ch")[-1]).lstrip("0")
-            if channel not in par_dict.keys():
-                par_dict[channel] = ch_dict
 
         # add grid
         axes[ax_idx].grid("major", linestyle="--")
@@ -413,19 +410,19 @@ def plot_per_cc4(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
     # -------------------------------------------------------------------------------
     y_title = 1.05 if plot_info["subsystem"] == "pulser" else 1.01
     fig.suptitle(f"{plot_info['subsystem']} - {plot_info['title']}", y=y_title)
-    plt.savefig(pdf, format="pdf", bbox_inches="tight")
-    # figures are retained until explicitly closed; close to not consume too much memory
-    plt.close()
+    # if no pdf is specified, then the function is not being called by make_subsystem_plots()
+    if pdf:
+        plt.savefig(pdf, format="pdf", bbox_inches="tight")
+        # figures are retained until explicitly closed; close to not consume too much memory
+        plt.close()
 
-    return par_dict
+    return fig
 
 
 def plot_per_string(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
     # --- choose plot function based on user requested style e.g. vs time or histogram
     plot_style = plot_styles.PLOT_STYLE[plot_info["plot_style"]]
     utils.logger.debug("Plot style: " + plot_info["plot_style"])
-
-    par_dict = {}
 
     # --- create plot structure
     # number of strings/fibers
@@ -485,8 +482,6 @@ def plot_per_string(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
             col_idx += 1
 
             channel = ((label.split("-")[1]).split("ch")[-1]).lstrip("0")
-            if channel not in par_dict.keys():
-                par_dict[channel] = ch_dict
 
         # add grid
         axes[ax_idx].grid("major", linestyle="--")
@@ -532,8 +527,6 @@ def plot_array(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
     plot_style = plot_styles.PLOT_STYLE[plot_info["plot_style"]]
     utils.logger.debug("Plot style: " + plot_info["plot_style"])
 
-    par_dict = {}
-
     # --- create plot structure
     fig, axes = plt.subplots(
         1,  # no of location
@@ -572,15 +565,17 @@ def plot_array(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
     for location, data_location in data_analysis.groupby("location"):
         utils.logger.debug(f"... {plot_info['locname']} {location}")
 
+        max_ch_per_string = (
+            data_analysis.groupby("location")["position"].nunique().max()
+        )
+        global COLORS
+        COLORS = color_palette("hls", max_ch_per_string).as_hex()
+
         values_per_string = []  # y values - in each string
         channels_per_string = []  # x values - in each string
         # group by channel
         for label, data_channel in data_location.groupby("label"):
             ch_dict = plot_style(data_channel, fig, axes, plot_info, COLORS[col_idx])
-
-            channel = (label.split("-")[1]).split("ch")[-1]
-            if channel not in par_dict.keys():
-                par_dict[channel] = ch_dict
 
             map_dict = utils.MAP_DICT
             location = data_channel["location"].unique()[0]
@@ -641,10 +636,13 @@ def plot_array(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
     fig.suptitle(f"{plot_info['subsystem']} - {plot_info['title']}", y=1.05)
 
     # -------------------------------------------------------------------------------
-    plt.savefig(pdf, format="pdf", bbox_inches="tight")
-    plt.close()
+    # if no pdf is specified, then the function is not being called by make_subsystem_plots()
+    if pdf:
+        plt.savefig(pdf, format="pdf", bbox_inches="tight")
+        # figures are retained until explicitly closed; close to not consume too much memory
+        plt.close()
 
-    return par_dict
+    #return fig
 
 
 # -------------------------------------------------------------------------------
