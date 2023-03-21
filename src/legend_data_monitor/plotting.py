@@ -371,9 +371,7 @@ def plot_per_cc4(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
     for cc4_id, data_cc4_id in data_analysis.groupby("cc4_id"):
         utils.logger.debug(f"... CC4 {cc4_id}")
         # set colors
-        max_ch_per_cc4 = (
-            data_analysis.groupby("cc4_id")["cc4_channel"].nunique().max()
-        )
+        max_ch_per_cc4 = data_analysis.groupby("cc4_id")["cc4_channel"].nunique().max()
         global COLORS
         COLORS = color_palette("hls", max_ch_per_cc4).as_hex()
 
@@ -642,7 +640,7 @@ def plot_array(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
         # figures are retained until explicitly closed; close to not consume too much memory
         plt.close()
 
-    #return fig
+    # return fig
 
 
 # -------------------------------------------------------------------------------
