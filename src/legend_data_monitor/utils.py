@@ -582,7 +582,7 @@ def build_out_dict(
     saving: str,
     plt_path: str,
 ):
-    """Build the dictionary in the correct format for being saved in the final shelve object."""
+    """Build the output dictionary based on the input 'saving' option."""
     # we overwrite the object with a new one
     if saving == "overwrite":
         out_dict = save_dict(plot_settings, plot_info, par_dict_content, out_dict)
@@ -639,6 +639,7 @@ def build_out_dict(
 
 
 def save_dict(plot_settings, plot_info, par_dict_content, out_dict):
+    """Create a dictionary with the correct format for being saved in the final shelve object."""
     # event type key is already there
     if plot_settings["event_type"] in out_dict.keys():
         out_dict[plot_settings["event_type"]][plot_info["parameter"]] = par_dict_content
