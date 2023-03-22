@@ -88,7 +88,7 @@ def plot_vs_time(
     # --- set labels
     fig.supxlabel("UTC Time")
     y_label = (
-        f"{plot_info['label']}, {plot_info['unit_label']} [{plot_info['unit']}]"
+        f"{plot_info['label']}, {plot_info['unit_label']}"
         if plot_info["unit_label"] == "%"
         else f"{plot_info['label']} [{plot_info['unit_label']}]"
     )
@@ -134,7 +134,7 @@ def par_vs_ch(
     # --- set labels
     fig.supxlabel("Channel ID")
     y_label = (
-        f"{plot_info['label']}, {plot_info['unit_label']} [{plot_info['unit']}]"
+        f"{plot_info['label']}, {plot_info['unit_label']}"
         if plot_info["unit_label"] == "%"
         else f"{plot_info['label']} [{plot_info['unit_label']}]"
     )
@@ -181,7 +181,7 @@ def plot_histo(
     # -------------------------------------------------------------------------
     ax.set_yscale("log")
     x_label = (
-        f"{plot_info['label']}, {plot_info['unit_label']} [{plot_info['unit']}]"
+        f"{plot_info['label']}, {plot_info['unit_label']}"
         if plot_info["unit_label"] == "%"
         else f"{plot_info['label']} [{plot_info['unit_label']}]"
     )
@@ -216,7 +216,7 @@ def plot_scatter(
 
     fig.supxlabel("UTC Time")
     y_label = (
-        f"{plot_info['label']}, {plot_info['unit_label']} [{plot_info['unit']}]"
+        f"{plot_info['label']}, {plot_info['unit_label']}"
         if plot_info["unit_label"] == "%"
         else f"{plot_info['label']} [{plot_info['unit_label']}]"
     )

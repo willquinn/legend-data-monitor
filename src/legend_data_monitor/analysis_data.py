@@ -111,6 +111,7 @@ class AnalysisData:
 
         # always get basic parameters
         params_to_get = [
+            "timestamp",
             "datetime",
             "channel",
             "name",

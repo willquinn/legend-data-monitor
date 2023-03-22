@@ -620,6 +620,8 @@ def build_out_dict(
                 # why does this column appear? remove it in any case
                 if "level_0" in merged_df.columns:
                     merged_df = merged_df.drop(columns=["level_0"]) 
+                # re-order content in order of channels/timestamps
+                merged_df = merged_df.sort_values(["channel", "datetime"])
                 
                 # redefine the dict containing the df and plot_info
                 par_dict_content = {}
