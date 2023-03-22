@@ -358,12 +358,18 @@ class AnalysisData:
                     # ...still we have to re-compute the % variations of previous time windows because now the mean estimate is different!!!
                     """
                     # a column of mean values
-                    mean_df = old_df[self.parameters[0] + "_mean"] #.groupy(self.parameters[0] + "_mean")# DataFrame(old_df[self.parameters[0] + "_mean"].unique(), columns=[self.parameters[0] + "_mean"])
+                    mean_df = old_df[
+                        self.parameters[0] + "_mean"
+                    ]  # .groupy(self.parameters[0] + "_mean")# DataFrame(old_df[self.parameters[0] + "_mean"].unique(), columns=[self.parameters[0] + "_mean"])
                     # a column of channels
-                    channels = old_df["channel"] #.groupy("channel")#DataFrame(old_df["channel"].unique(), columns=["channel"])
+                    channels = old_df[
+                        "channel"
+                    ]  # .groupy("channel")#DataFrame(old_df["channel"].unique(), columns=["channel"])
                     # two columns: one of channels, one of mean values
-                    channel_mean = concat([channels, mean_df], ignore_index=True, axis=1).rename(columns={0: "channel", 1: self.parameters[0]})
-                    channel_mean = channel_mean.set_index("channel") 
+                    channel_mean = concat(
+                        [channels, mean_df], ignore_index=True, axis=1
+                    ).rename(columns={0: "channel", 1: self.parameters[0]})
+                    channel_mean = channel_mean.set_index("channel")
                     # drop potential duplicate rows
                     channel_mean = channel_mean.drop_duplicates()
 
@@ -402,7 +408,9 @@ class AnalysisData:
 
     def is_spms(self) -> bool:
         """Return True if 'location' (=fiber) and 'position' (=top, bottom) are strings."""
-        if isinstance(self.data.iloc[0]["location"], str) and isinstance(self.data.iloc[0]["position"], str):
+        if isinstance(self.data.iloc[0]["location"], str) and isinstance(
+            self.data.iloc[0]["position"], str
+        ):
             return True
         else:
             return False
