@@ -359,13 +359,9 @@ class AnalysisData:
                     # ...still we have to re-compute the % variations of previous time windows because now the mean estimate is different!!!
                     """
                     # a column of mean values
-                    mean_df = old_df[
-                        self.parameters[0] + "_mean"
-                    ]  
+                    mean_df = old_df[self.parameters[0] + "_mean"]
                     # a column of channels
-                    channels = old_df[
-                        "channel"
-                    ]  
+                    channels = old_df["channel"]
                     # two columns: one of channels, one of mean values
                     channel_mean = concat(
                         [channels, mean_df], ignore_index=True, axis=1
