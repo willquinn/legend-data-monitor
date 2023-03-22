@@ -9,7 +9,7 @@ import shelve
 # for getting DataLoader time range
 from datetime import datetime, timedelta
 
-from pandas import concat
+from pandas import DataFrame, concat
 
 # -------------------------------------------------------------------------
 
@@ -614,11 +614,12 @@ def build_out_dict(
                 # get new df (plot_info object is the same as before, no need to get it and update it)
                 new_df = par_dict_content["df_" + plot_info["subsystem"]]
                 # concatenate the two dfs (channels are no more grouped; not a problem)
+                merged_df = DataFrame.empty
                 merged_df = concat([old_df, new_df], ignore_index=True, axis=0)
                 merged_df = merged_df.reset_index()
                 # why does this column appear? remove it in any case
                 if "level_0" in merged_df.columns:
-                    merged_df = merged_df.drop(columns=["level_0"])  
+                    merged_df = merged_df.drop(columns=["level_0"]) 
                 
                 # redefine the dict containing the df and plot_info
                 par_dict_content = {}
@@ -627,8 +628,12 @@ def build_out_dict(
 
                 # saved the merged df as usual
                 out_dict = save_dict(
-                    plot_settings, plot_info, par_dict_content, old_dict
+                    plot_settings, plot_info, par_dict_content, old_dict["monitoring"]
                 )
+                # we need to save it, otherwise when looping over the next parameter we lose the appended info for the already inspected parameter
+                out_file = shelve.open(plt_path + "-" + plot_info["subsystem"])
+                out_file["monitoring"] = out_dict
+                out_file.close()
 
     return out_dict
 
@@ -636,11 +641,7 @@ def build_out_dict(
 def save_dict(plot_settings, plot_info, par_dict_content, out_dict):
     # event type key is already there
     if plot_settings["event_type"] in out_dict.keys():
-        #  check if the parameter is already there (without this, previous inspected parameters are overwritten)
-        if plot_info["parameter"] not in out_dict[plot_settings["event_type"]].keys():
-            out_dict[plot_settings["event_type"]][
-                plot_info["parameter"]
-            ] = par_dict_content
+        out_dict[plot_settings["event_type"]][plot_info["parameter"]] = par_dict_content
     # event type key is NOT there
     else:
         # empty dictionary (not filled yet)

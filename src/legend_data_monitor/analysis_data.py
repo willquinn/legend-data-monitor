@@ -355,14 +355,16 @@ class AnalysisData:
                     # ...still we have to re-compute the % variations of previous time windows because now the mean estimate is different!!!
                     """
                     # a column of mean values
-                    mean_df = DataFrame(old_df[self.parameters[0] + "_mean"].unique(), columns=[self.parameters[0] + "_mean"])
+                    mean_df = old_df[self.parameters[0] + "_mean"] #.groupy(self.parameters[0] + "_mean")# DataFrame(old_df[self.parameters[0] + "_mean"].unique(), columns=[self.parameters[0] + "_mean"])
                     # a column of channels
-                    channels = DataFrame(old_df["channel"].unique(), columns=["channel"])
+                    channels = old_df["channel"] #.groupy("channel")#DataFrame(old_df["channel"].unique(), columns=["channel"])
                     # two columns: one of channels, one of mean values
-                    channel_mean = concat([channels, mean_df], ignore_index=True, axis=1).rename(columns={0: "channel", 1: self.parameters[0] + "_mean"})
-                    channel_mean = channel_mean.set_index("channel") # it contains mean values evaluated the first time ever running this run!
+                    channel_mean = concat([channels, mean_df], ignore_index=True, axis=1).rename(columns={0: "channel", 1: self.parameters[0]})
+                    channel_mean = channel_mean.set_index("channel") 
+                    # drop potential duplicate rows
+                    channel_mean = channel_mean.drop_duplicates()
 
-            # FWHM mean is meaningless -> drop (special parameter for SiPMs)
+            # FWHM mean is meaningless -> drop (special parameter for SiPMs); no need to get previous mean values for these parameters
             if "FWHM" in self.parameters:
                 channel_mean.drop("FWHM", axis=1)
             if "K_events" in self.parameters:
@@ -396,21 +398,21 @@ class AnalysisData:
         return data_after_cuts
 
     def is_spms(self) -> bool:
-        """Returns True if 'location' (=fiber) and 'position' (=top, bottom) are strings."""
+        """Return True if 'location' (=fiber) and 'position' (=top, bottom) are strings."""
         if isinstance(self.data.iloc[0]["location"], str) and isinstance(self.data.iloc[0]["position"], str):
             return True
         else:
             return False
             
     def is_geds(self) -> bool:
-        """Returns True if 'location' (=string) and 'position' are NOT strings."""
+        """Return True if 'location' (=string) and 'position' are NOT strings."""
         if not self.is_spms():
             return True
         else:
             False
 
     def is_pulser(self) -> bool:
-        """Returns True if 'location' (=string) and 'position' are NOT strings."""
+        """Return True if 'location' (=string) and 'position' are NOT strings."""
         if self.is_geds():
             if self.data.iloc[0]["location"] == 0 and self.data.iloc[0]["position"] == 0:
                 return True
@@ -420,7 +422,7 @@ class AnalysisData:
             return False
 
     def get_subsys(self) -> str:
-        """Returns 'pulser', 'geds' or 'spms'."""
+        """Return 'pulser', 'geds' or 'spms'."""
         if self.is_pulser():
             return "pulser"
         if self.is_spms():
