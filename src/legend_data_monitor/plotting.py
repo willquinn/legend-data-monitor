@@ -53,6 +53,9 @@ def make_subsystem_plots(
         # same, here need to account for unit label %
         if "variation" not in plot_settings:
             plot_settings["variation"] = False
+        # add saving info + plot where we save things
+        plot_settings["saving"] = saving
+        plot_settings["plt_path"] = plt_path
 
         # -------------------------------------------------------------------------
         # set up analysis data

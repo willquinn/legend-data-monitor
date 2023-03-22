@@ -175,7 +175,9 @@ class Subsystem:
         time_word = list(self.timerange.keys())[0]
 
         if "start" in self.timerange[time_word]:
-            # query by (run/timestamp >= ) and (run/timestamp <=) if format {start: end:}
+            # query by (run/timestamp >= ) and (run/timestamp <=) if format {start: end:} - note: start/end have to be expressed in UTC+00 since timestamps in filenames are expressed in that format too
+            # ...this does not enter into files and get potential timestamps that enter into the selected time window;
+            # ...for the same reason, you can get timestamps over th selected time range because there is no cut in it (this can potentially be fixed later on by cutting away some rows from the dataframe)
             query = f"({time_word} >= '{self.timerange[time_word]['start']}') and ({time_word} <= '{self.timerange[time_word]['end']}')"
         else:
             # query by (run/timestamp == ) or (run/timestamp == ) if format [list of runs/timestamps]
@@ -234,8 +236,6 @@ class Subsystem:
         self.data["datetime"] = pd.to_datetime(
             self.data["timestamp"], origin="unix", utc=True, unit="s"
         )
-        # drop timestamp
-        self.data = self.data.drop("timestamp", axis=1)
 
         # -------------------------------------------------------------------------
         # add detector name, location and position from map

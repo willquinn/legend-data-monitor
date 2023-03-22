@@ -1,5 +1,9 @@
+import os
+import shelve
+
 import numpy as np
 import pandas as pd
+from pandas import DataFrame, concat
 
 # needed to know which parameters are not in DataLoader
 # but need to be calculated, such as event rate
@@ -51,6 +55,8 @@ class AnalysisData:
             analysis_info["variation"] = False
         if "cuts" not in analysis_info:
             analysis_info["cuts"] = []
+        if "plt_path" not in analysis_info:
+            analysis_info["saving"] = analysis_info["plt_path"] = None
 
         # convert single parameter input to list for convenience
         for input in ["parameters", "cuts"]:
@@ -96,6 +102,8 @@ class AnalysisData:
         self.time_window = analysis_info["time_window"]
         self.variation = analysis_info["variation"]
         self.cuts = analysis_info["cuts"]
+        self.saving = analysis_info["saving"]
+        self.plt_path = analysis_info["plt_path"]
 
         # -------------------------------------------------------------------------
         # subselect data
@@ -103,6 +111,7 @@ class AnalysisData:
 
         # always get basic parameters
         params_to_get = [
+            "timestamp",
             "datetime",
             "channel",
             "name",
@@ -289,37 +298,79 @@ class AnalysisData:
         # series with index channel, columns of parameters containing mean of each channel;
         # the mean is performed over the first 10% interval of the full time range specified in the config file
 
-        # get mean (only for non-list parameters; in that case, add a new column with None values)
-        # ToDo: need to iterate over the parameters ??? some of them could be lists, others not
-        # ---> for param in self.parameters:
+        # get mean (only for non-list parameters; in that case, add a new column with None values):
+        # check if we are looking at SiPMs -> do not get mean because entries are usually lists
+        # ToDo: need to iterate over the parameters (some of them could be lists, others not)
 
-        # ToDo: check if the content of paramter's column is a list (can happen not only for SiPMs, but for loading waveforms)
-        # if isinstance(self.data.iloc[0][self.parameters[0]], list): # ---> gives problems
-        # check if we are looking at SiPMs -> do not get mean because entries are lists
-        if (
-            # not isinstance(self.data.iloc[0]["location"], np.int64)
-            isinstance(self.data.iloc[0]["location"], str)
-            and isinstance(self.data.iloc[0]["position"], str)
-        ):
+        # congratulations, it's a sipm!
+        if self.is_spms():
             channels = (self.data["channel"]).unique()
             channel_mean = pd.DataFrame(
                 {"channel": channels, self.parameters[0]: [None] * len(channels)}
             )
             channel_mean = channel_mean.set_index("channel")
+        # otherwise, it's either the pulser or geds
         else:
-            min_datetime = self.data["datetime"].min()  # first timestamp
-            max_datetime = self.data["datetime"].max()  # last timestamp
-            duration = max_datetime - min_datetime
-            ten_percent_duration = duration * 0.1
-            thr_datetime = min_datetime + ten_percent_duration  # 10% timestamp
-            # get only the rows for datetimes before the 10% of the specified time range
-            self_data_time_cut = self.data.loc[self.data["datetime"] < thr_datetime]
+            if self.saving is None or self.saving == "overwrite":
+                # get the dataframe for timestamps below 10% of data present in the selected time window
+                self_data_time_cut = cut_dataframe(self.data)
+                # create a column with the mean of the cut dataframe (cut in the time window of interest)
+                channel_mean = self_data_time_cut.groupby("channel").mean(
+                    numeric_only=True
+                )[self.parameters]
 
-            channel_mean = self_data_time_cut.groupby("channel").mean(
-                numeric_only=True
-            )[self.parameters]
+            if self.saving == "append":
+                subsys = self.get_subsys()
+                # the file does not exist, so we get the mean as usual
+                if not os.path.exists(self.plt_path + "-" + subsys + ".dat"):
+                    self_data_time_cut = cut_dataframe(self.data)
+                    # create a column with the mean of the cut dataframe (cut in the time window of interest)
+                    channel_mean = self_data_time_cut.groupby("channel").mean(
+                        numeric_only=True
+                    )[self.parameters]
 
-            # FWHM mean is meaningless -> drop (special parameter for SiPMs)
+                # the file exist: we have to combine previous data with new data, and re-compute the mean over the first 10% of data (that now, are more than before)
+                else:
+                    # open already existing shelve file
+                    with shelve.open(self.plt_path + "-" + subsys, "r") as shelf:
+                        old_dict = dict(shelf)
+                    # get old dataframe (we are interested only in the column with mean values)
+                    old_df = old_dict["monitoring"][self.evt_type][self.parameters[0]][
+                        "df_" + subsys
+                    ]
+
+                    """
+                    # to use in the future for a more refined version of updated mean values...
+
+                    # if previously we chose to plot % variations, we do not have anymore the absolute values to use when computing this new mean;
+                    # what we can do, is to get absolute values starting from the mean and the % values present in the old dataframe'
+                    # Later, we need to put these absolute values in the corresponding parameter column
+                    if self.variation:
+                        old_df[self.parameters[0]] = (old_df[self.parameters[0]] / 100 + 1) * old_df[self.parameters[0] + "_mean"]
+
+                    merged_df = concat([old_df, self.data], ignore_index=True, axis=0)
+                    merged_df = merged_df.reset_index()
+                    # why does this column appear? remove it in any case
+                    if "level_0" in merged_df.columns:
+                        merged_df = merged_df.drop(columns=["level_0"])
+
+                    self_data_time_cut = cut_dataframe(merged_df)
+
+                    # ...still we have to re-compute the % variations of previous time windows because now the mean estimate is different!!!
+                    """
+                    # a column of mean values
+                    mean_df = old_df[self.parameters[0] + "_mean"]
+                    # a column of channels
+                    channels = old_df["channel"]
+                    # two columns: one of channels, one of mean values
+                    channel_mean = concat(
+                        [channels, mean_df], ignore_index=True, axis=1
+                    ).rename(columns={0: "channel", 1: self.parameters[0]})
+                    channel_mean = channel_mean.set_index("channel")
+                    # drop potential duplicate rows
+                    channel_mean = channel_mean.drop_duplicates()
+
+            # FWHM mean is meaningless -> drop (special parameter for SiPMs); no need to get previous mean values for these parameters
             if "FWHM" in self.parameters:
                 channel_mean.drop("FWHM", axis=1)
             if "K_events" in self.parameters:
@@ -331,7 +382,6 @@ class AnalysisData:
         )
         # add it as column for convenience - repeating redundant information, but convenient
         self.data = self.data.set_index("channel")
-        # self.data['mean'] = channel_mean.reindex(self.data.index)
         self.data = pd.concat(
             [self.data, channel_mean.reindex(self.data.index)], axis=1
         )
@@ -347,11 +397,49 @@ class AnalysisData:
                     self.data[param] / self.data[param + "_mean"] - 1
                 ) * 100  # %
 
-    def apply_all_cuts(self):
+    def apply_all_cuts(self) -> DataFrame:
         data_after_cuts = self.data.copy()
         for cut in self.cuts:
             data_after_cuts = cuts.apply_cut(data_after_cuts, cut)
         return data_after_cuts
+
+    def is_spms(self) -> bool:
+        """Return True if 'location' (=fiber) and 'position' (=top, bottom) are strings."""
+        if isinstance(self.data.iloc[0]["location"], str) and isinstance(
+            self.data.iloc[0]["position"], str
+        ):
+            return True
+        else:
+            return False
+
+    def is_geds(self) -> bool:
+        """Return True if 'location' (=string) and 'position' are NOT strings."""
+        if not self.is_spms():
+            return True
+        else:
+            False
+
+    def is_pulser(self) -> bool:
+        """Return True if 'location' (=string) and 'position' are NOT strings."""
+        if self.is_geds():
+            if (
+                self.data.iloc[0]["location"] == 0
+                and self.data.iloc[0]["position"] == 0
+            ):
+                return True
+            else:
+                return False
+        else:
+            return False
+
+    def get_subsys(self) -> str:
+        """Return 'pulser', 'geds' or 'spms'."""
+        if self.is_pulser():
+            return "pulser"
+        if self.is_spms():
+            return "spms"
+        if self.is_geds():
+            return "geds"
 
 
 # -------------------------------------------------------------------------
@@ -374,3 +462,14 @@ def get_seconds(time_window: str):
     time_unit = time_window[-1]
 
     return int(time_window.rstrip(time_unit)) * str_to_seconds[time_unit]
+
+
+def cut_dataframe(data: DataFrame) -> DataFrame:
+    """Get mean value of the parameters under study over the first 10% of data present in the selected time range."""
+    min_datetime = data["datetime"].min()  # first timestamp
+    max_datetime = data["datetime"].max()  # last timestamp
+    duration = max_datetime - min_datetime
+    ten_percent_duration = duration * 0.1
+    thr_datetime = min_datetime + ten_percent_duration  # 10% timestamp
+    # get only the rows for datetimes before the 10% of the specified time range
+    return data.loc[data["datetime"] < thr_datetime]
