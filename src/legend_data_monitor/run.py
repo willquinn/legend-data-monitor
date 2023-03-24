@@ -131,10 +131,7 @@ def user_rsync_cli(args):
     keys_file = args.keys
 
     # start loading data & generating plots
-    legend_data_monitor.core.auto_control_plots(
-        config_file, keys_file, "", {}
-    )
-
+    legend_data_monitor.core.auto_control_plots(config_file, keys_file, "", {})
 
 
 def add_auto_prod_parser(subparsers):
