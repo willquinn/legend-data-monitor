@@ -489,7 +489,10 @@ def get_key(dsp_fname: str) -> str:
 
 
 def add_config_entries(
-    config: dict, file_keys: str, prod_path: str, prod_config: dict, saving: str
+    config: dict,
+    file_keys: str,
+    prod_path: str,
+    prod_config: dict,
 ) -> dict:
     """Add missing information (output, dataset) to the configuration file. This function is generally used during automathic data production, where the initiali config file has only the 'subsystem' entry."""
     # Get the keys
@@ -497,9 +500,6 @@ def add_config_entries(
         keys = f.readlines()
     # Remove newline characters from each line using strip()
     keys = [key.strip() for key in keys]
-    # get phy/cal lists
-    phy_keys = [key for key in keys if "phy" in key]
-    cal_keys = [key for key in keys if "cal" in key]
     # get only keys of timestamps
     timestamp = [key.split("-")[-1] for key in keys]
 
@@ -509,39 +509,59 @@ def add_config_entries(
     # Get the period
     period = (keys[0].split("-"))[1]
 
-    # Get the version
-    version = (
-        (prod_path.split("/"))[-2]
-        if prod_path.endswith("/")
-        else (prod_path.split("/"))[-1]
-    )
-
     # Get the run
     run = (keys[0].split("-"))[2]
 
-    # Get the production path
-    path = (
-        prod_path.split("prod-ref")[0] + "prod-ref"
-        if prod_path.split("prod-ref")[0].endswith("/")
-        else prod_path.split("prod-ref")[0] + "/prod-ref"
-    )
-
-    # Get data type: phy, cal or [cal, phy]
-    if len(phy_keys) == 0 and len(cal_keys) == 0:
-        logger.error("\033[91mNo keys to load. Try again.\033[0m")
-        return
-    if len(phy_keys) != 0 and len(cal_keys) == 0:
-        type = "phy"
-    if len(phy_keys) == 0 and len(cal_keys) != 0:
-        type = "cal"
-        logger.error("\033[91mcal is still under development! Try again.\033[0m")
-        return
-    if len(phy_keys) != 0 and len(cal_keys) != 0:
-        type = ["cal", "phy"]
-        logger.error(
-            "\033[91mBoth cal and phy are still under development! Try again.\033[0m"
+    # Get the version
+    if "dataset" in config.keys():
+        if "version" in config["dataset"].keys():
+            version = config["dataset"]["version"]
+        else:
+            version = (
+                (prod_path.split("/"))[-2]
+                if prod_path.endswith("/")
+                else (prod_path.split("/"))[-1]
+            )
+        if "type" in config["dataset"].keys():
+            type = config["dataset"]["type"]
+        else:
+            logger.error("\033[91mYou need to provide data type! Try again.\033[0m")
+            exit()
+        if "path" in config["dataset"].keys():
+            path = config["dataset"]["path"]
+        else:
+            logger.error(
+                "\033[91mYou need to provide path to lh5 files! Try again.\033[0m"
+            )
+            exit()
+    else:
+        # get phy/cal lists
+        phy_keys = [key for key in keys if "phy" in key]
+        cal_keys = [key for key in keys if "cal" in key]
+        if len(phy_keys) == 0 and len(cal_keys) == 0:
+            logger.error("\033[91mNo keys to load. Try again.\033[0m")
+            return
+        if len(phy_keys) != 0 and len(cal_keys) == 0:
+            type = "phy"
+        if len(phy_keys) == 0 and len(cal_keys) != 0:
+            type = "cal"
+            logger.error("\033[91mcal is still under development! Try again.\033[0m")
+            return
+        if len(phy_keys) != 0 and len(cal_keys) != 0:
+            type = ["cal", "phy"]
+            logger.error(
+                "\033[91mBoth cal and phy are still under development! Try again.\033[0m"
+            )
+            return
+        # Get the production path
+        path = (
+            prod_path.split("prod-ref")[0] + "prod-ref"
+            if prod_path.split("prod-ref")[0].endswith("/")
+            else prod_path.split("prod-ref")[0] + "/prod-ref"
         )
-        return
+
+    if "output" in config.keys():
+        prod_path = config["output"]
 
     # create the dataset dictionary
     dataset_dict = {
@@ -562,7 +582,8 @@ def add_config_entries(
     # let's make a check that everything we need is inside the config, otherwise exit
     if not all(key in config for key in ["output", "dataset", "saving", "subsystems"]):
         logger.error(
-            '\033[91mThere are missing entries in the config file. Try again and check you start with "output" and "dataset" info!\033[0m'
+            '\033[91mThere are missing entries among ["output", "dataset", "saving", "subsystems"] in the config file (found keys: %s). Try again and check you start with "output" and "dataset" info!\033[0m',
+            config.keys(),
         )
         exit()
 
@@ -591,9 +612,9 @@ def build_out_dict(
     if saving == "append":
         # the file does not exist, so first we create it and then, at the next step, we'll append things
         if not os.path.exists(plt_path + "-" + plot_info["subsystem"] + ".dat"):
-            logger.warning(
-                "\033[93mYou selected 'append' when saving, but the file with already saved data does not exist. For this reason, it will be created first.\033[0m"
-            )
+            # logger.warning(
+            #    "\033[93mYou selected 'append' when saving, but the file with already saved data does not exist. For this reason, it will be created first.\033[0m"
+            # )
             out_dict = save_dict(plot_settings, plot_info, par_dict_content, out_dict)
 
         # the file exists, so we are going to append data
@@ -616,10 +637,10 @@ def build_out_dict(
                 # concatenate the two dfs (channels are no more grouped; not a problem)
                 merged_df = DataFrame.empty
                 merged_df = concat([old_df, new_df], ignore_index=True, axis=0)
-                merged_df = merged_df.reset_index()
                 # why does this column appear? remove it in any case
                 if "level_0" in merged_df.columns:
                     merged_df = merged_df.drop(columns=["level_0"])
+                merged_df = merged_df.reset_index()
                 # re-order content in order of channels/timestamps
                 merged_df = merged_df.sort_values(["channel", "datetime"])
 

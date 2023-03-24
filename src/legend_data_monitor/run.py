@@ -62,23 +62,12 @@ def main():
         action="store_true",
         help="""Print version and exit.""",
     )
-    parser.add_argument(
-        "--verbose",
-        "-v",
-        action="store_true",
-        help="""Increase the program verbosity (NOT IMPLEMENTED).""",
-    )
-    parser.add_argument(
-        "--debug",
-        "-d",
-        action="store_true",
-        help="""Increase the program verbosity to maximum (NOT IMPLEMENTED).""",
-    )
 
     subparsers = parser.add_subparsers()
 
     # functions for different purpouses
     add_user_config_parser(subparsers)
+    add_user_rsync_parser(subparsers)
     add_auto_prod_parser(subparsers)
 
     if len(sys.argv) < 2:
@@ -86,15 +75,6 @@ def main():
         sys.exit(1)
 
     args = parser.parse_args()
-
-    """
-    if args.verbose:
-        legend_data_monitor.logging.setup(logging.DEBUG)
-    elif args.debug:
-        legend_data_monitor.logging.setup(logging.DEBUG, logging.root)
-    else:
-        legend_data_monitor.logging.setup()
-    """
 
     if args.version:
         legend_data_monitor.utils.logger.info(
@@ -125,6 +105,33 @@ def user_config_cli(args):
 
     # start loading data & generating plots
     legend_data_monitor.core.control_plots(config_file)
+
+
+def add_user_rsync_parser(subparsers):
+    """Configure :func:`.core.control_rsync_plots` command line interface."""
+    parser_auto_prod = subparsers.add_parser(
+        "user_rsync_prod",
+        description="""Inspect LEGEND HDF5 (LH5) processed data by giving a full config file with parameters/subsystems info to plot, syncing with new produced data.""",
+    )
+    parser_auto_prod.add_argument(
+        "--config",
+        help="""Path to config file (e.g. \"some_path/config_L200_r001_phy.json\").""",
+    )
+    parser_auto_prod.add_argument(
+        "--keys",
+        help="""Path to file containing new keys to inspect (e.g. \"some_path/new_keys.filekeylist\").""",
+    )
+    parser_auto_prod.set_defaults(func=user_rsync_cli)
+
+
+def user_rsync_cli(args):
+    """Pass command line arguments to :func:`.core.control_rsync_plots`."""
+    # get the path to the user config file
+    config_file = args.config
+    keys_file = args.keys
+
+    # start loading data & generating plots
+    legend_data_monitor.core.auto_control_plots(config_file, keys_file, "", {})
 
 
 def add_auto_prod_parser(subparsers):

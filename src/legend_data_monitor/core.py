@@ -61,11 +61,7 @@ def control_plots(user_config_path: str):
         return
 
     # we don't care here about the time keyword timestamp/run -> just get the value
-    plt_basename += (
-        utils.get_run_name(config, user_time_range)
-        if "timestamp" in user_time_range.keys()
-        else utils.get_time_name(user_time_range)
-    )
+    plt_basename += name_time
     plt_path = output_paths + plt_basename
     plt_path += "-{}".format("_".join(data_types))
 
@@ -76,7 +72,7 @@ def control_plots(user_config_path: str):
 def auto_control_plots(
     plot_config: str, file_keys: str, prod_path: str, prod_config: str
 ):
-    """Set the configuration file and the output paths when a config file is provided during automathic data processing. The function to generate plots is then automatically called."""
+    """Set the configuration file and the output paths when a config file is provided during automathic plot production."""
     # -------------------------------------------------------------------------
     # Read user settings
     # -------------------------------------------------------------------------
@@ -104,7 +100,6 @@ def auto_control_plots(
             if isinstance(config["dataset"]["type"], str)
             else config["dataset"]["type"]
         )
-
         plt_basename = "{}-{}-".format(
             config["dataset"]["experiment"].lower(),
             config["dataset"]["period"],
@@ -132,7 +127,7 @@ def auto_control_plots(
         return
 
     # we don't care here about the time keyword timestamp/run -> just get the value
-    plt_basename += utils.get_time_name(user_time_range)
+    plt_basename += name_time
     plt_path = output_paths + plt_basename
     plt_path += "-{}".format("_".join(data_types))
 
