@@ -570,7 +570,7 @@ def plot_array(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
         channels_per_string = []  # x values - in each string
         # group by channel
         for label, data_channel in data_location.groupby("label"):
-            ch_dict = plot_style(data_channel, fig, axes, plot_info, COLORS[col_idx])
+            plot_style(data_channel, fig, axes, plot_info, COLORS[col_idx])
 
             map_dict = utils.MAP_DICT
             location = data_channel["location"].unique()[0]
@@ -578,7 +578,7 @@ def plot_array(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
 
             labels.append(label)
             channels.append(map_dict[str(location)][str(position)])
-            values_per_string.append(ch_dict["values"])
+            values_per_string.append(data_channel[plot_info["parameter"]].unique()[0])
             channels_per_string.append(map_dict[str(location)][str(position)])
 
         # get average of plotted parameter per string (print horizontal line)

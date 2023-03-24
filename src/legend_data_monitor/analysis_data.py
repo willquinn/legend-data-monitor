@@ -349,10 +349,10 @@ class AnalysisData:
                         old_df[self.parameters[0]] = (old_df[self.parameters[0]] / 100 + 1) * old_df[self.parameters[0] + "_mean"]
 
                     merged_df = concat([old_df, self.data], ignore_index=True, axis=0)
-                    merged_df = merged_df.reset_index()
                     # why does this column appear? remove it in any case
                     if "level_0" in merged_df.columns:
                         merged_df = merged_df.drop(columns=["level_0"])
+                    merged_df = merged_df.reset_index()
 
                     self_data_time_cut = cut_dataframe(merged_df)
 

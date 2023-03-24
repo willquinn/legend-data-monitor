@@ -118,13 +118,6 @@ def par_vs_ch(
         color=color,
     )
 
-    # saving x,y data into output files (absolute data only)
-    ch_dict = {
-        "values": data_channel[plot_info["parameter"]].unique()[0],
-        "plot_info": plot_info,
-        "channel": data_channel.index.values[0],
-    }
-
     # -------------------------------------------------------------------------
     # beautification
     # -------------------------------------------------------------------------
@@ -139,8 +132,6 @@ def par_vs_ch(
         else f"{plot_info['label']} [{plot_info['unit_label']}]"
     )
     fig.supylabel(y_label)
-
-    return ch_dict
 
 
 def plot_histo(
