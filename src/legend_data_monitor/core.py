@@ -69,7 +69,6 @@ def control_plots(user_config_path: str):
     generate_plots(config, plt_path)
 
 
-
 def auto_control_plots(
     plot_config: str, file_keys: str, prod_path: str, prod_config: str
 ):

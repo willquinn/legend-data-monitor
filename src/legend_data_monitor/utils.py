@@ -489,7 +489,10 @@ def get_key(dsp_fname: str) -> str:
 
 
 def add_config_entries(
-    config: dict, file_keys: str, prod_path: str, prod_config: dict,
+    config: dict,
+    file_keys: str,
+    prod_path: str,
+    prod_config: dict,
 ) -> dict:
     """Add missing information (output, dataset) to the configuration file. This function is generally used during automathic data production, where the initiali config file has only the 'subsystem' entry."""
     # Get the keys
@@ -527,7 +530,9 @@ def add_config_entries(
         if "path" in config["dataset"].keys():
             path = config["dataset"]["path"]
         else:
-            logger.error("\033[91mYou need to provide path to lh5 files! Try again.\033[0m")
+            logger.error(
+                "\033[91mYou need to provide path to lh5 files! Try again.\033[0m"
+            )
             exit()
     else:
         # get phy/cal lists
@@ -577,12 +582,12 @@ def add_config_entries(
     # let's make a check that everything we need is inside the config, otherwise exit
     if not all(key in config for key in ["output", "dataset", "saving", "subsystems"]):
         logger.error(
-            '\033[91mThere are missing entries among ["output", "dataset", "saving", "subsystems"] in the config file (found keys: %s). Try again and check you start with "output" and "dataset" info!\033[0m', config.keys()
+            '\033[91mThere are missing entries among ["output", "dataset", "saving", "subsystems"] in the config file (found keys: %s). Try again and check you start with "output" and "dataset" info!\033[0m',
+            config.keys(),
         )
         exit()
 
     return config
-
 
 
 # -------------------------------------------------------------------------
@@ -607,9 +612,9 @@ def build_out_dict(
     if saving == "append":
         # the file does not exist, so first we create it and then, at the next step, we'll append things
         if not os.path.exists(plt_path + "-" + plot_info["subsystem"] + ".dat"):
-            #logger.warning(
+            # logger.warning(
             #    "\033[93mYou selected 'append' when saving, but the file with already saved data does not exist. For this reason, it will be created first.\033[0m"
-            #)
+            # )
             out_dict = save_dict(plot_settings, plot_info, par_dict_content, out_dict)
 
         # the file exists, so we are going to append data
