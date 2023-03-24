@@ -111,7 +111,7 @@ def add_user_rsync_parser(subparsers):
     """Configure :func:`.core.control_rsync_plots` command line interface."""
     parser_auto_prod = subparsers.add_parser(
         "user_rsync_prod",
-        description="""Inspect LEGEND HDF5 (LH5) processed data by giving a full config file with parameters/subsystems info to plot, synching with new produced data.""",
+        description="""Inspect LEGEND HDF5 (LH5) processed data by giving a full config file with parameters/subsystems info to plot, syncing with new produced data.""",
     )
     parser_auto_prod.add_argument(
         "--config",
@@ -119,7 +119,7 @@ def add_user_rsync_parser(subparsers):
     )
     parser_auto_prod.add_argument(
         "--keys",
-        help="""Path to file contianing new keys to inspect (e.g. \"some_path/new_keys.filekeylist\").""",
+        help="""Path to file containing new keys to inspect (e.g. \"some_path/new_keys.filekeylist\").""",
     )
     parser_auto_prod.set_defaults(func=user_rsync_cli)
 
