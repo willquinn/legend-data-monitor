@@ -576,7 +576,7 @@ def plot_array(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
             location = data_channel["location"].unique()[0]
             position = data_channel["position"].unique()[0]
 
-            labels.append(label)
+            labels.append(label.split("-")[-1])
             channels.append(map_dict[str(location)][str(position)])
             values_per_string.append(data_channel[plot_info["parameter"]].unique()[0])
             channels_per_string.append(map_dict[str(location)][str(position)])
@@ -625,7 +625,7 @@ def plot_array(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
     axes.set_xticks(channels)
     axes.set_xticklabels(labels, fontsize=5)
     # rotate x labels
-    plt.xticks(rotation=70, ha="right")
+    plt.xticks(rotation=90, ha="center")
     # title/label
     fig.supxlabel("")
     fig.suptitle(f"{plot_info['subsystem']} - {plot_info['title']}", y=1.05)
