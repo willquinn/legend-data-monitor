@@ -154,11 +154,15 @@ def make_subsystem_plots(
                     "variation"
                 ]
                 if plot_settings["variation"]
-                else utils.PLOT_INFO[plot_settings["parameters"]]["limits"][subsystem.type][
-                    "absolute"
-                ]
+                else utils.PLOT_INFO[plot_settings["parameters"]]["limits"][
+                    subsystem.type
+                ]["absolute"]
             )
-        plot_info["parameter"] = plot_settings["parameters"] + "_var" if plot_info["unit_label"] == "%" else plot_settings["parameters"] # could be multiple in the future!
+        plot_info["parameter"] = (
+            plot_settings["parameters"] + "_var"
+            if plot_info["unit_label"] == "%"
+            else plot_settings["parameters"]
+        )  # could be multiple in the future!
         plot_info["param_mean"] = plot_settings["parameters"] + "_mean"
 
         # -------------------------------------------------------------------------
