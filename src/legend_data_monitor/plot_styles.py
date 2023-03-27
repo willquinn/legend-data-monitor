@@ -159,7 +159,11 @@ def plot_histo(
 
     # Compute number of bins
     if bin_width:
-        bin_edges = np.arange(x_min, x_max + bin_width, bin_width / 5)
+        bin_edges = (
+            np.arange(x_min, x_max + bin_width, bin_width / 5)
+            if plot_info["unit_label"] == "%"
+            else np.arange(x_min, x_max + bin_width, bin_width)
+        )
     else:
         bin_edges = 50
 

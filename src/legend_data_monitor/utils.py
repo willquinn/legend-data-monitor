@@ -627,20 +627,24 @@ def build_out_dict(
                 old_dict = dict(shelf)
 
             # the parameter is there
-            if old_dict["monitoring"]["pulser"][plot_info["parameter"]]:
+            parameter = (
+                plot_info["parameter"].split("_var")[0]
+                if "_var" in plot_info["parameter"]
+                else plot_info["parameter"]
+            )
+            if old_dict["monitoring"]["pulser"][parameter]:
                 # get already present df
-                old_df = old_dict["monitoring"]["pulser"][plot_info["parameter"]][
+                old_df = old_dict["monitoring"]["pulser"][parameter][
                     "df_" + plot_info["subsystem"]
                 ]
+                old_df = check_level0(old_df)
                 # get new df (plot_info object is the same as before, no need to get it and update it)
                 new_df = par_dict_content["df_" + plot_info["subsystem"]]
                 # concatenate the two dfs (channels are no more grouped; not a problem)
                 merged_df = DataFrame.empty
                 merged_df = concat([old_df, new_df], ignore_index=True, axis=0)
-                # why does this column appear? remove it in any case
-                if "level_0" in merged_df.columns:
-                    merged_df = merged_df.drop(columns=["level_0"])
                 merged_df = merged_df.reset_index()
+                merged_df = check_level0(merged_df)
                 # re-order content in order of channels/timestamps
                 merged_df = merged_df.sort_values(["channel", "datetime"])
 
@@ -661,22 +665,32 @@ def build_out_dict(
     return out_dict
 
 
-def save_dict(plot_settings, plot_info, par_dict_content, out_dict):
+def save_dict(
+    plot_settings: list, plot_info: list, par_dict_content: dict, out_dict: dict
+):
     """Create a dictionary with the correct format for being saved in the final shelve object."""
+    parameter = (
+        plot_info["parameter"].split("_var")[0]
+        if "_var" in plot_info["parameter"]
+        else plot_info["parameter"]
+    )
     # event type key is already there
     if plot_settings["event_type"] in out_dict.keys():
-        out_dict[plot_settings["event_type"]][plot_info["parameter"]] = par_dict_content
+        out_dict[plot_settings["event_type"]][parameter] = par_dict_content
     # event type key is NOT there
     else:
         # empty dictionary (not filled yet)
         if len(out_dict.keys()) == 0:
-            out_dict = {
-                plot_settings["event_type"]: {plot_info["parameter"]: par_dict_content}
-            }
+            out_dict = {plot_settings["event_type"]: {parameter: par_dict_content}}
         # the dictionary already contains something (but for another event type selection)
         else:
-            out_dict[plot_settings["event_type"]] = {
-                plot_info["parameter"]: par_dict_content
-            }
+            out_dict[plot_settings["event_type"]] = {parameter: par_dict_content}
 
     return out_dict
+
+
+def check_level0(dataframe: DataFrame) -> DataFrame:
+    """Check if a dataframe contains the 'level_0' column. If so, remove it."""
+    if "level_0" in dataframe.columns:
+        dataframe = dataframe.drop(columns=["level_0"])
+    return dataframe
