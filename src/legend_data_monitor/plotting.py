@@ -139,10 +139,7 @@ def make_subsystem_plots(
                 )
 
         # --- information needed for plot style
-        plot_info["parameter"] = plot_settings[
-            "parameters"
-        ]  # could be multiple in the future!
-        plot_info["label"] = utils.PLOT_INFO[plot_info["parameter"]]["label"]
+        plot_info["label"] = utils.PLOT_INFO[plot_settings["parameters"]]["label"]
         # unit label should be % if variation was asked
         plot_info["unit_label"] = (
             "%" if plot_settings["variation"] else plot_info["unit"]
@@ -153,14 +150,16 @@ def make_subsystem_plots(
         # threshold values are needed for status map; might be needed for plotting limits on canvas too
         if subsystem.type != "pulser":
             plot_info["limits"] = (
-                utils.PLOT_INFO[plot_info["parameter"]]["limits"][subsystem.type][
+                utils.PLOT_INFO[plot_settings["parameters"]]["limits"][subsystem.type][
                     "variation"
                 ]
                 if plot_settings["variation"]
-                else utils.PLOT_INFO[plot_info["parameter"]]["limits"][subsystem.type][
+                else utils.PLOT_INFO[plot_settings["parameters"]]["limits"][subsystem.type][
                     "absolute"
                 ]
             )
+        plot_info["parameter"] = plot_settings["parameters"] + "_var" if plot_info["unit_label"] == "%" else plot_settings["parameters"] # could be multiple in the future!
+        plot_info["param_mean"] = plot_settings["parameters"] + "_mean"
 
         # -------------------------------------------------------------------------
         # call chosen plot structure
@@ -176,6 +175,10 @@ def make_subsystem_plots(
         # For some reason, after some plotting functions the index is set to "channel".
         # We need to set it back otherwise status_plot.py gets crazy and everything crashes.
         data_analysis.data = data_analysis.data.reset_index()
+
+        # -------------------------------------------------------------------------
+        # saving dataframe + plot info
+        # -------------------------------------------------------------------------
 
         par_dict_content = {}
 
@@ -283,7 +286,7 @@ def plot_per_ch(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
             # --- add summary to axis
             # name, position and mean are unique for each channel - take first value
             t = data_channel.iloc[0][
-                ["channel", "position", "name", plot_info["parameter"] + "_mean"]
+                ["channel", "position", "name", plot_info["param_mean"]]
             ]
 
             text = (
@@ -292,10 +295,10 @@ def plot_per_ch(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
                 + f"channel {t['channel']}\n"
                 + f"position {t['position']}\n"
                 + (
-                    f"mean {round(t[plot_info['parameter']+'_mean'],3)} [{plot_info['unit']}]"
-                    if t[plot_info["parameter"] + "_mean"] is not None
+                    f"mean {round(t[plot_info['param_mean']],3)} [{plot_info['unit']}]"
+                    if t[plot_info["param_mean"]] is not None
                     else ""
-                )  # handle with care mean='None' situationsF_
+                )  # handle with care mean='None' situations
             )
             axes[ax_idx].text(1.01, 0.5, text, transform=axes[ax_idx].transAxes)
 

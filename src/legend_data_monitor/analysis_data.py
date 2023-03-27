@@ -338,7 +338,6 @@ class AnalysisData:
                     old_df = old_dict["monitoring"][self.evt_type][self.parameters[0]][
                         "df_" + subsys
                     ]
-
                     """
                     # to use in the future for a more refined version of updated mean values...
 
@@ -349,9 +348,8 @@ class AnalysisData:
                         old_df[self.parameters[0]] = (old_df[self.parameters[0]] / 100 + 1) * old_df[self.parameters[0] + "_mean"]
 
                     merged_df = concat([old_df, self.data], ignore_index=True, axis=0)
-                    # why does this column appear? remove it in any case
-                    if "level_0" in merged_df.columns:
-                        merged_df = merged_df.drop(columns=["level_0"])
+                    # remove 'level_0' column (if present)
+                    merged_df = utils.check_level0(merged_df)
                     merged_df = merged_df.reset_index()
 
                     self_data_time_cut = cut_dataframe(merged_df)
@@ -366,9 +364,10 @@ class AnalysisData:
                     channel_mean = concat(
                         [channels, mean_df], ignore_index=True, axis=1
                     ).rename(columns={0: "channel", 1: self.parameters[0]})
+                    # drop potential duplicate rows 
+                    channel_mean = channel_mean.drop_duplicates(subset=["channel"])
+                    # set 'channel' column as index
                     channel_mean = channel_mean.set_index("channel")
-                    # drop potential duplicate rows
-                    channel_mean = channel_mean.drop_duplicates()
 
             # FWHM mean is meaningless -> drop (special parameter for SiPMs); no need to get previous mean values for these parameters
             if "FWHM" in self.parameters:
@@ -389,11 +388,17 @@ class AnalysisData:
         self.data = self.data.reset_index()
 
     def calculate_variation(self):
+        """
+        Add a new column containing the percentage variation of a given parameter.
+        The column is called '<parameter>_var'. 
+        There is still the <parameter> column containing absolute values.
+        There is only the <parameter> column if variation is set to False.
+        """
         if self.variation:
             utils.logger.info("... calculating % variation from the mean")
             for param in self.parameters:
-                # subtract mean from value for each channel
-                self.data[param] = (
+                # % variation: subtract mean from value for each channel
+                self.data[param + "_var"] = (
                     self.data[param] / self.data[param + "_mean"] - 1
                 ) * 100  # %
 
