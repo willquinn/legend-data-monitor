@@ -154,7 +154,7 @@ def plot_histo(
     )
 
     # --- bin width
-    bwidth = {"keV": 2.5} 
+    bwidth = {"keV": 2.5}
     bin_width = bwidth[plot_info["unit"]] if plot_info["unit"] in bwidth else 1
 
     # Compute number of bins
