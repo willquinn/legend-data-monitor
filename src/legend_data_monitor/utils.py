@@ -627,7 +627,11 @@ def build_out_dict(
                 old_dict = dict(shelf)
 
             # the parameter is there
-            parameter = plot_info["parameter"].split("_var")[0] if "_var" in plot_info["parameter"] else plot_info["parameter"]
+            parameter = (
+                plot_info["parameter"].split("_var")[0]
+                if "_var" in plot_info["parameter"]
+                else plot_info["parameter"]
+            )
             if old_dict["monitoring"]["pulser"][parameter]:
                 # get already present df
                 old_df = old_dict["monitoring"]["pulser"][parameter][
@@ -661,9 +665,15 @@ def build_out_dict(
     return out_dict
 
 
-def save_dict(plot_settings: list, plot_info: list, par_dict_content: dict, out_dict: dict):
+def save_dict(
+    plot_settings: list, plot_info: list, par_dict_content: dict, out_dict: dict
+):
     """Create a dictionary with the correct format for being saved in the final shelve object."""
-    parameter = plot_info["parameter"].split("_var")[0] if "_var" in plot_info["parameter"] else plot_info["parameter"]
+    parameter = (
+        plot_info["parameter"].split("_var")[0]
+        if "_var" in plot_info["parameter"]
+        else plot_info["parameter"]
+    )
     # event type key is already there
     if plot_settings["event_type"] in out_dict.keys():
         out_dict[plot_settings["event_type"]][parameter] = par_dict_content
@@ -671,16 +681,13 @@ def save_dict(plot_settings: list, plot_info: list, par_dict_content: dict, out_
     else:
         # empty dictionary (not filled yet)
         if len(out_dict.keys()) == 0:
-            out_dict = {
-                plot_settings["event_type"]: {parameter: par_dict_content}
-            }
+            out_dict = {plot_settings["event_type"]: {parameter: par_dict_content}}
         # the dictionary already contains something (but for another event type selection)
         else:
-            out_dict[plot_settings["event_type"]] = {
-                parameter: par_dict_content
-            }
+            out_dict[plot_settings["event_type"]] = {parameter: par_dict_content}
 
     return out_dict
+
 
 def check_level0(dataframe: DataFrame) -> DataFrame:
     """Check if a dataframe contains the 'level_0' column. If so, remove it."""

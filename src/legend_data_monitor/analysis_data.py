@@ -364,7 +364,7 @@ class AnalysisData:
                     channel_mean = concat(
                         [channels, mean_df], ignore_index=True, axis=1
                     ).rename(columns={0: "channel", 1: self.parameters[0]})
-                    # drop potential duplicate rows 
+                    # drop potential duplicate rows
                     channel_mean = channel_mean.drop_duplicates(subset=["channel"])
                     # set 'channel' column as index
                     channel_mean = channel_mean.set_index("channel")
