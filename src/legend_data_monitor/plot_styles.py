@@ -154,12 +154,12 @@ def plot_histo(
     )
 
     # --- bin width
-    bwidth = {"keV": 2.5} 
+    bwidth = {"keV": 2.5}
     bin_width = bwidth[plot_info["unit"]] if plot_info["unit"] in bwidth else 1
 
     # Compute number of bins
     if bin_width:
-        bin_edges = np.arange(x_min, x_max + bin_width, bin_width/5)
+        bin_edges = np.arange(x_min, x_max + bin_width, bin_width / 5)
     else:
         bin_edges = 50
 
