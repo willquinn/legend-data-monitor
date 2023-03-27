@@ -390,7 +390,8 @@ class AnalysisData:
     def calculate_variation(self):
         """
         Add a new column containing the percentage variation of a given parameter.
-        The column is called '<parameter>_var'. 
+
+        The new column is called '<parameter>_var'. 
         There is still the <parameter> column containing absolute values.
         There is only the <parameter> column if variation is set to False.
         """
