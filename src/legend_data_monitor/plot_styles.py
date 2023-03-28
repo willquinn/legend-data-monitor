@@ -25,69 +25,51 @@ def plot_vs_time(
     # plotting this way, to_pydatetime() converts it to type datetime which is needed for DateFormatter
     # changing the type of the column itself with the table does not work
     data_channel = data_channel.sort_values("datetime")
-    ax.plot(
-        data_channel["datetime"].dt.to_pydatetime(),
-        data_channel[plot_info["parameter"]],
-        zorder=0,
-        color=color if plot_info["parameter"] == "event_rate" else "darkgray",
+
+    res_col = color
+    all_col = (
+        color
+        if plot_info["resampled"] == "no" or plot_info["parameter"] == "event_rate"
+        else "darkgray"
     )
 
-    # save the mean value performed over the first bunch of data
-    mean_value = data_channel[plot_info["parameter"] + "_mean"].iloc[0]
+    if plot_info["resampled"] != "only":
+        ax.plot(
+            data_channel["datetime"].dt.to_pydatetime(),
+            data_channel[plot_info["parameter"]],
+            zorder=0,
+            color=all_col,
+        )
 
     # -------------------------------------------------------------------------
     # plot resampled average
     # -------------------------------------------------------------------------
 
-    # unless event rate - already resampled and counted in some time window
-    if not plot_info["parameter"] == "event_rate":
-        # resample in given time window, as start pick the first timestamp in table
-        resampled = (
-            data_channel.set_index("datetime")
-            .resample(plot_info["time_window"], origin="start")
-            .mean(numeric_only=True)
-        )
-        # will have datetime as index after resampling -> put back
-        resampled = resampled.reset_index()
-        # the timestamps in the resampled table will start from the first timestamp, and go with sampling intervals
-        # I want to shift them by half sampling window, so that the resampled value is plotted in the middle time window in which it was calculated
-        resampled["datetime"] = (
-            resampled["datetime"] + Timedelta(plot_info["time_window"]) / 2
-        )
+    if plot_info["resampled"] != "no":
+        # unless event rate - already resampled and counted in some time window
+        if not plot_info["parameter"] == "event_rate":
+            # resample in given time window, as start pick the first timestamp in table
+            resampled = (
+                data_channel.set_index("datetime")
+                .resample(plot_info["time_window"], origin="start")
+                .mean(numeric_only=True)
+            )
+            # will have datetime as index after resampling -> put back
+            resampled = resampled.reset_index()
+            # the timestamps in the resampled table will start from the first timestamp, and go with sampling intervals
+            # I want to shift them by half sampling window, so that the resampled value is plotted in the middle time window in which it was calculated
+            resampled["datetime"] = (
+                resampled["datetime"] + Timedelta(plot_info["time_window"]) / 2
+            )
 
-        ax.plot(
-            resampled["datetime"].dt.to_pydatetime(),
-            resampled[plot_info["parameter"]],
-            color=color,
-            zorder=1,
-            marker="o",
-            linestyle="-",
-        )
-
-        # saving x,y data into output files (absolute + resampled data)
-        ch_dict = {
-            "values": {
-                "all": data_channel[plot_info["parameter"]],
-                "resampled": resampled[plot_info["parameter"]],
-            },
-            "mean": mean_value,
-            "plot_info": plot_info,
-            "timestamp": {
-                "all": data_channel["datetime"].dt.to_pydatetime(),
-                "resampled": resampled["datetime"].dt.to_pydatetime(),
-            },
-        }
-    # saving x,y data into output files (absolute data only)
-    else:
-        ch_dict = {
-            "values": {"all": data_channel[plot_info["parameter"]], "resampled": []},
-            "mean": mean_value,
-            "plot_info": plot_info,
-            "timestamp": {
-                "all": data_channel["datetime"].dt.to_pydatetime(),
-                "resampled": [],
-            },
-        }
+            ax.plot(
+                resampled["datetime"].dt.to_pydatetime(),
+                resampled[plot_info["parameter"]],
+                color=res_col,
+                zorder=1,
+                marker="o",
+                linestyle="-",
+            )
 
     # -------------------------------------------------------------------------
     # beautification
@@ -105,9 +87,12 @@ def plot_vs_time(
 
     # --- set labels
     fig.supxlabel("UTC Time")
-    fig.supylabel(f"{plot_info['label']} [{plot_info['unit_label']}]")
-
-    return ch_dict
+    y_label = (
+        f"{plot_info['label']}, {plot_info['unit_label']}"
+        if plot_info["unit_label"] == "%"
+        else f"{plot_info['label']} [{plot_info['unit_label']}]"
+    )
+    fig.supylabel(y_label)
 
 
 def par_vs_ch(
@@ -122,18 +107,16 @@ def par_vs_ch(
     # -------------------------------------------------------------------------
     # plot data vs channel ID
     # -------------------------------------------------------------------------
+    # trick to get a correct position of channels, independently from the 'channel' entry
+    # (everything was ok when using 'fcid'; but using 'rawid' as 'channel', we loose the possibility to order channels over x-axis in a decent way)
+    map_dict = utils.MAP_DICT
+    location = data_channel["location"].unique()[0]
+    position = data_channel["position"].unique()[0]
     ax.scatter(
-        data_channel.index.values[0],
+        map_dict[str(location)][str(position)],
         data_channel[plot_info["parameter"]].unique()[0],
         color=color,
     )
-
-    # saving x,y data into output files (absolute data only)
-    ch_dict = {
-        "values": data_channel[plot_info["parameter"]].unique()[0],
-        "plot_info": plot_info,
-        "channel": data_channel.index.values[0],
-    }
 
     # -------------------------------------------------------------------------
     # beautification
@@ -143,9 +126,12 @@ def par_vs_ch(
 
     # --- set labels
     fig.supxlabel("Channel ID")
-    fig.supylabel(f"{plot_info['label']} [{plot_info['unit_label']}]")
-
-    return ch_dict
+    y_label = (
+        f"{plot_info['label']}, {plot_info['unit_label']}"
+        if plot_info["unit_label"] == "%"
+        else f"{plot_info['label']} [{plot_info['unit_label']}]"
+    )
+    fig.supylabel(y_label)
 
 
 def plot_histo(
@@ -168,14 +154,23 @@ def plot_histo(
     )
 
     # --- bin width
-    bwidth = {"keV": 2.5}  # what to do with binning???
-    bin_width = bwidth[plot_info["unit"]] if plot_info["unit"] in bwidth else None
-    no_bins = int((x_max - x_min) / bin_width) if bin_width else 50
+    bwidth = {"keV": 2.5}
+    bin_width = bwidth[plot_info["unit"]] if plot_info["unit"] in bwidth else 1
+
+    # Compute number of bins
+    if bin_width:
+        bin_edges = (
+            np.arange(x_min, x_max + bin_width, bin_width / 5)
+            if plot_info["unit_label"] == "%"
+            else np.arange(x_min, x_max + bin_width, bin_width)
+        )
+    else:
+        bin_edges = 50
 
     # -------------------------------------------------------------------------
-
+    # Plot histogram
     data_channel[plot_info["parameter"]].plot.hist(
-        bins=no_bins,
+        bins=bin_edges,
         range=[x_min, x_max],
         histtype="step",
         linewidth=1.5,
@@ -185,7 +180,12 @@ def plot_histo(
 
     # -------------------------------------------------------------------------
     ax.set_yscale("log")
-    fig.supxlabel(f"{plot_info['label']} [{plot_info['unit_label']}]")
+    x_label = (
+        f"{plot_info['label']}, {plot_info['unit_label']}"
+        if plot_info["unit_label"] == "%"
+        else f"{plot_info['label']} [{plot_info['unit_label']}]"
+    )
+    fig.supylabel(x_label)
 
     # saving x,y data into output files
     ch_dict = {
@@ -215,7 +215,12 @@ def plot_scatter(
     ax.xaxis.set_major_formatter(DateFormatter("%Y\n%m/%d\n%H:%M"))
 
     fig.supxlabel("UTC Time")
-    fig.supylabel(f"{plot_info['label']} [{plot_info['unit_label']}]")
+    y_label = (
+        f"{plot_info['label']}, {plot_info['unit_label']}"
+        if plot_info["unit_label"] == "%"
+        else f"{plot_info['label']} [{plot_info['unit_label']}]"
+    )
+    fig.supylabel(y_label)
 
     # saving x,y data into output files
     ch_dict = {

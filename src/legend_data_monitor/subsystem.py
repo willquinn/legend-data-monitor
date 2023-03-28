@@ -93,12 +93,18 @@ class Subsystem:
             return
 
         if "version" not in data_info:
-            utils.logger.error("\033[91mProvide pygama version!\033[0m")
+            utils.logger.error(
+                '\033[91mProvide processing version! If not needed, just put an empty string, "".\033[0m'
+            )
             utils.logger.error("\033[91m%s\033[0m", self.__doc__)
             return
 
-        if not os.path.exists(os.path.join(data_info["path"], data_info["version"])):
-            utils.logger.error("\033[91mProvide valid pygama version!\033[0m")
+        # in p03 things change again!!!!
+        # There is no version in '/data2/public/prodenv/prod-blind/tmp/auto/generated/tier/dsp/phy/p03', so for the moment we skip this check...
+        if data_info["period"] != "p03" and not os.path.exists(
+            os.path.join(data_info["path"], data_info["version"])
+        ):
+            utils.logger.error("\033[91mProvide valid processing version!\033[0m")
             utils.logger.error("\033[91m%s\033[0m", self.__doc__)
             return
 
@@ -110,8 +116,9 @@ class Subsystem:
         # get channel info for this subsystem
         # -------------------------------------------------------------------------
 
-        # needed to know which AUX channel is pulser
+        # needed to know for making 'if' statement over different experiments/periods
         self.experiment = data_info["experiment"]
+        self.period = data_info["period"]
         # need to remember for channel status query
         # ! now needs to be single !
         self.datatype = data_info["type"]
@@ -128,12 +135,11 @@ class Subsystem:
 
         self.channel_map = self.get_channel_map()  # pd.DataFrame
 
-        # add column status to channel map stating On/Off
+        # add column status to channel map stating on/off
         self.get_channel_status()
 
         # -------------------------------------------------------------------------
         # have something before get_data() is called just in case
-
         self.data = pd.DataFrame()
 
     def get_data(self, parameters: typing.Union[str, list_of_str, tuple_of_str] = ()):
@@ -169,7 +175,9 @@ class Subsystem:
         time_word = list(self.timerange.keys())[0]
 
         if "start" in self.timerange[time_word]:
-            # query by (run/timestamp >= ) and (run/timestamp <=) if format {start: end:}
+            # query by (run/timestamp >= ) and (run/timestamp <=) if format {start: end:} - note: start/end have to be expressed in UTC+00 since timestamps in filenames are expressed in that format too
+            # ...this does not enter into files and get potential timestamps that enter into the selected time window;
+            # ...for the same reason, you can get timestamps over th selected time range because there is no cut in it (this can potentially be fixed later on by cutting away some rows from the dataframe)
             query = f"({time_word} >= '{self.timerange[time_word]['start']}') and ({time_word} <= '{self.timerange[time_word]['end']}')"
         else:
             # query by (run/timestamp == ) or (run/timestamp == ) if format [list of runs/timestamps]
@@ -187,7 +195,8 @@ class Subsystem:
         # )
         query += f" and (type == '{self.datatype}')"
 
-        # !!!! QUICKFIX FOR R010
+        # !!!! QUICKFIX
+        # p02 keys (missing ch068)
         query += " and (timestamp != '20230125T222013Z')"
         query += " and (timestamp != '20230126T015308Z')"
         query += " and (timestamp != '20230222T231553Z')"
@@ -227,8 +236,6 @@ class Subsystem:
         self.data["datetime"] = pd.to_datetime(
             self.data["timestamp"], origin="unix", utc=True, unit="s"
         )
-        # drop timestamp
-        self.data = self.data.drop("timestamp", axis=1)
 
         # -------------------------------------------------------------------------
         # add detector name, location and position from map
@@ -293,13 +300,12 @@ class Subsystem:
 
     def get_channel_map(self):
         """
-        Build channel map for given subsystem.
+        Build channel map for given subsystem with info like name, position, cc4, HV, DAQ, detector type, ... for each channel.
 
         setup_info: dict with the keys 'experiment' and 'period'
 
         Later will probably be changed to get channel map by timestamp (or hopefully run, if possible)
         Planning to add:
-            - CC4 name
             - barrel column for SiPMs special case
         """
         utils.logger.info("... getting channel map")
@@ -314,7 +320,19 @@ class Subsystem:
         )
 
         df_map = pd.DataFrame(
-            columns=["name", "location", "channel", "position", "cc4_id", "cc4_channel"]
+            columns=[
+                "name",
+                "location",
+                "channel",
+                "position",
+                "cc4_id",
+                "cc4_channel",
+                "daq_crate",
+                "daq_card",
+                "HV_card",
+                "HV_channel",
+                "det_type",
+            ],
         )
         df_map = df_map.set_index("channel")
 
@@ -322,17 +340,35 @@ class Subsystem:
         # helper function to determine which channel map entry belongs to this subsystem
         # -------------------------------------------------------------------------
 
+        # for L60-p01 and L200-p02, keep using 'fcid' as channel
+        if int(self.period[-1]) < 3:
+            ch_flag = "fcid"
+        # from L200-p03 included, uses 'rawid' as channel
+        if int(self.period[-1]) >= 3:
+            ch_flag = "rawid"
+
         # dct_key is the subdict corresponding to one chmap entry
         def is_subsystem(entry):
             # special case for pulser
             if self.type == "pulser":
-                pulser_ch = 0 if self.experiment == "L60" else 1
-                return entry["system"] == "auxs" and entry["daq"]["fcid"] == pulser_ch
+                if self.experiment == "L60":
+                    return entry["system"] == "auxs" and entry["daq"]["fcid"] == 0
+                if self.experiment == "L200":
+                    if self.period != "p03":
+                        return entry["system"] == "puls" and entry["daq"][ch_flag] == 1
+                    if self.period == "p03":
+                        return (
+                            entry["system"] == "puls"
+                            and entry["daq"][ch_flag] == 1027201
+                        )
             # for geds or spms
             return entry["system"] == self.type
 
         # name of location in the channel map
         loc_code = {"geds": "string", "spms": "fiber"}
+
+        # detector type for geds in the channel map
+        type_code = {"B": "bege", "C": "coax", "V": "icpc", "P": "ppc"}
 
         # -------------------------------------------------------------------------
         # loop over entries and find out subsystem
@@ -340,19 +376,19 @@ class Subsystem:
 
         # config.channel_map is already a dict read from the channel map json
         for entry in full_channel_map:
-            # skip 'BF' don't even know what it is
-            # ! not needed since BF is auxs
+            # skip 'BF' (! not needed since BF is auxs)
             if "BF" in entry:
                 continue
 
             entry_info = full_channel_map[entry]
+
             # skip if this is not our system
             if not is_subsystem(entry_info):
                 continue
 
-            # --- add info for this channel
-            # FlashCam channel, unique for geds/spms/pulser
-            ch = entry_info["daq"]["fcid"]
+            # --- add info for this channel - Raw/FlashCam ID, unique for geds/spms/pulser
+            ch = entry_info["daq"][ch_flag]
+
             df_map.at[ch, "name"] = entry_info["name"]
             # number/name of string/fiber for geds/spms, dummy for pulser
             df_map.at[ch, "location"] = (
@@ -364,7 +400,7 @@ class Subsystem:
             df_map.at[ch, "position"] = (
                 0 if self.type == "pulser" else entry_info["location"]["position"]
             )
-            # CC4 information - will be None for L60 or spms -> put an if condition to avoid?
+            # CC4 information - will be None for L60 (set to 'null') or spms (there, but no CC4s)
             df_map.at[ch, "cc4_id"] = (
                 entry_info["electronics"]["cc4"]["id"] if self.type == "geds" else None
             )
@@ -373,13 +409,40 @@ class Subsystem:
                 if self.type == "geds"
                 else None
             )
+            # DAQ information - present even in L60 and spms
+            df_map.at[ch, "daq_crate"] = entry_info["daq"]["crate"]
+            df_map.at[ch, "daq_card"] = entry_info["daq"]["card"]["id"]
+            # voltage = not for pulser/spms (just daq and electronics)
+            df_map.at[ch, "HV_card"] = (
+                entry_info["voltage"]["card"]["id"] if self.type == "geds" else None
+            )
+            df_map.at[ch, "HV_channel"] = (
+                entry_info["voltage"]["channel"] if self.type == "geds" else None
+            )
+            # detector type for geds (based on channel's name)
+            if self.type == "geds":
+                df_map.at[ch, "det_type"] = (
+                    type_code[entry_info["name"][0]]
+                    if entry_info["name"][0] in type_code.keys()
+                    else None
+                )
+            else:
+                df_map.at[ch, "det_type"] = None
 
         df_map = df_map.reset_index()
 
         # -------------------------------------------------------------------------
-
         # stupid dataframe, can use dtype somehow to fix it?
-        for col in ["channel", "location", "position", "cc4_channel"]:
+        for col in [
+            "channel",
+            "location",
+            "position",
+            "cc4_channel",
+            "daq_crate",
+            "daq_card",
+            "HV_card",
+            "HV_channel",
+        ]:
             if isinstance(df_map[col].loc[0], float):
                 df_map[col] = df_map[col].astype(int)
 
@@ -389,7 +452,7 @@ class Subsystem:
 
     def get_channel_status(self):
         """
-        Add status column to channel map with On/Off for software status.
+        Add status column to channel map with on/off for software status.
 
         setup_info: dict with the keys 'experiment' and 'period'
 
@@ -404,19 +467,18 @@ class Subsystem:
         lmeta = LegendMetadata()
         full_status_map = lmeta.dataprod.config.on(
             timestamp=self.first_timestamp, system=self.datatype
-        )["hardware_configuration"]["channel_map"]
+        )["analysis"]
 
-        # AUX channels are not in status map, so at least for pulser need default On
-        self.channel_map["status"] = "On"
-        self.channel_map = self.channel_map.set_index("channel")
-        for channel in full_status_map:
-            # convert string channel ('ch005') to integer (5)
-            ch = int(channel[2:])
+        # AUX channels are not in status map, so at least for pulser need default on
+        self.channel_map["status"] = "on"
+        self.channel_map = self.channel_map.set_index("name")
+        # 'channel_name', for instance, has the format 'DNNXXXS' (= "name" column)
+        for channel_name in full_status_map:
             # status map contains all channels, check if this channel is in our subsystem
-            if ch in self.channel_map.index:
-                self.channel_map.at[ch, "status"] = full_status_map[channel][
-                    "software_status"
-                ]
+            if channel_name in self.channel_map.index:
+                self.channel_map.at[channel_name, "status"] = full_status_map[
+                    channel_name
+                ]["usability"]
 
         self.channel_map = self.channel_map.reset_index()
 
@@ -495,13 +557,15 @@ class Subsystem:
 
         # -------------------------------------------------------------------------
         # set up tiers depending on what parameters we need
+        # -------------------------------------------------------------------------
 
-        # ronly load channels that are On (Off channels will crash DataLoader)
-        chlist = list(self.channel_map[self.channel_map["status"] == "On"]["channel"])
+        # ronly load channels that are on (off channels will crash DataLoader)
+        chlist = list(self.channel_map[self.channel_map["status"] == "on"]["channel"])
         removed_chs = list(
-            self.channel_map[self.channel_map["status"] == "Off"]["channel"]
+            self.channel_map[self.channel_map["status"] == "off"]["channel"]
         )
-        utils.logger.info(f"...... not loading channels with status Off: {removed_chs}")
+
+        utils.logger.info(f"...... not loading channels with status off: {removed_chs}")
 
         # --- settings for each tier
         for tier, tier_params in param_tiers.groupby("tier"):

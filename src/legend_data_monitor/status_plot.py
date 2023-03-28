@@ -7,14 +7,14 @@
 
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 import seaborn as sns
-from pandas import Timedelta
+from matplotlib.backends.backend_pdf import PdfPages
+from pandas import DataFrame, Timedelta, concat
 
 from . import utils
 
 
-def status_plot(subsystem, data_analysis, plot_info, pdf):
+def status_plot(subsystem, data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
     # -------------------------------------------------------------------------
     # plot a map with statuses of channels
     # -------------------------------------------------------------------------
@@ -22,7 +22,7 @@ def status_plot(subsystem, data_analysis, plot_info, pdf):
     utils.logger.info("\33[95m~~~ S T A T U S  M A P : %s\33[0m", plot_info["title"])
     utils.logger.info("\33[95m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\33[0m")
 
-    data_analysis = data_analysis.data.sort_values(["location", "position"])
+    data_analysis = data_analysis.sort_values(["location", "position"])
 
     # get threshold values
     low_thr = plot_info["limits"][0]
@@ -60,7 +60,7 @@ def status_plot(subsystem, data_analysis, plot_info, pdf):
     if low_thr is None and high_thr is None:
         plot_title += f"{plot_info['parameter']} (no checks)"
 
-    new_dataframe = pd.DataFrame()
+    new_dataframe = DataFrame()
     # loop over individual channels (otherwise, the problematic timestamps apply to all detectors, even the OK ones) and create a summary dataframe
     for channel in data_analysis["channel"].unique():
         # select one block of DataFrame
@@ -125,12 +125,10 @@ def status_plot(subsystem, data_analysis, plot_info, pdf):
 
             # create a new row in the new dataframe with essential info (ie: channel, name, location, position, status)
             new_row = [[channel, name, location, position, status]]
-            new_df = pd.DataFrame(
+            new_df = DataFrame(
                 new_row, columns=["channel", "name", "location", "position", "status"]
             )
-            new_dataframe = pd.concat(
-                [new_dataframe, new_df], ignore_index=True, axis=0
-            )
+            new_dataframe = concat([new_dataframe, new_df], ignore_index=True, axis=0)
 
         # print message with timestamps where the detector is out of threshold
         if len(out_thr_datetimes) != 0:
@@ -147,7 +145,7 @@ def status_plot(subsystem, data_analysis, plot_info, pdf):
 
     # --------------------------------------------------------------------------------------------------------------------------
     # include OFF channels and see what is their status
-    off_channels = subsystem.channel_map[subsystem.channel_map["status"] == "Off"][
+    off_channels = subsystem.channel_map[subsystem.channel_map["status"] == "off"][
         "channel"
     ].unique()
 
@@ -160,10 +158,12 @@ def status_plot(subsystem, data_analysis, plot_info, pdf):
                 ]["status"].iloc[0]
 
                 # get status info
-                if status_info == "Off":
+                if status_info == "off":
                     status = 3
                 if status_info == "AC":
-                    status = 2  # is at "AC"? CHECK IT!
+                    status = (
+                        2  # not there at the moment, leave it as a future option...
+                    )
 
                 # get position within the array + other necessary info
                 name = subsystem.channel_map.loc[
@@ -178,12 +178,12 @@ def status_plot(subsystem, data_analysis, plot_info, pdf):
 
                 # define new row for not-ON detectors
                 new_row = [[channel, name, location, position, status]]
-                new_df = pd.DataFrame(
+                new_df = DataFrame(
                     new_row,
                     columns=["channel", "name", "location", "position", "status"],
                 )
                 # add the new row to the dataframe (order?)
-                new_dataframe = pd.concat(
+                new_dataframe = concat(
                     [new_dataframe, new_df], ignore_index=True, axis=0
                 )
 
@@ -207,7 +207,7 @@ def status_plot(subsystem, data_analysis, plot_info, pdf):
         output_result = output_result.replace(1.0, "\033[91mX\033[0m")
         output_result = output_result.replace(0.0, "\033[94m\u2713\033[0m")
         # convert to dataframe (to use 'tabulate' library)
-        df = pd.DataFrame(output_result.to_records())
+        df = DataFrame(output_result.to_records())
         from tabulate import tabulate
 
         output_result = tabulate(
@@ -227,7 +227,7 @@ def status_plot(subsystem, data_analysis, plot_info, pdf):
 
     # labels definition (AFTER having included OFF detectors too)
     # LOCATION:
-    x_axis_labels = [f"S{no}" for no in new_dataframe["location"].unique()]
+    x_axis_labels = [f"S{no}" for no in sorted(new_dataframe["location"].unique())]
     # POSITION:
     y_axis_labels = [
         no

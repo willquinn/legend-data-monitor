@@ -25,8 +25,9 @@ Or run it by parsing to the executable the path to the config file:
 
 .. warning::
 
-  Use the ``user_prod`` command line interface for generating your own plots; ``auto_prod`` was designed to be used during automatic data production, for generating
-  monitoring plots on the fly when processing data. For the moment, no documentation will be provided.
+  Use the ``user_prod`` command line interface for generating your own plots.
+  ``auto_prod`` was designed to be used during automatic data production, for generating monitoring plots on the fly when processing data. For the moment, no documentation will be provided.
+  ``user_rsync_prod`` was designed to be used by an user for a personal automatic plot generation, using rsync to synchronize with lh5 files automatically produced.
 
 
 Configuration file
@@ -57,6 +58,7 @@ Example config
         "plot_structure": "per channel",
         "plot_style": "vs time",
         "variation": true,
+        "resampled": "also",
         "time_window": "1H",
         "status": true
         }
@@ -78,9 +80,10 @@ In particular, ``dataset`` settings are:
 .. note::
 
   Time selection is based on:
-  
+
   - ``'start': '2023-02-07 02:00:00', 'end': '2023-02-07 03:30:00'`` (start + end) in format ``YYYY-MM-DD hh:mm:ss``;
   - ``'timestamps': ['20230207T103123Z', '20230207T141123Z', ...]`` (list of keys) in format ``YYYYMMDDThhmmssZ``;
+  - ``'window': '1d 2h 0m'`` ( time window in the past from current time point) in format ``Xd Xh Xm`` for days, hours, minutes;
   - ``'runs': 1`` (one run) or ``'runs': [1, 2, 3]`` (list of runs) in integer format.
 
 ..
@@ -102,7 +105,7 @@ For each subsystem to be plotted, specify
     - ``"FWHM"``: FWHM values for each channel
     - ``"wf_max_rel"``: relative difference between ``wf_max`` and baseline
     - ``"event_rate"``: event rate calculated in windows specified in the field ``"sampling"`` under ``plotting.parameters``.
-- ``"event_type"``: which events to plot. Choose among ``pulser``  (events flagged as pulser based on AUX channel), ``phy`` (physical, i.e. non-pulser events), ``K_lines`` (K lines selected based on energy) or ``all``.
+- ``"event_type"``: which events to plot. Choose among ``pulser``  (events flagged as pulser based on AUX channel), ``phy`` (physical, i.e. non-pulser events), or ``all``.
 - ``"plot_structure"``: plot arrangement. Choose among
     - ``per channel`` (pulser, geds): group plots by channel (ie each channel has its own AxesSubplot)
     - ``per cc4`` (geds): group plots by CC4 (ie all channels belonging to the same CC4 are in the same AxesSubplot)
@@ -117,6 +120,10 @@ For each subsystem to be plotted, specify
     - ``scatter``: plot all entries of a parameter with points
     - ``heatmap``: plot 2d histos, with time on x axis
 - ``"variation"``: set it to ``True`` if you want % variation instead of absolute values for your parameter. Percentage variations are evaluated as: ``(param/mean - 1)*100``, where ``mean`` is the mean of the parameter under study evaluated over the first 10% of the time interval you specified in the ``dataset`` entry
+- ``"resampled"``: set it to ``"also"`` if you want to plot resampled values for the parameter under study. Resampling is done using the ``"time_window"`` you specify. Possible values are:
+    - ``"none"``: do not plot resampled values, i.e. events for each saved timestamps
+    - ``"only"``: plot resampled values, i.e. averaged events over each saved timestamps (average window equal to ``"time_window"``)
+    - ``"also"``: plot both resampled and not resampled values
 - ``"time_window"``: resampling time (``T``=minutes, ``H``=hours, ``D``=days) used to print resampled values (useful to spot trends over time)
 - ``"status"``: set it to ``True`` if you want to generate a status map for the subsystem and parameter under study (note, 2023-03-07: this works only for geds). In order to work, you first need to specify the limits you want to set as a either low or high threshold (or both) for the parameter under study by adding the % or absolute threshoold for the subsystem of interest in ``settings/par-setting.json``.
 
@@ -161,7 +168,8 @@ More that one subsystem can be entered, for instance:
       }
     }
 
-More examples can be found under ``examples/`` folder present in the Github repository.
+..
+  More examples can be found under ``examples/`` folder present in the Github repository.
 
 
 
@@ -176,15 +184,14 @@ To plot events having energies within 1430 and 1575 keV (ie, around the 40K and 
 .. code-block:: json
 
     "subsystems": {
-        "geds": {
+      "geds": {
           "K events":{
-              "parameters": "cuspEmax_ctc_cal",
-              "event_type": "phy",
-              "cuts": "K lines",
+              "parameters": "K_events",
+              "event_type": "K_lines",
               "plot_structure": "per string",
               "plot_style" : "scatter"
-          }
         }
+      }
     }
 
 FWHM
@@ -236,6 +243,7 @@ To plot the event rate, by sampling over a period of time equal to ``<time_windo
                 "event_type": "pulser",
                 "plot_structure": "per channel",
                 "plot_style": "vs time",
+                "resampled": "no",
                 "variation": false,
                 "time_window": "5T"
             }

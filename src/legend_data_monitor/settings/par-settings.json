@@ -10,7 +10,7 @@
       },
       "geds": {
         "variation": [-5, 5],
-        "absolute": [null, 15050]
+        "absolute": [null, null]
       }
     }
   },
@@ -678,7 +678,7 @@
     }
   },
   "AoE_Classifier": {
-    "label": "AoE (hit)",
+    "label": "AoE_Classifier",
     "unit": "a.u.",
     "facecol": [0.27, 0.47, 0.9],
     "limits": {
@@ -693,7 +693,7 @@
     }
   },
   "AoE_Corrected": {
-    "label": "AoE_Corrected (hit)",
+    "label": "AoE_Corrected",
     "unit": "a.u.",
     "facecol": [0.27, 0.47, 0.9],
     "limits": {
@@ -707,7 +707,7 @@
       }
     }
   },
-  "K lines": {
+  "K_events": {
     "label": "Energy",
     "unit": "keV",
     "facecol": [0.94, 0.87, 0.8],
