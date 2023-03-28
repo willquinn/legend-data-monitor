@@ -678,7 +678,7 @@
     }
   },
   "AoE_Classifier": {
-    "label": "AoE (hit)",
+    "label": "AoE_Classifier",
     "unit": "a.u.",
     "facecol": [0.27, 0.47, 0.9],
     "limits": {
@@ -693,7 +693,7 @@
     }
   },
   "AoE_Corrected": {
-    "label": "AoE_Corrected (hit)",
+    "label": "AoE_Corrected",
     "unit": "a.u.",
     "facecol": [0.27, 0.47, 0.9],
     "limits": {
