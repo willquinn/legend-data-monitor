@@ -40,7 +40,7 @@ Available parameters
 
   In general, all saved timestamps will be plotted.
   But you can also pick some given entries (see the config file), eg.
-  * you can pick only ``pulser``, ``phy``, ``K_lines`` or ``all`` entries
+  * you can pick only ``pulser``, ``phy`` or ``all`` entries
 
 .. important::
 
