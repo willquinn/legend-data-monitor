@@ -354,7 +354,7 @@ class Subsystem:
                 if self.experiment == "L60":
                     return entry["system"] == "auxs" and entry["daq"]["fcid"] == 0
                 if self.experiment == "L200":
-                    if int(self.period[-1]) < 3: 
+                    if int(self.period[-1]) < 3:
                         return entry["system"] == "puls" and entry["daq"][ch_flag] == 1
                     if int(self.period[-1]) >= 3:
                         return (
@@ -580,14 +580,14 @@ class Subsystem:
             # type not fixed and instead specified in the query
             dict_dbconfig["file_format"][tier] = (
                 "/{type}/"
-                + self.period #{period}
+                + self.period  # {period}
                 + "/{run}/{exp}-"
-                + self.period #{period}
+                + self.period  # {period}
                 + "-{run}-{type}-{timestamp}-tier_"
                 + tier
                 + ".lh5"
             )
-            dict_dbconfig["table_format"][tier] = "ch{" + ch_format  +"}/" + tier
+            dict_dbconfig["table_format"][tier] = "ch{" + ch_format + "}/" + tier
 
             dict_dbconfig["tables"][tier] = chlist
 
