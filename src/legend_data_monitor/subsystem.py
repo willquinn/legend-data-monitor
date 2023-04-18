@@ -354,9 +354,9 @@ class Subsystem:
                 if self.experiment == "L60":
                     return entry["system"] == "auxs" and entry["daq"]["fcid"] == 0
                 if self.experiment == "L200":
-                    if self.period != "p03":
+                    if int(self.period[-1]) < 3: 
                         return entry["system"] == "puls" and entry["daq"][ch_flag] == 1
-                    if self.period == "p03":
+                    if int(self.period[-1]) >= 3:
                         return (
                             entry["system"] == "puls"
                             and entry["daq"][ch_flag] == 1027201
@@ -567,16 +567,27 @@ class Subsystem:
 
         utils.logger.info(f"...... not loading channels with status off: {removed_chs}")
 
+        # for L60-p01 and L200-p02, keep using 3 digits
+        if int(self.period[-1]) < 3:
+            ch_format = "ch:03d"
+        # from L200-p03 included, uses 7 digits
+        if int(self.period[-1]) >= 3:
+            ch_format = "ch:07d"
+
         # --- settings for each tier
         for tier, tier_params in param_tiers.groupby("tier"):
             dict_dbconfig["tier_dirs"][tier] = f"/{tier}"
             # type not fixed and instead specified in the query
             dict_dbconfig["file_format"][tier] = (
-                "/{type}/{period}/{run}/{exp}-{period}-{run}-{type}-{timestamp}-tier_"
+                "/{type}/"
+                + self.period #{period}
+                + "/{run}/{exp}-"
+                + self.period #{period}
+                + "-{run}-{type}-{timestamp}-tier_"
                 + tier
                 + ".lh5"
             )
-            dict_dbconfig["table_format"][tier] = "ch{ch:03d}/" + tier
+            dict_dbconfig["table_format"][tier] = "ch{" + ch_format  +"}/" + tier
 
             dict_dbconfig["tables"][tier] = chlist
 
