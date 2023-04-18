@@ -196,7 +196,7 @@ To plot events having energies within 1430 and 1575 keV (ie, around the 40K and 
 
 FWHM
 ~~~~
-To plot FWHM values for each channel, gropuing them by strings, selecting only pulser events, use
+To plot FWHM values for each channel, grouping them by strings, selecting only pulser events, use
 
 .. code-block:: json
 
