@@ -127,7 +127,9 @@ def make_subsystem_plots(
         )
 
         # information for shifting the channels or not (not needed only for the 'per channel' structure option) when plotting the std
-        plot_info["std"] = True if plot_settings["plot_structure"] == "per channel" else False
+        plot_info["std"] = (
+            True if plot_settings["plot_structure"] == "per channel" else False
+        )
 
         if plot_settings["plot_style"] == "vs time":
             if plot_info["resampled"] == "":
@@ -416,6 +418,8 @@ def plot_per_cc4(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
 
 
 import numpy as np
+
+
 def plot_per_string(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
     # --- choose plot function based on user requested style e.g. vs time or histogram
     plot_style = plot_styles.PLOT_STYLE[plot_info["plot_style"]]
@@ -475,10 +479,10 @@ def plot_per_string(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
             entries = data_channel[plot_info["parameter"]]
             entries_avg = np.mean(entries)
             rms_ch = np.sqrt(np.mean(np.square(entries - entries_avg)))
-            FWHM_ch = 2.355*rms_ch
-            
+            FWHM_ch = 2.355 * rms_ch
+
             _ = plot_style(data_channel, fig, axes[ax_idx], plot_info, COLORS[col_idx])
-            labels.append(label+f" - FWHM: {round(FWHM_ch, 2)}")
+            labels.append(label + f" - FWHM: {round(FWHM_ch, 2)}")
             col_idx += 1
 
         # add grid
@@ -785,9 +789,11 @@ def plot_per_barrel_and_position(
 
     return par_dict
 
+
 # -------------------------------------------------------------------------------
 # plotting functions
 # -------------------------------------------------------------------------------
+
 
 def plot_limits(ax: plt.Axes, limits: dict):
     """Plot limits (if present) on the plot."""
@@ -796,6 +802,7 @@ def plot_limits(ax: plt.Axes, limits: dict):
             ax.axhline(y=limits[0], color="red", linestyle="--")
         if limits[1] is not None:
             ax.axhline(y=limits[1], color="red", linestyle="--")
+
 
 def save_pdf(plt, pdf: PdfPages):
     """Save the plot to a PDF file. The plot is closed after saving."""

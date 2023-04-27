@@ -69,7 +69,7 @@ def plot_vs_time(
                 resampled[plot_info["parameter"]],
                 color=res_col,
                 zorder=1,
-                #marker="o",
+                # marker="o",
                 linestyle="-",
             )
 
@@ -84,10 +84,18 @@ def plot_vs_time(
                 std_data = std_data.reset_index()
 
                 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 3 - appending std to the resampled dataframe
-                std_data = std_data.rename(columns={plot_info["parameter"] : "std"})
-                new_dataframe = concat([resampled, std_data[['std']]], ignore_index=False, axis=1)
+                std_data = std_data.rename(columns={plot_info["parameter"]: "std"})
+                new_dataframe = concat(
+                    [resampled, std_data[["std"]]], ignore_index=False, axis=1
+                )
 
-                ax.fill_between(resampled["datetime"].dt.to_pydatetime(), resampled[plot_info["parameter"]] - new_dataframe['std'], resampled[plot_info["parameter"]] + new_dataframe['std'], alpha=0.25, color=res_col)
+                ax.fill_between(
+                    resampled["datetime"].dt.to_pydatetime(),
+                    resampled[plot_info["parameter"]] - new_dataframe["std"],
+                    resampled[plot_info["parameter"]] + new_dataframe["std"],
+                    alpha=0.25,
+                    color=res_col,
+                )
 
     # -------------------------------------------------------------------------
     # beautification
