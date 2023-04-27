@@ -1,5 +1,6 @@
 import io
 import shelve
+import numpy as np
 
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
@@ -286,9 +287,7 @@ def plot_per_ch(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
             COLORS = color_palette("hls", max_ch_per_string).as_hex()
 
             # plot selected style on this axis
-            _ = plot_style(
-                data_channel, fig, axes[ax_idx], plot_info, color=COLORS[ax_idx]
-            )
+            plot_style(data_channel, fig, axes[ax_idx], plot_info, color=COLORS[ax_idx])
 
             # --- add summary to axis
             # name, position and mean are unique for each channel - take first value
@@ -296,11 +295,14 @@ def plot_per_ch(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
                 ["channel", "position", "name", plot_info["param_mean"]]
             ]
 
+            fwhm_ch = get_fwhm_for_fixed_ch(data_channel, plot_info["parameter"])
+
             text = (
                 t["name"]
                 + "\n"
                 + f"channel {t['channel']}\n"
                 + f"position {t['position']}\n"
+                + f"FWHM {round(fwhm_ch, 2)}\n"
                 + (
                     f"mean {round(t[plot_info['param_mean']],3)} [{plot_info['unit']}]"
                     if t[plot_info["param_mean"]] is not None
@@ -390,8 +392,10 @@ def plot_per_cc4(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
         for label, data_channel in data_cc4_id.groupby("label"):
             cc4_channel = (label.split("-"))[-1]
             utils.logger.debug(f"...... channel {cc4_channel}")
-            _ = plot_style(data_channel, fig, axes[ax_idx], plot_info, COLORS[col_idx])
-            labels.append(label)
+            
+            fwhm_ch = get_fwhm_for_fixed_ch(data_channel, plot_info["parameter"])
+            plot_style(data_channel, fig, axes[ax_idx], plot_info, COLORS[col_idx])
+            labels.append(label+f" - FWHM: {round(fwhm_ch, 2)}")
             col_idx += 1
 
         # add grid
@@ -405,6 +409,11 @@ def plot_per_cc4(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
         # plot limits
         plot_limits(axes[ax_idx], plot_info["limits"])
 
+        # plot the position of the two K lines
+        if plot_info["parameter"] == "K_events":
+            axes[ax_idx].axhline(y=1460.822, color="gray", linestyle="--")
+            axes[ax_idx].axhline(y=1524.6, color="gray", linestyle="--")
+
         ax_idx += 1
 
     # -------------------------------------------------------------------------------
@@ -415,7 +424,6 @@ def plot_per_cc4(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
     return fig
 
 
-import numpy as np
 def plot_per_string(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
     # --- choose plot function based on user requested style e.g. vs time or histogram
     plot_style = plot_styles.PLOT_STYLE[plot_info["plot_style"]]
@@ -472,13 +480,9 @@ def plot_per_string(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
         col_idx = 0
         labels = []
         for label, data_channel in data_location.groupby("label"):
-            entries = data_channel[plot_info["parameter"]]
-            entries_avg = np.mean(entries)
-            rms_ch = np.sqrt(np.mean(np.square(entries - entries_avg)))
-            FWHM_ch = 2.355*rms_ch
-            
-            _ = plot_style(data_channel, fig, axes[ax_idx], plot_info, COLORS[col_idx])
-            labels.append(label+f" - FWHM: {round(FWHM_ch, 2)}")
+            fwhm_ch = get_fwhm_for_fixed_ch(data_channel, plot_info["parameter"])
+            plot_style(data_channel, fig, axes[ax_idx], plot_info, COLORS[col_idx])
+            labels.append(label+f" - FWHM: {round(fwhm_ch, 2)}")
             col_idx += 1
 
         # add grid
@@ -491,6 +495,11 @@ def plot_per_string(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
 
         # plot limits
         plot_limits(axes[ax_idx], plot_info["limits"])
+
+        # plot the position of the two K lines
+        if plot_info["parameter"] == "K_events":
+            axes[ax_idx].axhline(y=1460.822, color="gray", linestyle="--")
+            axes[ax_idx].axhline(y=1524.6, color="gray", linestyle="--")
 
         ax_idx += 1
 
@@ -744,9 +753,7 @@ def plot_per_barrel_and_position(
                         det_idx += 1
                         continue
 
-                    ch_dict = plot_style(
-                        data_position, fig, axes, plot_info, color=COLORS[det_idx]
-                    )
+                    plot_style(data_position, fig, axes, plot_info, color=COLORS[det_idx])
                     labels.append(data_position["label"])
 
                     if channel[det_idx] not in par_dict.keys():
@@ -789,6 +796,13 @@ def plot_per_barrel_and_position(
 # plotting functions
 # -------------------------------------------------------------------------------
 
+def get_fwhm_for_fixed_ch(data_channel: DataFrame, parameter: str) -> float:
+    """Calculate the FWHM of a given parameter for a given channel."""
+    entries = data_channel[parameter]
+    entries_avg = np.mean(entries)
+    fwhm_ch = 2.355*np.sqrt(np.mean(np.square(entries - entries_avg)))
+    return fwhm_ch
+    
 def plot_limits(ax: plt.Axes, limits: dict):
     """Plot limits (if present) on the plot."""
     if not all([x is None for x in limits]):

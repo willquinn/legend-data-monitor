@@ -205,16 +205,6 @@ def plot_histo(
     )
     fig.supylabel(x_label)
 
-    # saving x,y data into output files
-    ch_dict = {
-        "values": {},
-        "mean": "",
-        "plot_info": plot_info,
-        "timestamp": {},
-    }
-
-    return ch_dict
-
 
 def plot_scatter(
     data_channel: DataFrame, fig: Figure, ax: Axes, plot_info: dict, color=None
@@ -239,24 +229,6 @@ def plot_scatter(
         else f"{plot_info['label']} [{plot_info['unit_label']}]"
     )
     fig.supylabel(y_label)
-
-    # plot the position of the two K lines
-    if plot_info["parameter"] == "K_events":
-        ax.axhline(y=1460.822, color="gray", linestyle="--")
-        ax.axhline(y=1524.6, color="gray", linestyle="--")
-
-    # saving x,y data into output files
-    ch_dict = {
-        "values": {"all": data_channel[plot_info["parameter"]], "resampled": []},
-        "mean": "",
-        "plot_info": plot_info,
-        "timestamp": {
-            "all": data_channel["datetime"].dt.to_pydatetime(),
-            "resampled": [],
-        },
-    }
-
-    return ch_dict
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
