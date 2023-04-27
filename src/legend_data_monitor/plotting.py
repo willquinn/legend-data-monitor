@@ -761,7 +761,7 @@ def plot_per_barrel_and_position(
                     labels.append(data_position["label"])
 
                     if channel[det_idx] not in par_dict.keys():
-                        par_dict[channel[det_idx]] = ch_dict
+                        par_dict[channel[det_idx]] = {}
 
                     # set label as title for each axes
                     text = (
