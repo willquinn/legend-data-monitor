@@ -67,7 +67,7 @@ def plot_vs_time(
                 resampled[plot_info["parameter"]],
                 color=res_col,
                 zorder=1,
-                marker="o",
+                #marker="o",
                 linestyle="-",
             )
 
