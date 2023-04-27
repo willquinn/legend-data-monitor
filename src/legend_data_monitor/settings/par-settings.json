@@ -129,7 +129,7 @@
         "absolute": [null, null]
       },
       "geds": {
-        "variation": [-0.25, 0.25],
+        "variation": [-0.025, 0.025],
         "absolute": [null, null]
       }
     }
@@ -144,7 +144,7 @@
         "absolute": [null, null]
       },
       "geds": {
-        "variation": [-0.25, 0.25],
+        "variation": [-0.025, 0.025],
         "absolute": [null, null]
       }
     }
@@ -459,7 +459,7 @@
         "absolute": [null, null]
       },
       "geds": {
-        "variation": [-0.25, 0.25],
+        "variation": [-0.025, 0.025],
         "absolute": [null, null]
       }
     }
@@ -474,7 +474,7 @@
         "absolute": [null, null]
       },
       "geds": {
-        "variation": [-0.25, 0.25],
+        "variation": [-0.025, 0.025],
         "absolute": [null, null]
       }
     }
@@ -489,7 +489,7 @@
         "absolute": [null, null]
       },
       "geds": {
-        "variation": [-0.25, 0.25],
+        "variation": [-0.025, 0.025],
         "absolute": [null, null]
       }
     }

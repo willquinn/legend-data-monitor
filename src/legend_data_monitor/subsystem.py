@@ -559,35 +559,36 @@ class Subsystem:
         # set up tiers depending on what parameters we need
         # -------------------------------------------------------------------------
 
-        # ronly load channels that are on (off channels will crash DataLoader)
+        # only load channels that are on (off channels will crash DataLoader)
         chlist = list(self.channel_map[self.channel_map["status"] == "on"]["channel"])
         removed_chs = list(
-            self.channel_map[self.channel_map["status"] == "off"]["channel"]
+            self.channel_map[self.channel_map["status"] == "off"]["name"]
         )
-
         utils.logger.info(f"...... not loading channels with status off: {removed_chs}")
 
-        # for L60-p01 and L200-p02, keep using 3 digits
-        if int(self.period[-1]) < 3:
-            ch_format = "ch:03d"
-        # from L200-p03 included, uses 7 digits
+        # remove p03 channels who are not properly behaving in calib data (from George's analysis)
         if int(self.period[-1]) >= 3:
-            ch_format = "ch:07d"
+            names = ["V01406A", "V01415A", "V01387A", "P00665C", "P00748B", "P00748A"]#, "B00089D"]
+            probl_dets = []
+            for name in names:
+                probl_det = list(self.channel_map[self.channel_map["name"] == name]["channel"])
+                # the following 'if' is needed to avoid errors when setting up 'pulser'
+                if probl_det != []:
+                    probl_dets.append(probl_det[0])
+            if probl_dets != []:
+                utils.logger.info(f"...... not loading problematic detectors for {self.period}: {names}")
+                chlist = [ch for ch in chlist if ch not in probl_dets]
 
         # --- settings for each tier
         for tier, tier_params in param_tiers.groupby("tier"):
             dict_dbconfig["tier_dirs"][tier] = f"/{tier}"
             # type not fixed and instead specified in the query
             dict_dbconfig["file_format"][tier] = (
-                "/{type}/"
-                + self.period  # {period}
-                + "/{run}/{exp}-"
-                + self.period  # {period}
-                + "-{run}-{type}-{timestamp}-tier_"
+                "/{type}/{period}/{run}/{exp}-{period}-{run}-{type}-{timestamp}-tier_"
                 + tier
                 + ".lh5"
             )
-            dict_dbconfig["table_format"][tier] = "ch{" + ch_format + "}/" + tier
+            dict_dbconfig["table_format"][tier] = "ch{ch:03d}/" + tier
 
             dict_dbconfig["tables"][tier] = chlist
 

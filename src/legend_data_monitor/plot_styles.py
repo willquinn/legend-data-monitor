@@ -9,7 +9,7 @@ import pandas as pd
 from matplotlib.axes import Axes
 from matplotlib.dates import DateFormatter, date2num, num2date
 from matplotlib.figure import Figure
-from pandas import DataFrame, Timedelta
+from pandas import DataFrame, Timedelta, concat
 
 from . import utils
 
@@ -39,6 +39,7 @@ def plot_vs_time(
             data_channel[plot_info["parameter"]],
             zorder=0,
             color=all_col,
+            linewidth=1,
         )
 
     # -------------------------------------------------------------------------
@@ -48,6 +49,7 @@ def plot_vs_time(
     if plot_info["resampled"] != "no":
         # unless event rate - already resampled and counted in some time window
         if not plot_info["parameter"] == "event_rate":
+            # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 1 - resampling
             # resample in given time window, as start pick the first timestamp in table
             resampled = (
                 data_channel.set_index("datetime")
@@ -67,9 +69,25 @@ def plot_vs_time(
                 resampled[plot_info["parameter"]],
                 color=res_col,
                 zorder=1,
-                marker="o",
+                #marker="o",
                 linestyle="-",
             )
+
+            # evaluation of std bands, if enabled
+            if plot_info["std"] is True:
+                # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 2 - std evaluation
+                std_data = (
+                    data_channel.set_index("datetime")
+                    .resample(plot_info["time_window"], origin="start")
+                    .std(numeric_only=True)
+                )
+                std_data = std_data.reset_index()
+
+                # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 3 - appending std to the resampled dataframe
+                std_data = std_data.rename(columns={plot_info["parameter"] : "std"})
+                new_dataframe = concat([resampled, std_data[['std']]], ignore_index=False, axis=1)
+
+                ax.fill_between(resampled["datetime"].dt.to_pydatetime(), resampled[plot_info["parameter"]] - new_dataframe['std'], resampled[plot_info["parameter"]] + new_dataframe['std'], alpha=0.25, color=res_col)
 
     # -------------------------------------------------------------------------
     # beautification
@@ -221,6 +239,11 @@ def plot_scatter(
         else f"{plot_info['label']} [{plot_info['unit_label']}]"
     )
     fig.supylabel(y_label)
+
+    # plot the position of the two K lines
+    if plot_info["parameter"] == "K_events":
+        ax.axhline(y=1460.822, color="gray", linestyle="--")
+        ax.axhline(y=1524.6, color="gray", linestyle="--")
 
     # saving x,y data into output files
     ch_dict = {
