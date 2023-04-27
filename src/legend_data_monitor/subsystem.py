@@ -559,13 +559,25 @@ class Subsystem:
         # set up tiers depending on what parameters we need
         # -------------------------------------------------------------------------
 
-        # ronly load channels that are on (off channels will crash DataLoader)
+        # only load channels that are on (off channels will crash DataLoader)
         chlist = list(self.channel_map[self.channel_map["status"] == "on"]["channel"])
         removed_chs = list(
-            self.channel_map[self.channel_map["status"] == "off"]["channel"]
+            self.channel_map[self.channel_map["status"] == "off"]["name"]
         )
-
         utils.logger.info(f"...... not loading channels with status off: {removed_chs}")
+
+        # remove p03 channels who are not properly behaving in calib data (from George's analysis)
+        if int(self.period[-1]) >= 3:
+            names = ["V01406A", "V01415A", "V01387A", "P00665C", "P00748B", "P00748A"]#, "B00089D"]
+            probl_dets = []
+            for name in names:
+                probl_det = list(self.channel_map[self.channel_map["name"] == name]["channel"])
+                # the following 'if' is needed to avoid errors when setting up 'pulser'
+                if probl_det != []:
+                    probl_dets.append(probl_det[0])
+            if probl_dets != []:
+                utils.logger.info(f"...... not loading problematic detectors for {self.period}: {names}")
+                chlist = [ch for ch in chlist if ch not in probl_dets]
 
         # for L60-p01 and L200-p02, keep using 3 digits
         if int(self.period[-1]) < 3:

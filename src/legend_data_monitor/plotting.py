@@ -126,6 +126,9 @@ def make_subsystem_plots(
             plot_settings["resampled"] if "resampled" in plot_settings else ""
         )
 
+        # information for shifting the channels or not (not needed only for the 'per channel' structure option) when plotting the std
+        plot_info["std"] = True if plot_settings["plot_structure"] == "per channel" else False
+
         if plot_settings["plot_style"] == "vs time":
             if plot_info["resampled"] == "":
                 plot_info["resampled"] = "also"
@@ -312,9 +315,8 @@ def plot_per_ch(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
             # remove automatic y label since there will be a shared one
             axes[ax_idx].set_ylabel("")
 
-            # plot line at 0% for variation
-            if plot_info["unit_label"] == "%":
-                axes[ax_idx].axhline(y=0, color="gray", linestyle="--")
+            # plot limits
+            plot_limits(axes[ax_idx], plot_info["limits"])
 
             ax_idx += 1
 
@@ -327,10 +329,7 @@ def plot_per_ch(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
             axes[0].set_title(f"{plot_info['locname']} {location}")
         fig.suptitle(f"{plot_info['subsystem']} - {plot_info['title']}", y=y_title)
 
-        if pdf:
-            plt.savefig(pdf, format="pdf", bbox_inches="tight")
-            # figures are retained until explicitly closed; close to not consume too much memory
-            plt.close()
+        save_pdf(plt, pdf)
 
     return fig
 
@@ -403,28 +402,20 @@ def plot_per_cc4(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
         axes[ax_idx].set_ylabel("")
         axes[ax_idx].legend(labels=labels, loc="center left", bbox_to_anchor=(1, 0.5))
 
-        # plot the position of the two K lines
-        if plot_info["parameter"] == "K_events":
-            axes[ax_idx].axhline(y=1460.822, color="gray", linestyle="--")
-            axes[ax_idx].axhline(y=1524.6, color="gray", linestyle="--")
+        # plot limits
+        plot_limits(axes[ax_idx], plot_info["limits"])
 
-        # plot line at 0% for variation
-        if plot_info["unit_label"] == "%":
-            axes[ax_idx].axhline(y=0, color="gray", linestyle="--")
         ax_idx += 1
 
     # -------------------------------------------------------------------------------
     y_title = 1.05 if plot_info["subsystem"] == "pulser" else 1.01
     fig.suptitle(f"{plot_info['subsystem']} - {plot_info['title']}", y=y_title)
-    # if no pdf is specified, then the function is not being called by make_subsystem_plots()
-    if pdf:
-        plt.savefig(pdf, format="pdf", bbox_inches="tight")
-        # figures are retained until explicitly closed; close to not consume too much memory
-        plt.close()
+    save_pdf(plt, pdf)
 
     return fig
 
 
+import numpy as np
 def plot_per_string(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
     # --- choose plot function based on user requested style e.g. vs time or histogram
     plot_style = plot_styles.PLOT_STYLE[plot_info["plot_style"]]
@@ -481,8 +472,13 @@ def plot_per_string(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
         col_idx = 0
         labels = []
         for label, data_channel in data_location.groupby("label"):
+            entries = data_channel[plot_info["parameter"]]
+            entries_avg = np.mean(entries)
+            rms_ch = np.sqrt(np.mean(np.square(entries - entries_avg)))
+            FWHM_ch = 2.355*rms_ch
+            
             _ = plot_style(data_channel, fig, axes[ax_idx], plot_info, COLORS[col_idx])
-            labels.append(label)
+            labels.append(label+f" - FWHM: {round(FWHM_ch, 2)}")
             col_idx += 1
 
         # add grid
@@ -493,25 +489,16 @@ def plot_per_string(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
         axes[ax_idx].set_ylabel("")
         axes[ax_idx].legend(labels=labels, loc="center left", bbox_to_anchor=(1, 0.5))
 
-        # plot the position of the two K lines
-        if plot_info["parameter"] == "K_events":
-            axes[ax_idx].axhline(y=1460.822, color="gray", linestyle="--")
-            axes[ax_idx].axhline(y=1524.6, color="gray", linestyle="--")
+        # plot limits
+        plot_limits(axes[ax_idx], plot_info["limits"])
 
-        # plot line at 0% for variation
-        if plot_info["unit_label"] == "%":
-            axes[ax_idx].axhline(y=0, color="gray", linestyle="--")
         ax_idx += 1
 
     # -------------------------------------------------------------------------------
     y_title = 1.05 if plot_info["subsystem"] == "pulser" else 1.01
     fig.suptitle(f"{plot_info['subsystem']} - {plot_info['title']}", y=y_title)
 
-    # if no pdf is specified, then the function is not being called by make_subsystem_plots()
-    if pdf:
-        plt.savefig(pdf, format="pdf", bbox_inches="tight")
-        # figures are retained until explicitly closed; close to not consume too much memory
-        plt.close()
+    save_pdf(plt, pdf)
 
     return fig
 
@@ -637,14 +624,9 @@ def plot_array(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
     fig.supxlabel("")
     fig.suptitle(f"{plot_info['subsystem']} - {plot_info['title']}", y=1.05)
 
-    # -------------------------------------------------------------------------------
-    # if no pdf is specified, then the function is not being called by make_subsystem_plots()
-    if pdf:
-        plt.savefig(pdf, format="pdf", bbox_inches="tight")
-        # figures are retained until explicitly closed; close to not consume too much memory
-        plt.close()
+    save_pdf(plt, pdf)
 
-    # return fig
+    return fig
 
 
 # -------------------------------------------------------------------------------
@@ -802,6 +784,24 @@ def plot_per_barrel_and_position(
                 par_dict[f"figure_plot_{location}_{position}"] = buf.getvalue()
 
     return par_dict
+
+# -------------------------------------------------------------------------------
+# plotting functions
+# -------------------------------------------------------------------------------
+
+def plot_limits(ax: plt.Axes, limits: dict):
+    """Plot limits (if present) on the plot."""
+    if not all([x is None for x in limits]):
+        if limits[0] is not None:
+            ax.axhline(y=limits[0], color="red", linestyle="--")
+        if limits[1] is not None:
+            ax.axhline(y=limits[1], color="red", linestyle="--")
+
+def save_pdf(plt, pdf: PdfPages):
+    """Save the plot to a PDF file. The plot is closed after saving."""
+    if pdf:
+        plt.savefig(pdf, format="pdf", bbox_inches="tight")
+        plt.close()
 
 
 # -------------------------------------------------------------------------------
