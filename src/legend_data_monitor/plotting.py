@@ -1,8 +1,8 @@
 import io
 import shelve
-import numpy as np
 
 import matplotlib.pyplot as plt
+import numpy as np
 from matplotlib.backends.backend_pdf import PdfPages
 from pandas import DataFrame
 from seaborn import color_palette
@@ -394,10 +394,10 @@ def plot_per_cc4(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
         for label, data_channel in data_cc4_id.groupby("label"):
             cc4_channel = (label.split("-"))[-1]
             utils.logger.debug(f"...... channel {cc4_channel}")
-            
+
             fwhm_ch = get_fwhm_for_fixed_ch(data_channel, plot_info["parameter"])
             plot_style(data_channel, fig, axes[ax_idx], plot_info, COLORS[col_idx])
-            labels.append(label+f" - FWHM: {round(fwhm_ch, 2)}")
+            labels.append(label + f" - FWHM: {round(fwhm_ch, 2)}")
             col_idx += 1
 
         # add grid
@@ -484,7 +484,7 @@ def plot_per_string(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
         for label, data_channel in data_location.groupby("label"):
             fwhm_ch = get_fwhm_for_fixed_ch(data_channel, plot_info["parameter"])
             plot_style(data_channel, fig, axes[ax_idx], plot_info, COLORS[col_idx])
-            labels.append(label+f" - FWHM: {round(fwhm_ch, 2)}")
+            labels.append(label + f" - FWHM: {round(fwhm_ch, 2)}")
             col_idx += 1
 
         # add grid
@@ -755,7 +755,9 @@ def plot_per_barrel_and_position(
                         det_idx += 1
                         continue
 
-                    plot_style(data_position, fig, axes, plot_info, color=COLORS[det_idx])
+                    plot_style(
+                        data_position, fig, axes, plot_info, color=COLORS[det_idx]
+                    )
                     labels.append(data_position["label"])
 
                     if channel[det_idx] not in par_dict.keys():
@@ -799,13 +801,15 @@ def plot_per_barrel_and_position(
 # plotting functions
 # -------------------------------------------------------------------------------
 
+
 def get_fwhm_for_fixed_ch(data_channel: DataFrame, parameter: str) -> float:
     """Calculate the FWHM of a given parameter for a given channel."""
     entries = data_channel[parameter]
     entries_avg = np.mean(entries)
-    fwhm_ch = 2.355*np.sqrt(np.mean(np.square(entries - entries_avg)))
+    fwhm_ch = 2.355 * np.sqrt(np.mean(np.square(entries - entries_avg)))
     return fwhm_ch
-    
+
+
 def plot_limits(ax: plt.Axes, limits: dict):
     """Plot limits (if present) on the plot."""
     if not all([x is None for x in limits]):
