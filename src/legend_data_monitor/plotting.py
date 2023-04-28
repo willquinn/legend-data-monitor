@@ -115,7 +115,13 @@ def make_subsystem_plots(
         plot_info = {
             "title": plot_title,
             "subsystem": subsystem.type,
-            "locname": {"geds": "string", "spms": "fiber", "pulser": "puls", "pulser_aux": "puls", "FC_bsln": "bsln"}[subsystem.type],
+            "locname": {
+                "geds": "string",
+                "spms": "fiber",
+                "pulser": "puls",
+                "pulser_aux": "puls",
+                "FC_bsln": "bsln",
+            }[subsystem.type],
             "unit": utils.PLOT_INFO[plot_settings["parameters"]]["unit"],
             "plot_style": plot_settings["plot_style"],
         }
@@ -339,7 +345,8 @@ def plot_per_ch(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
 def plot_per_cc4(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
     if plot_info["subsystem"] in ["pulser", "pulser_aux", "FC_bsln"]:
         utils.logger.error(
-            "\033[91mPlotting per CC4 is not available for %s channel.\nTry again with a different plot structure!\033[0m", plot_info["subsystem"]
+            "\033[91mPlotting per CC4 is not available for %s channel.\nTry again with a different plot structure!\033[0m",
+            plot_info["subsystem"],
         )
         exit()
     # --- choose plot function based on user requested style e.g. vs time or histogram
@@ -417,7 +424,9 @@ def plot_per_cc4(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
         ax_idx += 1
 
     # -------------------------------------------------------------------------------
-    y_title = 1.05 if plot_info["subsystem"] in ["pulser", "pulser_aux", "FC_bsln"] else 1.01
+    y_title = (
+        1.05 if plot_info["subsystem"] in ["pulser", "pulser_aux", "FC_bsln"] else 1.01
+    )
     fig.suptitle(f"{plot_info['subsystem']} - {plot_info['title']}", y=y_title)
     save_pdf(plt, pdf)
 
@@ -504,7 +513,9 @@ def plot_per_string(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
         ax_idx += 1
 
     # -------------------------------------------------------------------------------
-    y_title = 1.05 if plot_info["subsystem"] in ["pulser", "pulser_aux", "FC_bsln"] else 1.01
+    y_title = (
+        1.05 if plot_info["subsystem"] in ["pulser", "pulser_aux", "FC_bsln"] else 1.01
+    )
     fig.suptitle(f"{plot_info['subsystem']} - {plot_info['title']}", y=y_title)
 
     save_pdf(plt, pdf)

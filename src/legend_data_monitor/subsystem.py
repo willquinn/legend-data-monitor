@@ -364,7 +364,9 @@ class Subsystem:
             # special case for pulser AUX
             if self.type == "pulser_aux":
                 if self.experiment == "L60":
-                    utils.logger.error("\033[91mThere is no pulser AUX channel in L60. Remove this subsystem!\033[0m")
+                    utils.logger.error(
+                        "\033[91mThere is no pulser AUX channel in L60. Remove this subsystem!\033[0m"
+                    )
                     exit()
                 if self.experiment == "L200":
                     if self.below_period_3_excluded():
@@ -397,7 +399,7 @@ class Subsystem:
 
         # systems for which the location/position has to be handled carefully; values were chosen arbitrarily to avoid conflicts
         special_systems = {"pulser": 0, "pulser_aux": -1, "FC_bsln": -2}
-        
+
         # -------------------------------------------------------------------------
         # loop over entries and find out subsystem
         # -------------------------------------------------------------------------
@@ -426,7 +428,9 @@ class Subsystem:
             )
             # position in string/fiber for geds/spms, dummy for pulser/pulser_aux/FC_bsln
             df_map.at[ch, "position"] = (
-                special_systems[self.type] if self.type in special_systems else entry_info["location"]["position"]
+                special_systems[self.type]
+                if self.type in special_systems
+                else entry_info["location"]["position"]
             )
             # CC4 information - will be None for L60 (set to 'null') or spms (there, but no CC4s)
             df_map.at[ch, "cc4_id"] = (
@@ -665,7 +669,7 @@ class Subsystem:
             return True
         else:
             return False
-        
+
     def above_period_3_included(self) -> bool:
         if int(self.period[-1]) >= 3:
             return True

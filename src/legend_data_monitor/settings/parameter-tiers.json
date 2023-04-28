@@ -41,7 +41,7 @@
   "lq80": "dsp",
   "dt_eff_invert": "dsp",
   "trapTmax_invert": "dsp",
-  "trapTftp_invert": "dsp", 
+  "trapTftp_invert": "dsp",
   "tp_0_invert": "dsp",
   "tp_100_invert": "dsp",
   "tp_99_invert": "dsp",
