@@ -17,7 +17,7 @@ class Subsystem:
     """
     Object containing information for a given subsystem such as channel map, channels status etc.
 
-    sub_type [str]: geds | spms | pulser
+    sub_type [str]: geds | spms | pulser | pulser_aux | FC_bsln
 
     Options for kwargs
 
@@ -354,12 +354,39 @@ class Subsystem:
                 if self.experiment == "L60":
                     return entry["system"] == "auxs" and entry["daq"]["fcid"] == 0
                 if self.experiment == "L200":
-                    if int(self.period[-1]) < 3:
+                    if self.below_period_3_excluded():
                         return entry["system"] == "puls" and entry["daq"][ch_flag] == 1
-                    if int(self.period[-1]) >= 3:
+                    if self.above_period_3_included():
                         return (
                             entry["system"] == "puls"
                             and entry["daq"][ch_flag] == 1027201
+                        )
+            # special case for pulser AUX
+            if self.type == "pulser_aux":
+                if self.experiment == "L60":
+                    utils.logger.error(
+                        "\033[91mThere is no pulser AUX channel in L60. Remove this subsystem!\033[0m"
+                    )
+                    exit()
+                if self.experiment == "L200":
+                    if self.below_period_3_excluded():
+                        return entry["system"] == "puls" and entry["daq"][ch_flag] == 3
+                    if self.above_period_3_included():
+                        return (
+                            entry["system"] == "puls"
+                            and entry["daq"][ch_flag] == 1027203
+                        )
+            # special case for baseline
+            if self.type == "FC_bsln":
+                if self.experiment == "L60":
+                    return entry["system"] == "auxs" and entry["daq"]["fcid"] == 0
+                if self.experiment == "L200":
+                    if self.below_period_3_excluded():
+                        return entry["system"] == "bsln" and entry["daq"][ch_flag] == 0
+                    if self.above_period_3_included():
+                        return (
+                            entry["system"] == "bsln"
+                            and entry["daq"][ch_flag] == 1027200
                         )
             # for geds or spms
             return entry["system"] == self.type
@@ -370,14 +397,17 @@ class Subsystem:
         # detector type for geds in the channel map
         type_code = {"B": "bege", "C": "coax", "V": "icpc", "P": "ppc"}
 
+        # systems for which the location/position has to be handled carefully; values were chosen arbitrarily to avoid conflicts
+        special_systems = {"pulser": 0, "pulser_aux": -1, "FC_bsln": -2}
+
         # -------------------------------------------------------------------------
         # loop over entries and find out subsystem
         # -------------------------------------------------------------------------
 
         # config.channel_map is already a dict read from the channel map json
         for entry in full_channel_map:
-            # skip 'BF' (! not needed since BF is auxs)
-            if "BF" in entry:
+            # skip dummy channels
+            if "BF" in entry or "DUMMY" in entry:
                 continue
 
             entry_info = full_channel_map[entry]
@@ -386,19 +416,21 @@ class Subsystem:
             if not is_subsystem(entry_info):
                 continue
 
-            # --- add info for this channel - Raw/FlashCam ID, unique for geds/spms/pulser
+            # --- add info for this channel - Raw/FlashCam ID, unique for geds/spms/pulser/pulser_aux/FC_bsln
             ch = entry_info["daq"][ch_flag]
 
             df_map.at[ch, "name"] = entry_info["name"]
-            # number/name of string/fiber for geds/spms, dummy for pulser
+            # number/name of string/fiber for geds/spms, dummy for pulser/pulser_aux/FC_bsln
             df_map.at[ch, "location"] = (
-                0
-                if self.type == "pulser"
+                special_systems[self.type]
+                if self.type in special_systems
                 else entry_info["location"][loc_code[self.type]]
             )
-            # position in string/fiber for geds/spms, dummy for pulser (works if there is only one pulser channel)
+            # position in string/fiber for geds/spms, dummy for pulser/pulser_aux/FC_bsln
             df_map.at[ch, "position"] = (
-                0 if self.type == "pulser" else entry_info["location"]["position"]
+                special_systems[self.type]
+                if self.type in special_systems
+                else entry_info["location"]["position"]
             )
             # CC4 information - will be None for L60 (set to 'null') or spms (there, but no CC4s)
             df_map.at[ch, "cc4_id"] = (
@@ -469,7 +501,7 @@ class Subsystem:
             timestamp=self.first_timestamp, system=self.datatype
         )["analysis"]
 
-        # AUX channels are not in status map, so at least for pulser need default on
+        # AUX channels are not in status map, so at least for pulser/pulser_aux/FC_bsln need default on
         self.channel_map["status"] = "on"
         self.channel_map = self.channel_map.set_index("name")
         # 'channel_name', for instance, has the format 'DNNXXXS' (= "name" column)
@@ -631,3 +663,15 @@ class Subsystem:
         }
 
         return dict_dlconfig, dict_dbconfig
+
+    def below_period_3_excluded(self) -> bool:
+        if int(self.period[-1]) < 3:
+            return True
+        else:
+            return False
+
+    def above_period_3_included(self) -> bool:
+        if int(self.period[-1]) >= 3:
+            return True
+        else:
+            return False
