@@ -329,8 +329,10 @@ def exposure_plot(subsystem, data_analysis: DataFrame, plot_info: dict, pdf: Pdf
 
                 # get status info
                 if status_info != "on":
-                    exposure = 0
-                    livetime_in_s = 0
+                    exposure = 0.0
+                    livetime_in_s = 0.0
+
+                
 
                 # get position within the array + other necessary info
                 name, location, position = get_info_from_channel(subsystem.channel_map, channel)
@@ -345,6 +347,34 @@ def exposure_plot(subsystem, data_analysis: DataFrame, plot_info: dict, pdf: Pdf
                 data_analysis = concat(
                     [data_analysis, new_df], ignore_index=True, axis=0
                 )
+
+    # -------------------------------------------------------------------------------
+    # ON but NULL exposure detectors
+    # -------------------------------------------------------------------------------
+    on_channels = subsystem.channel_map[subsystem.channel_map["status"] == "on"][
+        "channel"
+    ].unique()
+
+    for channel in on_channels:
+        if channel in list(data_analysis["channel"].unique()): continue
+
+        # if not there, set exposure to zero
+        exposure = 0.0
+        livetime_in_s = 0.0
+
+        # get position within the array + other necessary info
+        name, location, position = get_info_from_channel(subsystem.channel_map, channel)
+
+        # define new row for not-ON detectors
+        new_row = [[channel, name, location, position, exposure, livetime_in_s]]
+        new_df = DataFrame(
+            new_row,
+            columns=["channel", "name", "location", "position", "exposure", "livetime_in_s"],
+        )
+        # add the new row to the dataframe 
+        data_analysis = concat(
+            [data_analysis, new_df], ignore_index=True, axis=0
+        )
 
     # values to plot
     result = data_analysis.pivot(index="position", columns="location", values="exposure")

@@ -591,6 +591,7 @@ class Subsystem:
         utils.logger.info(f"...... not loading channels with status off: {removed_chs}")
 
         # remove p03 channels who are not properly behaving in calib data (from George's analysis)
+        """
         if int(self.period[-1]) >= 3:
             names = list(utils.REMOVE_DETS.keys())
             probl_dets = []
@@ -606,6 +607,7 @@ class Subsystem:
                     f"...... not loading problematic detectors for {self.period}: {names}"
                 )
                 chlist = [ch for ch in chlist if ch not in probl_dets]
+        """
 
         # for L60-p01 and L200-p02, keep using 3 digits
         if int(self.period[-1]) < 3:

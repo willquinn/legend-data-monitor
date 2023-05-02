@@ -126,10 +126,13 @@ class AnalysisData:
             "det_type",
             "status",
         ]
-        # pulser flag is present only if subsystem.flag_pulser_events() was called
-        # needed to subselect phy/pulser events
-        if "flag_pulser" in sub_data:
-            params_to_get.append("flag_pulser")
+        for col in sub_data.columns:
+            # pulser flag is present only if subsystem.flag_pulser_events() was called -> needed to subselect phy/pulser events
+            if "flag_pulser" in col:
+                params_to_get.append("flag_pulser")
+            # QC flag is present only if inserted as a cut in the config file -> needed to apply
+            if "is_" in col:
+                params_to_get.append(col)
 
         # if special parameter, get columns needed to calculate it
         for param in self.parameters:
@@ -183,9 +186,9 @@ class AnalysisData:
         # calculate variation if needed - only works after channel mean
         self.calculate_variation()
 
-        # -------------------------------------------------------------------------
-
+        # little sorting, before closing the function
         self.data = self.data.sort_values(["channel", "datetime"])
+
 
     def select_events(self):
         # do we want to keep all, phy or pulser events?

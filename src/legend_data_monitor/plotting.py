@@ -74,6 +74,9 @@ def make_subsystem_plots(
         # cuts will be loaded but not applied; for our purposes, need to apply the cuts right away
         # currently only K lines cut is used, and only data after cut is plotted -> just replace
         data_analysis.data = data_analysis.apply_all_cuts()
+        # check if the dataframe is empty, if so, skip this plot
+        if utils.is_empty(data_analysis.data):
+            continue
         utils.logger.debug(data_analysis.data)
 
         # -------------------------------------------------------------------------

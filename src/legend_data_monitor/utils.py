@@ -487,10 +487,10 @@ def get_all_plot_parameters(subsystem: str, config: dict):
                 all_parameters += parameters
 
             # check if there is any QC entry; if so, add it to the list of parameters to load
-            if "quality_cuts" in config["subsystems"][subsystem][plot]:
-                all_parameters.append(
-                    config["subsystems"][subsystem][plot]["quality_cuts"]
-                )
+            if "cuts" in config["subsystems"][subsystem][plot]:
+                for cut in config["subsystems"][subsystem][plot]["cuts"]:
+                    if "is_" in cut:
+                        all_parameters.append(cut)
 
     return all_parameters
 
@@ -744,3 +744,12 @@ def get_livetime(tot_livetime: float):
     logger.info(f"Total livetime: {tot_livetime:.2f}{unit}")
 
     return tot_livetime, unit
+
+
+def is_empty(df: DataFrame):
+    """Check if a dataframe is empty. If so, we exit from the code."""
+    if df.empty:
+        logger.warning(
+            "\033[93mThe dataframe is empty. Plotting the next entry (if present, otherwise exiting from the code).\033[0m"
+        )
+        return True
