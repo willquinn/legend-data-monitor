@@ -8,7 +8,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 from pandas import DataFrame
 from seaborn import color_palette
 
-from . import analysis_data, plot_styles, status_plot, subsystem, utils
+from . import analysis_data, plot_styles, string_visualization, subsystem, utils
 
 # -------------------------------------------------------------------------
 
@@ -84,7 +84,9 @@ def make_subsystem_plots(
         # num colors needed = max number of channels per string
         # - find number of unique positions in each string
         # - get maximum occurring
-        if plot_settings["plot_structure"] == "per cc4":
+        plot_structure = PLOT_STRUCTURE[plot_settings["plot_structure"]] if "plot_structure" in plot_settings else None
+
+        if plot_structure == "per cc4":
             if (
                 data_analysis.data.iloc[0]["cc4_id"] is None
                 or data_analysis.data.iloc[0]["cc4_channel"] is None
@@ -135,7 +137,7 @@ def make_subsystem_plots(
 
         # information for shifting the channels or not (not needed only for the 'per channel' structure option) when plotting the std
         plot_info["std"] = (
-            True if plot_settings["plot_structure"] == "per channel" else False
+            True if plot_structure == "per channel" else False
         )
 
         if plot_info["plot_style"] is not None:
@@ -179,18 +181,17 @@ def make_subsystem_plots(
         plot_info["param_mean"] = plot_settings["parameters"] + "_mean"
 
         # -------------------------------------------------------------------------
-        # call chosen plot structure
+        # call chosen plot structure + plotting
         # -------------------------------------------------------------------------
 
-        # choose plot function based on user requested structure e.g. per channel or all ch together
-        plot_structure = PLOT_STRUCTURE[plot_settings["plot_structure"]]
-        utils.logger.debug("Plot structure: " + plot_settings["plot_structure"])
-
-        # plotting
-        plot_structure(data_analysis.data, plot_info, pdf)
+        if plot_info["parameter"] == "exposure":
+                _ = string_visualization.exposure_plot(subsystem, data_analysis.data, plot_info, pdf)
+        else:
+            utils.logger.debug("Plot structure: " + plot_structure)
+            plot_structure(data_analysis.data, plot_info, pdf)
 
         # For some reason, after some plotting functions the index is set to "channel".
-        # We need to set it back otherwise status_plot.py gets crazy and everything crashes.
+        # We need to set it back otherwise string_visualization.py gets crazy and everything crashes.
         data_analysis.data = data_analysis.data.reset_index()
 
         # -------------------------------------------------------------------------
@@ -213,7 +214,7 @@ def make_subsystem_plots(
                     f"Thresholds are not enabled for {subsystem.type}! Use you own eyes to do checks there"
                 )
             else:
-                _ = status_plot.status_plot(
+                _ = string_visualization.status_plot(
                     subsystem, data_analysis.data, plot_info, pdf
                 )
 
@@ -651,121 +652,6 @@ def plot_array(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
 
     return fig
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# THIS IS NOT A GENERAL FUNCTION - IT WORKS ONLY FOR EXPOSURE RIGHT NOW, FIX IT!
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-def plot_summary(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
-    if plot_info["subsystem"] == "spms":
-        utils.logger.error(
-            "\033[91mPlotting the summary is not available for the spms.\nTry again!\033[0m"
-        )
-        exit()
-
-    # cbar unit (either 'kg d', if exposure is less than 0.1 kg yr, or 'kg yr'); note: exposure, at this point, is evaluated as 'kg yr'
-    if data_analysis["exposure"].max() < 0.1:
-        cbar_unit = "kg d"
-    else:
-        cbar_unit = "kg yr"
-
-    # convert exposure into [kg day] if data_analysis["exposure"].max() < 0.1 kg yr
-    if cbar_unit == "kg d":
-        data_analysis["exposure"] = data_analysis["exposure"] * 365.25
-    #data_analysis.loc[data_analysis["exposure"] < 0.1, "exposure"] = data_analysis.loc[data_analysis["exposure"] < 0.1, "exposure"] * 365.25
-    # drop duplicate rows, based on channel entry (exposure is constant for a fixed channel)
-    data_analysis = data_analysis.drop_duplicates(subset=["channel"])
-    # total exposure
-    tot_expo = data_analysis["exposure"].sum()
-    utils.logger.info(f"Total exposure: {tot_expo:.3f} {cbar_unit}")
-
-    # note: we leave off detectors with exposure = 0 (ie. off detectors)
-    
-    # values to plot
-    result = data_analysis.pivot(index="position", columns="location", values="exposure")
-    result = result.round(3)
-
-    # display it
-    if utils.logger.getEffectiveLevel() is utils.logging.DEBUG:
-        from tabulate import tabulate
-        output_result = tabulate(
-            result, headers="keys", tablefmt="psql", showindex=False, stralign="center"
-        )
-        utils.logger.debug(
-            "Status map summary for " + plot_info["parameter"] + ":\n%s", output_result
-        )
-
-    # calculate total livetime as sum of content of livetime_in_s column (and then convert it a human readable format)
-    tot_livetime = data_analysis["livetime_in_s"].unique()[0]
-    tot_livetime, unit = utils.get_livetime(tot_livetime)
-
-    # -------------------------------------------------------------------------------
-    # plot
-    # -------------------------------------------------------------------------------
-
-    # create the figure
-    fig = plt.figure(num=None, figsize=(8, 12), dpi=80, facecolor="w", edgecolor="k")
-    sns.set(font_scale=1)
-
-    # create labels for dets, with exposure values
-    labels = result.astype(str)
-
-    # labels definition (AFTER having included OFF detectors too) ------------------------------- ToDo (exposure set at 0 for OFF dets - we need SubSystem info)
-    # LOCATION:
-    x_axis_labels = [f"S{no}" for no in sorted(data_analysis["location"].unique())]
-    # POSITION:
-    y_axis_labels = [
-        no
-        for no in range(
-            min(data_analysis["position"].unique()),
-            max(data_analysis["position"].unique() + 1),
-        )
-    ]
-
-    # create the heatmap
-    status_map = sns.heatmap(
-        data=result,
-        annot=labels,
-        annot_kws={"size": 6},
-        yticklabels=y_axis_labels,
-        xticklabels=x_axis_labels,
-        fmt="s",
-        cbar=True,
-        cbar_kws={"shrink": 0.5},
-        linewidths=1,
-        linecolor="white",
-        square=True,
-        rasterized=True,
-    )
-
-    # add title "kg yr" as text on top of the cbar
-    plt.text(
-        1.08,
-        0.89,
-        f"({cbar_unit})",
-        transform=status_map.transAxes,
-        horizontalalignment="center",
-        verticalalignment="center",
-    )
-
-    plt.tick_params(
-        axis="both",
-        which="major",
-        labelbottom=False,
-        bottom=False,
-        top=False,
-        labeltop=True,
-    )
-    plt.yticks(rotation=0)
-    plt.title(f"{plot_info['subsystem']} - {plot_info['title']}\nTotal livetime: {tot_livetime:.2f}{unit}\nTotal exposure: {tot_expo:.3f} {cbar_unit}")
-
-    # -------------------------------------------------------------------------------
-    # if no pdf is specified, then the function is not being called by make_subsystem_plots()
-    if pdf:
-        plt.savefig(pdf, format="pdf", bbox_inches="tight")
-        # figures are retained until explicitly closed; close to not consume too much memory
-        plt.close()
-
-    return fig
-
 
 # -------------------------------------------------------------------------------
 # SiPM specific structures
@@ -962,7 +848,6 @@ PLOT_STRUCTURE = {
     "per cc4": plot_per_cc4,
     "per string": plot_per_string,
     "array": plot_array,
-    "summary": plot_summary,
     "per fiber": plot_per_fiber_and_barrel,
     "per barrel": plot_per_barrel_and_position,
 }

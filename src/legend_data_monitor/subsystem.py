@@ -498,6 +498,11 @@ class Subsystem:
                 self.channel_map.at[channel_name, "status"] = full_status_map[
                     channel_name
                 ]["usability"]
+        # quick-fix to remove detectors while status maps are not updated
+        for channel_name in list(utils.REMOVE_DETS.keys()):
+            # status map contains all channels, check if this channel is in our subsystem
+            if channel_name in self.channel_map.index:
+                self.channel_map.at[channel_name, "status"] = "off"
 
         self.channel_map = self.channel_map.reset_index()
 
@@ -587,16 +592,7 @@ class Subsystem:
 
         # remove p03 channels who are not properly behaving in calib data (from George's analysis)
         if int(self.period[-1]) >= 3:
-            names = [
-                "V01406A",
-                "V01415A",
-                "V01387A",
-                "P00665C",
-                "P00748B",
-                "P00748A",
-                "B00089D",
-                "V01389A",
-            ]
+            names = list(utils.REMOVE_DETS.keys())
             probl_dets = []
             for name in names:
                 probl_det = list(
@@ -659,7 +655,7 @@ class Subsystem:
         """
         # all timestamps we are considering are expressed in UTC0
         utc_timezone = pytz.timezone('UTC')
-        utils.logger.debug("We are removing timestamps from the following channels: %s", {k for k in remove_keys.keys()})
+        utils.logger.debug("We are removing timestamps from the following channels: %s", list(remove_keys.keys()))
 
         # loop over channels for which we want to remove timestamps
         for channel in remove_keys.keys():

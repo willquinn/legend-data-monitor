@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import re
+import sys
 import shelve
 
 # for getting DataLoader time range
@@ -53,6 +54,10 @@ with open(pkg / "settings" / "map-channels.json") as f:
 # dictionary with timestamps to remove for specific channels
 with open(pkg / "settings" / "remove-keys.json") as f:
     REMOVE_KEYS = json.load(f)
+
+# dictionary with detectors to remove 
+with open(pkg / "settings" / "remove-dets.json") as f:
+    REMOVE_DETS = json.load(f)
 
 # convert all to lists for convenience
 for param in SPECIAL_PARAMETERS:
@@ -262,7 +267,7 @@ def check_plot_settings(conf: dict):
             # check if all necessary fields for param settings were provided
             for field in options:
                 # when plot_structure is summary, plot_style is not needed...
-                if plot_settings["plot_structure"] == "summary" and "plot_style" not in plot_settings:
+                if plot_settings["parameters"] == "exposure" and ("plot_style" not in plot_settings and "plot_structure" not in plot_settings):
                     continue
                 # ...otherwise, it is required
                 else:
@@ -294,7 +299,7 @@ def check_plot_settings(conf: dict):
                     return False
 
             # if vs time was provided, need time window
-            if plot_settings["plot_structure"] != "summary":
+            if plot_settings["parameters"] != "exposure":
                 if (
                     plot_settings["plot_style"] == "vs time"
                     and "time_window" not in plot_settings
@@ -463,7 +468,7 @@ def get_run_name(config, user_time_range: dict) -> str:
         logger.error(
             "\033[91mThe selected timestamps were not find anywhere. Try again with another time range!\033[0m"
         )
-        exit()
+        sys.exit()
     if len(run_list) > 1:
         return get_multiple_run_id(user_time_range)
 
@@ -538,14 +543,14 @@ def add_config_entries(
             type = config["dataset"]["type"]
         else:
             logger.error("\033[91mYou need to provide data type! Try again.\033[0m")
-            exit()
+            sys.exit()
         if "path" in config["dataset"].keys():
             path = config["dataset"]["path"]
         else:
             logger.error(
                 "\033[91mYou need to provide path to lh5 files! Try again.\033[0m"
             )
-            exit()
+            sys.exit()
     else:
         # get phy/cal lists
         phy_keys = [key for key in keys if "phy" in key]
@@ -597,7 +602,7 @@ def add_config_entries(
             '\033[91mThere are missing entries among ["output", "dataset", "saving", "subsystems"] in the config file (found keys: %s). Try again and check you start with "output" and "dataset" info!\033[0m',
             config.keys(),
         )
-        exit()
+        sys.exit()
 
     return config
 
