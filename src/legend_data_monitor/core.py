@@ -150,7 +150,7 @@ def generate_plots(config: dict, plt_path: str):
     # some output messages, just to warn the user...
     if saving is None:
         utils.logger.warning(
-            "\033[93mData will not be saed, but the pdf will be.\033[0m"
+            "\033[93mData will not be saved, but the pdf will be.\033[0m"
         )
     elif saving == "append":
         utils.logger.warning(
@@ -193,6 +193,8 @@ def generate_plots(config: dict, plt_path: str):
             parameters = utils.get_all_plot_parameters(system, config)
             # get data for these parameters and dataset range
             subsystems[system].get_data(parameters)
+            # remove timestamps for given detectors
+            subsystems[system].remove_timestamps(utils.REMOVE_KEYS)
             utils.logger.debug(subsystems[system].data)
             # flag pulser events for future parameter data selection
             subsystems[system].flag_pulser_events(subsystems["pulser"])

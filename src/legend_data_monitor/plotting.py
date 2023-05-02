@@ -1,5 +1,6 @@
 import io
 import shelve
+import seaborn as sns
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -65,6 +66,7 @@ def make_subsystem_plots(
         # --- AnalysisData:
         # - select parameter of interest
         # - subselect type of events (pulser/phy/all/klines)
+        # - get channel mean
         # - calculate variation from mean, if asked
         data_analysis = analysis_data.AnalysisData(
             subsystem.data, selection=plot_settings
@@ -123,7 +125,7 @@ def make_subsystem_plots(
                 "FC_bsln": "bsln",
             }[subsystem.type],
             "unit": utils.PLOT_INFO[plot_settings["parameters"]]["unit"],
-            "plot_style": plot_settings["plot_style"],
+            "plot_style": plot_settings["plot_style"] if "plot_style" in plot_settings else None,
         }
 
         # information for having the resampled or all entries (needed only for 'vs time' style option)
@@ -136,17 +138,18 @@ def make_subsystem_plots(
             True if plot_settings["plot_structure"] == "per channel" else False
         )
 
-        if plot_settings["plot_style"] == "vs time":
-            if plot_info["resampled"] == "":
-                plot_info["resampled"] = "also"
-                utils.logger.warning(
-                    "\033[93mNo 'resampled' option was specified. Both resampled and all entries will be plotted (otherwise you can try again using the option 'no', 'only', 'also').\033[0m"
-                )
-        else:
-            if plot_info["resampled"] != "":
-                utils.logger.warning(
-                    "\033[93mYou're using the option 'resampled' for a plot style that does not need it. For this reason, that option will be ignored.\033[0m"
-                )
+        if plot_info["plot_style"] is not None:
+            if plot_settings["plot_style"] == "vs time":
+                if plot_info["resampled"] == "":
+                    plot_info["resampled"] = "also"
+                    utils.logger.warning(
+                        "\033[93mNo 'resampled' option was specified. Both resampled and all entries will be plotted (otherwise you can try again using the option 'no', 'only', 'also').\033[0m"
+                    )
+            else:
+                if plot_info["resampled"] != "":
+                    utils.logger.warning(
+                        "\033[93mYou're using the option 'resampled' for a plot style that does not need it. For this reason, that option will be ignored.\033[0m"
+                    )
 
         # --- information needed for plot style
         plot_info["label"] = utils.PLOT_INFO[plot_settings["parameters"]]["label"]
@@ -648,6 +651,121 @@ def plot_array(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
 
     return fig
 
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# THIS IS NOT A GENERAL FUNCTION - IT WORKS ONLY FOR EXPOSURE RIGHT NOW, FIX IT!
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+def plot_summary(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
+    if plot_info["subsystem"] == "spms":
+        utils.logger.error(
+            "\033[91mPlotting the summary is not available for the spms.\nTry again!\033[0m"
+        )
+        exit()
+
+    # cbar unit (either 'kg d', if exposure is less than 0.1 kg yr, or 'kg yr'); note: exposure, at this point, is evaluated as 'kg yr'
+    if data_analysis["exposure"].max() < 0.1:
+        cbar_unit = "kg d"
+    else:
+        cbar_unit = "kg yr"
+
+    # convert exposure into [kg day] if data_analysis["exposure"].max() < 0.1 kg yr
+    if cbar_unit == "kg d":
+        data_analysis["exposure"] = data_analysis["exposure"] * 365.25
+    #data_analysis.loc[data_analysis["exposure"] < 0.1, "exposure"] = data_analysis.loc[data_analysis["exposure"] < 0.1, "exposure"] * 365.25
+    # drop duplicate rows, based on channel entry (exposure is constant for a fixed channel)
+    data_analysis = data_analysis.drop_duplicates(subset=["channel"])
+    # total exposure
+    tot_expo = data_analysis["exposure"].sum()
+    utils.logger.info(f"Total exposure: {tot_expo:.3f} {cbar_unit}")
+
+    # note: we leave off detectors with exposure = 0 (ie. off detectors)
+    
+    # values to plot
+    result = data_analysis.pivot(index="position", columns="location", values="exposure")
+    result = result.round(3)
+
+    # display it
+    if utils.logger.getEffectiveLevel() is utils.logging.DEBUG:
+        from tabulate import tabulate
+        output_result = tabulate(
+            result, headers="keys", tablefmt="psql", showindex=False, stralign="center"
+        )
+        utils.logger.debug(
+            "Status map summary for " + plot_info["parameter"] + ":\n%s", output_result
+        )
+
+    # calculate total livetime as sum of content of livetime_in_s column (and then convert it a human readable format)
+    tot_livetime = data_analysis["livetime_in_s"].unique()[0]
+    tot_livetime, unit = utils.get_livetime(tot_livetime)
+
+    # -------------------------------------------------------------------------------
+    # plot
+    # -------------------------------------------------------------------------------
+
+    # create the figure
+    fig = plt.figure(num=None, figsize=(8, 12), dpi=80, facecolor="w", edgecolor="k")
+    sns.set(font_scale=1)
+
+    # create labels for dets, with exposure values
+    labels = result.astype(str)
+
+    # labels definition (AFTER having included OFF detectors too) ------------------------------- ToDo (exposure set at 0 for OFF dets - we need SubSystem info)
+    # LOCATION:
+    x_axis_labels = [f"S{no}" for no in sorted(data_analysis["location"].unique())]
+    # POSITION:
+    y_axis_labels = [
+        no
+        for no in range(
+            min(data_analysis["position"].unique()),
+            max(data_analysis["position"].unique() + 1),
+        )
+    ]
+
+    # create the heatmap
+    status_map = sns.heatmap(
+        data=result,
+        annot=labels,
+        annot_kws={"size": 6},
+        yticklabels=y_axis_labels,
+        xticklabels=x_axis_labels,
+        fmt="s",
+        cbar=True,
+        cbar_kws={"shrink": 0.5},
+        linewidths=1,
+        linecolor="white",
+        square=True,
+        rasterized=True,
+    )
+
+    # add title "kg yr" as text on top of the cbar
+    plt.text(
+        1.08,
+        0.89,
+        f"({cbar_unit})",
+        transform=status_map.transAxes,
+        horizontalalignment="center",
+        verticalalignment="center",
+    )
+
+    plt.tick_params(
+        axis="both",
+        which="major",
+        labelbottom=False,
+        bottom=False,
+        top=False,
+        labeltop=True,
+    )
+    plt.yticks(rotation=0)
+    plt.title(f"{plot_info['subsystem']} - {plot_info['title']}\nTotal livetime: {tot_livetime:.2f}{unit}\nTotal exposure: {tot_expo:.3f} {cbar_unit}")
+
+    # -------------------------------------------------------------------------------
+    # if no pdf is specified, then the function is not being called by make_subsystem_plots()
+    if pdf:
+        plt.savefig(pdf, format="pdf", bbox_inches="tight")
+        # figures are retained until explicitly closed; close to not consume too much memory
+        plt.close()
+
+    return fig
+
 
 # -------------------------------------------------------------------------------
 # SiPM specific structures
@@ -844,6 +962,7 @@ PLOT_STRUCTURE = {
     "per cc4": plot_per_cc4,
     "per string": plot_per_string,
     "array": plot_array,
+    "summary": plot_summary,
     "per fiber": plot_per_fiber_and_barrel,
     "per barrel": plot_per_barrel_and_position,
 }

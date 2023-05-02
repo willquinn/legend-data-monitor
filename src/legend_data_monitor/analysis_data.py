@@ -169,7 +169,7 @@ class AnalysisData:
 
         # -------------------------------------------------------------------------
 
-        # selec phy/puls/all events
+        # select phy/puls/all events
         bad = self.select_events()
         if bad:
             return
@@ -230,6 +230,8 @@ class AnalysisData:
                     .reset_index()
                 )
 
+                # ToDo: check time_window for event rate is smaller than the time window, but bigger than the rate (otherwise plots make no sense)
+
                 # divide event count in each time window by sampling window in seconds to get Hz
                 dt_seconds = get_seconds(self.time_window)
                 event_rate["event_rate"] = event_rate["event_rate"] / dt_seconds
@@ -253,12 +255,14 @@ class AnalysisData:
                 # - reindex to match event rate table index
                 # - put the columns in with concat
                 event_rate = event_rate.set_index("channel")
+                columns = utils.COLUMNS_TO_LOAD
+                columns.remove("channel")
                 self.data = pd.concat(
                     [
                         event_rate,
                         self.data.groupby("channel")
                         .first()
-                        .reindex(event_rate.index)[["name", "location", "position"]],
+                        .reindex(event_rate.index)[columns],
                     ],
                     axis=1,
                 )
@@ -287,6 +291,52 @@ class AnalysisData:
                 self.data = self.data.rename(
                     columns={utils.SPECIAL_PARAMETERS[param][0]: "K_events"}
                 )
+            elif param == "exposure":
+                self.data = self.data.reset_index()
+
+                # number of flag_pulser=True events for each channel; it will always be equal among channels during phy data taking, because it's the AUX pulser channel that triggers the geds acquisition
+                pulser_events = (
+                    self.data.groupby("channel")["flag_pulser"]
+                    .apply(lambda x: x.sum())
+                    .reset_index(name="pulser_events")
+                )["pulser_events"].unique()[0]
+
+                # retrieve first timestamp
+                first_timestamp = self.data["datetime"].iloc[0]
+           
+                from legendmeta import LegendMetadata
+                lmeta = LegendMetadata()
+                # get channel map     
+                full_channel_map = lmeta.hardware.configuration.channelmaps.on(timestamp=first_timestamp)
+                # get diodes map
+                dets_map = lmeta.hardware.detectors.germanium.diodes
+
+                # get pulser rate
+                if "PULS01" in full_channel_map.keys():
+                    rate = 0.05 #full_channel_map["PULS01"]["rate_in_Hz"] # L200: p02, p03
+                else:
+                    rate = full_channel_map["AUX00"]["rate_in_Hz"]["puls"] # L60
+
+                # add a new column called 'livetime' equal to the number of pulser_events multiplied by the pulser period
+                self.data["livetime_in_s"] = pulser_events / rate
+
+                # add a new column "mass" to self.data containing mass values evaluated from dets_map[channel_name]["production"]["mass_in_g"], where channel_name is the value in "name" column
+                self.data["mass_in_kg"] = None # let's start with an empty column
+                for channel_name in self.data["name"].unique():
+                    mass_in_kg = dets_map[channel_name]["production"]["mass_in_g"] / 1000
+                    self.data.loc[self.data["name"] == channel_name, "mass_in_kg"] = mass_in_kg
+
+                # This is in [kg s]
+                self.data["exposure"] = self.data["livetime_in_s"] * self.data["mass_in_kg"]
+                # convert exposure values from dtype object to dtype float64
+                self.data["exposure"] = self.data["exposure"].astype("float64")
+                # Convert it into [kg yr]
+                self.data["exposure"] = self.data["exposure"] / (60 * 60 * 24 * 365.25)
+                # drop mass column (not needed anymore)
+                self.data = self.data.drop(columns=["mass_in_kg"])
+                # put index back in
+                self.data = self.data.reset_index(drop=True)
+
 
     def channel_mean(self):
         """
@@ -369,11 +419,13 @@ class AnalysisData:
                     # set 'channel' column as index
                     channel_mean = channel_mean.set_index("channel")
 
-            # FWHM mean is meaningless -> drop (special parameter for SiPMs); no need to get previous mean values for these parameters
+            # some means are meaningless -> drop the corresponding column
             if "FWHM" in self.parameters:
                 channel_mean.drop("FWHM", axis=1)
             if "K_events" in self.parameters:
                 channel_mean.drop("K_events", axis=1)
+            if "exposure" in self.parameters:
+                channel_mean.drop("exposure", axis=1)
 
         # rename columns to be param_mean
         channel_mean = channel_mean.rename(

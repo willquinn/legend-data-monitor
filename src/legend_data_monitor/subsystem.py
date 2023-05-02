@@ -4,6 +4,7 @@ from datetime import datetime
 
 import numpy as np
 import pandas as pd
+import pytz
 from legendmeta import LegendMetadata
 from pygama.flow import DataLoader
 
@@ -319,21 +320,7 @@ class Subsystem:
             timestamp=self.first_timestamp
         )
 
-        df_map = pd.DataFrame(
-            columns=[
-                "name",
-                "location",
-                "channel",
-                "position",
-                "cc4_id",
-                "cc4_channel",
-                "daq_crate",
-                "daq_card",
-                "HV_card",
-                "HV_channel",
-                "det_type",
-            ],
-        )
+        df_map = pd.DataFrame(columns=utils.COLUMNS_TO_LOAD)
         df_map = df_map.set_index("channel")
 
         # -------------------------------------------------------------------------
@@ -607,7 +594,9 @@ class Subsystem:
                 "P00665C",
                 "P00748B",
                 "P00748A",
-            ]  # , "B00089D"]
+                "B00089D",
+                "V01389A",
+            ]
             probl_dets = []
             for name in names:
                 probl_det = list(
@@ -663,6 +652,39 @@ class Subsystem:
         }
 
         return dict_dlconfig, dict_dbconfig
+    
+    def remove_timestamps(self, remove_keys: dict):
+        """
+        Remove timestamps from the dataframes for a given channel. The time interval in which to remove the channel is provided through an external json file.
+        """
+        # all timestamps we are considering are expressed in UTC0
+        utc_timezone = pytz.timezone('UTC')
+        utils.logger.debug("We are removing timestamps from the following channels: %s", {k for k in remove_keys.keys()})
+
+        # loop over channels for which we want to remove timestamps
+        for channel in remove_keys.keys():
+            if channel in self.data['name'].unique():
+                if remove_keys[channel]["from"] != [] and remove_keys[channel]["to"] != []:
+                    # remove timestamps from self.data that are within time_from and time_to, for a given channel
+                    for idx, time_from in enumerate(remove_keys[channel]["from"]):
+                        # times are in format YYYYMMDDTHHMMSSZ, convert them into a UTC0 timestamp
+                        time_from = datetime.strptime(time_from, "%Y%m%dT%H%M%SZ")
+                        time_from = utc_timezone.localize(time_from)
+                        time_from = time_from.timestamp()
+                        
+                        time_to = datetime.strptime(remove_keys[channel]["to"][idx], "%Y%m%dT%H%M%SZ")
+                        time_to = utc_timezone.localize(time_to)
+                        time_to = time_to.timestamp()
+
+                        # selectjust the rows for the given channel
+                        channel_df = self.data[self.data['name'] == channel]
+                        # for the given channel, select just the rows that are within the time interval
+                        filtered_df = channel_df[(channel_df['timestamp'] >= time_from) & (channel_df['timestamp'] < time_to)]
+                        # remove the rows that are within the time interval from the original dataframe
+                        self.data = self.data[~((self.data['name'] == channel) & self.data['timestamp'].isin(filtered_df['timestamp']))]
+
+        self.data = self.data.reset_index()
+
 
     def below_period_3_excluded(self) -> bool:
         if int(self.period[-1]) < 3:
