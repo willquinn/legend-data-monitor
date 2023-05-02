@@ -11,7 +11,7 @@ import seaborn as sns
 from matplotlib.backends.backend_pdf import PdfPages
 from pandas import DataFrame, Timedelta, concat
 
-from . import utils
+from . import plotting, utils
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # CHANNELS' STATUS FUNCTION
@@ -168,7 +168,7 @@ def status_plot(subsystem, data_analysis: DataFrame, plot_info: dict, pdf: PdfPa
                     )
 
                 # get position within the array + other necessary info
-                name, location, position = get_info_from_channel(subsystem)
+                name, location, position = get_info_from_channel(subsystem.channel_map, channel)
 
                 # define new row for not-ON detectors
                 new_row = [[channel, name, location, position, status]]
@@ -231,7 +231,7 @@ def status_plot(subsystem, data_analysis: DataFrame, plot_info: dict, pdf: PdfPa
         )
     ]
 
-    # to account for empty strings: not a good idea actually...
+    # to account for empty strings: ...not a good idea actually...
     # In L60, there are S1,S2,S7,S8: do we really want to display 4 empty strings, i.e. S3-S6? There is no need!
     # x_axis_labels = [f"S{no}" for no in range(min(new_dataframe["location"].unique()), max(new_dataframe["location"].unique()+1))]
 
@@ -273,7 +273,9 @@ def status_plot(subsystem, data_analysis: DataFrame, plot_info: dict, pdf: PdfPa
     )
     plt.yticks(rotation=0)
     plt.title(plot_title)
-    pdf.savefig(bbox_inches="tight")
+
+    # saving
+    plotting.save_pdf(plt, pdf)
 
     # returning the figure
     return fig
@@ -331,15 +333,7 @@ def exposure_plot(subsystem, data_analysis: DataFrame, plot_info: dict, pdf: Pdf
                     livetime_in_s = 0
 
                 # get position within the array + other necessary info
-                name = subsystem.channel_map.loc[
-                    subsystem.channel_map["channel"] == channel
-                ]["name"].iloc[0]
-                location = subsystem.channel_map.loc[
-                    subsystem.channel_map["channel"] == channel
-                ]["location"].iloc[0]
-                position = subsystem.channel_map.loc[
-                    subsystem.channel_map["channel"] == channel
-                ]["position"].iloc[0]
+                name, location, position = get_info_from_channel(subsystem.channel_map, channel)
 
                 # define new row for not-ON detectors
                 new_row = [[channel, name, location, position, exposure, livetime_in_s]]
@@ -381,7 +375,7 @@ def exposure_plot(subsystem, data_analysis: DataFrame, plot_info: dict, pdf: Pdf
     # create labels for dets, with exposure values
     labels = result.astype(str)
 
-    # labels definition (AFTER having included OFF detectors too) ------------------------------- ToDo (exposure set at 0 for OFF dets - we need SubSystem info)
+    # labels definition (AFTER having included OFF detectors too) -------------------------------
     # LOCATION:
     x_axis_labels = [f"S{no}" for no in sorted(data_analysis["location"].unique())]
     # POSITION:
@@ -430,11 +424,24 @@ def exposure_plot(subsystem, data_analysis: DataFrame, plot_info: dict, pdf: Pdf
     plt.yticks(rotation=0)
     plt.title(f"{plot_info['subsystem']} - {plot_info['title']}\nTotal livetime: {tot_livetime:.2f}{unit}\nTotal exposure: {tot_expo:.3f} {cbar_unit}")
 
-    # -------------------------------------------------------------------------------
-    # if no pdf is specified, then the function is not being called by make_subsystem_plots()
-    if pdf:
-        plt.savefig(pdf, format="pdf", bbox_inches="tight")
-        # figures are retained until explicitly closed; close to not consume too much memory
-        plt.close()
+    # saving
+    plotting.save_pdf(plt, pdf)
 
     return fig
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Plotting recurring functions
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+def get_info_from_channel(channel_map: DataFrame, channel: int):
+    """Get info (name, location, position) from a channel number, once the channel map is provided as a DataFrame."""
+    name = channel_map.loc[
+        channel_map["channel"] == channel
+    ]["name"].iloc[0]
+    location = channel_map.loc[
+        channel_map["channel"] == channel
+    ]["location"].iloc[0]
+    position = channel_map.loc[
+        channel_map["channel"] == channel
+    ]["position"].iloc[0]
+
+    return name, location, position
