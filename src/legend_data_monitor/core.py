@@ -195,7 +195,7 @@ def generate_plots(config: dict, plt_path: str):
             subsystems[system].get_data(parameters)
             # remove timestamps for given detectors
             subsystems[system].remove_timestamps(utils.REMOVE_KEYS)
-            utils.logger.debug(subsystems[system].data) 
+            utils.logger.debug(subsystems[system].data)
             # flag pulser events for future parameter data selection
             subsystems[system].flag_pulser_events(subsystems["pulser"])
 

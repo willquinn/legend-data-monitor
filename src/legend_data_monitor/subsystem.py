@@ -660,39 +660,54 @@ class Subsystem:
         }
 
         return dict_dlconfig, dict_dbconfig
-    
+
     def remove_timestamps(self, remove_keys: dict):
         """
         Remove timestamps from the dataframes for a given channel. The time interval in which to remove the channel is provided through an external json file.
         """
         # all timestamps we are considering are expressed in UTC0
-        utc_timezone = pytz.timezone('UTC')
-        utils.logger.debug("We are removing timestamps from the following channels: %s", list(remove_keys.keys()))
+        utc_timezone = pytz.timezone("UTC")
+        utils.logger.debug(
+            "We are removing timestamps from the following channels: %s",
+            list(remove_keys.keys()),
+        )
 
         # loop over channels for which we want to remove timestamps
         for channel in remove_keys.keys():
-            if channel in self.data['name'].unique():
-                if remove_keys[channel]["from"] != [] and remove_keys[channel]["to"] != []:
+            if channel in self.data["name"].unique():
+                if (
+                    remove_keys[channel]["from"] != []
+                    and remove_keys[channel]["to"] != []
+                ):
                     # remove timestamps from self.data that are within time_from and time_to, for a given channel
                     for idx, time_from in enumerate(remove_keys[channel]["from"]):
                         # times are in format YYYYMMDDTHHMMSSZ, convert them into a UTC0 timestamp
                         time_from = datetime.strptime(time_from, "%Y%m%dT%H%M%SZ")
                         time_from = utc_timezone.localize(time_from)
                         time_from = time_from.timestamp()
-                        
-                        time_to = datetime.strptime(remove_keys[channel]["to"][idx], "%Y%m%dT%H%M%SZ")
+
+                        time_to = datetime.strptime(
+                            remove_keys[channel]["to"][idx], "%Y%m%dT%H%M%SZ"
+                        )
                         time_to = utc_timezone.localize(time_to)
                         time_to = time_to.timestamp()
 
                         # selectjust the rows for the given channel
-                        channel_df = self.data[self.data['name'] == channel]
+                        channel_df = self.data[self.data["name"] == channel]
                         # for the given channel, select just the rows that are within the time interval
-                        filtered_df = channel_df[(channel_df['timestamp'] >= time_from) & (channel_df['timestamp'] < time_to)]
+                        filtered_df = channel_df[
+                            (channel_df["timestamp"] >= time_from)
+                            & (channel_df["timestamp"] < time_to)
+                        ]
                         # remove the rows that are within the time interval from the original dataframe
-                        self.data = self.data[~((self.data['name'] == channel) & self.data['timestamp'].isin(filtered_df['timestamp']))]
+                        self.data = self.data[
+                            ~(
+                                (self.data["name"] == channel)
+                                & self.data["timestamp"].isin(filtered_df["timestamp"])
+                            )
+                        ]
 
         self.data = self.data.reset_index()
-
 
     def below_period_3_excluded(self) -> bool:
         if int(self.period[-1]) < 3:

@@ -11,11 +11,11 @@
   "saving": "append",
   "subsystems": {
     "geds": {
-      "FWHM in pulser events":{
+      "FWHM in pulser events": {
         "parameters": "FWHM",
         "event_type": "pulser",
         "plot_structure": "array",
-        "plot_style" : "vs ch"
+        "plot_style": "vs ch"
       },
       "Baselines (dsp/baseline) in pulser events": {
         "parameters": "baseline",

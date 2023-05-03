@@ -1,6 +1,5 @@
 import io
 import shelve
-import seaborn as sns
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -87,7 +86,11 @@ def make_subsystem_plots(
         # num colors needed = max number of channels per string
         # - find number of unique positions in each string
         # - get maximum occurring
-        plot_structure = PLOT_STRUCTURE[plot_settings["plot_structure"]] if "plot_structure" in plot_settings else None
+        plot_structure = (
+            PLOT_STRUCTURE[plot_settings["plot_structure"]]
+            if "plot_structure" in plot_settings
+            else None
+        )
 
         if plot_structure == "per cc4":
             if (
@@ -130,7 +133,9 @@ def make_subsystem_plots(
                 "FC_bsln": "bsln",
             }[subsystem.type],
             "unit": utils.PLOT_INFO[plot_settings["parameters"]]["unit"],
-            "plot_style": plot_settings["plot_style"] if "plot_style" in plot_settings else None,
+            "plot_style": plot_settings["plot_style"]
+            if "plot_style" in plot_settings
+            else None,
         }
 
         # information for having the resampled or all entries (needed only for 'vs time' style option)
@@ -139,9 +144,7 @@ def make_subsystem_plots(
         )
 
         # information for shifting the channels or not (not needed only for the 'per channel' structure option) when plotting the std
-        plot_info["std"] = (
-            True if plot_structure == "per channel" else False
-        )
+        plot_info["std"] = True if plot_structure == "per channel" else False
 
         if plot_info["plot_style"] is not None:
             if plot_settings["plot_style"] == "vs time":
@@ -188,7 +191,9 @@ def make_subsystem_plots(
         # -------------------------------------------------------------------------
 
         if plot_info["parameter"] == "exposure":
-                _ = string_visualization.exposure_plot(subsystem, data_analysis.data, plot_info, pdf)
+            _ = string_visualization.exposure_plot(
+                subsystem, data_analysis.data, plot_info, pdf
+            )
         else:
             utils.logger.debug("Plot structure: %s", plot_settings["plot_structure"])
             plot_structure(data_analysis.data, plot_info, pdf)
@@ -672,7 +677,6 @@ def plot_per_fiber_and_barrel(data_analysis: DataFrame, plot_info: dict, pdf: Pd
     # - each figure has subplots with N columns and M rows where N is the number of fibers, and M is the number of positions (top/bottom -> 2)
     # this function will only work for SiPMs requiring a columns 'barrel' in the channel map
     # add a check in config settings check to make sure geds are not called with this structure to avoid crash
-    pass
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
