@@ -188,7 +188,6 @@ class AnalysisData:
         # little sorting, before closing the function
         self.data = self.data.sort_values(["channel", "datetime"])
 
-
     def select_events(self):
         # do we want to keep all, phy or pulser events?
         if self.evt_type == "pulser":
@@ -305,31 +304,40 @@ class AnalysisData:
 
                 # retrieve first timestamp
                 first_timestamp = self.data["datetime"].iloc[0]
-           
+
                 from legendmeta import LegendMetadata
+
                 lmeta = LegendMetadata()
-                # get channel map     
-                full_channel_map = lmeta.hardware.configuration.channelmaps.on(timestamp=first_timestamp)
+                # get channel map
+                full_channel_map = lmeta.hardware.configuration.channelmaps.on(
+                    timestamp=first_timestamp
+                )
                 # get diodes map
                 dets_map = lmeta.hardware.detectors.germanium.diodes
 
                 # get pulser rate
                 if "PULS01" in full_channel_map.keys():
-                    rate = 0.05 #full_channel_map["PULS01"]["rate_in_Hz"] # L200: p02, p03
+                    rate = 0.05  # full_channel_map["PULS01"]["rate_in_Hz"] # L200: p02, p03
                 else:
-                    rate = full_channel_map["AUX00"]["rate_in_Hz"]["puls"] # L60
+                    rate = full_channel_map["AUX00"]["rate_in_Hz"]["puls"]  # L60
 
                 # add a new column called 'livetime' equal to the number of pulser_events multiplied by the pulser period
                 self.data["livetime_in_s"] = pulser_events / rate
 
                 # add a new column "mass" to self.data containing mass values evaluated from dets_map[channel_name]["production"]["mass_in_g"], where channel_name is the value in "name" column
-                self.data["mass_in_kg"] = None # let's start with an empty column
+                self.data["mass_in_kg"] = None  # let's start with an empty column
                 for channel_name in self.data["name"].unique():
-                    mass_in_kg = dets_map[channel_name]["production"]["mass_in_g"] / 1000
-                    self.data.loc[self.data["name"] == channel_name, "mass_in_kg"] = mass_in_kg
+                    mass_in_kg = (
+                        dets_map[channel_name]["production"]["mass_in_g"] / 1000
+                    )
+                    self.data.loc[
+                        self.data["name"] == channel_name, "mass_in_kg"
+                    ] = mass_in_kg
 
                 # This is in [kg s]
-                self.data["exposure"] = self.data["livetime_in_s"] * self.data["mass_in_kg"]
+                self.data["exposure"] = (
+                    self.data["livetime_in_s"] * self.data["mass_in_kg"]
+                )
                 # convert exposure values from dtype object to dtype float64
                 self.data["exposure"] = self.data["exposure"].astype("float64")
                 # Convert it into [kg yr]
@@ -338,7 +346,6 @@ class AnalysisData:
                 self.data = self.data.drop(columns=["mass_in_kg"])
                 # put index back in
                 self.data = self.data.reset_index(drop=True)
-
 
     def channel_mean(self):
         """

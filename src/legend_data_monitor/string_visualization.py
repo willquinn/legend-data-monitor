@@ -13,6 +13,7 @@ from pandas import DataFrame, Timedelta, concat
 
 from . import plotting, utils
 
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # CHANNELS' STATUS FUNCTION
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -168,7 +169,9 @@ def status_plot(subsystem, data_analysis: DataFrame, plot_info: dict, pdf: PdfPa
                     )
 
                 # get position within the array + other necessary info
-                name, location, position = get_info_from_channel(subsystem.channel_map, channel)
+                name, location, position = get_info_from_channel(
+                    subsystem.channel_map, channel
+                )
 
                 # define new row for not-ON detectors
                 new_row = [[channel, name, location, position, status]]
@@ -281,7 +284,6 @@ def status_plot(subsystem, data_analysis: DataFrame, plot_info: dict, pdf: PdfPa
     return fig
 
 
-
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # EXPOSURE FUNCTION
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -301,14 +303,16 @@ def exposure_plot(subsystem, data_analysis: DataFrame, plot_info: dict, pdf: Pdf
     # convert exposure into [kg day] if data_analysis["exposure"].max() < 0.1 kg yr
     if cbar_unit == "kg d":
         data_analysis["exposure"] = data_analysis["exposure"] * 365.25
-    #data_analysis.loc[data_analysis["exposure"] < 0.1, "exposure"] = data_analysis.loc[data_analysis["exposure"] < 0.1, "exposure"] * 365.25
+    # data_analysis.loc[data_analysis["exposure"] < 0.1, "exposure"] = data_analysis.loc[data_analysis["exposure"] < 0.1, "exposure"] * 365.25
     # drop duplicate rows, based on channel entry (exposure is constant for a fixed channel)
     data_analysis = data_analysis.drop_duplicates(subset=["channel"])
     # total exposure
     tot_expo = data_analysis["exposure"].sum()
     utils.logger.info(f"Total exposure: {tot_expo:.3f} {cbar_unit}")
 
-    data_analysis = data_analysis.filter(["channel", "name", "location", "position", "exposure", "livetime_in_s"])
+    data_analysis = data_analysis.filter(
+        ["channel", "name", "location", "position", "exposure", "livetime_in_s"]
+    )
 
     # -------------------------------------------------------------------------------
     # OFF detectors
@@ -332,18 +336,25 @@ def exposure_plot(subsystem, data_analysis: DataFrame, plot_info: dict, pdf: Pdf
                     exposure = 0.0
                     livetime_in_s = 0.0
 
-                
-
                 # get position within the array + other necessary info
-                name, location, position = get_info_from_channel(subsystem.channel_map, channel)
+                name, location, position = get_info_from_channel(
+                    subsystem.channel_map, channel
+                )
 
                 # define new row for not-ON detectors
                 new_row = [[channel, name, location, position, exposure, livetime_in_s]]
                 new_df = DataFrame(
                     new_row,
-                    columns=["channel", "name", "location", "position", "exposure", "livetime_in_s"],
+                    columns=[
+                        "channel",
+                        "name",
+                        "location",
+                        "position",
+                        "exposure",
+                        "livetime_in_s",
+                    ],
                 )
-                # add the new row to the dataframe 
+                # add the new row to the dataframe
                 data_analysis = concat(
                     [data_analysis, new_df], ignore_index=True, axis=0
                 )
@@ -356,7 +367,8 @@ def exposure_plot(subsystem, data_analysis: DataFrame, plot_info: dict, pdf: Pdf
     ].unique()
 
     for channel in on_channels:
-        if channel in list(data_analysis["channel"].unique()): continue
+        if channel in list(data_analysis["channel"].unique()):
+            continue
 
         # if not there, set exposure to zero
         exposure = 0.0
@@ -369,20 +381,28 @@ def exposure_plot(subsystem, data_analysis: DataFrame, plot_info: dict, pdf: Pdf
         new_row = [[channel, name, location, position, exposure, livetime_in_s]]
         new_df = DataFrame(
             new_row,
-            columns=["channel", "name", "location", "position", "exposure", "livetime_in_s"],
+            columns=[
+                "channel",
+                "name",
+                "location",
+                "position",
+                "exposure",
+                "livetime_in_s",
+            ],
         )
-        # add the new row to the dataframe 
-        data_analysis = concat(
-            [data_analysis, new_df], ignore_index=True, axis=0
-        )
+        # add the new row to the dataframe
+        data_analysis = concat([data_analysis, new_df], ignore_index=True, axis=0)
 
     # values to plot
-    result = data_analysis.pivot(index="position", columns="location", values="exposure")
+    result = data_analysis.pivot(
+        index="position", columns="location", values="exposure"
+    )
     result = result.round(3)
 
     # display it
     if utils.logger.getEffectiveLevel() is utils.logging.DEBUG:
         from tabulate import tabulate
+
         output_result = tabulate(
             result, headers="keys", tablefmt="psql", showindex=False, stralign="center"
         )
@@ -452,26 +472,23 @@ def exposure_plot(subsystem, data_analysis: DataFrame, plot_info: dict, pdf: Pdf
         labeltop=True,
     )
     plt.yticks(rotation=0)
-    plt.title(f"{plot_info['subsystem']} - {plot_info['title']}\nTotal livetime: {tot_livetime:.2f}{unit}\nTotal exposure: {tot_expo:.3f} {cbar_unit}")
+    plt.title(
+        f"{plot_info['subsystem']} - {plot_info['title']}\nTotal livetime: {tot_livetime:.2f}{unit}\nTotal exposure: {tot_expo:.3f} {cbar_unit}"
+    )
 
     # saving
     plotting.save_pdf(plt, pdf)
 
     return fig
 
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Plotting recurring functions
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 def get_info_from_channel(channel_map: DataFrame, channel: int):
     """Get info (name, location, position) from a channel number, once the channel map is provided as a DataFrame."""
-    name = channel_map.loc[
-        channel_map["channel"] == channel
-    ]["name"].iloc[0]
-    location = channel_map.loc[
-        channel_map["channel"] == channel
-    ]["location"].iloc[0]
-    position = channel_map.loc[
-        channel_map["channel"] == channel
-    ]["position"].iloc[0]
+    name = channel_map.loc[channel_map["channel"] == channel]["name"].iloc[0]
+    location = channel_map.loc[channel_map["channel"] == channel]["location"].iloc[0]
+    position = channel_map.loc[channel_map["channel"] == channel]["position"].iloc[0]
 
     return name, location, position
