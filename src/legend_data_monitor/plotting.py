@@ -44,6 +44,7 @@ def make_subsystem_plots(
         # - event type all/pulser/phy/Klines
         # - variation (bool)
         # - time window (for event rate or vs time plot)
+        # - etc
         plot_settings = plots[plot_title]
 
         # --- defaults
@@ -70,9 +71,7 @@ def make_subsystem_plots(
         data_analysis = analysis_data.AnalysisData(
             subsystem.data, selection=plot_settings
         )
-        # cuts will be loaded but not applied; for our purposes, need to apply the cuts right away
-        # currently only K lines cut is used, and only data after cut is plotted -> just replace
-        data_analysis.data = data_analysis.apply_all_cuts()
+
         # check if the dataframe is empty, if so, skip this plot
         if utils.is_empty(data_analysis.data):
             continue
@@ -165,7 +164,8 @@ def make_subsystem_plots(
         plot_info["unit_label"] = (
             "%" if plot_settings["variation"] else plot_info["unit"]
         )
-        plot_info["cuts"] = plot_settings["cuts"] if "cuts" in plot_settings else ""
+        # needed for grey lines for K lines, in case we are looking at energy itself (not event rate for example)
+        plot_info["K_events"] = (plot_settings["event_type"] == "K_events") and (plot_settings["parameters"] == utils.SPECIAL_PARAMETERS["K_events"])
         # time window might be needed fort he vs time function
         plot_info["time_window"] = plot_settings["time_window"]
         # threshold values are needed for status map; might be needed for plotting limits on canvas too
@@ -191,7 +191,7 @@ def make_subsystem_plots(
         # -------------------------------------------------------------------------
 
         if plot_info["parameter"] == "exposure":
-            _ = string_visualization.exposure_plot(
+            string_visualization.exposure_plot(
                 subsystem, data_analysis.data, plot_info, pdf
             )
         else:
@@ -428,11 +428,6 @@ def plot_per_cc4(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
         # plot limits
         plot_limits(axes[ax_idx], plot_info["limits"])
 
-        # plot the position of the two K lines
-        if plot_info["parameter"] == "K_events":
-            axes[ax_idx].axhline(y=1460.822, color="gray", linestyle="--")
-            axes[ax_idx].axhline(y=1524.6, color="gray", linestyle="--")
-
         ax_idx += 1
 
     # -------------------------------------------------------------------------------
@@ -516,11 +511,6 @@ def plot_per_string(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
 
         # plot limits
         plot_limits(axes[ax_idx], plot_info["limits"])
-
-        # plot the position of the two K lines
-        if plot_info["parameter"] == "K_events":
-            axes[ax_idx].axhline(y=1460.822, color="gray", linestyle="--")
-            axes[ax_idx].axhline(y=1524.6, color="gray", linestyle="--")
 
         ax_idx += 1
 

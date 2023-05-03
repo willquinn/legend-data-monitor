@@ -44,6 +44,11 @@ with open(pkg / "settings" / "parameter-tiers.json") as f:
 with open(pkg / "settings" / "special-parameters.json") as f:
     SPECIAL_PARAMETERS = json.load(f)
 
+# convert all to lists for convenience
+for param in SPECIAL_PARAMETERS:
+    if isinstance(SPECIAL_PARAMETERS[param], str):
+        SPECIAL_PARAMETERS[param] = [SPECIAL_PARAMETERS[param]]    
+
 # load list of columns to load for a dataframe
 COLUMNS_TO_LOAD = [
     "name",
@@ -70,11 +75,6 @@ with open(pkg / "settings" / "remove-keys.json") as f:
 # dictionary with detectors to remove
 with open(pkg / "settings" / "remove-dets.json") as f:
     REMOVE_DETS = json.load(f)
-
-# convert all to lists for convenience
-for param in SPECIAL_PARAMETERS:
-    if isinstance(SPECIAL_PARAMETERS[param], str):
-        SPECIAL_PARAMETERS[param] = [SPECIAL_PARAMETERS[param]]
 
 # -------------------------------------------------------------------------
 # Subsystem related functions (for getting channel map & status)
@@ -276,28 +276,30 @@ def check_plot_settings(conf: dict):
             # settings for this plot
             plot_settings = conf["subsystems"][subsys][plot]
 
+            # ----------------------------------------------------------------------------------------------
+            # general check
+            # ----------------------------------------------------------------------------------------------
             # check if all necessary fields for param settings were provided
             for field in options:
                 # when plot_structure is summary, plot_style is not needed...
-                if plot_settings["parameters"] == "exposure" and (
-                    "plot_style" not in plot_settings
-                    and "plot_structure" not in plot_settings
-                ):
+                # ToDo: neater way to skip the whole loop but still do special checks; break? ugly...
+                # future ToDo: exposure can be plotted in various plot styles e.g. string viz, or plot array, will change
+                if plot_settings["parameters"] == "exposure":
                     continue
+
                 # ...otherwise, it is required
-                else:
-                    # if this field is not provided by user, tell them to provide it
-                    # (if optional to provided, will have been set with defaults before calling set_defaults())
-                    if field not in plot_settings:
-                        logger.error(
-                            f"\033[91mProvide {field} in plot settings of '{plot}' for {subsys}!\033[0m"
+                # if this field is not provided by user, tell them to provide it
+                # (if optional to provided, will have been set with defaults before calling set_defaults())
+                if field not in plot_settings:
+                    logger.error(
+                        f"\033[91mProvide {field} in plot settings of '{plot}' for {subsys}!\033[0m"
+                    )
+                    logger.error(
+                        "\033[91mAvailable options: {}\033[0m".format(
+                            ",".join(options[field])
                         )
-                        logger.error(
-                            "\033[91mAvailable options: {}\033[0m".format(
-                                ",".join(options[field])
-                            )
-                        )
-                        return False
+                    )
+                    return False
 
                 # check if the provided option is valid
                 opt = plot_settings[field]
@@ -312,17 +314,33 @@ def check_plot_settings(conf: dict):
                         )
                     )
                     return False
+                
+            # ----------------------------------------------------------------------------------------------
+            # special checks
+            # ----------------------------------------------------------------------------------------------
 
+            # exposure check
+            if plot_settings["parameters"] == "exposure" and (plot_settings["event_type"] not in ["pulser", "all"]):
+                logger.error(
+                    "\033[91mPulser events are needed to calculate livetime/exposure; choose 'pulser' or 'all' event type\033[0m"
+                )
+                return False       
+
+            # ToDo: neater way to skip the whole loop but still do special checks; break? ugly...
+            if plot_settings["parameters"] == "exposure":
+                continue         
+
+            # other non-exposure checks
+            
             # if vs time was provided, need time window
-            if plot_settings["parameters"] != "exposure":
-                if (
-                    plot_settings["plot_style"] == "vs time"
-                    and "time_window" not in plot_settings
-                ):
-                    logger.error(
-                        "\033[91mYou chose plot style 'vs time' and did not provide 'time_window'!\033[0m"
-                    )
-                    return False
+            if (
+                plot_settings["plot_style"] == "vs time"
+                and "time_window" not in plot_settings
+            ):
+                logger.error(
+                    "\033[91mYou chose plot style 'vs time' and did not provide 'time_window'!\033[0m"
+                )
+                return False
 
     return True
 
@@ -445,8 +463,14 @@ def get_run_name(config, user_time_range: dict) -> str:
     )
 
     # start/end timestamps of the selected time range of interest
-    start_timestamp = user_time_range["timestamp"]["start"]
-    end_timestamp = user_time_range["timestamp"]["end"]
+    # if range was given, will have keywords "start" and "end"
+    if "start" in user_time_range["timestamp"]:
+        start_timestamp = user_time_range["timestamp"]["start"]
+        end_timestamp = user_time_range["timestamp"]["end"]
+    # if list of timestamps was given (may be not consecutive or in order), it's just a list
+    else:
+        start_timestamp = min(user_time_range["timestamp"])
+        end_timestamp = max(user_time_range["timestamp"])
 
     run_list = []  # this will be updated with the run ID
 
@@ -501,11 +525,17 @@ def get_all_plot_parameters(subsystem: str, config: dict):
             else:
                 all_parameters += parameters
 
+            # check if event type asked needs a special parameter (K lines need energy)
+            event_type = config["subsystems"][subsystem][plot]["event_type"]
+            if event_type in SPECIAL_PARAMETERS:
+                all_parameters+= SPECIAL_PARAMETERS[event_type]
+
             # check if there is any QC entry; if so, add it to the list of parameters to load
             if "cuts" in config["subsystems"][subsystem][plot]:
                 for cut in config["subsystems"][subsystem][plot]["cuts"]:
-                    if "is_" in cut:
-                        all_parameters.append(cut)
+                    if cut[0] == "~":
+                        cut = cut[1:]
+                    all_parameters.append(cut)
 
     return all_parameters
 

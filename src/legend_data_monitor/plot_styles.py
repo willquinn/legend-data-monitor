@@ -101,6 +101,11 @@ def plot_vs_time(
     # beautification
     # -------------------------------------------------------------------------
 
+    # plot the position of the two K lines
+    if plot_info["K_events"]:
+        ax.axhline(y=1460.822, color="gray", linestyle="--")
+        ax.axhline(y=1524.6, color="gray", linestyle="--")
+
     # --- time ticks/labels on x-axis
     min_x = date2num(data_channel.iloc[0]["datetime"])
     max_x = date2num(data_channel.iloc[-1]["datetime"])
@@ -205,6 +210,12 @@ def plot_histo(
     )
 
     # -------------------------------------------------------------------------
+
+    # plot the position of the two K lines
+    if plot_info["K_events"]:
+        ax.axvline(x=1460.822, color="gray", linestyle="--")
+        ax.axvline(x=1524.6, color="gray", linestyle="--")
+
     ax.set_yscale("log")
     x_label = (
         f"{plot_info['label']}, {plot_info['unit_label']}"
@@ -226,6 +237,10 @@ def plot_scatter(
         # facecolors='none',
         # edgecolors=color,
     )
+
+    if plot_info["K_events"]:
+        ax.axhline(y=1460.822, color="gray", linestyle="--")
+        ax.axhline(y=1524.6, color="gray", linestyle="--")
 
     # --- time ticks/labels on x-axis
     ax.xaxis.set_major_formatter(DateFormatter("%Y\n%m/%d\n%H:%M"))

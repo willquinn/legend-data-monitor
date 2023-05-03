@@ -5,6 +5,9 @@ import numpy as np
 import pandas as pd
 from pandas import DataFrame, concat
 
+from legendmeta import LegendMetadata
+
+
 # needed to know which parameters are not in DataLoader
 # but need to be calculated, such as event rate
 from . import cuts, utils
@@ -110,26 +113,12 @@ class AnalysisData:
         # -------------------------------------------------------------------------
 
         # always get basic parameters
-        params_to_get = [
-            "timestamp",
-            "datetime",
-            "channel",
-            "name",
-            "location",
-            "position",
-            "cc4_id",
-            "cc4_channel",
-            "daq_crate",
-            "daq_card",
-            "HV_card",
-            "HV_channel",
-            "det_type",
-            "status",
-        ]
+        params_to_get = ["datetime"] + utils.COLUMNS_TO_LOAD + ["status"]
+
         for col in sub_data.columns:
             # pulser flag is present only if subsystem.flag_pulser_events() was called -> needed to subselect phy/pulser events
             if "flag_pulser" in col:
-                params_to_get.append("flag_pulser")
+                params_to_get.append(col)
             # QC flag is present only if inserted as a cut in the config file -> this part is needed to apply
             if "is_" in col:
                 params_to_get.append(col)
@@ -175,6 +164,9 @@ class AnalysisData:
         bad = self.select_events()
         if bad:
             return
+        
+        # apply cuts, if any
+        self.apply_all_cuts()
 
         # calculate if special parameter
         self.special_parameter()
@@ -196,7 +188,7 @@ class AnalysisData:
         elif self.evt_type == "phy":
             utils.logger.info("... keeping only physical (non-pulser) events")
             self.data = self.data[~self.data["flag_pulser"]]
-        elif self.evt_type == "K_lines":
+        elif self.evt_type == "K_events":
             utils.logger.info("... selecting K lines in physical (non-pulser) events")
             self.data = self.data[~self.data["flag_pulser"]]
             energy = utils.SPECIAL_PARAMETERS["K_events"][0]
@@ -210,6 +202,21 @@ class AnalysisData:
             utils.logger.error("\033[91m%s\033[0m", self.__doc__)
             return "bad"
 
+    def apply_cut(self, cut):
+        utils.logger.info("... applying cut: " + cut)
+
+        cut_value = 1
+        # check if the cut has "not" in it
+        if cut[0] == "~":
+            cut_value = 0
+            cut = cut[1:]
+
+        self.data = self.data[self.data[cut] == cut_value]
+
+    def apply_all_cuts(self):
+        for cut in self.cuts:
+            self.apply_cut(cut)  
+    
     def special_parameter(self):
         for param in self.parameters:
             if param == "wf_max_rel":
@@ -270,8 +277,6 @@ class AnalysisData:
                 # put the channel back as column
                 self.data = self.data.reset_index()
             elif param == "FWHM":
-                self.data = self.data.reset_index()
-
                 # calculate FWHM for each channel (substitute 'param' column with it)
                 channel_fwhm = (
                     self.data.groupby("channel")[utils.SPECIAL_PARAMETERS[param][0]]
@@ -287,33 +292,18 @@ class AnalysisData:
 
                 # put channel back in
                 self.data.reset_index()
-            elif param == "K_events":
-                self.data = self.data.reset_index()
-                self.data = self.data.rename(
-                    columns={utils.SPECIAL_PARAMETERS[param][0]: "K_events"}
-                )
             elif param == "exposure":
-                self.data = self.data.reset_index()
-
-                # number of flag_pulser=True events for each channel; it will always be equal among channels during phy data taking, because it's the AUX pulser channel that triggers the geds acquisition
-                pulser_events = (
-                    self.data.groupby("channel")["flag_pulser"]
-                    .apply(lambda x: x.sum())
-                    .reset_index(name="pulser_events")
-                )["pulser_events"].unique()[0]
+                # ------ get pulser rate for this experiment
 
                 # retrieve first timestamp
                 first_timestamp = self.data["datetime"].iloc[0]
 
-                from legendmeta import LegendMetadata
-
+                # ToDo: already loaded before in Subsystem => 1) load mass already then, 2) inherit channel map from Subsystem ?
+                # get channel map at this timestamp
                 lmeta = LegendMetadata()
-                # get channel map
                 full_channel_map = lmeta.hardware.configuration.channelmaps.on(
                     timestamp=first_timestamp
                 )
-                # get diodes map
-                dets_map = lmeta.hardware.detectors.germanium.diodes
 
                 # get pulser rate
                 if "PULS01" in full_channel_map.keys():
@@ -321,31 +311,35 @@ class AnalysisData:
                 else:
                     rate = full_channel_map["AUX00"]["rate_in_Hz"]["puls"]  # L60
 
-                # add a new column called 'livetime' equal to the number of pulser_events multiplied by the pulser period
-                self.data["livetime_in_s"] = pulser_events / rate
+                # ------ count number of pulser events
+
+                # - subselect only pulser events (flag_pulser True)
+                # - count number of rows i.e. events for each detector
+                # - select arbitrary column that is definitely not NaN in each row e.g. channel to represent the count
+                # - rename to "pulser_events"
+                # now we have a table with number of pulser events as column with DETECTOR NAME AS INDEX
+                df_livetime = self.data[ self.data["flag_pulser"]].groupby("name").count()["channel"].to_frame("pulser_events")
+
+
+                # ------ calculate livetime for each detector and add it to original dataframe
+                df_livetime["livetime_in_s"] = df_livetime["pulser_events"] / rate
+
+                self.data = self.data.set_index("name")
+                self.data = pd.concat([self.data, df_livetime.reindex(self.data.index)], axis=1)
+                # drop the pulser events column we don't need it
+                self.data = self.data.drop("pulser_events", axis=1)
+
+                # --- calculate exposure for each detector
+                # get diodes map
+                dets_map = lmeta.hardware.detectors.germanium.diodes
 
                 # add a new column "mass" to self.data containing mass values evaluated from dets_map[channel_name]["production"]["mass_in_g"], where channel_name is the value in "name" column
-                self.data["mass_in_kg"] = None  # let's start with an empty column
-                for channel_name in self.data["name"].unique():
-                    mass_in_kg = (
-                        dets_map[channel_name]["production"]["mass_in_g"] / 1000
-                    )
-                    self.data.loc[
-                        self.data["name"] == channel_name, "mass_in_kg"
-                    ] = mass_in_kg
+                for det_name in self.data.index.unique():
+                    mass_in_kg = dets_map[det_name]["production"]["mass_in_g"] / 1000
+                    # exposure in kg*yr
+                    self.data.at[det_name, "exposure"] = mass_in_kg * df_livetime.at[det_name, "livetime_in_s"] / (60*60*24*365.25)
 
-                # This is in [kg s]
-                self.data["exposure"] = (
-                    self.data["livetime_in_s"] * self.data["mass_in_kg"]
-                )
-                # convert exposure values from dtype object to dtype float64
-                self.data["exposure"] = self.data["exposure"].astype("float64")
-                # Convert it into [kg yr]
-                self.data["exposure"] = self.data["exposure"] / (60 * 60 * 24 * 365.25)
-                # drop mass column (not needed anymore)
-                self.data = self.data.drop(columns=["mass_in_kg"])
-                # put index back in
-                self.data = self.data.reset_index(drop=True)
+                self.data.reset_index()
 
     def channel_mean(self):
         """
@@ -431,8 +425,6 @@ class AnalysisData:
             # some means are meaningless -> drop the corresponding column
             if "FWHM" in self.parameters:
                 channel_mean.drop("FWHM", axis=1)
-            if "K_events" in self.parameters:
-                channel_mean.drop("K_events", axis=1)
             if "exposure" in self.parameters:
                 channel_mean.drop("exposure", axis=1)
 
@@ -464,11 +456,7 @@ class AnalysisData:
                     self.data[param] / self.data[param + "_mean"] - 1
                 ) * 100  # %
 
-    def apply_all_cuts(self) -> DataFrame:
-        data_after_cuts = self.data.copy()
-        for cut in self.cuts:
-            data_after_cuts = cuts.apply_cut(data_after_cuts, cut)
-        return data_after_cuts
+
 
     def is_spms(self) -> bool:
         """Return True if 'location' (=fiber) and 'position' (=top, bottom) are strings."""
