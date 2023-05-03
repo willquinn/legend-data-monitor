@@ -5,6 +5,7 @@ import logging
 import os
 import re
 import shelve
+import sys
 
 # for getting DataLoader time range
 from datetime import datetime, timedelta
@@ -23,12 +24,11 @@ stream_handler.setLevel(logging.DEBUG)
 # format
 formatter = logging.Formatter("%(asctime)s:  %(message)s")
 stream_handler.setFormatter(formatter)
-# file_handler.setFormatter(formatter)
 
 # add to logger
 logger.addHandler(stream_handler)
 
-# -------------------------------------------------------------------------
+# ------------------------------------------------------------------------- SOME DICTIONARIES LOADING/DEFINITION
 
 pkg = importlib.resources.files("legend_data_monitor")
 
@@ -44,9 +44,32 @@ with open(pkg / "settings" / "parameter-tiers.json") as f:
 with open(pkg / "settings" / "special-parameters.json") as f:
     SPECIAL_PARAMETERS = json.load(f)
 
+# load list of columns to load for a dataframe
+COLUMNS_TO_LOAD = [
+    "name",
+    "location",
+    "channel",
+    "position",
+    "cc4_id",
+    "cc4_channel",
+    "daq_crate",
+    "daq_card",
+    "HV_card",
+    "HV_channel",
+    "det_type",
+]
+
 # dictionary map (helpful when we want to map channels based on their location/position)
 with open(pkg / "settings" / "map-channels.json") as f:
     MAP_DICT = json.load(f)
+
+# dictionary with timestamps to remove for specific channels
+with open(pkg / "settings" / "remove-keys.json") as f:
+    REMOVE_KEYS = json.load(f)
+
+# dictionary with detectors to remove
+with open(pkg / "settings" / "remove-dets.json") as f:
+    REMOVE_DETS = json.load(f)
 
 # convert all to lists for convenience
 for param in SPECIAL_PARAMETERS:
@@ -255,18 +278,26 @@ def check_plot_settings(conf: dict):
 
             # check if all necessary fields for param settings were provided
             for field in options:
-                # if this field is not provided by user, tell them to provide it
-                # (if optional to provided, will have been set with defaults before calling set_defaults())
-                if field not in plot_settings:
-                    logger.error(
-                        f"\033[91mProvide {field} in plot settings of '{plot}' for {subsys}!\033[0m"
-                    )
-                    logger.error(
-                        "\033[91mAvailable options: {}\033[0m".format(
-                            ",".join(options[field])
+                # when plot_structure is summary, plot_style is not needed...
+                if plot_settings["parameters"] == "exposure" and (
+                    "plot_style" not in plot_settings
+                    and "plot_structure" not in plot_settings
+                ):
+                    continue
+                # ...otherwise, it is required
+                else:
+                    # if this field is not provided by user, tell them to provide it
+                    # (if optional to provided, will have been set with defaults before calling set_defaults())
+                    if field not in plot_settings:
+                        logger.error(
+                            f"\033[91mProvide {field} in plot settings of '{plot}' for {subsys}!\033[0m"
                         )
-                    )
-                    return False
+                        logger.error(
+                            "\033[91mAvailable options: {}\033[0m".format(
+                                ",".join(options[field])
+                            )
+                        )
+                        return False
 
                 # check if the provided option is valid
                 opt = plot_settings[field]
@@ -283,14 +314,15 @@ def check_plot_settings(conf: dict):
                     return False
 
             # if vs time was provided, need time window
-            if (
-                plot_settings["plot_style"] == "vs time"
-                and "time_window" not in plot_settings
-            ):
-                logger.error(
-                    "\033[91mYou chose plot style 'vs time' and did not provide 'time_window'!\033[0m"
-                )
-                return False
+            if plot_settings["parameters"] != "exposure":
+                if (
+                    plot_settings["plot_style"] == "vs time"
+                    and "time_window" not in plot_settings
+                ):
+                    logger.error(
+                        "\033[91mYou chose plot style 'vs time' and did not provide 'time_window'!\033[0m"
+                    )
+                    return False
 
     return True
 
@@ -451,7 +483,7 @@ def get_run_name(config, user_time_range: dict) -> str:
         logger.error(
             "\033[91mThe selected timestamps were not find anywhere. Try again with another time range!\033[0m"
         )
-        exit()
+        sys.exit()
     if len(run_list) > 1:
         return get_multiple_run_id(user_time_range)
 
@@ -470,10 +502,10 @@ def get_all_plot_parameters(subsystem: str, config: dict):
                 all_parameters += parameters
 
             # check if there is any QC entry; if so, add it to the list of parameters to load
-            if "quality_cuts" in config["subsystems"][subsystem][plot]:
-                all_parameters.append(
-                    config["subsystems"][subsystem][plot]["quality_cuts"]
-                )
+            if "cuts" in config["subsystems"][subsystem][plot]:
+                for cut in config["subsystems"][subsystem][plot]["cuts"]:
+                    if "is_" in cut:
+                        all_parameters.append(cut)
 
     return all_parameters
 
@@ -526,14 +558,14 @@ def add_config_entries(
             type = config["dataset"]["type"]
         else:
             logger.error("\033[91mYou need to provide data type! Try again.\033[0m")
-            exit()
+            sys.exit()
         if "path" in config["dataset"].keys():
             path = config["dataset"]["path"]
         else:
             logger.error(
                 "\033[91mYou need to provide path to lh5 files! Try again.\033[0m"
             )
-            exit()
+            sys.exit()
     else:
         # get phy/cal lists
         phy_keys = [key for key in keys if "phy" in key]
@@ -585,7 +617,7 @@ def add_config_entries(
             '\033[91mThere are missing entries among ["output", "dataset", "saving", "subsystems"] in the config file (found keys: %s). Try again and check you start with "output" and "dataset" info!\033[0m',
             config.keys(),
         )
-        exit()
+        sys.exit()
 
     return config
 
@@ -692,5 +724,47 @@ def save_dict(
 def check_level0(dataframe: DataFrame) -> DataFrame:
     """Check if a dataframe contains the 'level_0' column. If so, remove it."""
     if "level_0" in dataframe.columns:
-        dataframe = dataframe.drop(columns=["level_0"])
-    return dataframe
+        return dataframe.drop(columns=["level_0"])
+    else:
+        return dataframe
+
+
+# -------------------------------------------------------------------------
+# Other functions
+# -------------------------------------------------------------------------
+
+
+def get_livetime(tot_livetime: float):
+    """Get the livetime in a human readable format, starting from livetime in seconds.
+
+    If tot_livetime is more than 0.1 yr, convert it to years.
+    If tot_livetime is less than 0.1 yr but more than 1 day, convert it to days.
+    If tot_livetime is less than 1 day but more than 1 hour, convert it to hours.
+    If tot_livetime is less than 1 hour but more than 1 minute, convert it to minutes.
+    """
+    if tot_livetime > 60 * 60 * 24 * 365.25:
+        tot_livetime = tot_livetime / 60 / 60 / 24 / 365.25
+        unit = " yr"
+    elif tot_livetime > 60 * 60 * 24:
+        tot_livetime = tot_livetime / 60 / 60 / 24
+        unit = " days"
+    elif tot_livetime > 60 * 60:
+        tot_livetime = tot_livetime / 60 / 60
+        unit = " hrs"
+    elif tot_livetime > 60:
+        tot_livetime = tot_livetime / 60
+        unit = " min"
+    else:
+        unit = " sec"
+    logger.info(f"Total livetime: {tot_livetime:.2f}{unit}")
+
+    return tot_livetime, unit
+
+
+def is_empty(df: DataFrame):
+    """Check if a dataframe is empty. If so, we exit from the code."""
+    if df.empty:
+        logger.warning(
+            "\033[93mThe dataframe is empty. Plotting the next entry (if present, otherwise exiting from the code).\033[0m"
+        )
+        return True

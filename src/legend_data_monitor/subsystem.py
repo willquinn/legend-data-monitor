@@ -4,6 +4,7 @@ from datetime import datetime
 
 import numpy as np
 import pandas as pd
+import pytz
 from legendmeta import LegendMetadata
 from pygama.flow import DataLoader
 
@@ -319,21 +320,7 @@ class Subsystem:
             timestamp=self.first_timestamp
         )
 
-        df_map = pd.DataFrame(
-            columns=[
-                "name",
-                "location",
-                "channel",
-                "position",
-                "cc4_id",
-                "cc4_channel",
-                "daq_crate",
-                "daq_card",
-                "HV_card",
-                "HV_channel",
-                "det_type",
-            ],
-        )
+        df_map = pd.DataFrame(columns=utils.COLUMNS_TO_LOAD)
         df_map = df_map.set_index("channel")
 
         # -------------------------------------------------------------------------
@@ -511,6 +498,11 @@ class Subsystem:
                 self.channel_map.at[channel_name, "status"] = full_status_map[
                     channel_name
                 ]["usability"]
+        # quick-fix to remove detectors while status maps are not updated
+        for channel_name in list(utils.REMOVE_DETS.keys()):
+            # status map contains all channels, check if this channel is in our subsystem
+            if channel_name in self.channel_map.index:
+                self.channel_map.at[channel_name, "status"] = "off"
 
         self.channel_map = self.channel_map.reset_index()
 
@@ -547,8 +539,18 @@ class Subsystem:
                 # otherwise just add the parameter directly
                 params.append(param)
 
+        # --- check if parameters have '~', if so remove for loading the corresponding lh5 parameter
+        final_params = []
+        for param in params:
+            if "~" in param:
+                # remove first entry in param
+                param = param.split("~")[1]
+                final_params.append(param)
+            else:
+                final_params.append(param)
+
         # some parameters might be repeated twice - remove
-        return list(np.unique(params))
+        return list(np.unique(final_params))
 
     def construct_dataloader_configs(self, params: list_of_str):
         """
@@ -599,15 +601,9 @@ class Subsystem:
         utils.logger.info(f"...... not loading channels with status off: {removed_chs}")
 
         # remove p03 channels who are not properly behaving in calib data (from George's analysis)
+        """
         if int(self.period[-1]) >= 3:
-            names = [
-                "V01406A",
-                "V01415A",
-                "V01387A",
-                "P00665C",
-                "P00748B",
-                "P00748A",
-            ]  # , "B00089D"]
+            names = list(utils.REMOVE_DETS.keys())
             probl_dets = []
             for name in names:
                 probl_det = list(
@@ -621,6 +617,7 @@ class Subsystem:
                     f"...... not loading problematic detectors for {self.period}: {names}"
                 )
                 chlist = [ch for ch in chlist if ch not in probl_dets]
+        """
 
         # for L60-p01 and L200-p02, keep using 3 digits
         if int(self.period[-1]) < 3:
@@ -663,6 +660,52 @@ class Subsystem:
         }
 
         return dict_dlconfig, dict_dbconfig
+
+    def remove_timestamps(self, remove_keys: dict):
+        """Remove timestamps from the dataframes for a given channel; the time interval in which to remove the channel is provided through an external json file."""
+        # all timestamps we are considering are expressed in UTC0
+        utc_timezone = pytz.timezone("UTC")
+        utils.logger.debug(
+            "We are removing timestamps from the following channels: %s",
+            list(remove_keys.keys()),
+        )
+
+        # loop over channels for which we want to remove timestamps
+        for channel in remove_keys.keys():
+            if channel in self.data["name"].unique():
+                if (
+                    remove_keys[channel]["from"] != []
+                    and remove_keys[channel]["to"] != []
+                ):
+                    # remove timestamps from self.data that are within time_from and time_to, for a given channel
+                    for idx, time_from in enumerate(remove_keys[channel]["from"]):
+                        # times are in format YYYYMMDDTHHMMSSZ, convert them into a UTC0 timestamp
+                        time_from = datetime.strptime(time_from, "%Y%m%dT%H%M%SZ")
+                        time_from = utc_timezone.localize(time_from)
+                        time_from = time_from.timestamp()
+
+                        time_to = datetime.strptime(
+                            remove_keys[channel]["to"][idx], "%Y%m%dT%H%M%SZ"
+                        )
+                        time_to = utc_timezone.localize(time_to)
+                        time_to = time_to.timestamp()
+
+                        # selectjust the rows for the given channel
+                        channel_df = self.data[self.data["name"] == channel]
+                        # for the given channel, select just the rows that are within the time interval
+                        filtered_df = channel_df[
+                            (channel_df["timestamp"] >= time_from)
+                            & (channel_df["timestamp"] < time_to)
+                        ]
+                        # remove the rows that are within the time interval from the original dataframe
+                        self.data = self.data[
+                            ~(
+                                (self.data["name"] == channel)
+                                & self.data["timestamp"].isin(filtered_df["timestamp"])
+                            )
+                        ]
+
+        self.data = self.data.reset_index()
 
     def below_period_3_excluded(self) -> bool:
         if int(self.period[-1]) < 3:

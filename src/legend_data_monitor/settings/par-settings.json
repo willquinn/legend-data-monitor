@@ -584,6 +584,21 @@
       }
     }
   },
+  "exposure": {
+    "label": "Exposure",
+    "unit": "kg yr",
+    "facecol": [0.82, 0.94, 0.75],
+    "limits": {
+      "spms": {
+        "variation": [null, null],
+        "absolute": [null, null]
+      },
+      "geds": {
+        "variation": [null, null],
+        "absolute": [null, null]
+      }
+    }
+  },
   "bl_rms": {
     "label": "Baseline RMS",
     "unit": null,

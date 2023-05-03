@@ -7,7 +7,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 from pandas import DataFrame
 from seaborn import color_palette
 
-from . import analysis_data, plot_styles, status_plot, subsystem, utils
+from . import analysis_data, plot_styles, string_visualization, subsystem, utils
 
 # -------------------------------------------------------------------------
 
@@ -65,6 +65,7 @@ def make_subsystem_plots(
         # --- AnalysisData:
         # - select parameter of interest
         # - subselect type of events (pulser/phy/all/klines)
+        # - get channel mean
         # - calculate variation from mean, if asked
         data_analysis = analysis_data.AnalysisData(
             subsystem.data, selection=plot_settings
@@ -72,6 +73,9 @@ def make_subsystem_plots(
         # cuts will be loaded but not applied; for our purposes, need to apply the cuts right away
         # currently only K lines cut is used, and only data after cut is plotted -> just replace
         data_analysis.data = data_analysis.apply_all_cuts()
+        # check if the dataframe is empty, if so, skip this plot
+        if utils.is_empty(data_analysis.data):
+            continue
         utils.logger.debug(data_analysis.data)
 
         # -------------------------------------------------------------------------
@@ -82,7 +86,13 @@ def make_subsystem_plots(
         # num colors needed = max number of channels per string
         # - find number of unique positions in each string
         # - get maximum occurring
-        if plot_settings["plot_structure"] == "per cc4":
+        plot_structure = (
+            PLOT_STRUCTURE[plot_settings["plot_structure"]]
+            if "plot_structure" in plot_settings
+            else None
+        )
+
+        if plot_structure == "per cc4":
             if (
                 data_analysis.data.iloc[0]["cc4_id"] is None
                 or data_analysis.data.iloc[0]["cc4_channel"] is None
@@ -123,7 +133,9 @@ def make_subsystem_plots(
                 "FC_bsln": "bsln",
             }[subsystem.type],
             "unit": utils.PLOT_INFO[plot_settings["parameters"]]["unit"],
-            "plot_style": plot_settings["plot_style"],
+            "plot_style": plot_settings["plot_style"]
+            if "plot_style" in plot_settings
+            else None,
         }
 
         # information for having the resampled or all entries (needed only for 'vs time' style option)
@@ -132,21 +144,20 @@ def make_subsystem_plots(
         )
 
         # information for shifting the channels or not (not needed only for the 'per channel' structure option) when plotting the std
-        plot_info["std"] = (
-            True if plot_settings["plot_structure"] == "per channel" else False
-        )
+        plot_info["std"] = True if plot_structure == "per channel" else False
 
-        if plot_settings["plot_style"] == "vs time":
-            if plot_info["resampled"] == "":
-                plot_info["resampled"] = "also"
-                utils.logger.warning(
-                    "\033[93mNo 'resampled' option was specified. Both resampled and all entries will be plotted (otherwise you can try again using the option 'no', 'only', 'also').\033[0m"
-                )
-        else:
-            if plot_info["resampled"] != "":
-                utils.logger.warning(
-                    "\033[93mYou're using the option 'resampled' for a plot style that does not need it. For this reason, that option will be ignored.\033[0m"
-                )
+        if plot_info["plot_style"] is not None:
+            if plot_settings["plot_style"] == "vs time":
+                if plot_info["resampled"] == "":
+                    plot_info["resampled"] = "also"
+                    utils.logger.warning(
+                        "\033[93mNo 'resampled' option was specified. Both resampled and all entries will be plotted (otherwise you can try again using the option 'no', 'only', 'also').\033[0m"
+                    )
+            else:
+                if plot_info["resampled"] != "":
+                    utils.logger.warning(
+                        "\033[93mYou're using the option 'resampled' for a plot style that does not need it. For this reason, that option will be ignored.\033[0m"
+                    )
 
         # --- information needed for plot style
         plot_info["label"] = utils.PLOT_INFO[plot_settings["parameters"]]["label"]
@@ -176,18 +187,19 @@ def make_subsystem_plots(
         plot_info["param_mean"] = plot_settings["parameters"] + "_mean"
 
         # -------------------------------------------------------------------------
-        # call chosen plot structure
+        # call chosen plot structure + plotting
         # -------------------------------------------------------------------------
 
-        # choose plot function based on user requested structure e.g. per channel or all ch together
-        plot_structure = PLOT_STRUCTURE[plot_settings["plot_structure"]]
-        utils.logger.debug("Plot structure: " + plot_settings["plot_structure"])
-
-        # plotting
-        plot_structure(data_analysis.data, plot_info, pdf)
+        if plot_info["parameter"] == "exposure":
+            _ = string_visualization.exposure_plot(
+                subsystem, data_analysis.data, plot_info, pdf
+            )
+        else:
+            utils.logger.debug("Plot structure: %s", plot_settings["plot_structure"])
+            plot_structure(data_analysis.data, plot_info, pdf)
 
         # For some reason, after some plotting functions the index is set to "channel".
-        # We need to set it back otherwise status_plot.py gets crazy and everything crashes.
+        # We need to set it back otherwise string_visualization.py gets crazy and everything crashes.
         data_analysis.data = data_analysis.data.reset_index()
 
         # -------------------------------------------------------------------------
@@ -210,7 +222,7 @@ def make_subsystem_plots(
                     f"Thresholds are not enabled for {subsystem.type}! Use you own eyes to do checks there"
                 )
             else:
-                _ = status_plot.status_plot(
+                _ = string_visualization.status_plot(
                     subsystem, data_analysis.data, plot_info, pdf
                 )
 
@@ -665,7 +677,6 @@ def plot_per_fiber_and_barrel(data_analysis: DataFrame, plot_info: dict, pdf: Pd
     # - each figure has subplots with N columns and M rows where N is the number of fibers, and M is the number of positions (top/bottom -> 2)
     # this function will only work for SiPMs requiring a columns 'barrel' in the channel map
     # add a check in config settings check to make sure geds are not called with this structure to avoid crash
-    pass
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
