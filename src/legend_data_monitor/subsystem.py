@@ -637,7 +637,7 @@ class Subsystem:
 
     def remove_timestamps(self, remove_keys: dict):
         """Remove timestamps from the dataframes for a given channel.
-        
+
         The time interval in which to remove the channel is provided through an external json file.
         """
         # all timestamps we are considering are expressed in UTC0
@@ -654,14 +654,19 @@ class Subsystem:
                     # times are in format YYYYMMDDTHHMMSSZ, convert them into a UTC0 timestamp
                     for point in ["from", "to"]:
                         # convert UTC timestamp to datetime (unix epoch time)
-                        chunk[point] = pd.to_datetime(chunk[point], utc=True, format="%Y%m%dT%H%M%SZ")
+                        chunk[point] = pd.to_datetime(
+                            chunk[point], utc=True, format="%Y%m%dT%H%M%SZ"
+                        )
 
                     # entries to drop for this chunk
-                    rows_to_drop = self.data[ (self.data["name"] == detector) & (self.data["datetime"] >= chunk["from"]) & (self.data["datetime"] <= chunk["to"]) ]
+                    rows_to_drop = self.data[
+                        (self.data["name"] == detector)
+                        & (self.data["datetime"] >= chunk["from"])
+                        & (self.data["datetime"] <= chunk["to"])
+                    ]
                     self.data = self.data.drop(rows_to_drop.index)
 
-        self.data = self.data.reset_index()                    
-
+        self.data = self.data.reset_index()
 
     def below_period_3_excluded(self) -> bool:
         if int(self.period[-1]) < 3:

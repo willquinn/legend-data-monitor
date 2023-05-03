@@ -165,7 +165,9 @@ def make_subsystem_plots(
             "%" if plot_settings["variation"] else plot_info["unit"]
         )
         # needed for grey lines for K lines, in case we are looking at energy itself (not event rate for example)
-        plot_info["K_events"] = (plot_settings["event_type"] == "K_events") and (plot_settings["parameters"] == utils.SPECIAL_PARAMETERS["K_events"])
+        plot_info["K_events"] = (plot_settings["event_type"] == "K_events") and (
+            plot_settings["parameters"] == utils.SPECIAL_PARAMETERS["K_events"]
+        )
         # time window might be needed fort he vs time function
         plot_info["time_window"] = plot_settings["time_window"]
         # threshold values are needed for status map; might be needed for plotting limits on canvas too

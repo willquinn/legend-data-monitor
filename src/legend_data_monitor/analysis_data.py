@@ -3,14 +3,12 @@ import shelve
 
 import numpy as np
 import pandas as pd
-from pandas import DataFrame, concat
-
 from legendmeta import LegendMetadata
-
+from pandas import DataFrame, concat
 
 # needed to know which parameters are not in DataLoader
 # but need to be calculated, such as event rate
-from . import cuts, utils
+from . import utils
 
 # -------------------------------------------------------------------------
 
@@ -164,7 +162,7 @@ class AnalysisData:
         bad = self.select_events()
         if bad:
             return
-        
+
         # apply cuts, if any
         self.apply_all_cuts()
 
@@ -215,8 +213,8 @@ class AnalysisData:
 
     def apply_all_cuts(self):
         for cut in self.cuts:
-            self.apply_cut(cut)  
-    
+            self.apply_cut(cut)
+
     def special_parameter(self):
         for param in self.parameters:
             if param == "wf_max_rel":
@@ -318,14 +316,20 @@ class AnalysisData:
                 # - select arbitrary column that is definitely not NaN in each row e.g. channel to represent the count
                 # - rename to "pulser_events"
                 # now we have a table with number of pulser events as column with DETECTOR NAME AS INDEX
-                df_livetime = self.data[ self.data["flag_pulser"]].groupby("name").count()["channel"].to_frame("pulser_events")
-
+                df_livetime = (
+                    self.data[self.data["flag_pulser"]]
+                    .groupby("name")
+                    .count()["channel"]
+                    .to_frame("pulser_events")
+                )
 
                 # ------ calculate livetime for each detector and add it to original dataframe
                 df_livetime["livetime_in_s"] = df_livetime["pulser_events"] / rate
 
                 self.data = self.data.set_index("name")
-                self.data = pd.concat([self.data, df_livetime.reindex(self.data.index)], axis=1)
+                self.data = pd.concat(
+                    [self.data, df_livetime.reindex(self.data.index)], axis=1
+                )
                 # drop the pulser events column we don't need it
                 self.data = self.data.drop("pulser_events", axis=1)
 
@@ -337,7 +341,11 @@ class AnalysisData:
                 for det_name in self.data.index.unique():
                     mass_in_kg = dets_map[det_name]["production"]["mass_in_g"] / 1000
                     # exposure in kg*yr
-                    self.data.at[det_name, "exposure"] = mass_in_kg * df_livetime.at[det_name, "livetime_in_s"] / (60*60*24*365.25)
+                    self.data.at[det_name, "exposure"] = (
+                        mass_in_kg
+                        * df_livetime.at[det_name, "livetime_in_s"]
+                        / (60 * 60 * 24 * 365.25)
+                    )
 
                 self.data.reset_index()
 
@@ -455,8 +463,6 @@ class AnalysisData:
                 self.data[param + "_var"] = (
                     self.data[param] / self.data[param + "_mean"] - 1
                 ) * 100  # %
-
-
 
     def is_spms(self) -> bool:
         """Return True if 'location' (=fiber) and 'position' (=top, bottom) are strings."""

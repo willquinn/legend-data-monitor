@@ -47,7 +47,7 @@ with open(pkg / "settings" / "special-parameters.json") as f:
 # convert all to lists for convenience
 for param in SPECIAL_PARAMETERS:
     if isinstance(SPECIAL_PARAMETERS[param], str):
-        SPECIAL_PARAMETERS[param] = [SPECIAL_PARAMETERS[param]]    
+        SPECIAL_PARAMETERS[param] = [SPECIAL_PARAMETERS[param]]
 
 # load list of columns to load for a dataframe
 COLUMNS_TO_LOAD = [
@@ -314,24 +314,26 @@ def check_plot_settings(conf: dict):
                         )
                     )
                     return False
-                
+
             # ----------------------------------------------------------------------------------------------
             # special checks
             # ----------------------------------------------------------------------------------------------
 
             # exposure check
-            if plot_settings["parameters"] == "exposure" and (plot_settings["event_type"] not in ["pulser", "all"]):
+            if plot_settings["parameters"] == "exposure" and (
+                plot_settings["event_type"] not in ["pulser", "all"]
+            ):
                 logger.error(
                     "\033[91mPulser events are needed to calculate livetime/exposure; choose 'pulser' or 'all' event type\033[0m"
                 )
-                return False       
+                return False
 
             # ToDo: neater way to skip the whole loop but still do special checks; break? ugly...
             if plot_settings["parameters"] == "exposure":
-                continue         
+                continue
 
             # other non-exposure checks
-            
+
             # if vs time was provided, need time window
             if (
                 plot_settings["plot_style"] == "vs time"
@@ -528,7 +530,7 @@ def get_all_plot_parameters(subsystem: str, config: dict):
             # check if event type asked needs a special parameter (K lines need energy)
             event_type = config["subsystems"][subsystem][plot]["event_type"]
             if event_type in SPECIAL_PARAMETERS:
-                all_parameters+= SPECIAL_PARAMETERS[event_type]
+                all_parameters += SPECIAL_PARAMETERS[event_type]
 
             # check if there is any QC entry; if so, add it to the list of parameters to load
             if "cuts" in config["subsystems"][subsystem][plot]:

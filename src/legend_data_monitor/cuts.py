@@ -1,5 +1,6 @@
 from . import utils
 
+
 def apply_cut(data, cut):
     utils.logger.info("...... applying cut: " + cut)
 
