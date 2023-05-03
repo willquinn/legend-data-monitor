@@ -539,8 +539,18 @@ class Subsystem:
                 # otherwise just add the parameter directly
                 params.append(param)
 
+        # --- check if parameters have '~', if so remove for loading the corresponding lh5 parameter
+        final_params = []
+        for param in params:
+            if "~" in param:
+                # remove first entry in param
+                param = param.split("~")[1]
+                final_params.append(param)
+            else:
+                final_params.append(param)
+
         # some parameters might be repeated twice - remove
-        return list(np.unique(params))
+        return list(np.unique(final_params))
 
     def construct_dataloader_configs(self, params: list_of_str):
         """

@@ -130,7 +130,7 @@ class AnalysisData:
             # pulser flag is present only if subsystem.flag_pulser_events() was called -> needed to subselect phy/pulser events
             if "flag_pulser" in col:
                 params_to_get.append("flag_pulser")
-            # QC flag is present only if inserted as a cut in the config file -> needed to apply
+            # QC flag is present only if inserted as a cut in the config file -> this part is needed to apply
             if "is_" in col:
                 params_to_get.append(col)
 
@@ -171,7 +171,6 @@ class AnalysisData:
             exit()
 
         # -------------------------------------------------------------------------
-
         # select phy/puls/all events
         bad = self.select_events()
         if bad:

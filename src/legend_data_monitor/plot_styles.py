@@ -337,5 +337,5 @@ PLOT_STYLE = {
     "vs ch": par_vs_ch,
     "histogram": plot_histo,
     "scatter": plot_scatter,
-    "heatmap": plot_heatmap
+    "heatmap": plot_heatmap,
 }

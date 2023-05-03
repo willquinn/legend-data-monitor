@@ -190,7 +190,7 @@ def make_subsystem_plots(
         if plot_info["parameter"] == "exposure":
                 _ = string_visualization.exposure_plot(subsystem, data_analysis.data, plot_info, pdf)
         else:
-            utils.logger.debug("Plot structure: " + plot_structure)
+            utils.logger.debug("Plot structure: %s", plot_settings["plot_structure"])
             plot_structure(data_analysis.data, plot_info, pdf)
 
         # For some reason, after some plotting functions the index is set to "channel".
