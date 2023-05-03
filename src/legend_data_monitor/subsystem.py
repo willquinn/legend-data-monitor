@@ -662,9 +662,7 @@ class Subsystem:
         return dict_dlconfig, dict_dbconfig
     
     def remove_timestamps(self, remove_keys: dict):
-        """
-        Remove timestamps from the dataframes for a given channel. The time interval in which to remove the channel is provided through an external json file.
-        """
+        """Remove timestamps from the dataframes for a given channel; the time interval in which to remove the channel is provided through an external json file."""
         # all timestamps we are considering are expressed in UTC0
         utc_timezone = pytz.timezone('UTC')
         utils.logger.debug("We are removing timestamps from the following channels: %s", list(remove_keys.keys()))

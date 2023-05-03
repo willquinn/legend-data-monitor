@@ -51,9 +51,6 @@ def is_valid_dteff(data):
 def is_valid_ediff(data):
     return data[data["is_valid_ediff"] == 1]
 
-def is_valid_ediff(data):
-    return data[data["is_valid_ediff"] == 1]
-
 def is_valid_efrac(data):
     return data[data["is_valid_efrac"] == 1]
 
@@ -71,9 +68,6 @@ def is_valid_tail(data):
 
 def is_downgoing_baseline(data):
     return data[data["is_downgoing_baseline"] == 1]
-
-def is_upgoing_baseline(data):
-    return data[data["is_upgoing_baseline"] == 1]
 
 def is_upgoing_baseline(data):
     return data[data["is_upgoing_baseline"] == 1]
@@ -117,9 +111,6 @@ def is_not_valid_dteff(data):
 def is_not_valid_ediff(data):
     return data[data["is_valid_ediff"] == 0]
 
-def is_not_valid_ediff(data):
-    return data[data["is_valid_ediff"] == 0]
-
 def is_not_valid_efrac(data):
     return data[data["is_valid_efrac"] == 0]
 
@@ -137,9 +128,6 @@ def is_not_valid_tail(data):
 
 def is_not_downgoing_baseline(data):
     return data[data["is_downgoing_baseline"] == 0]
-
-def is_not_upgoing_baseline(data):
-    return data[data["is_upgoing_baseline"] == 0]
 
 def is_not_upgoing_baseline(data):
     return data[data["is_upgoing_baseline"] == 0]
