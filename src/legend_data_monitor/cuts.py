@@ -29,38 +29,50 @@ def is_valid_0vbb(data):
     """Keep only events that are valid for 0vbb analysis."""
     return data[data["is_valid_0vbb"] == 1]
 
+
 def is_valid_cal(data):
     return data[data["is_valid_cal"] == 1]
+
 
 def is_negative(data):
     return data[data["is_negative"] == 1]
 
+
 def is_saturated(data):
     return data[data["is_saturated"] == 1]
+
 
 def is_valid_rt(data):
     return data[data["is_valid_rt"] == 1]
 
+
 def is_valid_t0(data):
     return data[data["is_valid_t0"] == 1]
+
 
 def is_valid_tmax(data):
     return data[data["is_valid_tmax"] == 1]
 
+
 def is_valid_dteff(data):
     return data[data["is_valid_dteff"] == 1]
+
 
 def is_valid_ediff(data):
     return data[data["is_valid_ediff"] == 1]
 
+
 def is_valid_efrac(data):
     return data[data["is_valid_efrac"] == 1]
+
 
 def is_negative_crosstalk(data):
     return data[data["is_negative_crosstalk"] == 1]
 
+
 def is_discharge(data):
     return data[data["is_discharge"] == 1]
+
 
 def is_neg_energy(data):
     return data[data["is_neg_energy"] == 1]
@@ -77,8 +89,10 @@ def is_downgoing_baseline(data):
 def is_upgoing_baseline(data):
     return data[data["is_upgoing_baseline"] == 1]
 
+
 def is_noise_burst(data):
     return data[data["is_noise_burst"] == 1]
+
 
 def is_valid_baseline(data):
     return data[data["is_valid_baseline"] == 1]
@@ -125,6 +139,7 @@ def is_not_valid_dteff(data):
 def is_not_valid_ediff(data):
     return data[data["is_valid_ediff"] == 0]
 
+
 def is_not_valid_efrac(data):
     return data[data["is_valid_efrac"] == 0]
 
@@ -151,6 +166,7 @@ def is_not_downgoing_baseline(data):
 
 def is_not_upgoing_baseline(data):
     return data[data["is_upgoing_baseline"] == 0]
+
 
 def is_not_noise_burst(data):
     return data[data["is_noise_burst"] == 0]
