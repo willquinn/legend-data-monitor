@@ -4,7 +4,6 @@ from datetime import datetime
 
 import numpy as np
 import pandas as pd
-import pytz
 from legendmeta import LegendMetadata
 from pygama.flow import DataLoader
 
@@ -641,7 +640,6 @@ class Subsystem:
         The time interval in which to remove the channel is provided through an external json file.
         """
         # all timestamps we are considering are expressed in UTC0
-        utc_timezone = pytz.timezone("UTC")
         utils.logger.debug("... removing timestamps from the following detectors:")
 
         # loop over channels for which we want to remove timestamps
