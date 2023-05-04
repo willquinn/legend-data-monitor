@@ -31,10 +31,6 @@ class AnalysisData:
                     Format: time_window='NA', where N is integer, and A is M for months, D for days, T for minutes, and S for seconds.
                     Default: None
         Or input kwargs directly parameters=, event_type=, cuts=, variation=, time_window=
-
-        To apply a single cut, use data_after_cut = ldm.apply_cut(<analysis_data>)
-        To apply all cuts, use data_after_all_cuts = <analysis_data>.apply_all_cuts()
-            where <analysis_data> is the AnalysisData object you created.
     """
 
     def __init__(self, sub_data: pd.DataFrame, **kwargs):
@@ -158,7 +154,7 @@ class AnalysisData:
             exit()
 
         # -------------------------------------------------------------------------
-        # select phy/puls/all events
+        # select phy/puls/all/Klines events
         bad = self.select_events()
         if bad:
             return
@@ -200,7 +196,12 @@ class AnalysisData:
             utils.logger.error("\033[91m%s\033[0m", self.__doc__)
             return "bad"
 
-    def apply_cut(self, cut):
+    def apply_cut(self, cut: str):
+        """
+        Apply given boolean cut.
+
+        Format: cut name as in lh5 files ("is_*") to apply given cut, or cut name preceded by "~" to apply a "not" cut.
+        """
         utils.logger.info("... applying cut: " + cut)
 
         cut_value = 1

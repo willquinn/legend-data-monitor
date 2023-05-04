@@ -534,7 +534,12 @@ def get_all_plot_parameters(subsystem: str, config: dict):
 
             # check if there is any QC entry; if so, add it to the list of parameters to load
             if "cuts" in config["subsystems"][subsystem][plot]:
-                for cut in config["subsystems"][subsystem][plot]["cuts"]:
+                cuts = config["subsystems"][subsystem][plot]["cuts"]
+                # convert to list for convenience
+                if isinstance(cuts, str):
+                    cuts = [cuts]
+                for cut in cuts:
+                    # append original name of the cut to load (remove the "not" ~ symbol if present)
                     if cut[0] == "~":
                         cut = cut[1:]
                     all_parameters.append(cut)
