@@ -71,12 +71,12 @@ class Subsystem:
             utils.logger.error("\033[91mProvide data type!\033[0m")
             utils.logger.error("\033[91m%s\033[0m", self.__doc__)
             return
-        
+
         if "period" not in data_info:
             utils.logger.error("\033[91mProvide period!\033[0m")
             utils.logger.error("\033[91m%s\033[0m", self.__doc__)
             return
-        
+
         # convert to list for convenience
         # ! currently not possible with channel status
         # if isinstance(data_info["type"], str):

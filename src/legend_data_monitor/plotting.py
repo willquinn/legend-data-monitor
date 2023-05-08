@@ -1,10 +1,10 @@
 import io
 import shelve
 
+import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.backends.backend_pdf import PdfPages
-import matplotlib.patches as mpatches
 from pandas import DataFrame
 from seaborn import color_palette
 
@@ -41,7 +41,7 @@ def make_subsystem_plots(
 
         # -------------------------------------------------------------------------
         # settings checks
-        # -------------------------------------------------------------------------        
+        # -------------------------------------------------------------------------
 
         # --- original plot settings provided in json
         plot_settings = plots[plot_title]
@@ -56,7 +56,7 @@ def make_subsystem_plots(
             plot_settings["variation"] = False
         # range for parameter
         if "range" not in plot_settings:
-            plot_settings["range"] = [None, None]      
+            plot_settings["range"] = [None, None]
         # resampling: applies only to vs time plot
         if "resampled" not in plot_settings:
             plot_settings["resampled"] = None
@@ -168,7 +168,6 @@ def make_subsystem_plots(
 
         # information for shifting the channels or not (not needed only for the 'per channel' structure option) when plotting the std
         plot_info["std"] = True if plot_structure == "per channel" else False
-       
 
         # -------------------------------------------------------------------------
         # information needed for plot style depending on parameters
@@ -200,7 +199,7 @@ def make_subsystem_plots(
             # unit label should be % if variation was asked
             plot_info["unit_label"][param] = (
                 "%" if plot_settings["variation"] else plot_info["unit"][param_orig]
-            )            
+            )
 
         if len(params) == 1:
             # change "parameters" to "parameter" - for single-param plotting functions
@@ -216,16 +215,14 @@ def make_subsystem_plots(
             # only needed for single param plots (for now)
             if subsystem.type not in ["pulser", "pulser_aux", "FC_bsln"]:
                 keyword = "variation" if plot_settings["variation"] else "absolute"
-                plot_info["limits"] = (
-                    utils.PLOT_INFO[params[0]]["limits"][subsystem.type][
-                        keyword
-                    ]
-                )
+                plot_info["limits"] = utils.PLOT_INFO[params[0]]["limits"][
+                    subsystem.type
+                ][keyword]
 
             # needed for grey lines for K lines, in case we are looking at energy itself (not event rate for example)
             plot_info["K_events"] = (plot_settings["event_type"] == "K_events") and (
-            plot_info["parameter"] == utils.SPECIAL_PARAMETERS["K_events"][0]
-            )                 
+                plot_info["parameter"] == utils.SPECIAL_PARAMETERS["K_events"][0]
+            )
 
         # -------------------------------------------------------------------------
         # call chosen plot structure + plotting
@@ -350,19 +347,19 @@ def plot_per_ch(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
 
             # --- add summary to axis - only for single channel plots
             # name, position and mean are unique for each channel - take first value
-            df_text = data_channel.iloc[0][
-                ["channel", "position", "name"]
-            ]            
+            df_text = data_channel.iloc[0][["channel", "position", "name"]]
             text = (
-                    df_text["name"]
-                    + "\n"
-                    + f"channel {df_text['channel']}\n"
-                    + f"position {df_text['position']}"   
-            )         
+                df_text["name"]
+                + "\n"
+                + f"channel {df_text['channel']}\n"
+                + f"position {df_text['position']}"
+            )
             if len(plot_info["parameters"]) == 1:
                 # in case of 1 parameter, "param mean" entry is a single string param_mean
                 # in case of > 1, it's a list of parameters -> ignore for now and plot mean only for 1 param case
-                par_mean = data_channel.iloc[0][plot_info["param_mean"]] # single number
+                par_mean = data_channel.iloc[0][
+                    plot_info["param_mean"]
+                ]  # single number
                 fwhm_ch = get_fwhm_for_fixed_ch(data_channel, plot_info["parameter"])
 
                 text += (
@@ -551,7 +548,7 @@ def plot_per_string(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
             labels.append(label)
             if len(plot_info["parameters"]) == 1:
                 fwhm_ch = get_fwhm_for_fixed_ch(data_channel, plot_info["parameter"])
-                labels[-1]= labels[-1] + f" - FWHM: {fwhm_ch}"
+                labels[-1] = labels[-1] + f" - FWHM: {fwhm_ch}"
             col_idx += 1
 
         # add grid
@@ -585,7 +582,6 @@ def plot_array(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
             "\033[91mPlotting per array is not available for the spms.\nTry again!\033[0m"
         )
         exit()
-
 
     # --- choose plot function based on user requested style
     plot_style = plot_styles.PLOT_STYLE[plot_info["plot_style"]]
@@ -648,7 +644,9 @@ def plot_array(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
             labels.append(label.split("-")[-1])
             channels.append(map_dict[str(location)][str(position)])
             if len(plot_info["parameters"]) == 1:
-                values_per_string.append(data_channel[plot_info["parameter"]].unique()[0])
+                values_per_string.append(
+                    data_channel[plot_info["parameter"]].unique()[0]
+                )
                 channels_per_string.append(map_dict[str(location)][str(position)])
 
         if len(plot_info["parameters"]) == 1:
@@ -872,7 +870,7 @@ def get_fwhm_for_fixed_ch(data_channel: DataFrame, parameter: str) -> float:
     entries = data_channel[parameter]
     entries_avg = np.mean(entries)
     fwhm_ch = 2.355 * np.sqrt(np.mean(np.square(entries - entries_avg)))
-    return round(fwhm_ch,2)
+    return round(fwhm_ch, 2)
 
 
 def plot_limits(ax: plt.Axes, limits: dict):

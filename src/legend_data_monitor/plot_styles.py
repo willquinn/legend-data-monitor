@@ -17,6 +17,7 @@ from . import utils
 # single parameter plotting functions
 # -------------------------------------------------------------------------------
 
+
 def plot_vs_time(
     data_channel: DataFrame, fig: Figure, ax: Axes, plot_info: dict, color=None
 ):
@@ -108,7 +109,7 @@ def plot_vs_time(
     if plot_info["range"][0] is not None:
         ax.set_ylim(ymin=plot_info["range"][0])
     if plot_info["range"][1] is not None:
-        ax.set_ylim(ymax=plot_info["range"][1])      
+        ax.set_ylim(ymax=plot_info["range"][1])
 
     # plot the position of the two K lines
     if plot_info["K_events"]:
@@ -177,7 +178,6 @@ def par_vs_ch(
 def plot_histo(
     data_channel: DataFrame, fig: Figure, ax: Axes, plot_info: dict, color=None
 ):
-
     # --- histo range
     # take full range if not specified
     x_min = (
@@ -189,7 +189,7 @@ def plot_histo(
         plot_info["range"][1]
         if plot_info["range"][1] is not None
         else data_channel[plot_info["parameter"]].max()
-    )    
+    )
 
     # --- bin width
     bwidth = {"keV": 2.5}
@@ -269,7 +269,10 @@ def plot_scatter(
 # multi parameter plotting functions
 # -------------------------------------------------------------------------------
 
-def plot_par_vs_par(data_channel: DataFrame, fig: Figure, ax: Axes, plot_info: dict, color=None):
+
+def plot_par_vs_par(
+    data_channel: DataFrame, fig: Figure, ax: Axes, plot_info: dict, color=None
+):
     par_x = plot_info["parameters"][0]
     par_y = plot_info["parameters"][1]
 
@@ -294,7 +297,7 @@ def plot_par_vs_par(data_channel: DataFrame, fig: Figure, ax: Axes, plot_info: d
     if par_x in plot_info["range"]:
         ax.set_xlim(plot_info["range"][par_x])
     if par_y in plot_info["range"]:
-        ax.set_ylim(plot_info["range"][par_y])        
+        ax.set_ylim(plot_info["range"][par_y])
 
 
 # !!! WORK IN PROGRESS !!!
@@ -307,7 +310,7 @@ def plot_par_vs_par(data_channel: DataFrame, fig: Figure, ax: Axes, plot_info: d
 #     # NaN check
 #     # anynan = False
 #     for param in plot_info["parameters"]:
-#         # range            
+#         # range
 #         par_range = [data_channel[param].min(), data_channel[param].max()]
 
 #         # bin width
@@ -327,7 +330,7 @@ def plot_par_vs_par(data_channel: DataFrame, fig: Figure, ax: Axes, plot_info: d
 #         # sometimes e.g. A/E is always 0.0 => mean = 0 => var = NaN => x_min = NaN => cannot plot range [nan, nan]
 #         # anynan = anynan or np.isnan(nbins[-1])
 
-#     print(nbins)    
+#     print(nbins)
 #     print(ranges)
 #     # if not anynan:
 #     h, xedges, yedges, image = ax.hist2d(data_channel[plot_info["parameters"][0]], data_channel[plot_info["parameters"][1]], range=ranges, bins=nbins)
@@ -342,12 +345,13 @@ def plot_par_vs_par(data_channel: DataFrame, fig: Figure, ax: Axes, plot_info: d
 #         labels.append(label)
 
 #     fig.supxlabel(labels[0])
-#     fig.supylabel(labels[1])    
+#     fig.supylabel(labels[1])
 
 #     del h
 #     del xedges
 #     del yedges
 #     del image
+
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # UNDER CONSTRUCTION!!!

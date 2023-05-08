@@ -776,7 +776,7 @@
   "AoE_Custom": {
     "label": "Custom A/E (A_max / cuspEmax)",
     "unit": "a.u.",
-    "facecol": [0.74, 0.77, 0.87],  
+    "facecol": [0.74, 0.77, 0.87],
     "limits": {
       "spms": {
         "variation": [null, null],
@@ -786,6 +786,6 @@
         "variation": [null, null],
         "absolute": [null, null]
       }
-    }      
-  }  
+    }
+  }
 }

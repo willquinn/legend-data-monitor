@@ -240,7 +240,7 @@ class AnalysisData:
 
                 # divide event count in each time window by sampling window in seconds to get Hz
                 dt_seconds = get_seconds(self.time_window)
-                event_rate["event_rate"] = event_rate["event_rate"]*1. / dt_seconds
+                event_rate["event_rate"] = event_rate["event_rate"] * 1.0 / dt_seconds
 
                 # --- get rid of last value
                 # as the data range does not equally divide by the time window, the count in the last "window" will be smaller
@@ -350,7 +350,7 @@ class AnalysisData:
 
                 self.data.reset_index()
             elif param == "AoE_Custom":
-                self.data["AoE_Custom"] = self.data["A_max"] / self.data["cuspEmax"]                
+                self.data["AoE_Custom"] = self.data["A_max"] / self.data["cuspEmax"]
 
     def channel_mean(self):
         """
@@ -423,12 +423,14 @@ class AnalysisData:
                     """
 
                     # subselect only columns of mean values of param(s) of interest and channel
-                    channel_mean = old_df[["channel"] + [x + "_mean" for x in self.parameters]]
+                    channel_mean = old_df[
+                        ["channel"] + [x + "_mean" for x in self.parameters]
+                    ]
                     # later there will be a line renaming param to param_mean, so now need to rename back to no mean...
                     # this whole section has to be cleaned up
                     channel_mean = channel_mean.rename(
                         columns={param + "_mean": param for param in self.parameters}
-                    )                    
+                    )
                     # set channel to index because that's how it comes out in previous cases from df.mean()
                     channel_mean = channel_mean.set_index("channel")
 
@@ -446,7 +448,6 @@ class AnalysisData:
                     # # set 'channel' column as index
                     # channel_mean = channel_mean.set_index("channel")
 
-                    
             # some means are meaningless -> drop the corresponding column
             if "FWHM" in self.parameters:
                 channel_mean.drop("FWHM", axis=1)
