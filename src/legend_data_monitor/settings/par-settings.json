@@ -70,7 +70,7 @@
       },
       "geds": {
         "variation": [null, null],
-        "absolute": [null, null]
+        "absolute": [0, 20]
       }
     }
   },
@@ -772,5 +772,20 @@
         "absolute": [null, null]
       }
     }
-  }
+  },
+  "AoE_Custom": {
+    "label": "Custom A/E (A_max / cuspEmax)",
+    "unit": "a.u.",
+    "facecol": [0.74, 0.77, 0.87],  
+    "limits": {
+      "spms": {
+        "variation": [null, null],
+        "absolute": [null, null]
+      },
+      "geds": {
+        "variation": [null, null],
+        "absolute": [null, null]
+      }
+    }      
+  }  
 }

@@ -4,7 +4,6 @@ import shelve
 import numpy as np
 import pandas as pd
 from legendmeta import LegendMetadata
-from pandas import DataFrame, concat
 
 # needed to know which parameters are not in DataLoader
 # but need to be calculated, such as event rate
@@ -85,7 +84,7 @@ class AnalysisData:
 
         # time window must be provided for event rate
         if (
-            analysis_info["parameters"][0] == "event_rate"
+            "event_rate" in analysis_info["parameters"]
             and not analysis_info["time_window"]
         ):
             utils.logger.error(
@@ -241,7 +240,7 @@ class AnalysisData:
 
                 # divide event count in each time window by sampling window in seconds to get Hz
                 dt_seconds = get_seconds(self.time_window)
-                event_rate["event_rate"] = event_rate["event_rate"] / dt_seconds
+                event_rate["event_rate"] = event_rate["event_rate"]*1. / dt_seconds
 
                 # --- get rid of last value
                 # as the data range does not equally divide by the time window, the count in the last "window" will be smaller
@@ -262,7 +261,8 @@ class AnalysisData:
                 # - reindex to match event rate table index
                 # - put the columns in with concat
                 event_rate = event_rate.set_index("channel")
-                columns = utils.COLUMNS_TO_LOAD
+                # need to copy, otherwise next line removes "channel" from original, and crashes next time over not finding channel
+                columns = utils.COLUMNS_TO_LOAD[:]
                 columns.remove("channel")
                 self.data = pd.concat(
                     [
@@ -349,6 +349,8 @@ class AnalysisData:
                     )
 
                 self.data.reset_index()
+            elif param == "AoE_Custom":
+                self.data["AoE_Custom"] = self.data["A_max"] / self.data["cuspEmax"]                
 
     def channel_mean(self):
         """
@@ -367,6 +369,7 @@ class AnalysisData:
         # congratulations, it's a sipm!
         if self.is_spms():
             channels = (self.data["channel"]).unique()
+            # !! need to update for multiple parameter case!
             channel_mean = pd.DataFrame(
                 {"channel": channels, self.parameters[0]: [None] * len(channels)}
             )
@@ -381,7 +384,7 @@ class AnalysisData:
                     numeric_only=True
                 )[self.parameters]
 
-            if self.saving == "append":
+            elif self.saving == "append":
                 subsys = self.get_subsys()
                 # the file does not exist, so we get the mean as usual
                 if not os.path.exists(self.plt_path + "-" + subsys + ".dat"):
@@ -397,7 +400,7 @@ class AnalysisData:
                     with shelve.open(self.plt_path + "-" + subsys, "r") as shelf:
                         old_dict = dict(shelf)
                     # get old dataframe (we are interested only in the column with mean values)
-                    old_df = old_dict["monitoring"][self.evt_type][self.parameters[0]][
+                    old_df = old_dict["monitoring"][self.evt_type][self.parameters][
                         "df_" + subsys
                     ]
                     """
@@ -407,9 +410,9 @@ class AnalysisData:
                     # what we can do, is to get absolute values starting from the mean and the % values present in the old dataframe'
                     # Later, we need to put these absolute values in the corresponding parameter column
                     if self.variation:
-                        old_df[self.parameters[0]] = (old_df[self.parameters[0]] / 100 + 1) * old_df[self.parameters[0] + "_mean"]
+                        old_df[self.parameters] = (old_df[self.parameters] / 100 + 1) * old_df[self.parameters + "_mean"]
 
-                    merged_df = concat([old_df, self.data], ignore_index=True, axis=0)
+                    merged_df = pd.concat([old_df, self.data], ignore_index=True, axis=0)
                     # remove 'level_0' column (if present)
                     merged_df = utils.check_level0(merged_df)
                     merged_df = merged_df.reset_index()
@@ -418,19 +421,32 @@ class AnalysisData:
 
                     # ...still we have to re-compute the % variations of previous time windows because now the mean estimate is different!!!
                     """
-                    # a column of mean values
-                    mean_df = old_df[self.parameters[0] + "_mean"]
-                    # a column of channels
-                    channels = old_df["channel"]
-                    # two columns: one of channels, one of mean values
-                    channel_mean = concat(
-                        [channels, mean_df], ignore_index=True, axis=1
-                    ).rename(columns={0: "channel", 1: self.parameters[0]})
-                    # drop potential duplicate rows
-                    channel_mean = channel_mean.drop_duplicates(subset=["channel"])
-                    # set 'channel' column as index
+
+                    # subselect only columns of mean values of param(s) of interest and channel
+                    channel_mean = old_df[["channel"] + [x + "_mean" for x in self.parameters]]
+                    # later there will be a line renaming param to param_mean, so now need to rename back to no mean...
+                    # this whole section has to be cleaned up
+                    channel_mean = channel_mean.rename(
+                        columns={param + "_mean": param for param in self.parameters}
+                    )                    
+                    # set channel to index because that's how it comes out in previous cases from df.mean()
                     channel_mean = channel_mean.set_index("channel")
 
+                    # a column of mean values
+                    # mean_df = old_df[self.parameters[0] + "_mean"]
+                    # mean_df = old_df[[x + "_mean" for x in self.parameters]]
+                    # # a column of channels
+                    # channels = old_df["channel"]
+                    # # two columns: one of channels, one of mean values
+                    # channel_mean = pd.concat(
+                    #     [channels, mean_df], ignore_index=True, axis=1
+                    # ).rename(columns={0: "channel", 1: self.parameters[0]})
+                    # # drop potential duplicate rows
+                    # channel_mean = channel_mean.drop_duplicates(subset=["channel"])
+                    # # set 'channel' column as index
+                    # channel_mean = channel_mean.set_index("channel")
+
+                    
             # some means are meaningless -> drop the corresponding column
             if "FWHM" in self.parameters:
                 channel_mean.drop("FWHM", axis=1)
@@ -526,7 +542,7 @@ def get_seconds(time_window: str):
     return int(time_window.rstrip(time_unit)) * str_to_seconds[time_unit]
 
 
-def cut_dataframe(data: DataFrame) -> DataFrame:
+def cut_dataframe(data: pd.DataFrame) -> pd.DataFrame:
     """Get mean value of the parameters under study over the first 10% of data present in the selected time range."""
     min_datetime = data["datetime"].min()  # first timestamp
     max_datetime = data["datetime"].max()  # last timestamp
