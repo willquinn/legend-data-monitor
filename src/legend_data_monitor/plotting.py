@@ -430,9 +430,9 @@ def plot_per_cc4(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
         ["name", "position", "location", "cc4_channel", "cc4_id"]
     ]
     labels["channel"] = labels.index
-    labels["label"] = labels[
-        ["location", "position", "channel", "name", "cc4_channel"]
-    ].apply(lambda x: f"s{x[0]}-p{x[1]}-ch{str(x[2]).zfill(3)}-{x[3]}-{x[4]}", axis=1)
+    labels["label"] = labels[["location", "position", "name", "cc4_channel"]].apply(
+        lambda x: f"s{x[0]}-p{x[1]}-{x[2]}-cc4 ch.{x[3]}", axis=1
+    )
     # put it in the table
     data_analysis = data_analysis.set_index("channel")
     data_analysis["label"] = labels["label"]
@@ -456,13 +456,13 @@ def plot_per_cc4(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
         labels = []
         for label, data_channel in data_cc4_id.groupby("label"):
             cc4_channel = (label.split("-"))[-1]
-            utils.logger.debug(f"...... channel {cc4_channel}")
+            utils.logger.debug(f"...... {cc4_channel}")
             plot_style(data_channel, fig, axes[ax_idx], plot_info, COLORS[col_idx])
 
             labels.append(label)
             if len(plot_info["parameters"]) == 1:
                 fwhm_ch = get_fwhm_for_fixed_ch(data_channel, plot_info["parameter"])
-                labels[-1] = label[-1] + f" - FWHM: {fwhm_ch}"
+                labels[-1] = label + f" - FWHM: {fwhm_ch}"
             col_idx += 1
 
         # add grid
@@ -870,7 +870,15 @@ def get_fwhm_for_fixed_ch(data_channel: DataFrame, parameter: str) -> float:
     entries = data_channel[parameter]
     entries_avg = np.mean(entries)
     fwhm_ch = 2.355 * np.sqrt(np.mean(np.square(entries - entries_avg)))
-    return round(fwhm_ch, 2)
+
+    # Determine the number of decimal places based on the magnitude of the value
+    decimal_places = max(0, int(-np.floor(np.log10(abs(fwhm_ch)))) + 2)
+    # Format the FWHM value with the appropriate number of decimal places
+    formatted_fwhm = "{:.{dp}f}".format(fwhm_ch, dp=decimal_places)
+    # Remove trailing zeros from the formatted value
+    formatted_fwhm = formatted_fwhm.rstrip("0").rstrip(".")
+
+    return formatted_fwhm
 
 
 def plot_limits(ax: plt.Axes, limits: dict):

@@ -400,7 +400,8 @@ class AnalysisData:
                     with shelve.open(self.plt_path + "-" + subsys, "r") as shelf:
                         old_dict = dict(shelf)
                     # get old dataframe (we are interested only in the column with mean values)
-                    old_df = old_dict["monitoring"][self.evt_type][self.parameters][
+                    # !! need to update for multiple parameter case! (check of they are saved to understand what to retrieve with the 'append' option)
+                    old_df = old_dict["monitoring"][self.evt_type][self.parameters[0]][
                         "df_" + subsys
                     ]
                     """
@@ -422,31 +423,20 @@ class AnalysisData:
                     # ...still we have to re-compute the % variations of previous time windows because now the mean estimate is different!!!
                     """
 
-                    # subselect only columns of mean values of param(s) of interest and channel
-                    channel_mean = old_df[
-                        ["channel"] + [x + "_mean" for x in self.parameters]
-                    ]
+                    # subselect only columns of: 1) channel 2) mean values of param(s) of interest
+                    channel_mean = old_df.filter(
+                        items=["channel"] + [x + "_mean" for x in self.parameters]
+                    )
+
                     # later there will be a line renaming param to param_mean, so now need to rename back to no mean...
                     # this whole section has to be cleaned up
                     channel_mean = channel_mean.rename(
                         columns={param + "_mean": param for param in self.parameters}
                     )
+                    # drop potential duplicate rows
+                    channel_mean = channel_mean.drop_duplicates(subset=["channel"])
                     # set channel to index because that's how it comes out in previous cases from df.mean()
                     channel_mean = channel_mean.set_index("channel")
-
-                    # a column of mean values
-                    # mean_df = old_df[self.parameters[0] + "_mean"]
-                    # mean_df = old_df[[x + "_mean" for x in self.parameters]]
-                    # # a column of channels
-                    # channels = old_df["channel"]
-                    # # two columns: one of channels, one of mean values
-                    # channel_mean = pd.concat(
-                    #     [channels, mean_df], ignore_index=True, axis=1
-                    # ).rename(columns={0: "channel", 1: self.parameters[0]})
-                    # # drop potential duplicate rows
-                    # channel_mean = channel_mean.drop_duplicates(subset=["channel"])
-                    # # set 'channel' column as index
-                    # channel_mean = channel_mean.set_index("channel")
 
             # some means are meaningless -> drop the corresponding column
             if "FWHM" in self.parameters:
