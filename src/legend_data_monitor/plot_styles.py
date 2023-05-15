@@ -13,6 +13,10 @@ from pandas import DataFrame, Timedelta, concat
 
 from . import utils
 
+# -------------------------------------------------------------------------------
+# single parameter plotting functions
+# -------------------------------------------------------------------------------
+
 
 def plot_vs_time(
     data_channel: DataFrame, fig: Figure, ax: Axes, plot_info: dict, color=None
@@ -101,6 +105,17 @@ def plot_vs_time(
     # beautification
     # -------------------------------------------------------------------------
 
+    # set range if provided
+    if plot_info["range"][0] is not None:
+        ax.set_ylim(ymin=plot_info["range"][0])
+    if plot_info["range"][1] is not None:
+        ax.set_ylim(ymax=plot_info["range"][1])
+
+    # plot the position of the two K lines
+    if plot_info["K_events"]:
+        ax.axhline(y=1460.822, color="gray", linestyle="--")
+        ax.axhline(y=1524.6, color="gray", linestyle="--")
+
     # --- time ticks/labels on x-axis
     min_x = date2num(data_channel.iloc[0]["datetime"])
     max_x = date2num(data_channel.iloc[-1]["datetime"])
@@ -164,18 +179,15 @@ def plot_histo(
     data_channel: DataFrame, fig: Figure, ax: Axes, plot_info: dict, color=None
 ):
     # --- histo range
-    # !! in the future take from par-settings
-    # needed for cuspEmax because with geant outliers not possible to view normal histo
-    hrange = {"keV": [0, 2500]}
     # take full range if not specified
     x_min = (
-        hrange[plot_info["unit"]][0]
-        if plot_info["unit"] in hrange
+        plot_info["range"][0]
+        if plot_info["range"][0] is not None
         else data_channel[plot_info["parameter"]].min()
     )
     x_max = (
-        hrange[plot_info["unit"]][1]
-        if plot_info["unit"] in hrange
+        plot_info["range"][1]
+        if plot_info["range"][1] is not None
         else data_channel[plot_info["parameter"]].max()
     )
 
@@ -184,27 +196,37 @@ def plot_histo(
     bin_width = bwidth[plot_info["unit"]] if plot_info["unit"] in bwidth else 1
 
     # Compute number of bins
-    if bin_width:
-        bin_edges = (
-            np.arange(x_min, x_max + bin_width, bin_width / 5)
-            if plot_info["unit_label"] == "%"
-            else np.arange(x_min, x_max + bin_width, bin_width)
+    # sometimes e.g. A/E is always 0.0 => mean = 0 => var = NaN => x_min = NaN => cannot do np.arange
+    # why arange tho? why not just number of bins (xmax - xmin) / binwidth?
+    if not np.isnan(x_min):
+        if bin_width:
+            bin_edges = (
+                np.arange(x_min, x_max + bin_width, bin_width / 5)
+                if plot_info["unit_label"] == "%"
+                else np.arange(x_min, x_max + bin_width, bin_width)
+            )
+        # this never happens unless somebody puts 0 in the bwidth dictionary?
+        else:
+            bin_edges = 50
+
+        # -------------------------------------------------------------------------
+        # Plot histogram
+        data_channel[plot_info["parameter"]].plot.hist(
+            bins=bin_edges,
+            range=[x_min, x_max],
+            histtype="step",
+            linewidth=1.5,
+            ax=ax,
+            color=color,
         )
-    else:
-        bin_edges = 50
 
     # -------------------------------------------------------------------------
-    # Plot histogram
-    data_channel[plot_info["parameter"]].plot.hist(
-        bins=bin_edges,
-        range=[x_min, x_max],
-        histtype="step",
-        linewidth=1.5,
-        ax=ax,
-        color=color,
-    )
 
-    # -------------------------------------------------------------------------
+    # plot the position of the two K lines
+    if plot_info["K_events"]:
+        ax.axvline(x=1460.822, color="gray", linestyle="--")
+        ax.axvline(x=1524.6, color="gray", linestyle="--")
+
     ax.set_yscale("log")
     x_label = (
         f"{plot_info['label']}, {plot_info['unit_label']}"
@@ -227,6 +249,10 @@ def plot_scatter(
         # edgecolors=color,
     )
 
+    if plot_info["K_events"]:
+        ax.axhline(y=1460.822, color="gray", linestyle="--")
+        ax.axhline(y=1524.6, color="gray", linestyle="--")
+
     # --- time ticks/labels on x-axis
     ax.xaxis.set_major_formatter(DateFormatter("%Y\n%m/%d\n%H:%M"))
 
@@ -237,6 +263,94 @@ def plot_scatter(
         else f"{plot_info['label']} [{plot_info['unit_label']}]"
     )
     fig.supylabel(y_label)
+
+
+# -------------------------------------------------------------------------------
+# multi parameter plotting functions
+# -------------------------------------------------------------------------------
+
+
+def plot_par_vs_par(
+    data_channel: DataFrame, fig: Figure, ax: Axes, plot_info: dict, color=None
+):
+    par_x = plot_info["parameters"][0]
+    par_y = plot_info["parameters"][1]
+
+    ax.scatter(data_channel[par_x], data_channel[par_y], color=color)
+
+    labels = []
+    for param in plot_info["parameters"]:
+        # construct label
+        label = (
+            f"{plot_info['label'][param]}, {plot_info['unit_label'][param]}"
+            if plot_info["unit_label"][param] == "%"
+            else f"{plot_info['label'][param]} [{plot_info['unit_label'][param]}]"
+        )
+        labels.append(label)
+
+    fig.supxlabel(labels[0])
+    fig.supylabel(labels[1])
+
+    # apply range
+    # parameter not in range means 1) none was given and defaulted to [None, None], or 2) this parameter was not mentioned in range
+    # ? cut data before plotting, not after? could be more efficient to plot smaller data sample?
+    if par_x in plot_info["range"]:
+        ax.set_xlim(plot_info["range"][par_x])
+    if par_y in plot_info["range"]:
+        ax.set_ylim(plot_info["range"][par_y])
+
+
+# !!! WORK IN PROGRESS !!!
+# hard to test because A/E vs E is weird with huge ranges of strange large and negative values, kills memory with many bins
+# will come back to this later after clarifying what A/E makes sense to plot
+# def plot_par_vs_par_hist(data_channel: DataFrame, fig: Figure, ax: Axes, plot_info: dict, color=None):
+#     # Compute number of bins
+#     # 0 = x, 1 = y
+#     nbins = []; ranges = []
+#     # NaN check
+#     # anynan = False
+#     for param in plot_info["parameters"]:
+#         # range
+#         par_range = [data_channel[param].min(), data_channel[param].max()]
+
+#         # bin width
+#         if param == "AoE_Custom":
+#             bin_width = 0.1
+#             # par_range = [0,2]
+#         elif plot_info["unit"][param] == "keV":
+#             bin_width = 2.5
+#             par_range = [0,3000] # avoid negative values
+#         else:
+#             bin_width = 1 # default
+
+
+#         # number of bins
+#         nbins.append( int( (par_range[1] - par_range[0])/bin_width ) )
+#         ranges.append(par_range)
+#         # sometimes e.g. A/E is always 0.0 => mean = 0 => var = NaN => x_min = NaN => cannot plot range [nan, nan]
+#         # anynan = anynan or np.isnan(nbins[-1])
+
+#     print(nbins)
+#     print(ranges)
+#     # if not anynan:
+#     h, xedges, yedges, image = ax.hist2d(data_channel[plot_info["parameters"][0]], data_channel[plot_info["parameters"][1]], range=ranges, bins=nbins)
+
+#     labels = []
+#     for param in plot_info["parameters"]:
+#         label = (
+#             f"{plot_info['label'][param]}, {plot_info['unit_label'][param]}"
+#             if plot_info["unit_label"][param] == "%"
+#             else f"{plot_info['label'][param]} [{plot_info['unit_label'][param]}]"
+#         )
+#         labels.append(label)
+
+#     fig.supxlabel(labels[0])
+#     fig.supylabel(labels[1])
+
+#     del h
+#     del xedges
+#     del yedges
+#     del image
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -338,4 +452,6 @@ PLOT_STYLE = {
     "histogram": plot_histo,
     "scatter": plot_scatter,
     "heatmap": plot_heatmap,
+    "par vs par": plot_par_vs_par,
+    # "par vs par histo": plot_par_vs_par_hist
 }

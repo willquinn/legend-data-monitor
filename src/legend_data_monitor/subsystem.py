@@ -4,7 +4,6 @@ from datetime import datetime
 
 import numpy as np
 import pandas as pd
-import pytz
 from legendmeta import LegendMetadata
 from pygama.flow import DataLoader
 
@@ -25,21 +24,25 @@ class Subsystem:
     dataset=
         dict with the following keys:
             - 'experiment' [str]: 'L60' or 'L200'
-            - 'path' [str]: < move description here from get_data() >
-            - 'version' [str]: < move description here from get_data() >
+            - 'period' [str]: period format pXX
+            - 'path' [str]: path to prod-ref folder (before version)
+            - 'version' [str]: version of pygama data processing format vXX.XX
             - 'type' [str]: 'phy' or 'cal'
             - the following key(s) depending in time selection
                 1) 'start' : <start datetime>, 'end': <end datetime> where <datetime> input is of format 'YYYY-MM-DD hh:mm:ss'
                 2) 'window'[str]: time window in the past from current time point, format: 'Xd Xh Xm' for days, hours, minutes
                 2) 'timestamps': str or list of str in format 'YYYYMMDDThhmmssZ'
                 3) 'runs': int or list of ints for run number(s)  e.g. 10 for r010
-    Or input kwargs separately path=, version=, type=; start=&end=, or window=, or timestamps=, or runs=
+    Or input kwargs separately experiment=, period=, path=, version=, type=; start=&end=, or window=, or timestamps=, or runs=
 
-    Experiment is needed to know which channel belongs to the pulser Subsystem, AUX0 (L60) or AUX1 (L200)
+    Experiment is needed to know which channel belongs to the pulser Subsystem (and its name), "auxs" ch0 (L60) or "puls" ch1 (L200)
+    Period is needed to know channel name ("fcid" or "rawid")
     Selection range is needed for the channel map and status information at that time point, and should be the only information needed,
         however, pylegendmeta only allows query .on(timestamp=...) but not .on(run=...);
         therefore, to be able to get info in case of `runs` selection, we need to know
-        path, version, and run type to look up first timestamp of the run
+        path, version, and run type to look up first timestamp of the run.
+        If this changes in the future, the path will only be asked when data is requested to be loaded with Subsystem.get_data(),
+        but not to just load the channel map and status for given run
 
     Might set default "latest" for version, but gotta be careful.
     """
@@ -66,6 +69,11 @@ class Subsystem:
 
         if "type" not in data_info:
             utils.logger.error("\033[91mProvide data type!\033[0m")
+            utils.logger.error("\033[91m%s\033[0m", self.__doc__)
+            return
+
+        if "period" not in data_info:
+            utils.logger.error("\033[91mProvide period!\033[0m")
             utils.logger.error("\033[91m%s\033[0m", self.__doc__)
             return
 
@@ -237,6 +245,7 @@ class Subsystem:
         self.data["datetime"] = pd.to_datetime(
             self.data["timestamp"], origin="unix", utc=True, unit="s"
         )
+        self.data = self.data.drop("timestamp", axis=1)
 
         # -------------------------------------------------------------------------
         # add detector name, location and position from map
@@ -498,8 +507,10 @@ class Subsystem:
                 self.channel_map.at[channel_name, "status"] = full_status_map[
                     channel_name
                 ]["usability"]
+
         # quick-fix to remove detectors while status maps are not updated
-        for channel_name in list(utils.REMOVE_DETS.keys()):
+        # (p03 channels who are not properly behaving in calib data from George's analysis)
+        for channel_name in utils.REMOVE_DETS:
             # status map contains all channels, check if this channel is in our subsystem
             if channel_name in self.channel_map.index:
                 self.channel_map.at[channel_name, "status"] = "off"
@@ -539,18 +550,8 @@ class Subsystem:
                 # otherwise just add the parameter directly
                 params.append(param)
 
-        # --- check if parameters have '~', if so remove for loading the corresponding lh5 parameter
-        final_params = []
-        for param in params:
-            if "~" in param:
-                # remove first entry in param
-                param = param.split("~")[1]
-                final_params.append(param)
-            else:
-                final_params.append(param)
-
         # some parameters might be repeated twice - remove
-        return list(np.unique(final_params))
+        return list(np.unique(params))
 
     def construct_dataloader_configs(self, params: list_of_str):
         """
@@ -600,25 +601,6 @@ class Subsystem:
         )
         utils.logger.info(f"...... not loading channels with status off: {removed_chs}")
 
-        # remove p03 channels who are not properly behaving in calib data (from George's analysis)
-        """
-        if int(self.period[-1]) >= 3:
-            names = list(utils.REMOVE_DETS.keys())
-            probl_dets = []
-            for name in names:
-                probl_det = list(
-                    self.channel_map[self.channel_map["name"] == name]["channel"]
-                )
-                # the following 'if' is needed to avoid errors when setting up 'pulser'
-                if probl_det != []:
-                    probl_dets.append(probl_det[0])
-            if probl_dets != []:
-                utils.logger.info(
-                    f"...... not loading problematic detectors for {self.period}: {names}"
-                )
-                chlist = [ch for ch in chlist if ch not in probl_dets]
-        """
-
         # for L60-p01 and L200-p02, keep using 3 digits
         if int(self.period[-1]) < 3:
             ch_format = "ch:03d"
@@ -662,48 +644,34 @@ class Subsystem:
         return dict_dlconfig, dict_dbconfig
 
     def remove_timestamps(self, remove_keys: dict):
-        """Remove timestamps from the dataframes for a given channel; the time interval in which to remove the channel is provided through an external json file."""
+        """Remove timestamps from the dataframes for a given channel.
+
+        The time interval in which to remove the channel is provided through an external json file.
+        """
         # all timestamps we are considering are expressed in UTC0
-        utc_timezone = pytz.timezone("UTC")
-        utils.logger.debug(
-            "We are removing timestamps from the following channels: %s",
-            list(remove_keys.keys()),
-        )
+        utils.logger.debug("... removing timestamps from the following detectors:")
 
         # loop over channels for which we want to remove timestamps
-        for channel in remove_keys.keys():
-            if channel in self.data["name"].unique():
-                if (
-                    remove_keys[channel]["from"] != []
-                    and remove_keys[channel]["to"] != []
-                ):
-                    # remove timestamps from self.data that are within time_from and time_to, for a given channel
-                    for idx, time_from in enumerate(remove_keys[channel]["from"]):
-                        # times are in format YYYYMMDDTHHMMSSZ, convert them into a UTC0 timestamp
-                        time_from = datetime.strptime(time_from, "%Y%m%dT%H%M%SZ")
-                        time_from = utc_timezone.localize(time_from)
-                        time_from = time_from.timestamp()
-
-                        time_to = datetime.strptime(
-                            remove_keys[channel]["to"][idx], "%Y%m%dT%H%M%SZ"
+        for detector in remove_keys:
+            if detector in self.data["name"].unique():
+                utils.logger.debug(f".... {detector}")
+                # remove timestamps from self.data that are within time_from and time_to, for a given channel
+                for chunk in remove_keys[detector]:
+                    utils.logger.debug(f"from {chunk['from']} to {chunk['to']}")
+                    # times are in format YYYYMMDDTHHMMSSZ, convert them into a UTC0 timestamp
+                    for point in ["from", "to"]:
+                        # convert UTC timestamp to datetime (unix epoch time)
+                        chunk[point] = pd.to_datetime(
+                            chunk[point], utc=True, format="%Y%m%dT%H%M%SZ"
                         )
-                        time_to = utc_timezone.localize(time_to)
-                        time_to = time_to.timestamp()
 
-                        # selectjust the rows for the given channel
-                        channel_df = self.data[self.data["name"] == channel]
-                        # for the given channel, select just the rows that are within the time interval
-                        filtered_df = channel_df[
-                            (channel_df["timestamp"] >= time_from)
-                            & (channel_df["timestamp"] < time_to)
-                        ]
-                        # remove the rows that are within the time interval from the original dataframe
-                        self.data = self.data[
-                            ~(
-                                (self.data["name"] == channel)
-                                & self.data["timestamp"].isin(filtered_df["timestamp"])
-                            )
-                        ]
+                    # entries to drop for this chunk
+                    rows_to_drop = self.data[
+                        (self.data["name"] == detector)
+                        & (self.data["datetime"] >= chunk["from"])
+                        & (self.data["datetime"] <= chunk["to"])
+                    ]
+                    self.data = self.data.drop(rows_to_drop.index)
 
         self.data = self.data.reset_index()
 

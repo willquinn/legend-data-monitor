@@ -1,6 +1,7 @@
 import io
 import shelve
 
+import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.backends.backend_pdf import PdfPages
@@ -29,7 +30,6 @@ def make_subsystem_plots(
     pdf = PdfPages(plt_path + "-" + subsystem.type + ".pdf")
     out_dict = {}
 
-    # for param in subsys.parameters:
     for plot_title in plots:
         utils.logger.info(
             "\33[95m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\33[0m"
@@ -39,11 +39,11 @@ def make_subsystem_plots(
             "\33[95m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\33[0m"
         )
 
+        # -------------------------------------------------------------------------
+        # settings checks
+        # -------------------------------------------------------------------------
+
         # --- original plot settings provided in json
-        # - parameter of interest
-        # - event type all/pulser/phy/Klines
-        # - variation (bool)
-        # - time window (for event rate or vs time plot)
         plot_settings = plots[plot_title]
 
         # --- defaults
@@ -54,25 +54,50 @@ def make_subsystem_plots(
         # same, here need to account for unit label %
         if "variation" not in plot_settings:
             plot_settings["variation"] = False
+        # range for parameter
+        if "range" not in plot_settings:
+            plot_settings["range"] = [None, None]
+        # resampling: applies only to vs time plot
+        if "resampled" not in plot_settings:
+            plot_settings["resampled"] = None
+        # status plot requires no plot style option (for now)
+        if "plot_style" not in plot_settings:
+            plot_settings["plot_style"] = None
+
+        # --- additional not in json
         # add saving info + plot where we save things
         plot_settings["saving"] = saving
         plot_settings["plt_path"] = plt_path
+
+        # --- checks
+        # resampled not provided for vs time -> set default
+        if plot_settings["plot_style"] == "vs time":
+            if not plot_settings["resampled"]:
+                plot_settings["resampled"] = "also"
+                utils.logger.warning(
+                    "\033[93mNo 'resampled' option was specified. Both resampled and all entries will be plotted (otherwise you can try again using the option 'no', 'only', 'also').\033[0m"
+                )
+        # resampled provided for irrelevant plot
+        elif plot_settings["resampled"]:
+            utils.logger.warning(
+                "\033[93mYou're using the option 'resampled' for a plot style that does not need it. For this reason, that option will be ignored.\033[0m"
+            )
 
         # -------------------------------------------------------------------------
         # set up analysis data
         # -------------------------------------------------------------------------
 
         # --- AnalysisData:
-        # - select parameter of interest
+        # - select parameter(s) of interest
         # - subselect type of events (pulser/phy/all/klines)
+        # - apply cuts
+        # - calculate special parameters if present
         # - get channel mean
         # - calculate variation from mean, if asked
         data_analysis = analysis_data.AnalysisData(
             subsystem.data, selection=plot_settings
         )
-        # cuts will be loaded but not applied; for our purposes, need to apply the cuts right away
-        # currently only K lines cut is used, and only data after cut is plotted -> just replace
-        data_analysis.data = data_analysis.apply_all_cuts()
+
         # check if the dataframe is empty, if so, skip this plot
         if utils.is_empty(data_analysis.data):
             continue
@@ -82,7 +107,9 @@ def make_subsystem_plots(
         # set up plot info
         # -------------------------------------------------------------------------
 
-        # --- color settings using a pre-defined palette
+        # -------------------------------------------------------------------------
+        # color settings using a pre-defined palette
+
         # num colors needed = max number of channels per string
         # - find number of unique positions in each string
         # - get maximum occurring
@@ -119,9 +146,8 @@ def make_subsystem_plots(
         global COLORS
         COLORS = color_palette("hls", max_ch_per_string).as_hex()
 
-        # --- information needed for plot structure
-        # ! currently "parameters" is one parameter !
-        # subject to change if one day want to plot multiple in one plot
+        # -------------------------------------------------------------------------
+        # basic information needed for plot structure
         plot_info = {
             "title": plot_title,
             "subsystem": subsystem.type,
@@ -132,66 +158,78 @@ def make_subsystem_plots(
                 "pulser_aux": "puls",
                 "FC_bsln": "bsln",
             }[subsystem.type],
-            "unit": utils.PLOT_INFO[plot_settings["parameters"]]["unit"],
-            "plot_style": plot_settings["plot_style"]
-            if "plot_style" in plot_settings
-            else None,
         }
 
-        # information for having the resampled or all entries (needed only for 'vs time' style option)
-        plot_info["resampled"] = (
-            plot_settings["resampled"] if "resampled" in plot_settings else ""
-        )
+        # parameters from plot settings to be simply propagated
+        plot_info["plot_style"] = plot_settings["plot_style"]
+        plot_info["time_window"] = plot_settings["time_window"]
+        plot_info["resampled"] = plot_settings["resampled"]
+        plot_info["range"] = plot_settings["range"]
 
         # information for shifting the channels or not (not needed only for the 'per channel' structure option) when plotting the std
         plot_info["std"] = True if plot_structure == "per channel" else False
 
-        if plot_info["plot_style"] is not None:
-            if plot_settings["plot_style"] == "vs time":
-                if plot_info["resampled"] == "":
-                    plot_info["resampled"] = "also"
-                    utils.logger.warning(
-                        "\033[93mNo 'resampled' option was specified. Both resampled and all entries will be plotted (otherwise you can try again using the option 'no', 'only', 'also').\033[0m"
-                    )
-            else:
-                if plot_info["resampled"] != "":
-                    utils.logger.warning(
-                        "\033[93mYou're using the option 'resampled' for a plot style that does not need it. For this reason, that option will be ignored.\033[0m"
-                    )
+        # -------------------------------------------------------------------------
+        # information needed for plot style depending on parameters
 
-        # --- information needed for plot style
-        plot_info["label"] = utils.PLOT_INFO[plot_settings["parameters"]]["label"]
-        # unit label should be % if variation was asked
-        plot_info["unit_label"] = (
-            "%" if plot_settings["variation"] else plot_info["unit"]
-        )
-        plot_info["cuts"] = plot_settings["cuts"] if "cuts" in plot_settings else ""
-        # time window might be needed fort he vs time function
-        plot_info["time_window"] = plot_settings["time_window"]
-        # threshold values are needed for status map; might be needed for plotting limits on canvas too
-        if subsystem.type not in ["pulser", "pulser_aux", "FC_bsln"]:
-            plot_info["limits"] = (
-                utils.PLOT_INFO[plot_settings["parameters"]]["limits"][subsystem.type][
-                    "variation"
-                ]
-                if plot_settings["variation"]
-                else utils.PLOT_INFO[plot_settings["parameters"]]["limits"][
-                    subsystem.type
-                ]["absolute"]
+        # first, treat it like multiple parameters, add dictionary to each entry with values for each parameter
+        multi_param_info = ["unit", "label", "unit_label"]
+        for info in multi_param_info:
+            plot_info[info] = {}
+
+        params = plot_settings["parameters"]
+        if isinstance(params, str):
+            params = [params]
+
+        # name(s) of parameter(s) to plot - always list
+        plot_info["parameters"] = params
+        # preserve original param_mean before potentially adding _var to name
+        plot_info["param_mean"] = [x + "_mean" for x in params]
+        # add _var if variation asked
+        if plot_settings["variation"]:
+            plot_info["parameters"] = [x + "_var" for x in params]
+
+        for param in plot_info["parameters"]:
+            # plot info should contain final parameter to plot i.e. _var if var is asked
+            # unit and label are connected to original parameter name
+            # this is messy AF need to rethink
+            param_orig = param.rstrip("_var")
+            plot_info["unit"][param] = utils.PLOT_INFO[param_orig]["unit"]
+            plot_info["label"][param] = utils.PLOT_INFO[param_orig]["label"]
+            # unit label should be % if variation was asked
+            plot_info["unit_label"][param] = (
+                "%" if plot_settings["variation"] else plot_info["unit"][param_orig]
             )
-        plot_info["parameter"] = (
-            plot_settings["parameters"] + "_var"
-            if plot_info["unit_label"] == "%"
-            else plot_settings["parameters"]
-        )  # could be multiple in the future!
-        plot_info["param_mean"] = plot_settings["parameters"] + "_mean"
+
+        if len(params) == 1:
+            # change "parameters" to "parameter" - for single-param plotting functions
+            plot_info["parameter"] = plot_info["parameters"][0]
+            # now, if it was actually a single parameter, convert {param: value} dict structure to just the value
+            # this is how one-parameter plotting functions are designed
+            for info in multi_param_info:
+                plot_info[info] = plot_info[info][plot_info["parameter"]]
+            # same for mean
+            plot_info["param_mean"] = plot_info["param_mean"][0]
+
+            # threshold values are needed for status map; might be needed for plotting limits on canvas too
+            # only needed for single param plots (for now)
+            if subsystem.type not in ["pulser", "pulser_aux", "FC_bsln"]:
+                keyword = "variation" if plot_settings["variation"] else "absolute"
+                plot_info["limits"] = utils.PLOT_INFO[params[0]]["limits"][
+                    subsystem.type
+                ][keyword]
+
+            # needed for grey lines for K lines, in case we are looking at energy itself (not event rate for example)
+            plot_info["K_events"] = (plot_settings["event_type"] == "K_events") and (
+                plot_info["parameter"] == utils.SPECIAL_PARAMETERS["K_events"][0]
+            )
 
         # -------------------------------------------------------------------------
         # call chosen plot structure + plotting
         # -------------------------------------------------------------------------
 
-        if plot_info["parameter"] == "exposure":
-            _ = string_visualization.exposure_plot(
+        if "exposure" in plot_info["parameters"]:
+            string_visualization.exposure_plot(
                 subsystem, data_analysis.data, plot_info, pdf
             )
         else:
@@ -307,26 +345,32 @@ def plot_per_ch(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
             # plot selected style on this axis
             plot_style(data_channel, fig, axes[ax_idx], plot_info, color=COLORS[ax_idx])
 
-            # --- add summary to axis
+            # --- add summary to axis - only for single channel plots
             # name, position and mean are unique for each channel - take first value
-            t = data_channel.iloc[0][
-                ["channel", "position", "name", plot_info["param_mean"]]
-            ]
-
-            fwhm_ch = get_fwhm_for_fixed_ch(data_channel, plot_info["parameter"])
-
+            df_text = data_channel.iloc[0][["channel", "position", "name"]]
             text = (
-                t["name"]
+                df_text["name"]
                 + "\n"
-                + f"channel {t['channel']}\n"
-                + f"position {t['position']}\n"
-                + f"FWHM {round(fwhm_ch, 2)}\n"
-                + (
-                    f"mean {round(t[plot_info['param_mean']],3)} [{plot_info['unit']}]"
-                    if t[plot_info["param_mean"]] is not None
-                    else ""
-                )  # handle with care mean='None' situations
+                + f"channel {df_text['channel']}\n"
+                + f"position {df_text['position']}"
             )
+            if len(plot_info["parameters"]) == 1:
+                # in case of 1 parameter, "param mean" entry is a single string param_mean
+                # in case of > 1, it's a list of parameters -> ignore for now and plot mean only for 1 param case
+                par_mean = data_channel.iloc[0][
+                    plot_info["param_mean"]
+                ]  # single number
+                fwhm_ch = get_fwhm_for_fixed_ch(data_channel, plot_info["parameter"])
+
+                text += (
+                    "\n"
+                    + f"FWHM {fwhm_ch}\n"
+                    + (
+                        f"mean {round(par_mean,3)} [{plot_info['unit']}]"
+                        if par_mean is not None
+                        else ""
+                    )  # handle with care mean='None' situations
+                )
             axes[ax_idx].text(1.01, 0.5, text, transform=axes[ax_idx].transAxes)
 
             # add grid
@@ -336,7 +380,9 @@ def plot_per_ch(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
             axes[ax_idx].set_ylabel("")
 
             # plot limits
-            plot_limits(axes[ax_idx], plot_info["limits"])
+            # check if "limits" present, is not for pulser (otherwise crash when plotting e.g. event rate), is not for multi-params
+            if "limits" in plot_info:
+                plot_limits(axes[ax_idx], plot_info["limits"])
 
             ax_idx += 1
 
@@ -411,10 +457,12 @@ def plot_per_cc4(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
         for label, data_channel in data_cc4_id.groupby("label"):
             cc4_channel = (label.split("-"))[-1]
             utils.logger.debug(f"...... channel {cc4_channel}")
-
-            fwhm_ch = get_fwhm_for_fixed_ch(data_channel, plot_info["parameter"])
             plot_style(data_channel, fig, axes[ax_idx], plot_info, COLORS[col_idx])
-            labels.append(label + f" - FWHM: {round(fwhm_ch, 2)}")
+
+            labels.append(label)
+            if len(plot_info["parameters"]) == 1:
+                fwhm_ch = get_fwhm_for_fixed_ch(data_channel, plot_info["parameter"])
+                labels[-1] = label[-1] + f" - FWHM: {fwhm_ch}"
             col_idx += 1
 
         # add grid
@@ -427,11 +475,6 @@ def plot_per_cc4(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
 
         # plot limits
         plot_limits(axes[ax_idx], plot_info["limits"])
-
-        # plot the position of the two K lines
-        if plot_info["parameter"] == "K_events":
-            axes[ax_idx].axhline(y=1460.822, color="gray", linestyle="--")
-            axes[ax_idx].axhline(y=1524.6, color="gray", linestyle="--")
 
         ax_idx += 1
 
@@ -501,9 +544,11 @@ def plot_per_string(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
         col_idx = 0
         labels = []
         for label, data_channel in data_location.groupby("label"):
-            fwhm_ch = get_fwhm_for_fixed_ch(data_channel, plot_info["parameter"])
             plot_style(data_channel, fig, axes[ax_idx], plot_info, COLORS[col_idx])
-            labels.append(label + f" - FWHM: {round(fwhm_ch, 2)}")
+            labels.append(label)
+            if len(plot_info["parameters"]) == 1:
+                fwhm_ch = get_fwhm_for_fixed_ch(data_channel, plot_info["parameter"])
+                labels[-1] = labels[-1] + f" - FWHM: {fwhm_ch}"
             col_idx += 1
 
         # add grid
@@ -514,13 +559,9 @@ def plot_per_string(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
         axes[ax_idx].set_ylabel("")
         axes[ax_idx].legend(labels=labels, loc="center left", bbox_to_anchor=(1, 0.5))
 
-        # plot limits
-        plot_limits(axes[ax_idx], plot_info["limits"])
-
-        # plot the position of the two K lines
-        if plot_info["parameter"] == "K_events":
-            axes[ax_idx].axhline(y=1460.822, color="gray", linestyle="--")
-            axes[ax_idx].axhline(y=1524.6, color="gray", linestyle="--")
+        # plot limits if given
+        if "limits" in plot_info:
+            plot_limits(axes[ax_idx], plot_info["limits"])
 
         ax_idx += 1
 
@@ -541,8 +582,6 @@ def plot_array(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
             "\033[91mPlotting per array is not available for the spms.\nTry again!\033[0m"
         )
         exit()
-
-    import matplotlib.patches as mpatches
 
     # --- choose plot function based on user requested style
     plot_style = plot_styles.PLOT_STYLE[plot_info["plot_style"]]
@@ -604,28 +643,32 @@ def plot_array(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
 
             labels.append(label.split("-")[-1])
             channels.append(map_dict[str(location)][str(position)])
-            values_per_string.append(data_channel[plot_info["parameter"]].unique()[0])
-            channels_per_string.append(map_dict[str(location)][str(position)])
+            if len(plot_info["parameters"]) == 1:
+                values_per_string.append(
+                    data_channel[plot_info["parameter"]].unique()[0]
+                )
+                channels_per_string.append(map_dict[str(location)][str(position)])
 
-        # get average of plotted parameter per string (print horizontal line)
-        avg_of_string = sum(values_per_string) / len(values_per_string)
-        axes.hlines(
-            y=avg_of_string,
-            xmin=min(channels_per_string),
-            xmax=max(channels_per_string),
-            color="k",
-            linestyle="-",
-            linewidth=1,
-        )
-        utils.logger.debug(f"..... average: {round(avg_of_string, 2)}")
-
-        # get legend entry (print string + colour)
-        legend.append(
-            mpatches.Patch(
-                color=COLORS[col_idx],
-                label=f"s{location} - avg: {round(avg_of_string, 2)} {plot_info['unit_label']}",
+        if len(plot_info["parameters"]) == 1:
+            # get average of plotted parameter per string (print horizontal line)
+            avg_of_string = sum(values_per_string) / len(values_per_string)
+            axes.hlines(
+                y=avg_of_string,
+                xmin=min(channels_per_string),
+                xmax=max(channels_per_string),
+                color="k",
+                linestyle="-",
+                linewidth=1,
             )
-        )
+            utils.logger.debug(f"..... average: {round(avg_of_string, 2)}")
+
+            # get legend entry (print string + colour)
+            legend.append(
+                mpatches.Patch(
+                    color=COLORS[col_idx],
+                    label=f"s{location} - avg: {round(avg_of_string, 2)} {plot_info['unit_label']}",
+                )
+            )
 
         # LAST thing to update
         col_idx += 1
@@ -827,7 +870,7 @@ def get_fwhm_for_fixed_ch(data_channel: DataFrame, parameter: str) -> float:
     entries = data_channel[parameter]
     entries_avg = np.mean(entries)
     fwhm_ch = 2.355 * np.sqrt(np.mean(np.square(entries - entries_avg)))
-    return fwhm_ch
+    return round(fwhm_ch, 2)
 
 
 def plot_limits(ax: plt.Axes, limits: dict):

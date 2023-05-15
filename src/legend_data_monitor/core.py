@@ -193,11 +193,12 @@ def generate_plots(config: dict, plt_path: str):
             parameters = utils.get_all_plot_parameters(system, config)
             # get data for these parameters and dataset range
             subsystems[system].get_data(parameters)
-            # remove timestamps for given detectors
-            subsystems[system].remove_timestamps(utils.REMOVE_KEYS)
             utils.logger.debug(subsystems[system].data)
             # flag pulser events for future parameter data selection
             subsystems[system].flag_pulser_events(subsystems["pulser"])
+            # remove timestamps for given detectors (moved here cause otherwise pulser timestamps for flagging don't match)
+            subsystems[system].remove_timestamps(utils.REMOVE_KEYS)
+            utils.logger.debug(subsystems[system].data)
 
         # -------------------------------------------------------------------------
         # make subsystem plots
