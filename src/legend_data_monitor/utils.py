@@ -49,6 +49,10 @@ for param in SPECIAL_PARAMETERS:
     if isinstance(SPECIAL_PARAMETERS[param], str):
         SPECIAL_PARAMETERS[param] = [SPECIAL_PARAMETERS[param]]
 
+# load SC params and corresponding flags to get specific parameters from big dfs that are stored in the database
+with open(pkg / "settings" / "SC-params.json") as f:
+    SC_PARAMETERS = json.load(f)
+
 # load list of columns to load for a dataframe
 COLUMNS_TO_LOAD = [
     "name",
