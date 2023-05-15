@@ -167,6 +167,9 @@ def generate_plots(config: dict, plt_path: str):
         )
         sys.exit()
 
+    # -------------------------------------------------------------------------
+    # flag events - PULSER
+    # -------------------------------------------------------------------------
     # put it in a dict, so that later, if pulser is also wanted to be plotted, we don't have to load it twice
     subsystems = {"pulser": subsystem.Subsystem("pulser", dataset=config["dataset"])}
     # get list of all parameters needed for all requested plots, if any
@@ -177,7 +180,22 @@ def generate_plots(config: dict, plt_path: str):
     utils.logger.debug(subsystems["pulser"].data)
 
     # -------------------------------------------------------------------------
+    # flag events - FC baseline
+    # -------------------------------------------------------------------------
+    subsystems["FC_bsln"] = subsystem.Subsystem("FC_bsln", dataset=config["dataset"])
+    parameters = utils.get_all_plot_parameters("FC_bsln", config)
+    subsystems["FC_bsln"].get_data(parameters)
+    utils.logger.debug(subsystems["FC_bsln"].data)
 
+    # -------------------------------------------------------------------------
+    # flag events - muon
+    # -------------------------------------------------------------------------
+    subsystems["muon"] = subsystem.Subsystem("muon", dataset=config["dataset"])
+    parameters = utils.get_all_plot_parameters("muon", config)
+    subsystems["muon"].get_data(parameters)
+    utils.logger.debug(subsystems["muon"].data)
+
+    # -------------------------------------------------------------------------
     # What subsystems do we want to plot?
     subsystems_to_plot = list(config["subsystems"].keys())
 
@@ -195,9 +213,18 @@ def generate_plots(config: dict, plt_path: str):
             # get data for these parameters and dataset range
             subsystems[system].get_data(parameters)
             utils.logger.debug(subsystems[system].data)
+
+            # -------------------------------------------------------------------------
+            # flag events
+            # -------------------------------------------------------------------------
             # flag pulser events for future parameter data selection
             subsystems[system].flag_pulser_events(subsystems["pulser"])
-            # remove timestamps for given detectors (moved here cause otherwise pulser timestamps for flagging don't match)
+            # flag FC baseline events
+            subsystems[system].flag_fcbsln_events(subsystems["FC_bsln"])
+            # flag muon events
+            subsystems[system].flag_muon_events(subsystems["muon"])
+
+            # remove timestamps for given detectors (moved here cause otherwise timestamps for flagging don't match)
             subsystems[system].remove_timestamps(utils.REMOVE_KEYS)
             utils.logger.debug(subsystems[system].data)
 

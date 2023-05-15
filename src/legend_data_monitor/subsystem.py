@@ -272,8 +272,13 @@ class Subsystem:
 
         if self.type == "pulser":
             self.flag_pulser_events()
+        if self.type == "FC_bsln":
+            self.flag_fcbsln_events()
+        if self.type == "muon":
+            self.flag_muon_events()
 
     def flag_pulser_events(self, pulser=None):
+        """Flag pulser events. If a pulser object was provided, flag pulser events in data based on its flag."""
         utils.logger.info("... flagging pulser events")
 
         # --- if a pulser object was provided, flag pulser events in data based on its flag
@@ -305,6 +310,76 @@ class Subsystem:
             # flag them
             self.data["flag_pulser"] = False
             self.data.loc[pulser_timestamps, "flag_pulser"] = True
+
+        self.data = self.data.reset_index()
+
+    def flag_fcbsln_events(self, fc_bsln=None):
+        """Flag FC baseline events. If a FC baseline object was provided, flag FC baseline events in data based on its flag."""
+        utils.logger.info("... flagging FC baseline events")
+
+        # --- if a FC baseline object was provided, flag FC baseline events in data based on its flag
+        if fc_bsln:
+            try:
+                fc_bsln_timestamps = fc_bsln.data[fc_bsln.data["flag_fc_bsln"]][
+                    "datetime"
+                ]  # .set_index('datetime').index
+                self.data["flag_fc_bsln"] = False
+                self.data = self.data.set_index("datetime")
+                self.data.loc[fc_bsln_timestamps, "flag_fc_bsln"] = True
+            except KeyError:
+                utils.logger.warning(
+                    "\033[93mWarning: cannot flag FC baseline events, timestamps don't match!\n \
+                    If you are you looking at calibration data, it's not possible to flag FC baseline events in it this way.\n \
+                    Contact the developers if you would like them to focus on advanced flagging methods.\033[0m"
+                )
+                utils.logger.warning(
+                    "\033[93m! Proceeding without FC baseline flag !\033[0m"
+                )
+
+        else:
+            # --- if no object was provided, it's understood that this itself is a FC baseline
+            # find timestamps over threshold
+            high_thr = 3000
+            self.data = self.data.set_index("datetime")
+            wf_max_rel = self.data["wf_max"] - self.data["baseline"]
+            fc_bsln_timestamps = self.data[wf_max_rel > high_thr].index
+            # flag them
+            self.data["flag_fc_bsln"] = False
+            self.data.loc[fc_bsln_timestamps, "flag_fc_bsln"] = True
+
+        self.data = self.data.reset_index()
+
+    def flag_muon_events(self, muon=None):
+        """Flag muon events. If a muon object was provided, flag muon events in data based on its flag."""
+        utils.logger.info("... flagging muon events")
+
+        # --- if a muon object was provided, flag muon events in data based on its flag
+        if muon:
+            try:
+                muon_timestamps = muon.data[muon.data["flag_muon"]][
+                    "datetime"
+                ]  # .set_index('datetime').index
+                self.data["flag_muon"] = False
+                self.data = self.data.set_index("datetime")
+                self.data.loc[muon_timestamps, "flag_muon"] = True
+            except KeyError:
+                utils.logger.warning(
+                    "\033[93mWarning: cannot flag muon events, timestamps don't match!\n \
+                    If you are you looking at calibration data, it's not possible to flag muon events in it this way.\n \
+                    Contact the developers if you would like them to focus on advanced flagging methods.\033[0m"
+                )
+                utils.logger.warning("\033[93m! Proceeding without muon flag !\033[0m")
+
+        else:
+            # --- if no object was provided, it's understood that this itself is a muon
+            # find timestamps over threshold
+            high_thr = 500
+            self.data = self.data.set_index("datetime")
+            wf_max_rel = self.data["wf_max"] - self.data["baseline"]
+            muon_timestamps = self.data[wf_max_rel > high_thr].index
+            # flag them
+            self.data["flag_muon"] = False
+            self.data.loc[muon_timestamps, "flag_muon"] = True
 
         self.data = self.data.reset_index()
 
@@ -540,7 +615,7 @@ class Subsystem:
         # --- always read timestamp
         params = ["timestamp"]
         # --- always get wf_max & baseline for pulser for flagging
-        if self.type == "pulser":
+        if self.type in ["pulser", "FC_bsln", "muon"]:
             params += ["wf_max", "baseline"]
 
         # --- add user requested parameters

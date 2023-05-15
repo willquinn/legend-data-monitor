@@ -59,15 +59,23 @@ class AnalysisData:
             if isinstance(analysis_info[input], str):
                 analysis_info[input] = [analysis_info[input]]
 
-        if analysis_info["event_type"] != "all" and "flag_pulser" not in sub_data:
-            utils.logger.error(
-                f"\033[91mYour subsystem data does not have a pulser flag! We need it to subselect event type {analysis_info['event_type']}\033[0m"
-            )
-            utils.logger.error(
-                "\033[91mRun the function <subsystem>.flag_pulser_events(<pulser>) first, where <subsystem> is your Subsystem object, \033[0m"
-                + "\033[91mand <pulser> is a Subsystem object of type 'pulser', which already has it data loaded with <pulser>.get_data(); then create AnalysisData object.\033[0m"
-            )
-            return
+        event_type_flags = {
+            "pulser": ("flag_pulser", "pulser"),
+            "FC_bsln": ("flag_fc_bsln", "FC_bsln"),
+            "muon": ("flag_muon", "muon"),
+        }
+
+        event_type = analysis_info["event_type"]
+
+        if event_type in event_type_flags:
+            flag, subsystem_name = event_type_flags[event_type]
+            if flag not in sub_data:
+                utils.logger.error(
+                    f"\033[91mYour subsystem data does not have a {subsystem_name} flag! We need it to subselect event type {event_type}\033[0m"
+                    + f"\033[91mRun the function <subsystem>.flag_{subsystem_name}_events(<{subsystem_name}>) first, where <subsystem> is your Subsystem object, \033[0m"
+                    + f"\033[91mand <{subsystem_name}> is a Subsystem object of type '{subsystem_name}', which already has its data loaded with <{subsystem_name}>.get_data(); then create an AnalysisData object.\033[0m"
+                )
+                return
 
         # cannot do event rate and another parameter at the same time
         # since event rate is calculated in windows
@@ -110,7 +118,7 @@ class AnalysisData:
 
         for col in sub_data.columns:
             # pulser flag is present only if subsystem.flag_pulser_events() was called -> needed to subselect phy/pulser events
-            if "flag_pulser" in col:
+            if "flag_pulser" in col or "flag_fc_bsln" in col or "flag_muon" in col:
                 params_to_get.append(col)
             # QC flag is present only if inserted as a cut in the config file -> this part is needed to apply
             if "is_" in col:
@@ -178,6 +186,12 @@ class AnalysisData:
         if self.evt_type == "pulser":
             utils.logger.info("... keeping only pulser events")
             self.data = self.data[self.data["flag_pulser"]]
+        elif self.evt_type == "FC_bsln":
+            utils.logger.info("... keeping only FC baseline events")
+            self.data = self.data[self.data["flag_fc_bsln"]]
+        elif self.evt_type == "muon":
+            utils.logger.info("... keeping only muon events")
+            self.data = self.data[self.data["flag_muon"]]
         elif self.evt_type == "phy":
             utils.logger.info("... keeping only physical (non-pulser) events")
             self.data = self.data[~self.data["flag_pulser"]]
