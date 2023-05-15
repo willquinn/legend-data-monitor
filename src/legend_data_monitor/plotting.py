@@ -362,8 +362,10 @@ def plot_per_ch(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
                 par_mean = data_channel.iloc[0][
                     plot_info["param_mean"]
                 ]  # single number
-                if plot_info['parameter'] != "event_rate":
-                    fwhm_ch = get_fwhm_for_fixed_ch(data_channel, plot_info["parameter"])
+                if plot_info["parameter"] != "event_rate":
+                    fwhm_ch = get_fwhm_for_fixed_ch(
+                        data_channel, plot_info["parameter"]
+                    )
                     text += f"\nFWHM {fwhm_ch}"
 
                 text += "\n" + (

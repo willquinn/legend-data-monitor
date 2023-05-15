@@ -313,7 +313,6 @@ class Subsystem:
 
         self.data = self.data.reset_index()
 
-
     def flag_fcbsln_events(self, fc_bsln=None):
         """Flag FC baseline events. If a FC baseline object was provided, flag FC baseline events in data based on its flag."""
         utils.logger.info("... flagging FC baseline events")

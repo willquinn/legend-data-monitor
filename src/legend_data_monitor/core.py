@@ -219,9 +219,9 @@ def generate_plots(config: dict, plt_path: str):
             # -------------------------------------------------------------------------
             # flag pulser events for future parameter data selection
             subsystems[system].flag_pulser_events(subsystems["pulser"])
-            # flag FC baseline events 
+            # flag FC baseline events
             subsystems[system].flag_fcbsln_events(subsystems["FC_bsln"])
-            # flag muon events 
+            # flag muon events
             subsystems[system].flag_muon_events(subsystems["muon"])
 
             # remove timestamps for given detectors (moved here cause otherwise timestamps for flagging don't match)
