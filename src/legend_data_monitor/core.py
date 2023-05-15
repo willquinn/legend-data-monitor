@@ -1,5 +1,6 @@
 import json
 import re
+import sys
 
 from . import plotting, subsystem, utils
 
@@ -164,7 +165,7 @@ def generate_plots(config: dict, plt_path: str):
         utils.logger.error(
             "\033[91mThe selected saving option in the config file is wrong. Try again with 'overwrite', 'append' or nothing!\033[0m"
         )
-        exit()
+        sys.exit()
 
     # put it in a dict, so that later, if pulser is also wanted to be plotted, we don't have to load it twice
     subsystems = {"pulser": subsystem.Subsystem("pulser", dataset=config["dataset"])}
