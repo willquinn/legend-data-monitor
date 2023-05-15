@@ -167,7 +167,6 @@ def generate_plots(config: dict, plt_path: str):
         )
         sys.exit()
 
-
     # -------------------------------------------------------------------------
     # flag events - PULSER
     # -------------------------------------------------------------------------
@@ -199,7 +198,6 @@ def generate_plots(config: dict, plt_path: str):
     # -------------------------------------------------------------------------
     # What subsystems do we want to plot?
     subsystems_to_plot = list(config["subsystems"].keys())
-
 
     for system in subsystems_to_plot:
         # -------------------------------------------------------------------------

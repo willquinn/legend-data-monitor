@@ -350,7 +350,6 @@ class Subsystem:
 
         self.data = self.data.reset_index()
 
-
     def flag_muon_events(self, muon=None):
         """Flag muon events. If a muon object was provided, flag muon events in data based on its flag."""
         utils.logger.info("... flagging muon events")
@@ -370,9 +369,7 @@ class Subsystem:
                     If you are you looking at calibration data, it's not possible to flag muon events in it this way.\n \
                     Contact the developers if you would like them to focus on advanced flagging methods.\033[0m"
                 )
-                utils.logger.warning(
-                    "\033[93m! Proceeding without muon flag !\033[0m"
-                )
+                utils.logger.warning("\033[93m! Proceeding without muon flag !\033[0m")
 
         else:
             # --- if no object was provided, it's understood that this itself is a muon

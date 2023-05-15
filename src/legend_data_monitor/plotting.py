@@ -366,14 +366,11 @@ def plot_per_ch(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
                     fwhm_ch = get_fwhm_for_fixed_ch(data_channel, plot_info["parameter"])
                     text += f"\nFWHM {fwhm_ch}"
 
-                text += (
-                    "\n"
-                    + (
-                        f"mean {round(par_mean,3)} [{plot_info['unit']}]"
-                        if par_mean is not None
-                        else ""
-                    )  # handle with care mean='None' situations
-                )
+                text += "\n" + (
+                    f"mean {round(par_mean,3)} [{plot_info['unit']}]"
+                    if par_mean is not None
+                    else ""
+                )  # handle with care mean='None' situations
             axes[ax_idx].text(1.01, 0.5, text, transform=axes[ax_idx].transAxes)
 
             # add grid
@@ -464,9 +461,11 @@ def plot_per_cc4(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
 
             labels.append(label)
             if len(plot_info["parameters"]) == 1:
-                if plot_info['parameter'] != "event_rate":
-                    fwhm_ch = get_fwhm_for_fixed_ch(data_channel, plot_info["parameter"])
-                    labels[-1] = label + f" - FWHM: {fwhm_ch}" 
+                if plot_info["parameter"] != "event_rate":
+                    fwhm_ch = get_fwhm_for_fixed_ch(
+                        data_channel, plot_info["parameter"]
+                    )
+                    labels[-1] = label + f" - FWHM: {fwhm_ch}"
                 else:
                     labels[-1] = label
             col_idx += 1
@@ -555,9 +554,11 @@ def plot_per_string(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
             plot_style(data_channel, fig, axes[ax_idx], plot_info, COLORS[col_idx])
             labels.append(label)
             if len(plot_info["parameters"]) == 1:
-                if plot_info['parameter'] != "event_rate":
-                    fwhm_ch = get_fwhm_for_fixed_ch(data_channel, plot_info["parameter"])
-                    labels[-1] = label + f" - FWHM: {fwhm_ch}" 
+                if plot_info["parameter"] != "event_rate":
+                    fwhm_ch = get_fwhm_for_fixed_ch(
+                        data_channel, plot_info["parameter"]
+                    )
+                    labels[-1] = label + f" - FWHM: {fwhm_ch}"
                 else:
                     labels[-1] = label
             col_idx += 1
