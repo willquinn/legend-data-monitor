@@ -364,7 +364,7 @@ def plot_per_ch(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
                 ]  # single number
                 if plot_info['parameter'] != "event_rate":
                     fwhm_ch = get_fwhm_for_fixed_ch(data_channel, plot_info["parameter"])
-                    text += "\nFWHM {fwhm_ch}"
+                    text += f"\nFWHM {fwhm_ch}"
 
                 text += (
                     "\n"

@@ -273,7 +273,7 @@ class Subsystem:
         if self.type == "pulser":
             self.flag_pulser_events()
         if self.type == "FC_bsln":
-            self.flag_FCbsln_events()
+            self.flag_fcbsln_events()
         if self.type == "muon":
             self.flag_muon_events()
 
@@ -314,19 +314,19 @@ class Subsystem:
         self.data = self.data.reset_index()
 
 
-    def flag_FCbsln_events(self, FC_bsln=None):
+    def flag_fcbsln_events(self, fc_bsln=None):
         """Flag FC baseline events. If a FC baseline object was provided, flag FC baseline events in data based on its flag."""
         utils.logger.info("... flagging FC baseline events")
 
         # --- if a FC baseline object was provided, flag FC baseline events in data based on its flag
-        if FC_bsln:
+        if fc_bsln:
             try:
-                FC_bsln_timestamps = FC_bsln.data[FC_bsln.data["flag_FC_bsln"]][
+                fc_bsln_timestamps = fc_bsln.data[fc_bsln.data["flag_fc_bsln"]][
                     "datetime"
                 ]  # .set_index('datetime').index
-                self.data["flag_FC_bsln"] = False
+                self.data["flag_fc_bsln"] = False
                 self.data = self.data.set_index("datetime")
-                self.data.loc[FC_bsln_timestamps, "flag_FC_bsln"] = True
+                self.data.loc[fc_bsln_timestamps, "flag_fc_bsln"] = True
             except KeyError:
                 utils.logger.warning(
                     "\033[93mWarning: cannot flag FC baseline events, timestamps don't match!\n \
@@ -343,10 +343,10 @@ class Subsystem:
             high_thr = 3000
             self.data = self.data.set_index("datetime")
             wf_max_rel = self.data["wf_max"] - self.data["baseline"]
-            FC_bsln_timestamps = self.data[wf_max_rel > high_thr].index
+            fc_bsln_timestamps = self.data[wf_max_rel > high_thr].index
             # flag them
-            self.data["flag_FC_bsln"] = False
-            self.data.loc[FC_bsln_timestamps, "flag_FC_bsln"] = True
+            self.data["flag_fc_bsln"] = False
+            self.data.loc[fc_bsln_timestamps, "flag_fc_bsln"] = True
 
         self.data = self.data.reset_index()
 

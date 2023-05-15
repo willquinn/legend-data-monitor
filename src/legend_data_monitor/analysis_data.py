@@ -61,7 +61,7 @@ class AnalysisData:
 
         event_type_flags = {
             "pulser": ("flag_pulser", "pulser"),
-            "FC_bsln": ("flag_FC_bsln", "FC_bsln"),
+            "FC_bsln": ("flag_fc_bsln", "FC_bsln"),
             "muon": ("flag_muon", "muon")
         }
 
@@ -118,7 +118,7 @@ class AnalysisData:
 
         for col in sub_data.columns:
             # pulser flag is present only if subsystem.flag_pulser_events() was called -> needed to subselect phy/pulser events
-            if "flag_pulser" in col or "flag_FC_bsln" in col or "flag_muon" in col:
+            if "flag_pulser" in col or "flag_fc_bsln" in col or "flag_muon" in col:
                 params_to_get.append(col)
             # QC flag is present only if inserted as a cut in the config file -> this part is needed to apply
             if "is_" in col:
@@ -188,7 +188,7 @@ class AnalysisData:
             self.data = self.data[self.data["flag_pulser"]]
         elif self.evt_type == "FC_bsln":
             utils.logger.info("... keeping only FC baseline events")
-            self.data = self.data[self.data["flag_FC_bsln"]]
+            self.data = self.data[self.data["flag_fc_bsln"]]
         elif self.evt_type == "muon":
             utils.logger.info("... keeping only muon events")
             self.data = self.data[self.data["flag_muon"]]

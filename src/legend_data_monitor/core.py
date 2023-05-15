@@ -196,7 +196,6 @@ def generate_plots(config: dict, plt_path: str):
     subsystems["muon"].get_data(parameters)
     utils.logger.debug(subsystems["muon"].data)
 
-
     # -------------------------------------------------------------------------
     # What subsystems do we want to plot?
     subsystems_to_plot = list(config["subsystems"].keys())
@@ -223,7 +222,7 @@ def generate_plots(config: dict, plt_path: str):
             # flag pulser events for future parameter data selection
             subsystems[system].flag_pulser_events(subsystems["pulser"])
             # flag FC baseline events 
-            subsystems[system].flag_FCbsln_events(subsystems["FC_bsln"])
+            subsystems[system].flag_fcbsln_events(subsystems["FC_bsln"])
             # flag muon events 
             subsystems[system].flag_muon_events(subsystems["muon"])
 
