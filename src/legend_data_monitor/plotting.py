@@ -430,9 +430,9 @@ def plot_per_cc4(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
         ["name", "position", "location", "cc4_channel", "cc4_id"]
     ]
     labels["channel"] = labels.index
-    labels["label"] = labels[
-        ["location", "position", "name", "cc4_channel"]
-    ].apply(lambda x: f"s{x[0]}-p{x[1]}-{x[2]}-cc4 ch.{x[3]}", axis=1)
+    labels["label"] = labels[["location", "position", "name", "cc4_channel"]].apply(
+        lambda x: f"s{x[0]}-p{x[1]}-{x[2]}-cc4 ch.{x[3]}", axis=1
+    )
     # put it in the table
     data_analysis = data_analysis.set_index("channel")
     data_analysis["label"] = labels["label"]
