@@ -349,12 +349,13 @@ def plot_per_ch(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
             # --- add summary to axis - only for single channel plots
             # name, position and mean are unique for each channel - take first value
             df_text = data_channel.iloc[0][["channel", "position", "name"]]
-            text = (
-                df_text["name"]
-                + "\n"
-                + f"channel {df_text['channel']}\n"
+            text = df_text["name"] + "\n" + f"channel {df_text['channel']}\n"
+            text += (
+                f"position {df_text['position']}"
+                if plot_info["subsystem"]
+                not in ["pulser", "pulser_aux", "FC_bsln", "muon"]
+                else ""
             )
-            text += f"position {df_text['position']}" if plot_info["subsystem"] not in ["pulser", "pulser_aux", "FC_bsln", "muon"] else ""
             if len(plot_info["parameters"]) == 1:
                 # in case of 1 parameter, "param mean" entry is a single string param_mean
                 # in case of > 1, it's a list of parameters -> ignore for now and plot mean only for 1 param case
@@ -485,7 +486,9 @@ def plot_per_cc4(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
 
     # -------------------------------------------------------------------------------
     y_title = (
-        1.05 if plot_info["subsystem"] in ["pulser", "pulser_aux", "FC_bsln", "muon"] else 1.01
+        1.05
+        if plot_info["subsystem"] in ["pulser", "pulser_aux", "FC_bsln", "muon"]
+        else 1.01
     )
     fig.suptitle(f"{plot_info['subsystem']} - {plot_info['title']}", y=y_title)
     save_pdf(plt, pdf)
@@ -575,7 +578,9 @@ def plot_per_string(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
 
     # -------------------------------------------------------------------------------
     y_title = (
-        1.05 if plot_info["subsystem"] in ["pulser", "pulser_aux", "FC_bsln", "muon"] else 1.01
+        1.05
+        if plot_info["subsystem"] in ["pulser", "pulser_aux", "FC_bsln", "muon"]
+        else 1.01
     )
     fig.suptitle(f"{plot_info['subsystem']} - {plot_info['title']}", y=y_title)
 

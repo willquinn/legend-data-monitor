@@ -463,7 +463,7 @@ class Subsystem:
                             entry["system"] == "bsln"
                             and entry["daq"][ch_flag] == 1027200
                         )
-            # special case for muon channel 
+            # special case for muon channel
             if self.type == "muon":
                 if self.experiment == "L60":
                     return entry["system"] == "auxs" and entry["daq"]["fcid"] == 1
