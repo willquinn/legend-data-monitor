@@ -17,7 +17,7 @@ class Subsystem:
     """
     Object containing information for a given subsystem such as channel map, channels status etc.
 
-    sub_type [str]: geds | spms | pulser | pulser_aux | FC_bsln
+    sub_type [str]: geds | spms | pulser | pulser_aux | FC_bsln | muon
 
     Options for kwargs
 
@@ -384,6 +384,18 @@ class Subsystem:
                             entry["system"] == "bsln"
                             and entry["daq"][ch_flag] == 1027200
                         )
+            # special case for muon channel
+            if self.type == "muon":
+                if self.experiment == "L60":
+                    return entry["system"] == "auxs" and entry["daq"]["fcid"] == 1
+                if self.experiment == "L200":
+                    if self.below_period_3_excluded():
+                        return entry["system"] == "auxs" and entry["daq"][ch_flag] == 2
+                    if self.above_period_3_included():
+                        return (
+                            entry["system"] == "auxs"
+                            and entry["daq"][ch_flag] == 1027202
+                        )
             # for geds or spms
             return entry["system"] == self.type
 
@@ -394,7 +406,7 @@ class Subsystem:
         type_code = {"B": "bege", "C": "coax", "V": "icpc", "P": "ppc"}
 
         # systems for which the location/position has to be handled carefully; values were chosen arbitrarily to avoid conflicts
-        special_systems = {"pulser": 0, "pulser_aux": -1, "FC_bsln": -2}
+        special_systems = {"pulser": 0, "pulser_aux": -1, "FC_bsln": -2, "muon": -3}
 
         # -------------------------------------------------------------------------
         # loop over entries and find out subsystem
@@ -412,17 +424,17 @@ class Subsystem:
             if not is_subsystem(entry_info):
                 continue
 
-            # --- add info for this channel - Raw/FlashCam ID, unique for geds/spms/pulser/pulser_aux/FC_bsln
+            # --- add info for this channel - Raw/FlashCam ID, unique for geds/spms/pulser/pulser_aux/FC_bsln/muon
             ch = entry_info["daq"][ch_flag]
 
             df_map.at[ch, "name"] = entry_info["name"]
-            # number/name of string/fiber for geds/spms, dummy for pulser/pulser_aux/FC_bsln
+            # number/name of string/fiber for geds/spms, dummy for pulser/pulser_aux/FC_bsln/muon
             df_map.at[ch, "location"] = (
                 special_systems[self.type]
                 if self.type in special_systems
                 else entry_info["location"][loc_code[self.type]]
             )
-            # position in string/fiber for geds/spms, dummy for pulser/pulser_aux/FC_bsln
+            # position in string/fiber for geds/spms, dummy for pulser/pulser_aux/FC_bsln/muon
             df_map.at[ch, "position"] = (
                 special_systems[self.type]
                 if self.type in special_systems
@@ -497,7 +509,7 @@ class Subsystem:
             timestamp=self.first_timestamp, system=self.datatype
         )["analysis"]
 
-        # AUX channels are not in status map, so at least for pulser/pulser_aux/FC_bsln need default on
+        # AUX channels are not in status map, so at least for pulser/pulser_aux/FC_bsln/muon need default on
         self.channel_map["status"] = "on"
         self.channel_map = self.channel_map.set_index("name")
         # 'channel_name', for instance, has the format 'DNNXXXS' (= "name" column)

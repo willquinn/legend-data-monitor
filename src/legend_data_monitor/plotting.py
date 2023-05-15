@@ -157,6 +157,7 @@ def make_subsystem_plots(
                 "pulser": "puls",
                 "pulser_aux": "puls",
                 "FC_bsln": "bsln",
+                "muon": "muon",
             }[subsystem.type],
         }
 
@@ -213,7 +214,7 @@ def make_subsystem_plots(
 
             # threshold values are needed for status map; might be needed for plotting limits on canvas too
             # only needed for single param plots (for now)
-            if subsystem.type not in ["pulser", "pulser_aux", "FC_bsln"]:
+            if subsystem.type not in ["pulser", "pulser_aux", "FC_bsln", "muon"]:
                 keyword = "variation" if plot_settings["variation"] else "absolute"
                 plot_info["limits"] = utils.PLOT_INFO[params[0]]["limits"][
                     subsystem.type
@@ -255,7 +256,7 @@ def make_subsystem_plots(
         # -------------------------------------------------------------------------
 
         if "status" in plot_settings and plot_settings["status"]:
-            if subsystem.type in ["pulser", "pulser_aux", "FC_bsln"]:
+            if subsystem.type in ["pulser", "pulser_aux", "FC_bsln", "muon"]:
                 utils.logger.debug(
                     f"Thresholds are not enabled for {subsystem.type}! Use you own eyes to do checks there"
                 )
@@ -348,11 +349,12 @@ def plot_per_ch(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
             # --- add summary to axis - only for single channel plots
             # name, position and mean are unique for each channel - take first value
             df_text = data_channel.iloc[0][["channel", "position", "name"]]
-            text = (
-                df_text["name"]
-                + "\n"
-                + f"channel {df_text['channel']}\n"
-                + f"position {df_text['position']}"
+            text = df_text["name"] + "\n" + f"channel {df_text['channel']}\n"
+            text += (
+                f"position {df_text['position']}"
+                if plot_info["subsystem"]
+                not in ["pulser", "pulser_aux", "FC_bsln", "muon"]
+                else ""
             )
             if len(plot_info["parameters"]) == 1:
                 # in case of 1 parameter, "param mean" entry is a single string param_mean
@@ -387,7 +389,7 @@ def plot_per_ch(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
             ax_idx += 1
 
         # -------------------------------------------------------------------------------
-        if plot_info["subsystem"] in ["pulser", "pulser_aux", "FC_bsln"]:
+        if plot_info["subsystem"] in ["pulser", "pulser_aux", "FC_bsln", "muon"]:
             y_title = 1.05
             axes[0].set_title("")
         else:
@@ -401,7 +403,7 @@ def plot_per_ch(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
 
 
 def plot_per_cc4(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
-    if plot_info["subsystem"] in ["pulser", "pulser_aux", "FC_bsln"]:
+    if plot_info["subsystem"] in ["pulser", "pulser_aux", "FC_bsln", "muon"]:
         utils.logger.error(
             "\033[91mPlotting per CC4 is not available for %s channel.\nTry again with a different plot structure!\033[0m",
             plot_info["subsystem"],
@@ -480,7 +482,9 @@ def plot_per_cc4(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
 
     # -------------------------------------------------------------------------------
     y_title = (
-        1.05 if plot_info["subsystem"] in ["pulser", "pulser_aux", "FC_bsln"] else 1.01
+        1.05
+        if plot_info["subsystem"] in ["pulser", "pulser_aux", "FC_bsln", "muon"]
+        else 1.01
     )
     fig.suptitle(f"{plot_info['subsystem']} - {plot_info['title']}", y=y_title)
     save_pdf(plt, pdf)
@@ -567,7 +571,9 @@ def plot_per_string(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
 
     # -------------------------------------------------------------------------------
     y_title = (
-        1.05 if plot_info["subsystem"] in ["pulser", "pulser_aux", "FC_bsln"] else 1.01
+        1.05
+        if plot_info["subsystem"] in ["pulser", "pulser_aux", "FC_bsln", "muon"]
+        else 1.01
     )
     fig.suptitle(f"{plot_info['subsystem']} - {plot_info['title']}", y=y_title)
 
