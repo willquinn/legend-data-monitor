@@ -233,7 +233,7 @@ def plot_histo(
         if plot_info["unit_label"] == "%"
         else f"{plot_info['label']} [{plot_info['unit_label']}]"
     )
-    fig.supylabel(x_label)
+    fig.supxlabel(x_label)
 
 
 def plot_scatter(
