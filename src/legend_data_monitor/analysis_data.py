@@ -401,7 +401,7 @@ class AnalysisData:
                         old_dict = dict(shelf)
                     # get old dataframe (we are interested only in the column with mean values)
                     # !! need to update for multiple parameter case! (check of they are saved to understand what to retrieve with the 'append' option)
-                    old_df = old_dict["monitoring"][self.evt_type][self.parameters[0]][ 
+                    old_df = old_dict["monitoring"][self.evt_type][self.parameters[0]][
                         "df_" + subsys
                     ]
                     """
@@ -424,7 +424,9 @@ class AnalysisData:
                     """
 
                     # subselect only columns of: 1) channel 2) mean values of param(s) of interest
-                    channel_mean = old_df.filter(items=['channel'] + [x + "_mean" for x in self.parameters])
+                    channel_mean = old_df.filter(
+                        items=["channel"] + [x + "_mean" for x in self.parameters]
+                    )
 
                     # later there will be a line renaming param to param_mean, so now need to rename back to no mean...
                     # this whole section has to be cleaned up
