@@ -62,7 +62,7 @@ class AnalysisData:
         event_type_flags = {
             "pulser": ("flag_pulser", "pulser"),
             "FC_bsln": ("flag_FC_bsln", "FC_bsln"),
-            "muon": ("flag_muon", "muon")
+            "muon": ("flag_muon", "muon"),
         }
 
         event_type = analysis_info["event_type"]
