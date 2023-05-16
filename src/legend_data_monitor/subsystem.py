@@ -135,7 +135,7 @@ class Subsystem:
         self.path = data_info["path"]
         self.version = data_info["version"]
 
-        self.timerange, self.first_timestamp = utils.get_query_times(**kwargs)
+        self.timerange, self.first_timestamp, self.last_timestamp = utils.get_query_times(**kwargs)
 
         # None will be returned if something went wrong
         if not self.timerange:

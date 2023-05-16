@@ -9,6 +9,7 @@ import sys
 
 # for getting DataLoader time range
 from datetime import datetime, timedelta
+import pygama.lgdo.lh5_store as lh5
 
 from pandas import DataFrame, concat
 
@@ -87,7 +88,7 @@ with open(pkg / "settings" / "remove-dets.json") as f:
 
 def get_query_times(**kwargs):
     """
-    Get time ranges for DataLoader query from user input, as well as first timestamp for channel map/status query.
+    Get time ranges for DataLoader query from user input, as well as first/last timestamp for channel map / status / SC query.
 
     Available kwargs:
 
@@ -119,42 +120,66 @@ def get_query_times(**kwargs):
     timerange = get_query_timerange(**kwargs)
 
     first_timestamp = ""
-    # get first timestamp in case keyword is timestamp
+    # get first/last timestamp in case keyword is timestamp
     if "timestamp" in timerange:
         if "start" in timerange["timestamp"]:
             first_timestamp = timerange["timestamp"]["start"]
-        else:
+        if "end" in timerange["timestamp"]:
+            last_timestamp = timerange["timestamp"]["end"]
+        if "start" not in timerange["timestamp"] and "end" not in timerange["timestamp"]:
             first_timestamp = min(timerange["timestamp"])
+            last_timestamp = max(timerange["timestamp"])
     # look in path to find first timestamp if keyword is run
     else:
         # currently only list of runs and not 'start' and 'end', so always list
-        # find earliest run, format rXXX
+        # find earliest/latest run, format rXXX
         first_run = min(timerange["run"])
+        last_run = max(timerange["run"])
 
         # --- get dsp filelist of this run
         # if setup= keyword was used, get dict; otherwise kwargs is already the dict we need
         path_info = kwargs["dataset"] if "dataset" in kwargs else kwargs
 
-        # format to search /path_to_prod-ref[/v06.00]/generated/tier/**/phy/**/r027 (version might not be there)
-        glob_path = os.path.join(
+        # format to search /path_to_prod-ref[/vXX.XX]/generated/tier/dsp/phy/pXX/rXXX (version 'vXX.XX' might not be there).
+        # NOTICE that we fixed the tier, otherwise it picks the last one it finds (eg tcm).
+        # NOTICE that this is PERIOD SPECIFIC (unlikely we're gonna inspect two periods together, so we fix it)
+        first_glob_path = os.path.join(
             path_info["path"],
             path_info["version"],
             "generated",
             "tier",
-            "**",
+            "dsp",
             path_info["type"],
-            "**",
+            path_info["period"],
             first_run,
             "*.lh5",
         )
-        dsp_files = glob.glob(glob_path)
+        last_glob_path = os.path.join(
+            path_info["path"],
+            path_info["version"],
+            "generated",
+            "tier",
+            "dsp",
+            path_info["type"],
+            path_info["period"],
+            last_run,
+            "*.lh5",
+        )
+        first_dsp_files = glob.glob(first_glob_path)
+        last_dsp_files = glob.glob(last_glob_path)
         # find earliest
-        dsp_files.sort()
-        first_file = dsp_files[0]
-        # extract timestamp
+        first_dsp_files.sort()
+        first_file = first_dsp_files[0]
+        # find latest
+        last_dsp_files.sort()
+        last_file = last_dsp_files[-1]
+        # extract timestamps
         first_timestamp = get_key(first_file)
+        last_timestamp = get_last_timestamp(last_file) # ma non e' l'ultimo timestamp, per quello bisogna aprire il file e prendere l'ultima entry!!!
 
-    return timerange, first_timestamp
+        print("last_run:", last_run, "\tlast_glob_path:", last_glob_path, "\tlast_file:", last_file)
+
+    return timerange, first_timestamp, last_timestamp
 
 
 def get_query_timerange(**kwargs):
@@ -457,6 +482,7 @@ def get_time_name(user_time_range: dict) -> str:
 
 
 def get_timestamp(filename):
+    """Get the timestamp from a filename. For instance, if file='l200-p04-r000-phy-20230421T055556Z-tier_dsp.lh5', then it returns '20230421T055556Z'."""
     # Assumes that the timestamp is in the format YYYYMMDDTHHMMSSZ
     return filename.split("-")[-2]
 
@@ -554,6 +580,27 @@ def get_all_plot_parameters(subsystem: str, config: dict):
 def get_key(dsp_fname: str) -> str:
     """Extract key from lh5 filename."""
     return re.search(r"-\d{8}T\d{6}Z", dsp_fname).group(0)[1:]
+
+
+def unix_timestamp_to_string(unix_timestamp):
+    """Convert a Unix timestamp to a string in the format 'YYYYMMDDTHHMMSSZ' with the timezone indicating UTC+00."""
+    utc_datetime = datetime.utcfromtimestamp(unix_timestamp)
+    formatted_string = utc_datetime.strftime("%Y%m%dT%H%M%SZ")
+    return formatted_string
+
+
+def get_last_timestamp(dsp_fname: str) -> str:
+    """Read a lh5 file and return the last timestamp saved in the file. This works only in case of a global trigger where the whole array is entirely recorded for a given timestamp."""
+    # pick a random channel
+    first_channel = lh5.ls(dsp_fname, "")[0]
+    # get array of timestamps stored in the lh5 file
+    timestamp = lh5.load_nda(dsp_fname, ["timestamp"], f"{first_channel}/dsp/")["timestamp"]
+    # get the last entry
+    last_timestamp = timestamp[-1]
+    # convert from UNIX tstamp to string tstmp of format YYYYMMDDTHHMMSSZ
+    last_timestamp = unix_timestamp_to_string(last_timestamp)
+
+    return last_timestamp
 
 
 # -------------------------------------------------------------------------
