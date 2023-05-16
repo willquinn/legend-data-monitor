@@ -1,12 +1,11 @@
 import sys
-import numpy as np
 from datetime import datetime, timezone
 from typing import Tuple
 
 from legendmeta import LegendSlowControlDB
 from pandas import DataFrame
 
-from . import subsystem, utils
+from . import utils
 
 scdb = LegendSlowControlDB()
 scdb.connect(password="legend00")  # look on Confluence (or ask Sofia) for the password
@@ -108,7 +107,6 @@ def load_table_and_apply_flags(
     if param == "diode_vmon" or param == "diode_imon":
         get_table_df = include_more_diode_info(get_table_df)
 
-
     # order by timestamp (not automatically done)
     get_table_df = get_table_df.sort_values(by="tstamp")
 
@@ -124,14 +122,15 @@ def load_table_and_apply_flags(
             param, sc_params, first_tstmp, last_tstmp
         )
     else:
-        lower_lim = upper_lim = None # there are just 'set values', no actual thresholds
+        lower_lim = (
+            upper_lim
+        ) = None  # there are just 'set values', no actual thresholds
         if "vmon" in param:
             unit = "V"
         elif "imon" in param:
             unit = "\u03BCA"
         else:
             unit = None
-
 
     # append unit, lower_lim, upper_lim to the dataframe
     get_table_df["unit"] = unit
@@ -233,25 +232,29 @@ def include_more_diode_info(df: DataFrame) -> DataFrame:
     # remove unnecessary columns (otherwise, they are repeated after the merging)
     df_info = df_info.drop(columns={"status", "tstamp"})
     # there is a repeated detector! Once with an additional blank space in front of its name: removed in case it is found
-    if " V00050B" in list(df_info['label'].unique()):
-        df_info = df_info[df_info['label'] != ' V00050B']
+    if " V00050B" in list(df_info["label"].unique()):
+        df_info = df_info[df_info["label"] != " V00050B"]
 
     # remve 'HV filter test' and 'no cable' entries
-    df_info = df_info[~df_info['label'].str.contains('Ch')]
+    df_info = df_info[~df_info["label"].str.contains("Ch")]
     # remove other stuff (???)
-    if "?" in list(df_info['label'].unique()):
-        df_info = df_info[df_info['label'] != '?']
-    if " routed" in list(df_info['label'].unique()):
-        df_info = df_info[df_info['label'] != ' routed']
-    if "routed" in list(df_info['label'].unique()):
-        df_info = df_info[df_info['label'] != 'routed']
+    if "?" in list(df_info["label"].unique()):
+        df_info = df_info[df_info["label"] != "?"]
+    if " routed" in list(df_info["label"].unique()):
+        df_info = df_info[df_info["label"] != " routed"]
+    if "routed" in list(df_info["label"].unique()):
+        df_info = df_info[df_info["label"] != "routed"]
 
     # Merge df_info into df based on 'crate' and 'slot'
-    merged_df = df.merge(df_info[['crate', 'slot', 'channel', 'label', 'group']], on=['crate', 'slot', 'channel'], how='left')
-    merged_df = merged_df.rename(columns={'label': 'name', 'group': 'string'})
+    merged_df = df.merge(
+        df_info[["crate", "slot", "channel", "label", "group"]],
+        on=["crate", "slot", "channel"],
+        how="left",
+    )
+    merged_df = merged_df.rename(columns={"label": "name", "group": "string"})
     # remove "name"=NaN (ie entries for which there was not a correspondence among the two merged dataframes)
-    merged_df = merged_df.dropna(subset=['name'])
+    merged_df = merged_df.dropna(subset=["name"])
     # switch from "String X" (str) to "X" (int) for entries of the 'string' column
-    merged_df['string'] = merged_df['string'].str.extract('(\d+)').astype(int)
+    merged_df["string"] = merged_df["string"].str.extract(r"(\d+)").astype(int)
 
     return merged_df
