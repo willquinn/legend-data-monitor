@@ -236,7 +236,7 @@ def include_more_diode_info(df: DataFrame) -> DataFrame:
         df_info = df_info[df_info["label"] != " V00050B"]
 
     # remove 'HV filter test' and 'no cable' entries
-    df_info = df_info[~df_info['label'].str.contains('Ch')]
+    df_info = df_info[~df_info["label"].str.contains("Ch")]
     # remove other stuff (???)
     if "?" in list(df_info["label"].unique()):
         df_info = df_info[df_info["label"] != "?"]
