@@ -29,7 +29,7 @@ dataset = {
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-def get_sc_param(param="diode_imon", dataset=dataset) -> DataFrame:
+def get_sc_param(param="diode_vmon", dataset=dataset) -> DataFrame:
     """Get data from the Slow Control (SC) database for the specified parameter ```param```.
 
     The ```dataset```  entry is of the following type:
@@ -124,7 +124,14 @@ def load_table_and_apply_flags(
             param, sc_params, first_tstmp, last_tstmp
         )
     else:
-        unit = lower_lim = upper_lim = None # I don't know where to get these info for geds ...
+        lower_lim = upper_lim = None # there are just 'set values', no actual thresholds
+        if "vmon" in param:
+            unit = "V"
+        elif "imon" in param:
+            unit = "\u03BCA"
+        else:
+            unit = None
+
 
     # append unit, lower_lim, upper_lim to the dataframe
     get_table_df["unit"] = unit
