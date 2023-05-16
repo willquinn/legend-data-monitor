@@ -23,14 +23,14 @@ dataset = {
     "type": "phy",
     #"runs": 0
     #"runs": [0,1]
-    "start": "2023-04-08 10:00:00",
-    "end": "2023-04-08 11:00:00"
+    "start": "2023-04-06 10:00:00",
+    "end": "2023-04-08 13:00:00"
 }
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # SLOW CONTROL LOADING/PLOTTING FUNCTIONS
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-def get_sc_df(param="PT118", dataset=dataset): 
+def get_sc_df(param="DaqLeft-Temp2", dataset=dataset): 
     """
     # Necessary to perform the SSH tunnel to the databse
     def ssh_tunnel():
@@ -107,6 +107,7 @@ def get_plotting_info(param: str, sc_params: dict, first_tstmp: str, last_tstmp:
 
     # Filter the DataFrame based on the time interval, starting to look from the latest entry ('reversed(...)')
     times = list(get_table_info['tstamp'].unique()) 
+
     for time in reversed(times):
         if first_tstmp < time < last_tstmp:
             unit = list(get_table_info['unit'].unique())[0] 
@@ -122,8 +123,9 @@ def get_plotting_info(param: str, sc_params: dict, first_tstmp: str, last_tstmp:
             return unit, lower_lim, upper_lim
 
         if time > first_tstmp and time > last_tstmp:
-            utils.logger.error("\033[91mYou're travelling too far in the past, there were no SC data in the time period you selected. Try again!\033[0m")
-            sys.exit()
+            if time == times[0]:
+                utils.logger.error("\033[91mYou're travelling too far in the past, there were no SC data in the time period you selected. Try again!\033[0m")
+                sys.exit()
 
     return unit, lower_lim, upper_lim
 
@@ -134,5 +136,10 @@ def apply_flags(df: DataFrame, sc_params: dict, flags_param: list) -> DataFrame:
         column = sc_params['expressions'][flag]['column']
         entry = sc_params['expressions'][flag]['entry']
         df = df[df[column] == entry]
+
+    # check if the dataframe is empty
+    if df.empty:
+        utils.logger.error("\033[91mThe dataframe is empty. Exiting now!\033[0m")
+        exit()
 
     return df
