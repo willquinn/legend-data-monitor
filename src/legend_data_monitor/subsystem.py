@@ -29,10 +29,10 @@ class Subsystem:
             - 'version' [str]: version of pygama data processing format vXX.XX
             - 'type' [str]: 'phy' or 'cal'
             - the following key(s) depending in time selection
-                1) 'start' : <start datetime>, 'end': <end datetime> where <datetime> input is of format 'YYYY-MM-DD hh:mm:ss'
-                2) 'window'[str]: time window in the past from current time point, format: 'Xd Xh Xm' for days, hours, minutes
-                2) 'timestamps': str or list of str in format 'YYYYMMDDThhmmssZ'
-                3) 'runs': int or list of ints for run number(s)  e.g. 10 for r010
+                1. 'start' : <start datetime>, 'end': <end datetime> where <datetime> input is of format 'YYYY-MM-DD hh:mm:ss'
+                2. 'window'[str]: time window in the past from current time point, format: 'Xd Xh Xm' for days, hours, minutes
+                2. 'timestamps': str or list of str in format 'YYYYMMDDThhmmssZ'
+                3. 'runs': int or list of ints for run number(s)  e.g. 10 for r010
     Or input kwargs separately experiment=, period=, path=, version=, type=; start=&end=, or window=, or timestamps=, or runs=
 
     Experiment is needed to know which channel belongs to the pulser Subsystem (and its name), "auxs" ch0 (L60) or "puls" ch1 (L200)

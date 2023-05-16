@@ -1,5 +1,13 @@
 {
   "SC_DB_params": {
+    "diode_vmon": {
+      "table": "diode_snap",
+      "flags": []
+    },
+    "diode_imon": {
+      "table": "diode_snap",
+      "flags": []
+    },
     "PT114": {
       "table": "cryostat_snap",
       "flags": ["is_Pressure", "is_PT114"]

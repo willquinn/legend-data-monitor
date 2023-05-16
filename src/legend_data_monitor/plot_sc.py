@@ -1,14 +1,15 @@
 import sys
+import numpy as np
 from datetime import datetime, timezone
 from typing import Tuple
 
 from legendmeta import LegendSlowControlDB
 from pandas import DataFrame
 
-from . import utils
+from . import subsystem, utils
 
 scdb = LegendSlowControlDB()
-scdb.connect(password="...")  # look on Confluence (or ask Sofia) for the password
+scdb.connect(password="legend00")  # look on Confluence (or ask Sofia) for the password
 
 # instead of dataset, retrieve 'config["dataset"]' from config json
 dataset = {
@@ -28,7 +29,7 @@ dataset = {
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-def get_sc_param(param="DaqLeft-Temp2", dataset=dataset) -> DataFrame:
+def get_sc_param(param="diode_imon", dataset=dataset) -> DataFrame:
     """Get data from the Slow Control (SC) database for the specified parameter ```param```.
 
     The ```dataset```  entry is of the following type:
@@ -93,6 +94,21 @@ def load_table_and_apply_flags(
     # SQL query to filter the dataframe based on the time range
     query = f"SELECT * FROM {table_param} WHERE tstamp >= '{first_tstmp}' AND tstamp <= '{last_tstmp}'"
     get_table_df = scdb.dataframe(query)
+
+    # remove unnecessary columns (necessary when retrieving diode parameters)
+    # note: there will be a 'status' column such that ON=1 and OFF=0 - right now we are keeping every detector, without removing the OFF ones as we usually do for geds
+    if "vmon" in param and "imon" in list(get_table_df.columns):
+        get_table_df = get_table_df.drop(columns="imon")
+        # rename the column of interest to 'value' to be consistent with other parameter dataframes
+        get_table_df = get_table_df.rename(columns={"vmon": "value"})
+    if "imon" in param and "vmon" in list(get_table_df.columns):
+        get_table_df = get_table_df.drop(columns="vmon")
+        get_table_df = get_table_df.rename(columns={"imon": "value"})
+    # in case of geds parameters, add the info about the channel name and channel id (right now, there is only crate&slot info)
+    if param == "diode_vmon" or param == "diode_imon":
+        get_table_df = include_more_diode_info(get_table_df)
+
+
     # order by timestamp (not automatically done)
     get_table_df = get_table_df.sort_values(by="tstamp")
 
@@ -103,9 +119,13 @@ def load_table_and_apply_flags(
     get_table_df = apply_flags(get_table_df, sc_params, flags_param)
 
     # get units and lower/upper limits for the parameter of interest
-    unit, lower_lim, upper_lim = get_plotting_info(
-        param, sc_params, first_tstmp, last_tstmp
-    )
+    if "diode" not in param:
+        unit, lower_lim, upper_lim = get_plotting_info(
+            param, sc_params, first_tstmp, last_tstmp
+        )
+    else:
+        unit = lower_lim = upper_lim = None # I don't know where to get these info for geds ...
+
     # append unit, lower_lim, upper_lim to the dataframe
     get_table_df["unit"] = unit
     get_table_df["lower_lim"] = lower_lim
@@ -195,3 +215,36 @@ def apply_flags(df: DataFrame, sc_params: dict, flags_param: list) -> DataFrame:
         exit()
 
     return df
+
+
+def include_more_diode_info(df: DataFrame) -> DataFrame:
+    """Include more diode info, such as the channel name and the string number to which it belongs."""
+    # get the diode info dataframe from the SC database
+    df_info = scdb.dataframe("diode_info")
+    # remove duplicates of detector names
+    df_info = df_info.drop_duplicates(subset="label")
+    # remove unnecessary columns (otherwise, they are repeated after the merging)
+    df_info = df_info.drop(columns={"status", "tstamp"})
+    # there is a repeated detector! Once with an additional blank space in front of its name: removed in case it is found
+    if " V00050B" in list(df_info['label'].unique()):
+        df_info = df_info[df_info['label'] != ' V00050B']
+
+    # remve 'HV filter test' and 'no cable' entries
+    df_info = df_info[~df_info['label'].str.contains('Ch')]
+    # remove other stuff (???)
+    if "?" in list(df_info['label'].unique()):
+        df_info = df_info[df_info['label'] != '?']
+    if " routed" in list(df_info['label'].unique()):
+        df_info = df_info[df_info['label'] != ' routed']
+    if "routed" in list(df_info['label'].unique()):
+        df_info = df_info[df_info['label'] != 'routed']
+
+    # Merge df_info into df based on 'crate' and 'slot'
+    merged_df = df.merge(df_info[['crate', 'slot', 'channel', 'label', 'group']], on=['crate', 'slot', 'channel'], how='left')
+    merged_df = merged_df.rename(columns={'label': 'name', 'group': 'string'})
+    # remove "name"=NaN (ie entries for which there was not a correspondence among the two merged dataframes)
+    merged_df = merged_df.dropna(subset=['name'])
+    # switch from "String X" (str) to "X" (int) for entries of the 'string' column
+    merged_df['string'] = merged_df['string'].str.extract('(\d+)').astype(int)
+
+    return merged_df
