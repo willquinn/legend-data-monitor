@@ -719,11 +719,12 @@ def add_config_entries(
 # Saving related functions
 # -------------------------------------------------------------------------
 
+
 def save_df_and_info(df: DataFrame, plot_info: dict) -> dict:
     """Return a dictionary containing a dataframe for the parameter(s) under study for a given subsystem. The plotting info are saved too."""
     par_dict_content = {
-        "df_" + plot_info["subsystem"]: df, # saving dataframe
-        "plot_info": plot_info # saving plotting info
+        "df_" + plot_info["subsystem"]: df,  # saving dataframe
+        "plot_info": plot_info,  # saving plotting info
     }
 
     return par_dict_content
@@ -736,7 +737,7 @@ def build_out_dict(
 ):
     """
     Build the output dictionary based on the input 'saving' option.
-    
+
     Parameters
     ----------
     plot_settings
@@ -744,11 +745,11 @@ def build_out_dict(
     par_dict_content
         Dictionary containing, for a given parameter, the dataframe with data and a dictionary with info for plotting (e.g. plot style, title, units, labels, ...)
     out_dict
-        Dictionary that is returned, containing the objects that need to be saved. 
+        Dictionary that is returned, containing the objects that need to be saved.
     """
-    saving = plot_settings['saving'] if 'saving' in plot_settings.keys() else None
-    plt_path = plot_settings['plt_path'] if 'plt_path' in plot_settings.keys() else None
-    plot_info = par_dict_content['plot_info'] 
+    saving = plot_settings["saving"] if "saving" in plot_settings.keys() else None
+    plt_path = plot_settings["plt_path"] if "plt_path" in plot_settings.keys() else None
+    plot_info = par_dict_content["plot_info"]
 
     # we overwrite the object with a new one
     if saving == "overwrite":
@@ -840,36 +841,64 @@ def save_dict(
     # more than one parameter
     else:
         # some info we'll later need to better divide the parameters stored in the dataframe...
-        keep_cols = ['index', 'channel', 'HV_card', 'HV_channel', 'cc4_channel', 'cc4_id', 'daq_card', 'daq_crate', 'datetime', 'det_type', 'flag_fc_bsln', 'flag_muon', 'flag_pulser', 'location', 'name', 'position', 'status']
-        keep_keys = ['subsystem', 'locname', 'plot_style', 'time_window', 'resampled', 'range', 'std']
-        new_keys = ['unit', 'label', 'unit_label', 'parameters', 'param_mean']
+        keep_cols = [
+            "index",
+            "channel",
+            "HV_card",
+            "HV_channel",
+            "cc4_channel",
+            "cc4_id",
+            "daq_card",
+            "daq_crate",
+            "datetime",
+            "det_type",
+            "flag_fc_bsln",
+            "flag_muon",
+            "flag_pulser",
+            "location",
+            "name",
+            "position",
+            "status",
+        ]
+        keep_keys = [
+            "subsystem",
+            "locname",
+            "plot_style",
+            "time_window",
+            "resampled",
+            "range",
+            "std",
+        ]
+        new_keys = ["unit", "label", "unit_label", "parameters", "param_mean"]
 
         for param in params:
-            parameter = (
-                param.split("_var")[0]
-                if "_var" in param
-                else param
-            )
+            parameter = param.split("_var")[0] if "_var" in param else param
 
             # we have to polish our dataframe and plot_info dictionary from other parameters...
-            # --- original objects 
+            # --- original objects
             plot_info_all = par_dict_content["plot_info"]
             df_all = par_dict_content["df_" + plot_info_all["subsystem"]]
 
             #  --- cleaned plot_info
             plot_info_param = {key: plot_info_all[key] for key in keep_keys}
             # set a default title - that does not involve a second parameter in it
-            plot_info_param['title'] = f"Plotting {param}"
+            plot_info_param["title"] = f"Plotting {param}"
             for new_key in new_keys:
                 obj = plot_info_all[new_key]
                 if isinstance(obj, dict):
-                    plot_info_param[new_key] = [v for k,v in obj.items() if parameter in k][0]
+                    plot_info_param[new_key] = [
+                        v for k, v in obj.items() if parameter in k
+                    ][0]
                 if isinstance(obj, list):
                     plot_info_param[new_key] = [k for k in obj if parameter in k][0]
 
             # --- cleaned df
-            df_param = df_all.copy().drop(columns={x for x in df_all.columns if parameter not in x})
-            df_cols = df_all.copy().drop(columns={x for x in df_all.columns if x not in keep_cols})
+            df_param = df_all.copy().drop(
+                columns={x for x in df_all.columns if parameter not in x}
+            )
+            df_cols = df_all.copy().drop(
+                columns={x for x in df_all.columns if x not in keep_cols}
+            )
             df_param = concat([df_param, df_cols], axis=1)
 
             # --- rebuilding the 'par_dict_content' for the parameter under study
@@ -883,10 +912,14 @@ def save_dict(
             else:
                 # empty dictionary (not filled yet)
                 if len(out_dict.keys()) == 0:
-                    out_dict = {plot_settings["event_type"]: {parameter: par_dict_content}}
+                    out_dict = {
+                        plot_settings["event_type"]: {parameter: par_dict_content}
+                    }
                 # the dictionary already contains something (but for another event type selection)
                 else:
-                    out_dict[plot_settings["event_type"]] = {parameter: par_dict_content}
+                    out_dict[plot_settings["event_type"]] = {
+                        parameter: par_dict_content
+                    }
 
     return out_dict
 

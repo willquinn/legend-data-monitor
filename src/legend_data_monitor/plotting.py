@@ -270,9 +270,7 @@ def make_subsystem_plots(
 
         # building a dictionary with dataframe/plot_info to be later stored in a shelve object
         if saving is not None:
-            out_dict = utils.build_out_dict(
-                plot_settings, par_dict_content, out_dict
-            )
+            out_dict = utils.build_out_dict(plot_settings, par_dict_content, out_dict)
 
     # save in shelve object, overwriting the already existing file with new content (either completely new or new bunches)
     if saving is not None:
