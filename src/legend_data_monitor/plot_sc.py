@@ -4,6 +4,7 @@ from typing import Tuple
 from pandas import DataFrame
 
 from legendmeta import LegendSlowControlDB
+
 from . import utils
 
 scdb = LegendSlowControlDB()
@@ -25,6 +26,7 @@ dataset = {
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # SLOW CONTROL LOADING/PLOTTING FUNCTIONS
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 
 def get_sc_param(param="DaqLeft-Temp2", dataset=dataset) -> DataFrame:
     """Get data from the Slow Control (SC) database for the specified parameter ```param```.
@@ -65,7 +67,7 @@ def get_sc_param(param="DaqLeft-Temp2", dataset=dataset) -> DataFrame:
 
     # get data from the SC database
     df_param = load_table_and_apply_flags(param, sc_params, first_tstmp, last_tstmp)
-    
+
     return df_param
 
 
@@ -99,17 +101,21 @@ def load_table_and_apply_flags(
     # let's apply the flags for keeping only the parameter of interest
     utils.logger.debug(f"... applying flags to get the parameter '{param}'")
     get_table_df = apply_flags(get_table_df, sc_params, flags_param)
-    
+
     # get units and lower/upper limits for the parameter of interest
-    unit, lower_lim, upper_lim = get_plotting_info(param, sc_params, first_tstmp, last_tstmp)
+    unit, lower_lim, upper_lim = get_plotting_info(
+        param, sc_params, first_tstmp, last_tstmp
+    )
     # append unit, lower_lim, upper_lim to the dataframe
-    get_table_df['unit'] = unit
-    get_table_df['lower_lim'] = lower_lim
-    get_table_df['upper_lim'] = upper_lim
+    get_table_df["unit"] = unit
+    get_table_df["lower_lim"] = lower_lim
+    get_table_df["upper_lim"] = upper_lim
 
     get_table_df = get_table_df.reset_index()
 
-    utils.logger.debug("... final dataframe (after flagging the events):\n%s", get_table_df)
+    utils.logger.debug(
+        "... final dataframe (after flagging the events):\n%s", get_table_df
+    )
 
     return get_table_df
 
