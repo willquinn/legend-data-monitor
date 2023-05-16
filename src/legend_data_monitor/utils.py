@@ -720,7 +720,7 @@ def add_config_entries(
 # -------------------------------------------------------------------------
 
 def save_df_and_info(df: DataFrame, plot_info: dict) -> dict:
-    """Returns a dictionary containing a dataframe for the parameter(s) under study for a given subsystem. The plotting info are saved too."""
+    """Return a dictionary containing a dataframe for the parameter(s) under study for a given subsystem. The plotting info are saved too."""
     par_dict_content = {
         "df_" + plot_info["subsystem"]: df, # saving dataframe
         "plot_info": plot_info # saving plotting info
