@@ -1,9 +1,9 @@
 import sys
 from datetime import datetime, timezone
 from typing import Tuple
-from pandas import DataFrame
 
 from legendmeta import LegendSlowControlDB
+from pandas import DataFrame
 
 from . import utils
 
