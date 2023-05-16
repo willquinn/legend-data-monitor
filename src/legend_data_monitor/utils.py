@@ -9,8 +9,8 @@ import sys
 
 # for getting DataLoader time range
 from datetime import datetime, timedelta
-import pygama.lgdo.lh5_store as lh5
 
+import pygama.lgdo.lh5_store as lh5
 from pandas import DataFrame, concat
 
 # -------------------------------------------------------------------------
@@ -99,10 +99,10 @@ def get_query_times(**kwargs):
             - 'version' [str]: < move description here from get_data() >
             - 'type' [str]: < move description here > ! not possible for multiple types now!
             - the following keys depending in time selection mode (choose one)
-                1) 'start' : <start datetime>, 'end': <end datetime> where <datetime> input is of format 'YYYY-MM-DD hh:mm:ss'
-                2) 'window'[str]: time window in the past from current time point, format: 'Xd Xh Xm' for days, hours, minutes
-                2) 'timestamps': str or list of str in format 'YYYYMMDDThhmmssZ'
-                3) 'runs': int or list of ints for run number(s)  e.g. 10 for r010
+                1. 'start' : <start datetime>, 'end': <end datetime> where <datetime> input is of format 'YYYY-MM-DD hh:mm:ss'
+                2. 'window'[str]: time window in the past from current time point, format: 'Xd Xh Xm' for days, hours, minutes
+                2. 'timestamps': str or list of str in format 'YYYYMMDDThhmmssZ'
+                3. 'runs': int or list of ints for run number(s)  e.g. 10 for r010
     Or input kwargs separately path=, ...; start=&end=, or window=, or timestamps=, or runs=
 
     Designed in such a way to accommodate Subsystem init kwargs. A bit cumbersome and can probably be done better.
@@ -126,7 +126,10 @@ def get_query_times(**kwargs):
             first_timestamp = timerange["timestamp"]["start"]
         if "end" in timerange["timestamp"]:
             last_timestamp = timerange["timestamp"]["end"]
-        if "start" not in timerange["timestamp"] and "end" not in timerange["timestamp"]:
+        if (
+            "start" not in timerange["timestamp"]
+            and "end" not in timerange["timestamp"]
+        ):
             first_timestamp = min(timerange["timestamp"])
             last_timestamp = max(timerange["timestamp"])
     # look in path to find first timestamp if keyword is run
@@ -175,7 +178,9 @@ def get_query_times(**kwargs):
         last_file = last_dsp_files[-1]
         # extract timestamps
         first_timestamp = get_key(first_file)
-        last_timestamp = get_last_timestamp(last_file) # ma non e' l'ultimo timestamp, per quello bisogna aprire il file e prendere l'ultima entry!!!
+        last_timestamp = get_last_timestamp(
+            last_file
+        )  # ma non e' l'ultimo timestamp, per quello bisogna aprire il file e prendere l'ultima entry!!!
 
     return timerange, first_timestamp, last_timestamp
 
@@ -188,10 +193,10 @@ def get_query_timerange(**kwargs):
 
     dataset=
         dict with the following keys depending in time selection mode (choose one)
-            1) 'start' : <start datetime>, 'end': <end datetime> where <datetime> input is of format 'YYYY-MM-DD hh:mm:ss'
-            2) 'window'[str]: time window in the past from current time point, format: 'Xd Xh Xm' for days, hours, minutes
-            2) 'timestamps': str or list of str in format 'YYYYMMDDThhmmssZ'
-            3) 'runs': int or list of ints for run number(s)  e.g. 10 for r010
+            1. 'start' : <start datetime>, 'end': <end datetime> where <datetime> input is of format 'YYYY-MM-DD hh:mm:ss'
+            2. 'window'[str]: time window in the past from current time point, format: 'Xd Xh Xm' for days, hours, minutes
+            2. 'timestamps': str or list of str in format 'YYYYMMDDThhmmssZ'
+            3. 'runs': int or list of ints for run number(s)  e.g. 10 for r010
     Or enter kwargs separately start=&end=, or window=, or timestamp=, or runs=
 
     Designed in such a way to accommodate Subsystem init kwargs. A bit cumbersome and can probably be done better.
@@ -440,16 +445,16 @@ def get_time_name(user_time_range: dict) -> str:
     """Get a name for each available time selection.
 
     careful handling of folder name depending on the selected time range. The possibilities are:
-      1) user_time_range = {'timestamp': {'start': '20220928T080000Z', 'end': '20220928T093000Z'}} => start + end
+      1. user_time_range = {'timestamp': {'start': '20220928T080000Z', 'end': '20220928T093000Z'}} => start + end
               -> folder: 20220928T080000Z_20220928T093000Z/
-      2) user_time_range = {'timestamp': ['20230207T103123Z']} => one key
+      2. user_time_range = {'timestamp': ['20230207T103123Z']} => one key
               -> folder: 20230207T103123Z/
-      3) user_time_range = {'timestamp': ['20230207T103123Z', '20230207T141123Z', '20230207T083323Z']} => multiple keys
+      3. user_time_range = {'timestamp': ['20230207T103123Z', '20230207T141123Z', '20230207T083323Z']} => multiple keys
               -> get min/max and use in the folder name
               -> folder: 20230207T083323Z_20230207T141123Z/
-      4) user_time_range = {'run': ['r010']} => one run
+      4. user_time_range = {'run': ['r010']} => one run
               -> folder: r010/
-      5) user_time_range = {'run': ['r010', 'r014']} => multiple runs
+      5. user_time_range = {'run': ['r010', 'r014']} => multiple runs
               -> folder: r010_r014/
     """
     name_time = ""
@@ -592,7 +597,9 @@ def get_last_timestamp(dsp_fname: str) -> str:
     # pick a random channel
     first_channel = lh5.ls(dsp_fname, "")[0]
     # get array of timestamps stored in the lh5 file
-    timestamp = lh5.load_nda(dsp_fname, ["timestamp"], f"{first_channel}/dsp/")["timestamp"]
+    timestamp = lh5.load_nda(dsp_fname, ["timestamp"], f"{first_channel}/dsp/")[
+        "timestamp"
+    ]
     # get the last entry
     last_timestamp = timestamp[-1]
     # convert from UNIX tstamp to string tstmp of format YYYYMMDDTHHMMSSZ
