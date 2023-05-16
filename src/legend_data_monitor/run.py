@@ -17,6 +17,7 @@ def main():
       $ legend-data-monitor --help # help section
 
     Example JSON configuration file:
+    
     .. code-block:: json
         {
             "dataset": {

@@ -1,9 +1,5 @@
 {
   "SC_DB_params": {
-      "PT118": {
-        "table": "cryostat_snap",
-        "flags": ["is_Pressure", "is_PT118"]
-      },
       "PT114": {
         "table": "cryostat_snap",
         "flags": ["is_Pressure", "is_PT114"]
@@ -11,6 +7,10 @@
       "PT115": {
         "table": "cryostat_snap",
         "flags": ["is_Pressure", "is_PT115"]
+      },
+      "PT118": {
+        "table": "cryostat_snap",
+        "flags": ["is_Pressure", "is_PT118"]
       },
       "PT202": {
         "table": "cryostat_snap",

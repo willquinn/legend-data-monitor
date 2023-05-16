@@ -10,7 +10,7 @@ from pandas import DataFrame, Timedelta, concat
 
 from legendmeta import LegendSlowControlDB
 scdb = LegendSlowControlDB()
-scdb.connect(password="...")  # ????????????????????
+scdb.connect(password="...")  # look on Confluence (or ask Sofia) for the password
 
 from . import utils
 
@@ -27,20 +27,34 @@ dataset = {
     "end": "2023-04-08 13:00:00"
 }
 
+"""
+# Necessary to perform the SSH tunnel to the databse
+def ssh_tunnel():
+    import subprocess
+    #ssh_tunnel_cmd = 'ssh -t ugnet-proxy' 
+    #full_ssh_cmd = ssh_tunnel_cmd
+    #subprocess.run(full_ssh_cmd, shell=True)
+    #subprocess.Popen(["ssh", "-t", "ugnet-proxy"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+"""
+
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # SLOW CONTROL LOADING/PLOTTING FUNCTIONS
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-def get_sc_df(param="DaqLeft-Temp2", dataset=dataset): 
-    """
-    # Necessary to perform the SSH tunnel to the databse
-    def ssh_tunnel():
-        import subprocess
-        #ssh_tunnel_cmd = 'ssh -t ugnet-proxy' 
-        #full_ssh_cmd = ssh_tunnel_cmd
-        #subprocess.run(full_ssh_cmd, shell=True)
-        #subprocess.Popen(["ssh", "-t", "ugnet-proxy"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    """
 
+def get_sc_param(param="DaqLeft-Temp2", dataset=dataset):
+    """Get data from the Slow Control (SC) database for the specified parameter ```param```.
+    
+    The ```dataset```  entry is of the following type:
+
+    dataset=
+        1. dict with keys usually included when plotting other subsystems (geds, spms, ...), i.e. 'experiment', 'period', 'version', 'path', 'type' and any time selection among the following ones:
+            1. 'start' : <start datetime>, 'end': <end datetime> where <datetime> input is of format 'YYYY-MM-DD hh:mm:ss'
+            2. 'window'[str]: time window in the past from current time point, format: 'Xd Xh Xm' for days, hours, minutes
+            2. 'timestamps': str or list of str in format 'YYYYMMDDThhmmssZ'
+            3. 'runs': int or list of ints for run number(s)  e.g. 10 for r010
+        2. dict with 'start' : <start datetime>, 'end': <end datetime> where <datetime> input is of format 'YYYY-MM-DD hh:mm:ss' only
+    """
     # load info from settings/SC-params.json
     sc_params = utils.SC_PARAMETERS
 
@@ -50,13 +64,18 @@ def get_sc_df(param="DaqLeft-Temp2", dataset=dataset):
         sys.exit()
 
     # get first/last timestamps to use when querying data from the SC database
-    timerange, first_tstmp, last_tstmp = utils.get_query_times(dataset=dataset)
+    if set(dataset.keys()) == {'start', 'end'}:
+        first_tstmp = (datetime.strptime(dataset['start'], "%Y-%m-%d %H:%M:%S")).strftime("%Y%m%dT%H%M%SZ")
+        last_tstmp = (datetime.strptime(dataset['end'], "%Y-%m-%d %H:%M:%S")).strftime("%Y%m%dT%H%M%SZ")
+    else:
+        _, first_tstmp, last_tstmp = utils.get_query_times(dataset=dataset)
+    utils.logger.debug(f"... you are going to query data from {first_tstmp} to {last_tstmp}")
 
     # get data from the SC database
     df_param = load_table_and_apply_flags(param, sc_params, first_tstmp, last_tstmp)
     # get units and lower/upper limits for the parameter of interest
     unit, lower_lim, upper_lim = get_plotting_info(param, sc_params, first_tstmp, last_tstmp)
-    exit()
+    sys.exit()
 
 
 def load_table_and_apply_flags(param: str, sc_params: dict, first_tstmp: str, last_tstmp: str) -> DataFrame:

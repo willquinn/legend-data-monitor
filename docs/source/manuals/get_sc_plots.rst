@@ -21,16 +21,37 @@ Files are collected in the output folder specified in the ``output`` config entr
   "output": "<some_path>/out",
   // ...
 
-Since SC data does not depend on any dataset info (``experiment``, ``period``, ``version``, ``type``) but the selected time interval,
-the output folder is generally structured as it follows:
+In principle, for plotting the SC data you would need just the start and the end of a time interval of interest. This means that SC data does not depend on any dataset info (``experiment``, ``period``, ``version``, ``type``) but ``time_selection``.
+However, there are cases were we want to inspect a given run or time period made of keys as we usually do with germanium.
+
+In the first case, we end up saving data in the following folder:
 
 .. code-block::
 
   <some_path>/out/
-    └── <time_selection>
-      ├── SC-<time_selection>.pdf
-      ├── SC-<time_selection>.log
-      └── SC-<time_selection>.{dat,bak,dir}
+    └── generated
+      └── plt
+        └── SC
+          └── <time_selection>
+            ├── SC-<time_selection>.pdf
+            ├── SC-<time_selection>.log
+            └── SC-<time_selection>.{dat,bak,dir}
+
+Otherwise, we store the SC data/plots as usual:
+
+.. code-block::
+
+  <some_path>/out/
+    └── generated
+      └── plt
+        └── <type>
+          └── <period>
+            └── SC
+              └── <time_selection>
+                ├── SC-<time_selection>.pdf
+                ├── SC-<time_selection>.log
+                └── SC-<time_selection>.{dat,bak,dir}
+
 
 .. note::
 
