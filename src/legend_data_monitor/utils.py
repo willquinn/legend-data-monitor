@@ -177,8 +177,6 @@ def get_query_times(**kwargs):
         first_timestamp = get_key(first_file)
         last_timestamp = get_last_timestamp(last_file) # ma non e' l'ultimo timestamp, per quello bisogna aprire il file e prendere l'ultima entry!!!
 
-        print("last_run:", last_run, "\tlast_glob_path:", last_glob_path, "\tlast_file:", last_file)
-
     return timerange, first_timestamp, last_timestamp
 
 

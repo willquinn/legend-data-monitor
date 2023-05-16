@@ -6,7 +6,7 @@ How to load SC data
 
 A number of parameters related to the LEGEND hardware configuration and status are recorded in the Slow Control (SC) database. 
 The latter, PostgreSQL database resides on the ``legend-sc.lngs.infn.it`` host, part of the LNGS network.
-To access the SC databse, follow the `Confluence (Python Software Stack) <https://legend-exp.atlassian.net/wiki/spaces/LEGEND/pages/494764033/Python+Software+Stack>`_ instructions.
+To access the SC database, follow the `Confluence (Python Software Stack) <https://legend-exp.atlassian.net/wiki/spaces/LEGEND/pages/494764033/Python+Software+Stack>`_ instructions.
 Data are loaded following the ``pylegendmeta`` tutorial , which shows how to inspect the database.
 
 
