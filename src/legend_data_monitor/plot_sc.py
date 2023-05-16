@@ -1,6 +1,7 @@
 import sys
 from datetime import datetime, timezone
 from typing import Tuple
+from pandas import DataFrame
 
 from legendmeta import LegendSlowControlDB
 from . import utils
@@ -20,17 +21,6 @@ dataset = {
     "start": "2023-04-06 10:00:00",
     "end": "2023-04-08 13:00:00",
 }
-
-"""
-# Necessary to perform the SSH tunnel to the database
-def ssh_tunnel():
-    import subprocess
-    #ssh_tunnel_cmd = 'ssh -t ugnet-proxy'
-    #full_ssh_cmd = ssh_tunnel_cmd
-    #subprocess.run(full_ssh_cmd, shell=True)
-    #subprocess.Popen(["ssh", "-t", "ugnet-proxy"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-"""
-
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # SLOW CONTROL LOADING/PLOTTING FUNCTIONS
