@@ -8,7 +8,7 @@ from pandas import DataFrame
 from . import utils
 
 scdb = LegendSlowControlDB()
-scdb.connect(password="legend00")  # look on Confluence (or ask Sofia) for the password
+scdb.connect(password="...")  # look on Confluence (or ask Sofia) for the password
 
 # instead of dataset, retrieve 'config["dataset"]' from config json
 dataset = {
