@@ -9,8 +9,8 @@ import sys
 
 # for getting DataLoader time range
 from datetime import datetime, timedelta
-import pygama.lgdo.lh5_store as lh5
 
+import pygama.lgdo.lh5_store as lh5
 from pandas import DataFrame, concat
 
 # -------------------------------------------------------------------------
@@ -126,7 +126,10 @@ def get_query_times(**kwargs):
             first_timestamp = timerange["timestamp"]["start"]
         if "end" in timerange["timestamp"]:
             last_timestamp = timerange["timestamp"]["end"]
-        if "start" not in timerange["timestamp"] and "end" not in timerange["timestamp"]:
+        if (
+            "start" not in timerange["timestamp"]
+            and "end" not in timerange["timestamp"]
+        ):
             first_timestamp = min(timerange["timestamp"])
             last_timestamp = max(timerange["timestamp"])
     # look in path to find first timestamp if keyword is run
@@ -175,9 +178,18 @@ def get_query_times(**kwargs):
         last_file = last_dsp_files[-1]
         # extract timestamps
         first_timestamp = get_key(first_file)
-        last_timestamp = get_last_timestamp(last_file) # ma non e' l'ultimo timestamp, per quello bisogna aprire il file e prendere l'ultima entry!!!
+        last_timestamp = get_last_timestamp(
+            last_file
+        )  # ma non e' l'ultimo timestamp, per quello bisogna aprire il file e prendere l'ultima entry!!!
 
-        print("last_run:", last_run, "\tlast_glob_path:", last_glob_path, "\tlast_file:", last_file)
+        print(
+            "last_run:",
+            last_run,
+            "\tlast_glob_path:",
+            last_glob_path,
+            "\tlast_file:",
+            last_file,
+        )
 
     return timerange, first_timestamp, last_timestamp
 
@@ -594,7 +606,9 @@ def get_last_timestamp(dsp_fname: str) -> str:
     # pick a random channel
     first_channel = lh5.ls(dsp_fname, "")[0]
     # get array of timestamps stored in the lh5 file
-    timestamp = lh5.load_nda(dsp_fname, ["timestamp"], f"{first_channel}/dsp/")["timestamp"]
+    timestamp = lh5.load_nda(dsp_fname, ["timestamp"], f"{first_channel}/dsp/")[
+        "timestamp"
+    ]
     # get the last entry
     last_timestamp = timestamp[-1]
     # convert from UNIX tstamp to string tstmp of format YYYYMMDDTHHMMSSZ
