@@ -10,6 +10,7 @@ import sys
 # for getting DataLoader time range
 from datetime import datetime, timedelta
 
+import pygama.lgdo.lh5_store as lh5
 from pandas import DataFrame, concat
 
 # -------------------------------------------------------------------------
@@ -49,6 +50,10 @@ for param in SPECIAL_PARAMETERS:
     if isinstance(SPECIAL_PARAMETERS[param], str):
         SPECIAL_PARAMETERS[param] = [SPECIAL_PARAMETERS[param]]
 
+# load SC params and corresponding flags to get specific parameters from big dfs that are stored in the database
+with open(pkg / "settings" / "SC-params.json") as f:
+    SC_PARAMETERS = json.load(f)
+
 # load list of columns to load for a dataframe
 COLUMNS_TO_LOAD = [
     "name",
@@ -83,7 +88,7 @@ with open(pkg / "settings" / "remove-dets.json") as f:
 
 def get_query_times(**kwargs):
     """
-    Get time ranges for DataLoader query from user input, as well as first timestamp for channel map/status query.
+    Get time ranges for DataLoader query from user input, as well as first/last timestamp for channel map / status / SC query.
 
     Available kwargs:
 
@@ -94,10 +99,10 @@ def get_query_times(**kwargs):
             - 'version' [str]: < move description here from get_data() >
             - 'type' [str]: < move description here > ! not possible for multiple types now!
             - the following keys depending in time selection mode (choose one)
-                1) 'start' : <start datetime>, 'end': <end datetime> where <datetime> input is of format 'YYYY-MM-DD hh:mm:ss'
-                2) 'window'[str]: time window in the past from current time point, format: 'Xd Xh Xm' for days, hours, minutes
-                2) 'timestamps': str or list of str in format 'YYYYMMDDThhmmssZ'
-                3) 'runs': int or list of ints for run number(s)  e.g. 10 for r010
+                1. 'start' : <start datetime>, 'end': <end datetime> where <datetime> input is of format 'YYYY-MM-DD hh:mm:ss'
+                2. 'window'[str]: time window in the past from current time point, format: 'Xd Xh Xm' for days, hours, minutes
+                2. 'timestamps': str or list of str in format 'YYYYMMDDThhmmssZ'
+                3. 'runs': int or list of ints for run number(s)  e.g. 10 for r010
     Or input kwargs separately path=, ...; start=&end=, or window=, or timestamps=, or runs=
 
     Designed in such a way to accommodate Subsystem init kwargs. A bit cumbersome and can probably be done better.
@@ -115,42 +120,69 @@ def get_query_times(**kwargs):
     timerange = get_query_timerange(**kwargs)
 
     first_timestamp = ""
-    # get first timestamp in case keyword is timestamp
+    # get first/last timestamp in case keyword is timestamp
     if "timestamp" in timerange:
         if "start" in timerange["timestamp"]:
             first_timestamp = timerange["timestamp"]["start"]
-        else:
+        if "end" in timerange["timestamp"]:
+            last_timestamp = timerange["timestamp"]["end"]
+        if (
+            "start" not in timerange["timestamp"]
+            and "end" not in timerange["timestamp"]
+        ):
             first_timestamp = min(timerange["timestamp"])
+            last_timestamp = max(timerange["timestamp"])
     # look in path to find first timestamp if keyword is run
     else:
         # currently only list of runs and not 'start' and 'end', so always list
-        # find earliest run, format rXXX
+        # find earliest/latest run, format rXXX
         first_run = min(timerange["run"])
+        last_run = max(timerange["run"])
 
         # --- get dsp filelist of this run
         # if setup= keyword was used, get dict; otherwise kwargs is already the dict we need
         path_info = kwargs["dataset"] if "dataset" in kwargs else kwargs
 
-        # format to search /path_to_prod-ref[/v06.00]/generated/tier/**/phy/**/r027 (version might not be there)
-        glob_path = os.path.join(
+        # format to search /path_to_prod-ref[/vXX.XX]/generated/tier/dsp/phy/pXX/rXXX (version 'vXX.XX' might not be there).
+        # NOTICE that we fixed the tier, otherwise it picks the last one it finds (eg tcm).
+        # NOTICE that this is PERIOD SPECIFIC (unlikely we're gonna inspect two periods together, so we fix it)
+        first_glob_path = os.path.join(
             path_info["path"],
             path_info["version"],
             "generated",
             "tier",
-            "**",
+            "dsp",
             path_info["type"],
-            "**",
+            path_info["period"],
             first_run,
             "*.lh5",
         )
-        dsp_files = glob.glob(glob_path)
+        last_glob_path = os.path.join(
+            path_info["path"],
+            path_info["version"],
+            "generated",
+            "tier",
+            "dsp",
+            path_info["type"],
+            path_info["period"],
+            last_run,
+            "*.lh5",
+        )
+        first_dsp_files = glob.glob(first_glob_path)
+        last_dsp_files = glob.glob(last_glob_path)
         # find earliest
-        dsp_files.sort()
-        first_file = dsp_files[0]
-        # extract timestamp
+        first_dsp_files.sort()
+        first_file = first_dsp_files[0]
+        # find latest
+        last_dsp_files.sort()
+        last_file = last_dsp_files[-1]
+        # extract timestamps
         first_timestamp = get_key(first_file)
+        last_timestamp = get_last_timestamp(
+            last_file
+        )  # ma non e' l'ultimo timestamp, per quello bisogna aprire il file e prendere l'ultima entry!!!
 
-    return timerange, first_timestamp
+    return timerange, first_timestamp, last_timestamp
 
 
 def get_query_timerange(**kwargs):
@@ -161,10 +193,10 @@ def get_query_timerange(**kwargs):
 
     dataset=
         dict with the following keys depending in time selection mode (choose one)
-            1) 'start' : <start datetime>, 'end': <end datetime> where <datetime> input is of format 'YYYY-MM-DD hh:mm:ss'
-            2) 'window'[str]: time window in the past from current time point, format: 'Xd Xh Xm' for days, hours, minutes
-            2) 'timestamps': str or list of str in format 'YYYYMMDDThhmmssZ'
-            3) 'runs': int or list of ints for run number(s)  e.g. 10 for r010
+            1. 'start' : <start datetime>, 'end': <end datetime> where <datetime> input is of format 'YYYY-MM-DD hh:mm:ss'
+            2. 'window'[str]: time window in the past from current time point, format: 'Xd Xh Xm' for days, hours, minutes
+            2. 'timestamps': str or list of str in format 'YYYYMMDDThhmmssZ'
+            3. 'runs': int or list of ints for run number(s)  e.g. 10 for r010
     Or enter kwargs separately start=&end=, or window=, or timestamp=, or runs=
 
     Designed in such a way to accommodate Subsystem init kwargs. A bit cumbersome and can probably be done better.
@@ -413,16 +445,16 @@ def get_time_name(user_time_range: dict) -> str:
     """Get a name for each available time selection.
 
     careful handling of folder name depending on the selected time range. The possibilities are:
-      1) user_time_range = {'timestamp': {'start': '20220928T080000Z', 'end': '20220928T093000Z'}} => start + end
+      1. user_time_range = {'timestamp': {'start': '20220928T080000Z', 'end': '20220928T093000Z'}} => start + end
               -> folder: 20220928T080000Z_20220928T093000Z/
-      2) user_time_range = {'timestamp': ['20230207T103123Z']} => one key
+      2. user_time_range = {'timestamp': ['20230207T103123Z']} => one key
               -> folder: 20230207T103123Z/
-      3) user_time_range = {'timestamp': ['20230207T103123Z', '20230207T141123Z', '20230207T083323Z']} => multiple keys
+      3. user_time_range = {'timestamp': ['20230207T103123Z', '20230207T141123Z', '20230207T083323Z']} => multiple keys
               -> get min/max and use in the folder name
               -> folder: 20230207T083323Z_20230207T141123Z/
-      4) user_time_range = {'run': ['r010']} => one run
+      4. user_time_range = {'run': ['r010']} => one run
               -> folder: r010/
-      5) user_time_range = {'run': ['r010', 'r014']} => multiple runs
+      5. user_time_range = {'run': ['r010', 'r014']} => multiple runs
               -> folder: r010_r014/
     """
     name_time = ""
@@ -453,6 +485,7 @@ def get_time_name(user_time_range: dict) -> str:
 
 
 def get_timestamp(filename):
+    """Get the timestamp from a filename. For instance, if file='l200-p04-r000-phy-20230421T055556Z-tier_dsp.lh5', then it returns '20230421T055556Z'."""
     # Assumes that the timestamp is in the format YYYYMMDDTHHMMSSZ
     return filename.split("-")[-2]
 
@@ -550,6 +583,29 @@ def get_all_plot_parameters(subsystem: str, config: dict):
 def get_key(dsp_fname: str) -> str:
     """Extract key from lh5 filename."""
     return re.search(r"-\d{8}T\d{6}Z", dsp_fname).group(0)[1:]
+
+
+def unix_timestamp_to_string(unix_timestamp):
+    """Convert a Unix timestamp to a string in the format 'YYYYMMDDTHHMMSSZ' with the timezone indicating UTC+00."""
+    utc_datetime = datetime.utcfromtimestamp(unix_timestamp)
+    formatted_string = utc_datetime.strftime("%Y%m%dT%H%M%SZ")
+    return formatted_string
+
+
+def get_last_timestamp(dsp_fname: str) -> str:
+    """Read a lh5 file and return the last timestamp saved in the file. This works only in case of a global trigger where the whole array is entirely recorded for a given timestamp."""
+    # pick a random channel
+    first_channel = lh5.ls(dsp_fname, "")[0]
+    # get array of timestamps stored in the lh5 file
+    timestamp = lh5.load_nda(dsp_fname, ["timestamp"], f"{first_channel}/dsp/")[
+        "timestamp"
+    ]
+    # get the last entry
+    last_timestamp = timestamp[-1]
+    # convert from UNIX tstamp to string tstmp of format YYYYMMDDTHHMMSSZ
+    last_timestamp = unix_timestamp_to_string(last_timestamp)
+
+    return last_timestamp
 
 
 # -------------------------------------------------------------------------
