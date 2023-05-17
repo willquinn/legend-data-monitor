@@ -977,13 +977,11 @@ def get_param_info(param: str, plot_info: dict) -> dict:
     for new_key in new_keys:
         obj = plot_info[new_key]
         if isinstance(obj, dict):
-            plot_info_param[new_key] = [
-                v for k, v in obj.items() if parameter in k
-            ][0]
+            plot_info_param[new_key] = [v for k, v in obj.items() if parameter in k][0]
         if isinstance(obj, list):
             plot_info_param[new_key] = [k for k in obj if parameter in k][0]
-    
+
     # need to go back to the one parameter case ...
-    plot_info_param['parameter'] = plot_info_param.pop('parameters')
+    plot_info_param["parameter"] = plot_info_param.pop("parameters")
 
     return plot_info_param
