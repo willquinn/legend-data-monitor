@@ -271,8 +271,8 @@ def make_subsystem_plots(
                         _ = string_visualization.status_plot(
                             subsystem, data_analysis.data, plot_info, pdf
                         )
-                    if len(params) > 1: 
-                        plot_info_param = utils.get_param_info(param, plot_info)    
+                    if len(params) > 1:
+                        plot_info_param = utils.get_param_info(param, plot_info)
                         _ = string_visualization.status_plot(
                             subsystem, data_analysis.data, plot_info_param, pdf
                         )

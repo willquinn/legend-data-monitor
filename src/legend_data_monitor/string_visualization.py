@@ -5,8 +5,8 @@
 # See mapping user plot structure keywords to corresponding functions in the end of this file
 
 
+
 import matplotlib.pyplot as plt
-import sys
 import numpy as np
 import seaborn as sns
 from matplotlib.backends.backend_pdf import PdfPages
