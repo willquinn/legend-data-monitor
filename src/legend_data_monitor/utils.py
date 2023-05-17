@@ -757,11 +757,8 @@ def build_out_dict(
 
     # we retrieve the already existing shelve object, and we append new things to it; the parameter here is fixed
     if saving == "append":
-        # the file does not exist, so first we create it and then, at the next step, we'll append things
+        # the file does not exist, so we create it
         if not os.path.exists(plt_path + "-" + plot_info["subsystem"] + ".dat"):
-            # logger.warning(
-            #    "\033[93mYou selected 'append' when saving, but the file with already saved data does not exist. For this reason, it will be created first.\033[0m"
-            # )
             out_dict = save_dict(plot_settings, plot_info, par_dict_content, out_dict)
 
         # the file exists, so we are going to append data
@@ -773,41 +770,27 @@ def build_out_dict(
             with shelve.open(plt_path + "-" + plot_info["subsystem"], "r") as shelf:
                 old_dict = dict(shelf)
 
-            # the parameter is there
-            parameter = (
-                plot_info["parameter"].split("_var")[0]
-                if "_var" in plot_info["parameter"]
-                else plot_info["parameter"]
-            )
-            if old_dict["monitoring"]["pulser"][parameter]:
-                # get already present df
-                old_df = old_dict["monitoring"]["pulser"][parameter][
-                    "df_" + plot_info["subsystem"]
-                ]
-                old_df = check_level0(old_df)
-                # get new df (plot_info object is the same as before, no need to get it and update it)
-                new_df = par_dict_content["df_" + plot_info["subsystem"]]
-                # concatenate the two dfs (channels are no more grouped; not a problem)
-                merged_df = DataFrame.empty
-                merged_df = concat([old_df, new_df], ignore_index=True, axis=0)
-                merged_df = merged_df.reset_index()
-                merged_df = check_level0(merged_df)
-                # re-order content in order of channels/timestamps
-                merged_df = merged_df.sort_values(["channel", "datetime"])
-
-                # redefine the dict containing the df and plot_info
-                par_dict_content = {}
-                par_dict_content["df_" + plot_info["subsystem"]] = merged_df
-                par_dict_content["plot_info"] = plot_info
-
-                # saved the merged df as usual
-                out_dict = save_dict(
-                    plot_settings, plot_info, par_dict_content, old_dict["monitoring"]
+            # one parameter case
+            if len(plot_settings["parameters"]) == 1:
+                out_dict = append_new_data(
+                    plot_settings["parameters"][0],
+                    plot_settings,
+                    plot_info,
+                    old_dict,
+                    par_dict_content,
+                    plt_path,
                 )
-                # we need to save it, otherwise when looping over the next parameter we lose the appended info for the already inspected parameter
-                out_file = shelve.open(plt_path + "-" + plot_info["subsystem"])
-                out_file["monitoring"] = out_dict
-                out_file.close()
+            # multi-parameters case
+            if len(plot_settings["parameters"]) > 1:
+                for param in plot_settings["parameters"]:
+                    out_dict = append_new_data(
+                        param,
+                        plot_settings,
+                        plot_info,
+                        old_dict,
+                        par_dict_content,
+                        plt_path,
+                    )
 
     return out_dict
 
@@ -817,7 +800,11 @@ def save_dict(
 ) -> dict:
     """Create a dictionary with the correct format for being saved in the final shelve object."""
     # get the parameters under study (can be one, can be more for 'par vs par' plot style)
-    params = plot_info["parameters"]
+    params = (
+        plot_info["parameters"]
+        if "parameters" in plot_info.keys()
+        else [plot_info["parameter"]]
+    )
 
     # one parameter
     if len(params) == 1:
@@ -840,26 +827,6 @@ def save_dict(
                 out_dict[plot_settings["event_type"]] = {parameter: par_dict_content}
     # more than one parameter
     else:
-        # some info we'll later need to better divide the parameters stored in the dataframe...
-        keep_cols = [
-            "index",
-            "channel",
-            "HV_card",
-            "HV_channel",
-            "cc4_channel",
-            "cc4_id",
-            "daq_card",
-            "daq_crate",
-            "datetime",
-            "det_type",
-            "flag_fc_bsln",
-            "flag_muon",
-            "flag_pulser",
-            "location",
-            "name",
-            "position",
-            "status",
-        ]
         # we have to polish our dataframe and plot_info dictionary from other parameters...
         # --- original objects
         plot_info_all = par_dict_content["plot_info"]
@@ -872,13 +839,7 @@ def save_dict(
             plot_info_param = get_param_info(param, plot_info_all)
 
             # --- cleaned df
-            df_param = df_all.copy().drop(
-                columns={x for x in df_all.columns if parameter not in x}
-            )
-            df_cols = df_all.copy().drop(
-                columns={x for x in df_all.columns if x not in keep_cols}
-            )
-            df_param = concat([df_param, df_cols], axis=1)
+            df_param = get_param_df(param, df_all)
 
             # --- rebuilding the 'par_dict_content' for the parameter under study
             par_dict_content = save_df_and_info(df_param, plot_info_param)
@@ -899,6 +860,56 @@ def save_dict(
                     out_dict[plot_settings["event_type"]] = {
                         parameter: par_dict_content
                     }
+
+    return out_dict
+
+
+def append_new_data(
+    param: str,
+    plot_settings: dict,
+    plot_info: dict,
+    old_dict: dict,
+    par_dict_content: dict,
+    plt_path: str,
+) -> dict:
+    # the parameter is there
+    parameter = param.split("_var")[0] if "_var" in param else param
+    event_type = plot_settings["event_type"]
+
+    if old_dict["monitoring"][event_type][parameter]:
+        # get already present df
+        old_df = old_dict["monitoring"][event_type][parameter][
+            "df_" + plot_info["subsystem"]
+        ].copy()
+        old_df = check_level0(old_df)
+
+        # get new df (plot_info object is the same as before, no need to get it and update it)
+        new_df = par_dict_content["df_" + plot_info["subsystem"]].copy()
+        # --- cleaned df
+        new_df = get_param_df(param, new_df)
+
+        # concatenate the two dfs (channels are no more grouped; not a problem)
+        merged_df = DataFrame.empty
+        merged_df = concat([old_df, new_df], ignore_index=True, axis=0)
+        merged_df = merged_df.reset_index()
+        merged_df = check_level0(merged_df)
+        # re-order content in order of channels/timestamps
+        merged_df = merged_df.sort_values(["channel", "datetime"])
+
+        # redefine the dict containing the df and plot_info
+        par_dict_content = {}
+        par_dict_content["df_" + plot_info["subsystem"]] = merged_df
+        par_dict_content["plot_info"] = plot_info
+
+        # saved the merged df as usual (but for the given parameter)
+        plot_info = get_param_info(param, plot_info)
+        out_dict = save_dict(
+            plot_settings, plot_info, par_dict_content, old_dict["monitoring"]
+        )
+        # we need to save it, otherwise when looping over the next parameter we lose the appended info for the already inspected parameter
+        out_file = shelve.open(plt_path + "-" + plot_info["subsystem"])
+        out_file["monitoring"] = out_dict
+        out_file.close()
 
     return out_dict
 
@@ -953,7 +964,7 @@ def is_empty(df: DataFrame):
 
 
 def get_param_info(param: str, plot_info: dict) -> dict:
-    """Get a dictionary with plotting info for the specified parameter ```param```. This is needed for the multi-parameters case."""
+    """Subselect from 'plot_info' the plotting info for the specified parameter ```param```. This is needed for the multi-parameters case."""
     # get the *naked* parameter name
     parameter = param.split("_var")[0] if "_var" in param else param
     keep_keys = [
@@ -985,3 +996,32 @@ def get_param_info(param: str, plot_info: dict) -> dict:
     plot_info_param["parameter"] = plot_info_param.pop("parameters")
 
     return plot_info_param
+
+
+def get_param_df(parameter: str, df: DataFrame) -> DataFrame:
+    """Subselect from 'df' only the dataframe columns that refer to a given parameter."""
+    # list needed to better divide the parameters stored in the dataframe...
+    keep_cols = [
+        "index",
+        "channel",
+        "HV_card",
+        "HV_channel",
+        "cc4_channel",
+        "cc4_id",
+        "daq_card",
+        "daq_crate",
+        "datetime",
+        "det_type",
+        "flag_fc_bsln",
+        "flag_muon",
+        "flag_pulser",
+        "location",
+        "name",
+        "position",
+        "status",
+    ]
+    df_param = df.copy().drop(columns={x for x in df.columns if parameter not in x})
+    df_cols = df.copy().drop(columns={x for x in df.columns if x not in keep_cols})
+    df_param = concat([df_param, df_cols], axis=1)
+
+    return df_param

@@ -413,44 +413,17 @@ class AnalysisData:
                     # open already existing shelve file
                     with shelve.open(self.plt_path + "-" + subsys, "r") as shelf:
                         old_dict = dict(shelf)
-                    # get old dataframe (we are interested only in the column with mean values)
-                    # !! need to update for multiple parameter case! (check of they are saved to understand what to retrieve with the 'append' option)
-                    old_df = old_dict["monitoring"][self.evt_type][self.parameters[0]][
-                        "df_" + subsys
-                    ]
-                    """
-                    # to use in the future for a more refined version of updated mean values...
 
-                    # if previously we chose to plot % variations, we do not have anymore the absolute values to use when computing this new mean;
-                    # what we can do, is to get absolute values starting from the mean and the % values present in the old dataframe'
-                    # Later, we need to put these absolute values in the corresponding parameter column
-                    if self.variation:
-                        old_df[self.parameters] = (old_df[self.parameters] / 100 + 1) * old_df[self.parameters + "_mean"]
-
-                    merged_df = pd.concat([old_df, self.data], ignore_index=True, axis=0)
-                    # remove 'level_0' column (if present)
-                    merged_df = utils.check_level0(merged_df)
-                    merged_df = merged_df.reset_index()
-
-                    self_data_time_cut = cut_dataframe(merged_df)
-
-                    # ...still we have to re-compute the % variations of previous time windows because now the mean estimate is different!!!
-                    """
-
-                    # subselect only columns of: 1) channel 2) mean values of param(s) of interest
-                    channel_mean = old_df.filter(
-                        items=["channel"] + [x + "_mean" for x in self.parameters]
-                    )
-
-                    # later there will be a line renaming param to param_mean, so now need to rename back to no mean...
-                    # this whole section has to be cleaned up
-                    channel_mean = channel_mean.rename(
-                        columns={param + "_mean": param for param in self.parameters}
-                    )
-                    # drop potential duplicate rows
-                    channel_mean = channel_mean.drop_duplicates(subset=["channel"])
-                    # set channel to index because that's how it comes out in previous cases from df.mean()
-                    channel_mean = channel_mean.set_index("channel")
+                    if len(self.parameters) == 1:
+                        param = self.parameters[0]
+                        channel_mean = get_saved_df(
+                            subsys, param, old_dict, self.evt_type
+                        )
+                    if len(self.parameters) > 1:
+                        for param in self.parameters:
+                            channel_mean = get_saved_df(
+                                subsys, param, old_dict, self.evt_type
+                            )
 
             # some means are meaningless -> drop the corresponding column
             if "FWHM" in self.parameters:
@@ -556,3 +529,25 @@ def cut_dataframe(data: pd.DataFrame) -> pd.DataFrame:
     thr_datetime = min_datetime + ten_percent_duration  # 10% timestamp
     # get only the rows for datetimes before the 10% of the specified time range
     return data.loc[data["datetime"] < thr_datetime]
+
+
+def get_saved_df(
+    subsys: str, param: str, old_dict: dict, evt_type: str
+) -> pd.DataFrame:
+    """Get the already saved dataframe from the already saved output shelve file, for a given parameter ```param```."""
+    # get old dataframe (we are interested only in the column with mean values)
+    # !! need to update for multiple parameter case! (check of they are saved to understand what to retrieve with the 'append' option)
+    old_df = old_dict["monitoring"][evt_type][param]["df_" + subsys]
+
+    # subselect only columns of: 1) channel 2) mean values of param(s) of interest
+    channel_mean = old_df.filter(items=["channel"] + [param + "_mean"])
+
+    # later there will be a line renaming param to param_mean, so now need to rename back to no mean...
+    # this whole section has to be cleaned up
+    channel_mean = channel_mean.rename(columns={param + "_mean": param})
+    # drop potential duplicate rows
+    channel_mean = channel_mean.drop_duplicates(subset=["channel"])
+    # set channel to index because that's how it comes out in previous cases from df.mean()
+    channel_mean = channel_mean.set_index("channel")
+
+    return channel_mean
