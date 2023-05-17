@@ -781,10 +781,17 @@ def build_out_dict(
                     plt_path,
                 )
             # multi-parameters case
-            if len(plot_settings['parameters']) > 1:
-                for param in plot_settings['parameters']:
-                    out_dict = append_new_data(param, plot_settings, plot_info, old_dict, par_dict_content, plt_path)
-            
+            if len(plot_settings["parameters"]) > 1:
+                for param in plot_settings["parameters"]:
+                    out_dict = append_new_data(
+                        param,
+                        plot_settings,
+                        plot_info,
+                        old_dict,
+                        par_dict_content,
+                        plt_path,
+                    )
+
     return out_dict
 
 

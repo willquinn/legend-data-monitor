@@ -1,6 +1,7 @@
 import os
 import shelve
 import sys
+
 import numpy as np
 import pandas as pd
 from legendmeta import LegendMetadata
@@ -429,13 +430,14 @@ class AnalysisData:
                         self.data = concat_channel_mean(self, channel_mean)
                     if len(self.parameters) > 1:
                         for param in self.parameters:
-                            parameter = param.split("_var")[0] if "_var" in param else param
+                            parameter = (
+                                param.split("_var")[0] if "_var" in param else param
+                            )
                             channel_mean = get_saved_df(
                                 subsys, parameter, old_dict, self.evt_type
                             )
                             # we need to repeat this operation for each param, otherwise only the mean of the last one survives
                             self.data = concat_channel_mean(self, channel_mean)
-
 
     def calculate_variation(self):
         """
@@ -465,26 +467,47 @@ class AnalysisData:
     def is_geds(self) -> bool:
         """Return True if 'location' (=string) and 'position' are NOT strings."""
         return not self.is_spms()
-    
+
     def is_pulser(self) -> bool:
         """Return True if the system is the pulser channel."""
-        return self.is_geds() and self.data.iloc[0]["location"] == 0 and self.data.iloc[0]["position"] == 0
-    
+        return (
+            self.is_geds()
+            and self.data.iloc[0]["location"] == 0
+            and self.data.iloc[0]["position"] == 0
+        )
+
     def is_pulser_aux(self) -> bool:
         """Return True if the system is the pulser channel."""
-        return self.is_geds() and self.data.iloc[0]["location"] == -1 and self.data.iloc[0]["position"] == -1
+        return (
+            self.is_geds()
+            and self.data.iloc[0]["location"] == -1
+            and self.data.iloc[0]["position"] == -1
+        )
 
     def is_FC_bsln(self) -> bool:
         """Return True if the system is the FC baseline channel."""
-        return self.is_geds() and self.data.iloc[0]["location"] == -2 and self.data.iloc[0]["position"] == -2
-    
+        return (
+            self.is_geds()
+            and self.data.iloc[0]["location"] == -2
+            and self.data.iloc[0]["position"] == -2
+        )
+
     def is_muon(self) -> bool:
         """Return True if the system is the muon channel."""
-        return self.is_geds() and self.data.iloc[0]["location"] == -3 and self.data.iloc[0]["position"] == -3
-    
+        return (
+            self.is_geds()
+            and self.data.iloc[0]["location"] == -3
+            and self.data.iloc[0]["position"] == -3
+        )
+
     def is_aux(self) -> bool:
         """Return True if the system is an AUX channel."""
-        return self.is_pulser() or self.is_pulser_aux() or self.is_FC_bsln() or self.is_muon()
+        return (
+            self.is_pulser()
+            or self.is_pulser_aux()
+            or self.is_FC_bsln()
+            or self.is_muon()
+        )
 
     def get_subsys(self) -> str:
         """Return 'pulser', 'pulser_aux', 'FC_bsln', 'muon', 'geds' or 'spms' depending on the subsystem type."""
@@ -571,8 +594,6 @@ def concat_channel_mean(self, channel_mean):
     )
     # add it as column for convenience - repeating redundant information, but convenient
     self.data = self.data.set_index("channel")
-    self.data = pd.concat(
-        [self.data, channel_mean.reindex(self.data.index)], axis=1
-    )
+    self.data = pd.concat([self.data, channel_mean.reindex(self.data.index)], axis=1)
     # put channel back in
     return self.data.reset_index()
