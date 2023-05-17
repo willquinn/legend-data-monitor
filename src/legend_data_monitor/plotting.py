@@ -244,17 +244,16 @@ def make_subsystem_plots(
         # -------------------------------------------------------------------------
         # saving dataframe + plot info
         # -------------------------------------------------------------------------
-
-        par_dict_content = {}
-
-        # saving dataframe data for each parameter
-        par_dict_content["df_" + plot_info["subsystem"]] = data_analysis.data
-        par_dict_content["plot_info"] = plot_info
+        # here we are not checking if we are plotting one or more than one parameter
+        # the output dataframe and plot_info objects are merged for more than one parameters
+        # this will be fixed at a later stage, when building the output dictionary through utils.build_out_dict(...)
+        par_dict_content = utils.save_df_and_info(data_analysis.data, plot_info)
 
         # -------------------------------------------------------------------------
         # call status plot
         # -------------------------------------------------------------------------
 
+        # ??? how to deal with more than one parameters? still not implemented
         if "status" in plot_settings and plot_settings["status"]:
             if subsystem.type in ["pulser", "pulser_aux", "FC_bsln", "muon"]:
                 utils.logger.debug(
@@ -271,9 +270,7 @@ def make_subsystem_plots(
 
         # building a dictionary with dataframe/plot_info to be later stored in a shelve object
         if saving is not None:
-            out_dict = utils.build_out_dict(
-                plot_settings, plot_info, par_dict_content, out_dict, saving, plt_path
-            )
+            out_dict = utils.build_out_dict(plot_settings, par_dict_content, out_dict)
 
     # save in shelve object, overwriting the already existing file with new content (either completely new or new bunches)
     if saving is not None:
