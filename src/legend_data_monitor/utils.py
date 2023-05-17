@@ -814,7 +814,7 @@ def build_out_dict(
 
 def save_dict(
     plot_settings: list, plot_info: list, par_dict_content: dict, out_dict: dict
-):
+) -> dict:
     """Create a dictionary with the correct format for being saved in the final shelve object."""
     # get the parameters under study (can be one, can be more for 'par vs par' plot style)
     params = plot_info["parameters"]
@@ -870,14 +870,13 @@ def save_dict(
             "std",
         ]
         new_keys = ["unit", "label", "unit_label", "parameters", "param_mean"]
+        # we have to polish our dataframe and plot_info dictionary from other parameters...
+        # --- original objects
+        plot_info_all = par_dict_content["plot_info"]
+        df_all = par_dict_content["df_" + plot_info_all["subsystem"]]
 
         for param in params:
             parameter = param.split("_var")[0] if "_var" in param else param
-
-            # we have to polish our dataframe and plot_info dictionary from other parameters...
-            # --- original objects
-            plot_info_all = par_dict_content["plot_info"]
-            df_all = par_dict_content["df_" + plot_info_all["subsystem"]]
 
             #  --- cleaned plot_info
             plot_info_param = {key: plot_info_all[key] for key in keep_keys}
