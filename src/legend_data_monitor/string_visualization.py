@@ -5,7 +5,6 @@
 # See mapping user plot structure keywords to corresponding functions in the end of this file
 
 
-
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns

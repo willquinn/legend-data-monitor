@@ -217,7 +217,7 @@ def apply_flags(df: DataFrame, sc_params: dict, flags_param: list) -> DataFrame:
 
     # check if the dataframe is empty, if so, skip this plot
     if utils.is_empty(df):
-        return # or exit - depending on how we will include these data in plotting
+        return  # or exit - depending on how we will include these data in plotting
 
     return df
 
