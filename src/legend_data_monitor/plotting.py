@@ -266,7 +266,7 @@ def make_subsystem_plots(
                 )
             else:
                 for param in params:
-                    # retrived the necessary info for the specific parameter under study (just in the multi-parameters case)
+                    # retrieved the necessary info for the specific parameter under study (just in the multi-parameters case)
                     if len(params) == 1:
                         _ = string_visualization.status_plot(
                             subsystem, data_analysis.data, plot_info, pdf
