@@ -6,6 +6,7 @@
 
 
 import matplotlib.pyplot as plt
+import sys
 import numpy as np
 import seaborn as sns
 from matplotlib.backends.backend_pdf import PdfPages
@@ -31,7 +32,7 @@ def status_plot(subsystem, data_analysis: DataFrame, plot_info: dict, pdf: PdfPa
     low_thr = plot_info["limits"][0]
     high_thr = plot_info["limits"][1]
     utils.logger.debug(
-        "...low threshold for "
+        "... low threshold for "
         + plot_info["parameter"]
         + " set at: "
         + str(low_thr)
@@ -39,7 +40,7 @@ def status_plot(subsystem, data_analysis: DataFrame, plot_info: dict, pdf: PdfPa
         + plot_info["unit_label"]
     )
     utils.logger.debug(
-        "...high threshold for "
+        "... high threshold for "
         + plot_info["parameter"]
         + " set at: "
         + str(high_thr)
@@ -61,7 +62,9 @@ def status_plot(subsystem, data_analysis: DataFrame, plot_info: dict, pdf: PdfPa
         if low_thr is not None and high_thr is not None:
             plot_title += f"{plot_info['parameter']} < {low_thr} {plot_info['unit_label']} || {plot_info['parameter']} > {high_thr} {plot_info['unit_label']}"
     if low_thr is None and high_thr is None:
-        plot_title += f"{plot_info['parameter']} (no checks)"
+        # there is no point to check values if there are no thresholds
+        utils.logger.debug("... there are no thresholds to check for. We skip this!")
+        return
 
     new_dataframe = DataFrame()
     # loop over individual channels (otherwise, the problematic timestamps apply to all detectors, even the OK ones) and create a summary dataframe

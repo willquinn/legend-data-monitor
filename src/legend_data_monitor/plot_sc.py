@@ -215,10 +215,9 @@ def apply_flags(df: DataFrame, sc_params: dict, flags_param: list) -> DataFrame:
         entry = sc_params["expressions"][flag]["entry"]
         df = df[df[column] == entry]
 
-    # check if the dataframe is empty
-    if df.empty:
-        utils.logger.error("\033[91mThe dataframe is empty. Exiting now!\033[0m")
-        exit()
+    # check if the dataframe is empty, if so, skip this plot
+        if utils.is_empty(data_analysis.data):
+            return # or exit - depending on how we will include these data in plotting
 
     return df
 
