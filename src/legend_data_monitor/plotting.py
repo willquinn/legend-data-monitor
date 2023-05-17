@@ -1,12 +1,12 @@
 import io
 import shelve
+from typing import Union
 
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.backends.backend_pdf import PdfPages
 from pandas import DataFrame
-from typing import Union
 from seaborn import color_palette
 
 from . import analysis_data, plot_styles, string_visualization, subsystem, utils
@@ -199,7 +199,9 @@ def make_subsystem_plots(
             plot_info["unit"][param] = utils.PLOT_INFO[param_orig]["unit"]
             plot_info["label"][param] = utils.PLOT_INFO[param_orig]["label"]
             keyword = "variation" if plot_settings["variation"] else "absolute"
-            plot_info["limits"][param] = utils.PLOT_INFO[param_orig]["limits"][subsystem.type][keyword]
+            plot_info["limits"][param] = utils.PLOT_INFO[param_orig]["limits"][
+                subsystem.type
+            ][keyword]
             # unit label should be % if variation was asked
             plot_info["unit_label"][param] = (
                 "%" if plot_settings["variation"] else plot_info["unit"][param_orig]
@@ -912,15 +914,19 @@ def plot_limits(ax: plt.Axes, params: list, limits: Union[list, dict]):
                 ax.axhline(y=limits[1], color="red", linestyle="--")
     # multi-parameters case
     if len(params) > 1:
-        for idx,param in enumerate(params):
+        for idx, param in enumerate(params):
             limits_param = limits[param]
             if not all([x is None for x in limits_param]):
                 if limits_param[0] is not None:
-                    if idx == 0 : ax.axvline(x=limits_param[0], color="red", linestyle="--")
-                    if idx == 1 : ax.axhline(y=limits_param[0], color="red", linestyle="--")
+                    if idx == 0:
+                        ax.axvline(x=limits_param[0], color="red", linestyle="--")
+                    if idx == 1:
+                        ax.axhline(y=limits_param[0], color="red", linestyle="--")
                 if limits_param[1] is not None:
-                    if idx == 0 : ax.axvline(x=limits_param[1], color="red", linestyle="--")
-                    if idx == 1 : ax.axhline(y=limits_param[1], color="red", linestyle="--")
+                    if idx == 0:
+                        ax.axvline(x=limits_param[1], color="red", linestyle="--")
+                    if idx == 1:
+                        ax.axhline(y=limits_param[1], color="red", linestyle="--")
 
 
 def save_pdf(plt, pdf: PdfPages):
