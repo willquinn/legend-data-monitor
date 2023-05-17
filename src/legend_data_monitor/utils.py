@@ -771,8 +771,15 @@ def build_out_dict(
                 old_dict = dict(shelf)
 
             # one parameter case
-            if len(plot_settings['parameters']) == 1:
-                out_dict = append_new_data(plot_settings['parameters'][0], plot_settings, plot_info, old_dict, par_dict_content, plt_path)
+            if len(plot_settings["parameters"]) == 1:
+                out_dict = append_new_data(
+                    plot_settings["parameters"][0],
+                    plot_settings,
+                    plot_info,
+                    old_dict,
+                    par_dict_content,
+                    plt_path,
+                )
             # multi-parameters case
             if len(plot_settings['parameters']) > 1:
                 for param in plot_settings['parameters']:
@@ -786,7 +793,11 @@ def save_dict(
 ) -> dict:
     """Create a dictionary with the correct format for being saved in the final shelve object."""
     # get the parameters under study (can be one, can be more for 'par vs par' plot style)
-    params = plot_info["parameters"] if 'parameters' in plot_info.keys() else [plot_info["parameter"]]
+    params = (
+        plot_info["parameters"]
+        if "parameters" in plot_info.keys()
+        else [plot_info["parameter"]]
+    )
 
     # one parameter
     if len(params) == 1:
@@ -846,14 +857,17 @@ def save_dict(
     return out_dict
 
 
-def append_new_data(param: str, plot_settings: dict, plot_info: dict, old_dict: dict, par_dict_content: dict, plt_path: str) -> dict:
+def append_new_data(
+    param: str,
+    plot_settings: dict,
+    plot_info: dict,
+    old_dict: dict,
+    par_dict_content: dict,
+    plt_path: str,
+) -> dict:
     # the parameter is there
-    parameter = (
-        param.split("_var")[0]
-        if "_var" in param
-        else param
-    )
-    event_type = plot_settings['event_type']
+    parameter = param.split("_var")[0] if "_var" in param else param
+    event_type = plot_settings["event_type"]
 
     if old_dict["monitoring"][event_type][parameter]:
         # get already present df
@@ -976,6 +990,7 @@ def get_param_info(param: str, plot_info: dict) -> dict:
 
     return plot_info_param
 
+
 def get_param_df(parameter: str, df: DataFrame) -> DataFrame:
     """Subselect from 'df' only the dataframe columns that refer to a given parameter."""
     # list needed to better divide the parameters stored in the dataframe...
@@ -998,12 +1013,8 @@ def get_param_df(parameter: str, df: DataFrame) -> DataFrame:
         "position",
         "status",
     ]
-    df_param = df.copy().drop(
-        columns={x for x in df.columns if parameter not in x}
-    )
-    df_cols = df.copy().drop(
-        columns={x for x in df.columns if x not in keep_cols}
-    )
+    df_param = df.copy().drop(columns={x for x in df.columns if parameter not in x})
+    df_cols = df.copy().drop(columns={x for x in df.columns if x not in keep_cols})
     df_param = concat([df_param, df_cols], axis=1)
 
     return df_param
