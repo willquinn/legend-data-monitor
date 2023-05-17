@@ -416,10 +416,14 @@ class AnalysisData:
 
                     if len(self.parameters) == 1:
                         param = self.parameters[0]
-                        channel_mean = get_saved_df(subsys, param, old_dict, self.evt_type)
+                        channel_mean = get_saved_df(
+                            subsys, param, old_dict, self.evt_type
+                        )
                     if len(self.parameters) > 1:
                         for param in self.parameters:
-                            channel_mean = get_saved_df(subsys, param, old_dict, self.evt_type)
+                            channel_mean = get_saved_df(
+                                subsys, param, old_dict, self.evt_type
+                            )
 
             # some means are meaningless -> drop the corresponding column
             if "FWHM" in self.parameters:
@@ -527,24 +531,20 @@ def cut_dataframe(data: pd.DataFrame) -> pd.DataFrame:
     return data.loc[data["datetime"] < thr_datetime]
 
 
-def get_saved_df(subsys: str, param: str, old_dict: dict, evt_type: str) -> pd.DataFrame:
+def get_saved_df(
+    subsys: str, param: str, old_dict: dict, evt_type: str
+) -> pd.DataFrame:
     """Get the already saved dataframe from the already saved output shelve file, for a given parameter ```param```."""
     # get old dataframe (we are interested only in the column with mean values)
     # !! need to update for multiple parameter case! (check of they are saved to understand what to retrieve with the 'append' option)
-    old_df = old_dict["monitoring"][evt_type][param][
-        "df_" + subsys
-    ]
-    
+    old_df = old_dict["monitoring"][evt_type][param]["df_" + subsys]
+
     # subselect only columns of: 1) channel 2) mean values of param(s) of interest
-    channel_mean = old_df.filter(
-        items=["channel"] + [param + "_mean"]
-    )
+    channel_mean = old_df.filter(items=["channel"] + [param + "_mean"])
 
     # later there will be a line renaming param to param_mean, so now need to rename back to no mean...
     # this whole section has to be cleaned up
-    channel_mean = channel_mean.rename(
-        columns={param + "_mean": param}
-    )
+    channel_mean = channel_mean.rename(columns={param + "_mean": param})
     # drop potential duplicate rows
     channel_mean = channel_mean.drop_duplicates(subset=["channel"])
     # set channel to index because that's how it comes out in previous cases from df.mean()
