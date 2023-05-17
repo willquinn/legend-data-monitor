@@ -778,7 +778,6 @@ def build_out_dict(
                 for param in plot_settings['parameters']:
                     out_dict = append_new_data(param, plot_settings, plot_info, old_dict, par_dict_content, plt_path)
             
-
     return out_dict
 
 
@@ -822,7 +821,7 @@ def save_dict(
             plot_info_param = get_param_info(param, plot_info_all)
 
             # --- cleaned df
-            df_param = get_param_df(param, df_all)
+            df_param = get_param_df(parameter, df_all)
 
             # --- rebuilding the 'par_dict_content' for the parameter under study
             par_dict_content = save_df_and_info(df_param, plot_info_param)
@@ -866,7 +865,7 @@ def append_new_data(param: str, plot_settings: dict, plot_info: dict, old_dict: 
         # get new df (plot_info object is the same as before, no need to get it and update it)
         new_df = par_dict_content["df_" + plot_info["subsystem"]].copy()
         # --- cleaned df
-        new_df = get_param_df(param, new_df)
+        new_df = get_param_df(parameter, new_df)
 
         # concatenate the two dfs (channels are no more grouped; not a problem)
         merged_df = DataFrame.empty
