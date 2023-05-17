@@ -1,5 +1,6 @@
 import io
 import shelve
+from typing import Union
 
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
@@ -174,7 +175,7 @@ def make_subsystem_plots(
         # information needed for plot style depending on parameters
 
         # first, treat it like multiple parameters, add dictionary to each entry with values for each parameter
-        multi_param_info = ["unit", "label", "unit_label"]
+        multi_param_info = ["unit", "label", "unit_label", "limits"]
         for info in multi_param_info:
             plot_info[info] = {}
 
@@ -192,11 +193,15 @@ def make_subsystem_plots(
 
         for param in plot_info["parameters"]:
             # plot info should contain final parameter to plot i.e. _var if var is asked
-            # unit and label are connected to original parameter name
+            # unit, label and limits are connected to original parameter name
             # this is messy AF need to rethink
             param_orig = param.rstrip("_var")
             plot_info["unit"][param] = utils.PLOT_INFO[param_orig]["unit"]
             plot_info["label"][param] = utils.PLOT_INFO[param_orig]["label"]
+            keyword = "variation" if plot_settings["variation"] else "absolute"
+            plot_info["limits"][param] = utils.PLOT_INFO[param_orig]["limits"][
+                subsystem.type
+            ][keyword]
             # unit label should be % if variation was asked
             plot_info["unit_label"][param] = (
                 "%" if plot_settings["variation"] else plot_info["unit"][param_orig]
@@ -260,9 +265,17 @@ def make_subsystem_plots(
                     f"Thresholds are not enabled for {subsystem.type}! Use you own eyes to do checks there"
                 )
             else:
-                _ = string_visualization.status_plot(
-                    subsystem, data_analysis.data, plot_info, pdf
-                )
+                for param in params:
+                    # retrieved the necessary info for the specific parameter under study (just in the multi-parameters case)
+                    if len(params) == 1:
+                        _ = string_visualization.status_plot(
+                            subsystem, data_analysis.data, plot_info, pdf
+                        )
+                    if len(params) > 1:
+                        plot_info_param = utils.get_param_info(param, plot_info)
+                        _ = string_visualization.status_plot(
+                            subsystem, data_analysis.data, plot_info_param, pdf
+                        )
 
         # -------------------------------------------------------------------------
         # save results
@@ -379,9 +392,9 @@ def plot_per_ch(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
             axes[ax_idx].set_ylabel("")
 
             # plot limits
-            # check if "limits" present, is not for pulser (otherwise crash when plotting e.g. event rate), is not for multi-params
+            # check if "limits" present, is not for pulser (otherwise crash when plotting e.g. event rate)
             if "limits" in plot_info:
-                plot_limits(axes[ax_idx], plot_info["limits"])
+                plot_limits(axes[ax_idx], plot_info["parameters"], plot_info["limits"])
 
             ax_idx += 1
 
@@ -478,7 +491,9 @@ def plot_per_cc4(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
         axes[ax_idx].legend(labels=labels, loc="center left", bbox_to_anchor=(1, 0.5))
 
         # plot limits
-        plot_limits(axes[ax_idx], plot_info["limits"])
+        # check if "limits" present, is not for pulser (otherwise crash when plotting e.g. event rate)
+        if "limits" in plot_info:
+            plot_limits(axes[ax_idx], plot_info["parameters"], plot_info["limits"])
 
         ax_idx += 1
 
@@ -570,9 +585,10 @@ def plot_per_string(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
         axes[ax_idx].set_ylabel("")
         axes[ax_idx].legend(labels=labels, loc="center left", bbox_to_anchor=(1, 0.5))
 
-        # plot limits if given
+        # plot limits
+        # check if "limits" present, is not for pulser (otherwise crash when plotting e.g. event rate)
         if "limits" in plot_info:
-            plot_limits(axes[ax_idx], plot_info["limits"])
+            plot_limits(axes[ax_idx], plot_info["parameters"], plot_info["limits"])
 
         ax_idx += 1
 
@@ -894,13 +910,30 @@ def get_fwhm_for_fixed_ch(data_channel: DataFrame, parameter: str) -> float:
     return formatted_fwhm
 
 
-def plot_limits(ax: plt.Axes, limits: dict):
-    """Plot limits (if present) on the plot."""
-    if not all([x is None for x in limits]):
-        if limits[0] is not None:
-            ax.axhline(y=limits[0], color="red", linestyle="--")
-        if limits[1] is not None:
-            ax.axhline(y=limits[1], color="red", linestyle="--")
+def plot_limits(ax: plt.Axes, params: list, limits: Union[list, dict]):
+    """Plot limits (if present) on the plot. The multi-params case is carefully handled."""
+    # one parameter case
+    if len(params) == 1:
+        if not all([x is None for x in limits]):
+            if limits[0] is not None:
+                ax.axhline(y=limits[0], color="red", linestyle="--")
+            if limits[1] is not None:
+                ax.axhline(y=limits[1], color="red", linestyle="--")
+    # multi-parameters case
+    if len(params) > 1:
+        for idx, param in enumerate(params):
+            limits_param = limits[param]
+            if not all([x is None for x in limits_param]):
+                if limits_param[0] is not None:
+                    if idx == 0:
+                        ax.axvline(x=limits_param[0], color="red", linestyle="--")
+                    if idx == 1:
+                        ax.axhline(y=limits_param[0], color="red", linestyle="--")
+                if limits_param[1] is not None:
+                    if idx == 0:
+                        ax.axvline(x=limits_param[1], color="red", linestyle="--")
+                    if idx == 1:
+                        ax.axhline(y=limits_param[1], color="red", linestyle="--")
 
 
 def save_pdf(plt, pdf: PdfPages):

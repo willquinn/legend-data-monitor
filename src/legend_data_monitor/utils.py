@@ -860,16 +860,6 @@ def save_dict(
             "position",
             "status",
         ]
-        keep_keys = [
-            "subsystem",
-            "locname",
-            "plot_style",
-            "time_window",
-            "resampled",
-            "range",
-            "std",
-        ]
-        new_keys = ["unit", "label", "unit_label", "parameters", "param_mean"]
         # we have to polish our dataframe and plot_info dictionary from other parameters...
         # --- original objects
         plot_info_all = par_dict_content["plot_info"]
@@ -879,17 +869,7 @@ def save_dict(
             parameter = param.split("_var")[0] if "_var" in param else param
 
             #  --- cleaned plot_info
-            plot_info_param = {key: plot_info_all[key] for key in keep_keys}
-            # set a default title - that does not involve a second parameter in it
-            plot_info_param["title"] = f"Plotting {param}"
-            for new_key in new_keys:
-                obj = plot_info_all[new_key]
-                if isinstance(obj, dict):
-                    plot_info_param[new_key] = [
-                        v for k, v in obj.items() if parameter in k
-                    ][0]
-                if isinstance(obj, list):
-                    plot_info_param[new_key] = [k for k in obj if parameter in k][0]
+            plot_info_param = get_param_info(param, plot_info_all)
 
             # --- cleaned df
             df_param = df_all.copy().drop(
@@ -970,3 +950,38 @@ def is_empty(df: DataFrame):
             "\033[93mThe dataframe is empty. Plotting the next entry (if present, otherwise exiting from the code).\033[0m"
         )
         return True
+
+
+def get_param_info(param: str, plot_info: dict) -> dict:
+    """Get a dictionary with plotting info for the specified parameter ```param```. This is needed for the multi-parameters case."""
+    # get the *naked* parameter name
+    parameter = param.split("_var")[0] if "_var" in param else param
+    keep_keys = [
+        "subsystem",
+        "locname",
+        "plot_style",
+        "time_window",
+        "resampled",
+        "range",
+        "std",
+    ]
+    new_keys = ["unit", "label", "unit_label", "limits", "parameters", "param_mean"]
+
+    #  --- cleaned plot_info
+    plot_info_param = {key: plot_info[key] for key in keep_keys}
+
+    # set a default title - that does not involve a second parameter in it
+    plot_info_param["title"] = f"Plotting {param}"
+
+    # start the cleaning
+    for new_key in new_keys:
+        obj = plot_info[new_key]
+        if isinstance(obj, dict):
+            plot_info_param[new_key] = [v for k, v in obj.items() if parameter in k][0]
+        if isinstance(obj, list):
+            plot_info_param[new_key] = [k for k in obj if parameter in k][0]
+
+    # need to go back to the one parameter case ...
+    plot_info_param["parameter"] = plot_info_param.pop("parameters")
+
+    return plot_info_param
