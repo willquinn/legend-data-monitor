@@ -241,6 +241,7 @@ def make_subsystem_plots(
         else:
             utils.logger.debug("Plot structure: %s", plot_settings["plot_structure"])
             plot_structure(data_analysis.data, plot_info, pdf)
+            plot_structure(data_analysis.data, plot_info, pdf)
 
         # For some reason, after some plotting functions the index is set to "channel".
         # We need to set it back otherwise string_visualization.py gets crazy and everything crashes.
@@ -251,7 +252,7 @@ def make_subsystem_plots(
         # -------------------------------------------------------------------------
         # here we are not checking if we are plotting one or more than one parameter
         # the output dataframe and plot_info objects are merged for more than one parameters
-        # this will be fixed at a later stage, when building the output dictionary through utils.build_out_dict(...)
+        # this will be splitted at a later stage, when building the output dictionary through utils.build_out_dict(...)
         par_dict_content = utils.save_df_and_info(data_analysis.data, plot_info)
 
         # -------------------------------------------------------------------------
