@@ -484,7 +484,7 @@ class AnalysisData:
             and self.data.iloc[0]["position"] == -1
         )
 
-    def is_FC_bsln(self) -> bool:
+    def is_fc_bsln(self) -> bool:
         """Return True if the system is the FC baseline channel."""
         return (
             self.is_geds()
@@ -505,7 +505,7 @@ class AnalysisData:
         return (
             self.is_pulser()
             or self.is_pulser_aux()
-            or self.is_FC_bsln()
+            or self.is_fc_bsln()
             or self.is_muon()
         )
 
@@ -515,7 +515,7 @@ class AnalysisData:
             return "pulser"
         if self.is_pulser_aux():
             return "pulser_aux"
-        if self.is_FC_bsln():
+        if self.is_fc_bsln():
             return "FC_bsln"
         if self.is_muon():
             return "muon"
