@@ -771,10 +771,15 @@ def build_out_dict(
                 old_dict = dict(shelf)
 
             # one parameter case
-            if (isinstance(plot_settings["parameters"], list) and len(plot_settings["parameters"]) == 1) or isinstance(plot_settings['parameters'], str):
+            if (
+                isinstance(plot_settings["parameters"], list)
+                and len(plot_settings["parameters"]) == 1
+            ) or isinstance(plot_settings["parameters"], str):
                 logger.debug("... appending new data for the one-parameter case")
                 out_dict = append_new_data(
-                    plot_settings["parameters"][0] if isinstance(plot_settings["parameters"], list) else plot_settings["parameters"],
+                    plot_settings["parameters"][0]
+                    if isinstance(plot_settings["parameters"], list)
+                    else plot_settings["parameters"],
                     plot_settings,
                     plot_info,
                     old_dict,
@@ -782,11 +787,21 @@ def build_out_dict(
                     plt_path,
                 )
             # multi-parameters case
-            if isinstance(plot_settings["parameters"], list) and len(plot_settings['parameters']) > 1:
+            if (
+                isinstance(plot_settings["parameters"], list)
+                and len(plot_settings["parameters"]) > 1
+            ):
                 logger.debug("... appending new data for the multi-parameters case")
-                for param in plot_settings['parameters']:
-                    out_dict = append_new_data(param, plot_settings, plot_info, old_dict, par_dict_content, plt_path)
-            
+                for param in plot_settings["parameters"]:
+                    out_dict = append_new_data(
+                        param,
+                        plot_settings,
+                        plot_info,
+                        old_dict,
+                        par_dict_content,
+                        plt_path,
+                    )
+
     return out_dict
 
 
@@ -802,18 +817,16 @@ def build_dict(
     )
 
     # one parameter
-    #if len(params) == 1:
+    # if len(params) == 1:
     if (isinstance(params, list) and len(params) == 1) or isinstance(params, str):
         if isinstance(params, list):
             param = params[0]
         if isinstance(params, str):
             param = params
-        parameter = (
-            param.split("_var")[0]
-            if "_var" in param
-            else param
+        parameter = param.split("_var")[0] if "_var" in param else param
+        par_dict_content["plot_info"] = get_param_info(
+            param, par_dict_content["plot_info"]
         )
-        par_dict_content["plot_info"] = get_param_info(param, par_dict_content["plot_info"])
         # --- building up the output dictionary
         # event type key is already there
         if plot_settings["event_type"] in out_dict.keys():
@@ -827,18 +840,18 @@ def build_dict(
             else:
                 out_dict[plot_settings["event_type"]] = {parameter: par_dict_content}
     # more than one parameter
-    #else:
+    # else:
     if isinstance(params, list) and len(params) > 1:
         # we have to polish our dataframe and plot_info dictionary from other parameters...
         # --- original plot info
         # ::::::::::::::::::::::::::::::::::::::::::: example 'plot_info_all' :::::::::::::::::::::::::::::::::::::::::::
-        # {'title': 'Plotting cuspEmax vs baseline', 'subsystem': 'geds', 'locname': 'string', 
-        #  'plot_style': 'par vs par', 'time_window': '10T', 'resampled': 'no', 'range': [None, None], 'std': False, 
-        #  'unit': {'cuspEmax_var': 'ADC', 'baseline_var': 'ADC'}, 
-        #  'label': {'cuspEmax_var': 'cuspEmax', 'baseline_var': 'FPGA baseline'}, 
-        #  'unit_label': {'cuspEmax_var': '%', 'baseline_var': '%'}, 
-        #  'limits': {'cuspEmax_var': [-0.025, 0.025], 'baseline_var': [-5, 5]}, 
-        #  'parameters': ['cuspEmax_var', 'baseline_var'], 
+        # {'title': 'Plotting cuspEmax vs baseline', 'subsystem': 'geds', 'locname': 'string',
+        #  'plot_style': 'par vs par', 'time_window': '10T', 'resampled': 'no', 'range': [None, None], 'std': False,
+        #  'unit': {'cuspEmax_var': 'ADC', 'baseline_var': 'ADC'},
+        #  'label': {'cuspEmax_var': 'cuspEmax', 'baseline_var': 'FPGA baseline'},
+        #  'unit_label': {'cuspEmax_var': '%', 'baseline_var': '%'},
+        #  'limits': {'cuspEmax_var': [-0.025, 0.025], 'baseline_var': [-5, 5]},
+        #  'parameters': ['cuspEmax_var', 'baseline_var'],
         #  'param_mean': ['cuspEmax_mean', 'baseline_mean']}
         plot_info_all = par_dict_content["plot_info"]
 
@@ -850,8 +863,8 @@ def build_dict(
 
             # --- cleaned plot info
             # ::::::::::::::::::::::::::::::::::::::::::: example 'plot_info_param' :::::::::::::::::::::::::::::::::::::::::::
-            # {'title': 'Prove in corso', 'subsystem': 'geds', 'locname': 'string', 'plot_style': 'par vs par', 'time_window': '10T', 
-            #  'resampled': 'no', 'range': [None, None], 'std': False, 'unit': 'ADC', 'label': 'cuspEmax', 'unit_label': '%', 
+            # {'title': 'Prove in corso', 'subsystem': 'geds', 'locname': 'string', 'plot_style': 'par vs par', 'time_window': '10T',
+            #  'resampled': 'no', 'range': [None, None], 'std': False, 'unit': 'ADC', 'label': 'cuspEmax', 'unit_label': '%',
             #  'limits': [-0.025, 0.025], 'param_mean': 'cuspEmax_mean', 'parameter': 'cuspEmax_var', 'variation': True}
             plot_info_param = get_param_info(param, plot_info_all)
 
@@ -987,27 +1000,48 @@ def get_param_info(param: str, plot_info: dict) -> dict:
     parameter = param.split("_var")[0]
 
     # but what if there is no % variation? We don't want any "_var" in our parameters!
-    if isinstance(plot_info["unit_label"], dict) and param not in plot_info["unit_label"].keys():
+    if (
+        isinstance(plot_info["unit_label"], dict)
+        and param not in plot_info["unit_label"].keys()
+    ):
         if plot_info["unit_label"][parameter]:
             param = parameter
     if isinstance(plot_info["unit_label"], str):
         if plot_info["unit_label"] == "%":
             param = parameter
-    
+
     # re-shape the plot_info dictionary for the given parameter under study
     plot_info_param = plot_info.copy()
     plot_info_param["title"] = f"Plotting {param}"
-    plot_info_param['unit'] = plot_info['unit'][param] if isinstance(plot_info['unit'], dict) else plot_info['unit']
-    plot_info_param['label'] = plot_info['label'][param] if isinstance(plot_info['label'], dict) else plot_info['label']
-    plot_info_param['unit_label'] = plot_info['unit_label'][param] if isinstance(plot_info['unit_label'], dict) else plot_info['unit_label']
-    plot_info_param['limits'] = plot_info['limits'][param] if isinstance(plot_info['limits'], dict) else plot_info['limits']
-    plot_info_param['parameters'] = param
-    plot_info_param['param_mean'] = parameter + "_mean"
-    plot_info_param['variation'] = True if plot_info_param['unit_label'] == "%" else False
+    plot_info_param["unit"] = (
+        plot_info["unit"][param]
+        if isinstance(plot_info["unit"], dict)
+        else plot_info["unit"]
+    )
+    plot_info_param["label"] = (
+        plot_info["label"][param]
+        if isinstance(plot_info["label"], dict)
+        else plot_info["label"]
+    )
+    plot_info_param["unit_label"] = (
+        plot_info["unit_label"][param]
+        if isinstance(plot_info["unit_label"], dict)
+        else plot_info["unit_label"]
+    )
+    plot_info_param["limits"] = (
+        plot_info["limits"][param]
+        if isinstance(plot_info["limits"], dict)
+        else plot_info["limits"]
+    )
+    plot_info_param["parameters"] = param
+    plot_info_param["param_mean"] = parameter + "_mean"
+    plot_info_param["variation"] = (
+        True if plot_info_param["unit_label"] == "%" else False
+    )
 
     # ... need to go back to the one parameter case ...
     if "parameters" in plot_info_param.keys():
-        plot_info_param["parameter"] = plot_info_param.pop("parameters") 
+        plot_info_param["parameter"] = plot_info_param.pop("parameters")
 
     return plot_info_param
 
