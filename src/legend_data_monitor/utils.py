@@ -917,8 +917,8 @@ def append_new_data(
         new_df = par_dict_content["df_" + plot_info["subsystem"]].copy()
         # --- cleaned df
         new_df = get_param_df(parameter, new_df)
-        #print(f"this is my old df (columns={old_df.columns})\n", old_df)
-        #print(f"this is my new df (columns={new_df.columns})\n", new_df)
+        # we have to copy the new means in the old one, otherwise we end up with two values
+        old_df[parameter + "_mean"] = new_df[parameter + "_mean"]
 
         # concatenate the two dfs (channels are no more grouped; not a problem)
         merged_df = DataFrame.empty
@@ -927,7 +927,6 @@ def append_new_data(
         merged_df = check_level0(merged_df)
         # re-order content in order of channels/timestamps
         merged_df = merged_df.sort_values(["channel", "datetime"])
-        #print("this is the merged df\n", merged_df)
 
         # redefine the dict containing the df and plot_info
         par_dict_content = {}
@@ -944,7 +943,6 @@ def append_new_data(
         out_file = shelve.open(plt_path + "-" + plot_info["subsystem"])
         out_file["monitoring"] = out_dict
         out_file.close()
-        #exit()
 
     return out_dict
 
@@ -1095,7 +1093,6 @@ def get_param_df(parameter: str, df: DataFrame) -> DataFrame:
         if isinstance(other_cols_to_keep, list):
             for col in other_cols_to_keep:
                 if col is not None:
-                    #print(f"loading column={col}")
                     # this is the first column we are putting in 'df_other_cols'
                     if df_other_cols.empty:
                         df_other_cols = df.copy().drop(columns={x for x in df.columns if x != col})
@@ -1108,8 +1105,5 @@ def get_param_df(parameter: str, df: DataFrame) -> DataFrame:
 
     # concatenate everything
     df_param = concat([df_param, df_cols, df_other_cols], axis=1)
-    #print(f"this is my concatenated object\n:{df_param}")
-    #print(f"columns: {df_param.columns}")
-    #exit()
                    
     return df_param
