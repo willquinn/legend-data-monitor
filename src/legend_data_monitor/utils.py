@@ -753,13 +753,13 @@ def build_out_dict(
 
     # we overwrite the object with a new one
     if saving == "overwrite":
-        out_dict = save_dict(plot_settings, plot_info, par_dict_content, out_dict)
+        out_dict = build_dict(plot_settings, plot_info, par_dict_content, out_dict)
 
     # we retrieve the already existing shelve object, and we append new things to it; the parameter here is fixed
     if saving == "append":
         # the file does not exist, so we create it
         if not os.path.exists(plt_path + "-" + plot_info["subsystem"] + ".dat"):
-            out_dict = save_dict(plot_settings, plot_info, par_dict_content, out_dict)
+            out_dict = build_dict(plot_settings, plot_info, par_dict_content, out_dict)
 
         # the file exists, so we are going to append data
         else:
@@ -771,9 +771,15 @@ def build_out_dict(
                 old_dict = dict(shelf)
 
             # one parameter case
-            if len(plot_settings["parameters"]) == 1:
+            if (
+                isinstance(plot_settings["parameters"], list)
+                and len(plot_settings["parameters"]) == 1
+            ) or isinstance(plot_settings["parameters"], str):
+                logger.debug("... appending new data for the one-parameter case")
                 out_dict = append_new_data(
-                    plot_settings["parameters"][0],
+                    plot_settings["parameters"][0]
+                    if isinstance(plot_settings["parameters"], list)
+                    else plot_settings["parameters"],
                     plot_settings,
                     plot_info,
                     old_dict,
@@ -781,7 +787,11 @@ def build_out_dict(
                     plt_path,
                 )
             # multi-parameters case
-            if len(plot_settings["parameters"]) > 1:
+            if (
+                isinstance(plot_settings["parameters"], list)
+                and len(plot_settings["parameters"]) > 1
+            ):
+                logger.debug("... appending new data for the multi-parameters case")
                 for param in plot_settings["parameters"]:
                     out_dict = append_new_data(
                         param,
@@ -795,7 +805,7 @@ def build_out_dict(
     return out_dict
 
 
-def save_dict(
+def build_dict(
     plot_settings: list, plot_info: list, par_dict_content: dict, out_dict: dict
 ) -> dict:
     """Create a dictionary with the correct format for being saved in the final shelve object."""
@@ -803,15 +813,19 @@ def save_dict(
     params = (
         plot_info["parameters"]
         if "parameters" in plot_info.keys()
-        else [plot_info["parameter"]]
+        else plot_info["parameter"]
     )
 
     # one parameter
-    if len(params) == 1:
-        parameter = (
-            plot_info["parameter"].split("_var")[0]
-            if "_var" in plot_info["parameter"]
-            else plot_info["parameter"]
+    if (isinstance(params, list) and len(params) == 1) or isinstance(params, str):
+        logger.debug("... building the output dictionary in the one-parameter case")
+        if isinstance(params, list):
+            param = params[0]
+        if isinstance(params, str):
+            param = params
+        parameter = param.split("_var")[0] if "_var" in param else param
+        par_dict_content["plot_info"] = get_param_info(
+            param, par_dict_content["plot_info"]
         )
         # --- building up the output dictionary
         # event type key is already there
@@ -826,20 +840,36 @@ def save_dict(
             else:
                 out_dict[plot_settings["event_type"]] = {parameter: par_dict_content}
     # more than one parameter
-    else:
+    if isinstance(params, list) and len(params) > 1:
+        logger.debug("... building the output dictionary in the multi-parameters case")
         # we have to polish our dataframe and plot_info dictionary from other parameters...
-        # --- original objects
+        # --- original plot info
+        # ::::::::::::::::::::::::::::::::::::::::::: example 'plot_info_all' :::::::::::::::::::::::::::::::::::::::::::
+        # {'title': 'Plotting cuspEmax vs baseline', 'subsystem': 'geds', 'locname': 'string',
+        #  'plot_style': 'par vs par', 'time_window': '10T', 'resampled': 'no', 'range': [None, None], 'std': False,
+        #  'unit': {'cuspEmax_var': 'ADC', 'baseline_var': 'ADC'},
+        #  'label': {'cuspEmax_var': 'cuspEmax', 'baseline_var': 'FPGA baseline'},
+        #  'unit_label': {'cuspEmax_var': '%', 'baseline_var': '%'},
+        #  'limits': {'cuspEmax_var': [-0.025, 0.025], 'baseline_var': [-5, 5]},
+        #  'parameters': ['cuspEmax_var', 'baseline_var'],
+        #  'param_mean': ['cuspEmax_mean', 'baseline_mean']}
         plot_info_all = par_dict_content["plot_info"]
+
+        # --- original dataframes coming from the analysis
         df_all = par_dict_content["df_" + plot_info_all["subsystem"]]
 
         for param in params:
             parameter = param.split("_var")[0] if "_var" in param else param
 
-            #  --- cleaned plot_info
+            # --- cleaned plot info
+            # ::::::::::::::::::::::::::::::::::::::::::: example 'plot_info_param' :::::::::::::::::::::::::::::::::::::::::::
+            # {'title': 'Prove in corso', 'subsystem': 'geds', 'locname': 'string', 'plot_style': 'par vs par', 'time_window': '10T',
+            #  'resampled': 'no', 'range': [None, None], 'std': False, 'unit': 'ADC', 'label': 'cuspEmax', 'unit_label': '%',
+            #  'limits': [-0.025, 0.025], 'param_mean': 'cuspEmax_mean', 'parameter': 'cuspEmax_var', 'variation': True}
             plot_info_param = get_param_info(param, plot_info_all)
 
             # --- cleaned df
-            df_param = get_param_df(param, df_all)
+            df_param = get_param_df(parameter, df_all)
 
             # --- rebuilding the 'par_dict_content' for the parameter under study
             par_dict_content = save_df_and_info(df_param, plot_info_param)
@@ -886,7 +916,7 @@ def append_new_data(
         # get new df (plot_info object is the same as before, no need to get it and update it)
         new_df = par_dict_content["df_" + plot_info["subsystem"]].copy()
         # --- cleaned df
-        new_df = get_param_df(param, new_df)
+        new_df = get_param_df(parameter, new_df)
 
         # concatenate the two dfs (channels are no more grouped; not a problem)
         merged_df = DataFrame.empty
@@ -903,9 +933,10 @@ def append_new_data(
 
         # saved the merged df as usual (but for the given parameter)
         plot_info = get_param_info(param, plot_info)
-        out_dict = save_dict(
+        out_dict = build_dict(
             plot_settings, plot_info, par_dict_content, old_dict["monitoring"]
         )
+
         # we need to save it, otherwise when looping over the next parameter we lose the appended info for the already inspected parameter
         out_file = shelve.open(plt_path + "-" + plot_info["subsystem"])
         out_file["monitoring"] = out_dict
@@ -965,35 +996,55 @@ def is_empty(df: DataFrame):
 
 def get_param_info(param: str, plot_info: dict) -> dict:
     """Subselect from 'plot_info' the plotting info for the specified parameter ```param```. This is needed for the multi-parameters case."""
-    # get the *naked* parameter name
-    parameter = param.split("_var")[0] if "_var" in param else param
-    keep_keys = [
-        "subsystem",
-        "locname",
-        "plot_style",
-        "time_window",
-        "resampled",
-        "range",
-        "std",
-    ]
-    new_keys = ["unit", "label", "unit_label", "limits", "parameters", "param_mean"]
+    # get the *naked* parameter name and apply some if statements to avoid problems
+    param = param + "_var" if "_var" not in param else param
+    parameter = param.split("_var")[0]
 
-    #  --- cleaned plot_info
-    plot_info_param = {key: plot_info[key] for key in keep_keys}
+    # but what if there is no % variation? We don't want any "_var" in our parameters!
+    if (
+        isinstance(plot_info["unit_label"], dict)
+        and param not in plot_info["unit_label"].keys()
+    ):
+        if plot_info["unit_label"][parameter] != "%":
+            param = parameter
+    if isinstance(plot_info["unit_label"], str):
+        if plot_info["unit_label"] != "%":
+            param = parameter
 
-    # set a default title - that does not involve a second parameter in it
+    # re-shape the plot_info dictionary for the given parameter under study
+    plot_info_param = plot_info.copy()
     plot_info_param["title"] = f"Plotting {param}"
+    plot_info_param["unit"] = (
+        plot_info["unit"][param]
+        if isinstance(plot_info["unit"], dict)
+        else plot_info["unit"]
+    )
+    plot_info_param["label"] = (
+        plot_info["label"][param]
+        if isinstance(plot_info["label"], dict)
+        else plot_info["label"]
+    )
+    plot_info_param["unit_label"] = (
+        plot_info["unit_label"][param]
+        if isinstance(plot_info["unit_label"], dict)
+        else plot_info["unit_label"]
+    )
+    plot_info_param["limits"] = (
+        plot_info["limits"][param]
+        if isinstance(plot_info["limits"], dict)
+        else plot_info["limits"]
+    )
+    plot_info_param["param_mean"] = parameter + "_mean"
+    plot_info_param["variation"] = (
+        True if plot_info_param["unit_label"] == "%" else False
+    )
+    plot_info_param["parameters"] = (
+        param if plot_info_param["variation"] is True else parameter
+    )
 
-    # start the cleaning
-    for new_key in new_keys:
-        obj = plot_info[new_key]
-        if isinstance(obj, dict):
-            plot_info_param[new_key] = [v for k, v in obj.items() if parameter in k][0]
-        if isinstance(obj, list):
-            plot_info_param[new_key] = [k for k in obj if parameter in k][0]
-
-    # need to go back to the one parameter case ...
-    plot_info_param["parameter"] = plot_info_param.pop("parameters")
+    # ... need to go back to the one parameter case ...
+    if "parameters" in plot_info_param.keys():
+        plot_info_param["parameter"] = plot_info_param.pop("parameters")
 
     return plot_info_param
 

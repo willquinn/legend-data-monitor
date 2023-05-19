@@ -1,5 +1,6 @@
 import os
 import shelve
+import sys
 
 import numpy as np
 import pandas as pd
@@ -145,7 +146,7 @@ class AnalysisData:
                     "\033[91m'%s' either does not exist in 'par-settings.json' or you misspelled the parameter's name. TRY AGAIN.\033[0m",
                     param,
                 )
-                exit()
+                sys.exit()
 
         # avoid repetition
         params_to_get = list(np.unique(params_to_get))
@@ -158,7 +159,7 @@ class AnalysisData:
                 "\033[91mOne/more entry/entries among %s is/are not present in the dataframe. TRY AGAIN.\033[0m",
                 params_to_get,
             )
-            exit()
+            sys.exit()
 
         # -------------------------------------------------------------------------
         # select phy/puls/all/Klines events
@@ -388,7 +389,9 @@ class AnalysisData:
                 {"channel": channels, self.parameters[0]: [None] * len(channels)}
             )
             channel_mean = channel_mean.set_index("channel")
-        # otherwise, it's either the pulser or geds
+            # !! need to update for multiple parameter case!
+            self.data = concat_channel_mean(self, channel_mean)
+        # otherwise, it's either an aux or geds
         else:
             if self.saving is None or self.saving == "overwrite":
                 # get the dataframe for timestamps below 10% of data present in the selected time window
@@ -397,6 +400,8 @@ class AnalysisData:
                 channel_mean = self_data_time_cut.groupby("channel").mean(
                     numeric_only=True
                 )[self.parameters]
+                # concatenate column with mean values
+                self.data = concat_channel_mean(self, channel_mean)
 
             elif self.saving == "append":
                 subsys = self.get_subsys()
@@ -407,6 +412,8 @@ class AnalysisData:
                     channel_mean = self_data_time_cut.groupby("channel").mean(
                         numeric_only=True
                     )[self.parameters]
+                    # concatenate column with mean values
+                    self.data = concat_channel_mean(self, channel_mean)
 
                 # the file exist: we have to combine previous data with new data, and re-compute the mean over the first 10% of data (that now, are more than before)
                 else:
@@ -419,29 +426,18 @@ class AnalysisData:
                         channel_mean = get_saved_df(
                             subsys, param, old_dict, self.evt_type
                         )
+                        # concatenate column with mean values
+                        self.data = concat_channel_mean(self, channel_mean)
                     if len(self.parameters) > 1:
                         for param in self.parameters:
-                            channel_mean = get_saved_df(
-                                subsys, param, old_dict, self.evt_type
+                            parameter = (
+                                param.split("_var")[0] if "_var" in param else param
                             )
-
-            # some means are meaningless -> drop the corresponding column
-            if "FWHM" in self.parameters:
-                channel_mean.drop("FWHM", axis=1)
-            if "exposure" in self.parameters:
-                channel_mean.drop("exposure", axis=1)
-
-        # rename columns to be param_mean
-        channel_mean = channel_mean.rename(
-            columns={param: param + "_mean" for param in self.parameters}
-        )
-        # add it as column for convenience - repeating redundant information, but convenient
-        self.data = self.data.set_index("channel")
-        self.data = pd.concat(
-            [self.data, channel_mean.reindex(self.data.index)], axis=1
-        )
-        # put channel back in
-        self.data = self.data.reset_index()
+                            channel_mean = get_saved_df(
+                                subsys, parameter, old_dict, self.evt_type
+                            )
+                            # we need to repeat this operation for each param, otherwise only the mean of the last one survives
+                            self.data = concat_channel_mean(self, channel_mean)
 
     def calculate_variation(self):
         """
@@ -470,28 +466,59 @@ class AnalysisData:
 
     def is_geds(self) -> bool:
         """Return True if 'location' (=string) and 'position' are NOT strings."""
-        if not self.is_spms():
-            return True
-        else:
-            False
+        return not self.is_spms()
 
     def is_pulser(self) -> bool:
-        """Return True if 'location' (=string) and 'position' are NOT strings."""
-        if self.is_geds():
-            if (
-                self.data.iloc[0]["location"] == 0
-                and self.data.iloc[0]["position"] == 0
-            ):
-                return True
-            else:
-                return False
-        else:
-            return False
+        """Return True if the system is the pulser channel."""
+        return (
+            self.is_geds()
+            and self.data.iloc[0]["location"] == 0
+            and self.data.iloc[0]["position"] == 0
+        )
+
+    def is_pulser_aux(self) -> bool:
+        """Return True if the system is the pulser channel."""
+        return (
+            self.is_geds()
+            and self.data.iloc[0]["location"] == -1
+            and self.data.iloc[0]["position"] == -1
+        )
+
+    def is_fc_bsln(self) -> bool:
+        """Return True if the system is the FC baseline channel."""
+        return (
+            self.is_geds()
+            and self.data.iloc[0]["location"] == -2
+            and self.data.iloc[0]["position"] == -2
+        )
+
+    def is_muon(self) -> bool:
+        """Return True if the system is the muon channel."""
+        return (
+            self.is_geds()
+            and self.data.iloc[0]["location"] == -3
+            and self.data.iloc[0]["position"] == -3
+        )
+
+    def is_aux(self) -> bool:
+        """Return True if the system is an AUX channel."""
+        return (
+            self.is_pulser()
+            or self.is_pulser_aux()
+            or self.is_fc_bsln()
+            or self.is_muon()
+        )
 
     def get_subsys(self) -> str:
-        """Return 'pulser', 'geds' or 'spms'."""
+        """Return 'pulser', 'pulser_aux', 'FC_bsln', 'muon', 'geds' or 'spms' depending on the subsystem type."""
         if self.is_pulser():
             return "pulser"
+        if self.is_pulser_aux():
+            return "pulser_aux"
+        if self.is_fc_bsln():
+            return "FC_bsln"
+        if self.is_muon():
+            return "muon"
         if self.is_spms():
             return "spms"
         if self.is_geds():
@@ -551,3 +578,22 @@ def get_saved_df(
     channel_mean = channel_mean.set_index("channel")
 
     return channel_mean
+
+
+def concat_channel_mean(self, channel_mean):
+    """Build a dataframe accounting for mean values of parameter(s). It removes unnecessary columns too."""
+    # some means are meaningless -> drop the corresponding column
+    if "FWHM" in self.parameters:
+        channel_mean.drop("FWHM", axis=1)
+    if "exposure" in self.parameters:
+        channel_mean.drop("exposure", axis=1)
+
+    # rename columns to be param_mean
+    channel_mean = channel_mean.rename(
+        columns={param: param + "_mean" for param in self.parameters}
+    )
+    # add it as column for convenience - repeating redundant information, but convenient
+    self.data = self.data.set_index("channel")
+    self.data = pd.concat([self.data, channel_mean.reindex(self.data.index)], axis=1)
+    # put channel back in
+    return self.data.reset_index()
