@@ -817,8 +817,8 @@ def build_dict(
     )
 
     # one parameter
-    # if len(params) == 1:
     if (isinstance(params, list) and len(params) == 1) or isinstance(params, str):
+        logger.debug("... building the output dictionary in the one-parameter case")
         if isinstance(params, list):
             param = params[0]
         if isinstance(params, str):
@@ -840,8 +840,8 @@ def build_dict(
             else:
                 out_dict[plot_settings["event_type"]] = {parameter: par_dict_content}
     # more than one parameter
-    # else:
     if isinstance(params, list) and len(params) > 1:
+        logger.debug("... building the output dictionary in the multi-parameters case")
         # we have to polish our dataframe and plot_info dictionary from other parameters...
         # --- original plot info
         # ::::::::::::::::::::::::::::::::::::::::::: example 'plot_info_all' :::::::::::::::::::::::::::::::::::::::::::
@@ -936,11 +936,12 @@ def append_new_data(
         out_dict = build_dict(
             plot_settings, plot_info, par_dict_content, old_dict["monitoring"]
         )
+        
         # we need to save it, otherwise when looping over the next parameter we lose the appended info for the already inspected parameter
         out_file = shelve.open(plt_path + "-" + plot_info["subsystem"])
         out_file["monitoring"] = out_dict
         out_file.close()
-
+        
     return out_dict
 
 
@@ -1004,10 +1005,10 @@ def get_param_info(param: str, plot_info: dict) -> dict:
         isinstance(plot_info["unit_label"], dict)
         and param not in plot_info["unit_label"].keys()
     ):
-        if plot_info["unit_label"][parameter]:
+        if plot_info["unit_label"][parameter] != "%":
             param = parameter
     if isinstance(plot_info["unit_label"], str):
-        if plot_info["unit_label"] == "%":
+        if plot_info["unit_label"] != "%":
             param = parameter
 
     # re-shape the plot_info dictionary for the given parameter under study
@@ -1033,11 +1034,11 @@ def get_param_info(param: str, plot_info: dict) -> dict:
         if isinstance(plot_info["limits"], dict)
         else plot_info["limits"]
     )
-    plot_info_param["parameters"] = param
     plot_info_param["param_mean"] = parameter + "_mean"
     plot_info_param["variation"] = (
         True if plot_info_param["unit_label"] == "%" else False
     )
+    plot_info_param["parameters"] = param if plot_info_param["variation"] is True else parameter
 
     # ... need to go back to the one parameter case ...
     if "parameters" in plot_info_param.keys():
