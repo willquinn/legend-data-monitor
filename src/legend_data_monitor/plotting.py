@@ -913,14 +913,14 @@ def get_fwhm_for_fixed_ch(data_channel: DataFrame, parameter: str) -> float:
 def plot_limits(ax: plt.Axes, params: list, limits: Union[list, dict]):
     """Plot limits (if present) on the plot. The multi-params case is carefully handled."""
     # one parameter case
-    if len(params) == 1:
+    if (isinstance(params, list) and len(params) == 1) or isinstance(params, str):
         if not all([x is None for x in limits]):
             if limits[0] is not None:
                 ax.axhline(y=limits[0], color="red", linestyle="--")
             if limits[1] is not None:
                 ax.axhline(y=limits[1], color="red", linestyle="--")
     # multi-parameters case
-    if len(params) > 1:
+    else:
         for idx, param in enumerate(params):
             limits_param = limits[param]
             if not all([x is None for x in limits_param]):

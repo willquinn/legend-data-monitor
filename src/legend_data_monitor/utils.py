@@ -917,6 +917,8 @@ def append_new_data(
         new_df = par_dict_content["df_" + plot_info["subsystem"]].copy()
         # --- cleaned df
         new_df = get_param_df(parameter, new_df)
+        #print(f"this is my old df (columns={old_df.columns})\n", old_df)
+        #print(f"this is my new df (columns={new_df.columns})\n", new_df)
 
         # concatenate the two dfs (channels are no more grouped; not a problem)
         merged_df = DataFrame.empty
@@ -925,6 +927,7 @@ def append_new_data(
         merged_df = check_level0(merged_df)
         # re-order content in order of channels/timestamps
         merged_df = merged_df.sort_values(["channel", "datetime"])
+        #print("this is the merged df\n", merged_df)
 
         # redefine the dict containing the df and plot_info
         par_dict_content = {}
@@ -941,6 +944,7 @@ def append_new_data(
         out_file = shelve.open(plt_path + "-" + plot_info["subsystem"])
         out_file["monitoring"] = out_dict
         out_file.close()
+        #exit()
 
     return out_dict
 
@@ -1043,14 +1047,14 @@ def get_param_info(param: str, plot_info: dict) -> dict:
     )
 
     # ... need to go back to the one parameter case ...
-    if "parameters" in plot_info_param.keys():
-        plot_info_param["parameter"] = plot_info_param.pop("parameters")
+    #if "parameters" in plot_info_param.keys():
+    #    plot_info_param["parameter"] = plot_info_param.pop("parameters")
 
     return plot_info_param
 
 
 def get_param_df(parameter: str, df: DataFrame) -> DataFrame:
-    """Subselect from 'df' only the dataframe columns that refer to a given parameter."""
+    """Subselect from 'df' only the dataframe columns that refer to a given parameter. The case of 'parameter' being a special parameter is carefully handled."""
     # list needed to better divide the parameters stored in the dataframe...
     keep_cols = [
         "index",
@@ -1073,6 +1077,39 @@ def get_param_df(parameter: str, df: DataFrame) -> DataFrame:
     ]
     df_param = df.copy().drop(columns={x for x in df.columns if parameter not in x})
     df_cols = df.copy().drop(columns={x for x in df.columns if x not in keep_cols})
-    df_param = concat([df_param, df_cols], axis=1)
+    
+    # check if the parameter belongs to a special one
+    if parameter in SPECIAL_PARAMETERS:
+        # get the other columns to keep in the new dataframe
+        other_cols_to_keep = SPECIAL_PARAMETERS[parameter]
+        # initialize an empty dataframe
+        df_other_cols = DataFrame()
+        # we might want to load one or more special columns 
+        # (of course, avoid to load columns if the special parameter does not request any special parameter, 
+        # eg event rate or exposure are not build on the basis of any other parameter)
 
+        # + one column only
+        if isinstance(other_cols_to_keep, str) and other_cols_to_keep is not None:
+            df_other_cols = df.copy().drop(columns={x for x in df.columns if x != other_cols_to_keep})
+        # + more than one column
+        if isinstance(other_cols_to_keep, list):
+            for col in other_cols_to_keep:
+                if col is not None:
+                    #print(f"loading column={col}")
+                    # this is the first column we are putting in 'df_other_cols'
+                    if df_other_cols.empty:
+                        df_other_cols = df.copy().drop(columns={x for x in df.columns if x != col})
+                    # there are already column(s) in 'df_other_cols'
+                    else:
+                        new_col = df.copy().drop(columns={x for x in df.columns if x != col})
+                        df_other_cols = concat([df_other_cols, new_col], axis=1)
+    else:
+        df_other_cols = DataFrame()
+
+    # concatenate everything
+    df_param = concat([df_param, df_cols, df_other_cols], axis=1)
+    #print(f"this is my concatenated object\n:{df_param}")
+    #print(f"columns: {df_param.columns}")
+    #exit()
+                   
     return df_param
