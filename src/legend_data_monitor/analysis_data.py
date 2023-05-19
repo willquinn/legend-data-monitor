@@ -422,7 +422,9 @@ class AnalysisData:
                         old_dict = dict(shelf)
 
                     if len(self.parameters) == 1:
-                        param = self.parameters[0]  ### ??? or self.parameters[0].split("_var")[0] if "_var" in self.parameters[0] else self.parameters[0]
+                        param = self.parameters[
+                            0
+                        ]  ### ??? or self.parameters[0].split("_var")[0] if "_var" in self.parameters[0] else self.parameters[0]
                         channel_mean = get_saved_df(
                             self, subsys, param, old_dict, self.evt_type
                         )
@@ -438,7 +440,6 @@ class AnalysisData:
                             )
                             # we need to repeat this operation for each param, otherwise only the mean of the last one survives
                             self.data = concat_channel_mean(self, channel_mean)
-        
 
     def calculate_variation(self):
         """
@@ -562,23 +563,31 @@ def cut_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 def get_saved_df(
     self, subsys: str, param: str, old_dict: dict, evt_type: str
 ) -> pd.DataFrame:
-    """Get the already saved dataframe from the already saved output shelve file, for a given parameter ```param```. In particular, """
+    """Get the already saved dataframe from the already saved output shelve file, for a given parameter ```param```. In particular,"""
     # get old dataframe (we are interested only in the column with mean values)
     old_df = old_dict["monitoring"][evt_type][param]["df_" + subsys]
 
     # we need to re-calculate the mean value over the new bigger time window!
-    # we retrieve aboslute values of already saved df, we use 
-    old_absolute_values = old_df.copy().filter(items=["channel", "datetime", param]) # param works if variation=false; check it for variation=true !!!!
-    new_absolute_values = self.data.copy().filter(items=["channel", "datetime", param]) # param works if variation=false; check it for variation=true !!!!
+    # we retrieve aboslute values of already saved df, we use
+    old_absolute_values = old_df.copy().filter(
+        items=["channel", "datetime", param]
+    )  # param works if variation=false; check it for variation=true !!!!
+    new_absolute_values = self.data.copy().filter(
+        items=["channel", "datetime", param]
+    )  # param works if variation=false; check it for variation=true !!!!
 
-    concatenated_df = pd.concat([old_absolute_values, new_absolute_values], ignore_index=True)
+    concatenated_df = pd.concat(
+        [old_absolute_values, new_absolute_values], ignore_index=True
+    )
     # get the dataframe for timestamps below 10% of data present in the selected time window
     concatenated_df_time_cut = cut_dataframe(concatenated_df)
     # remove 'datetime' column (it was necessary just to evaluate again the first 10% of data, necessary to evaluate the mean on the new dataset)
     concatenated_df_time_cut = concatenated_df_time_cut.drop(columns=["datetime"])
 
     # create a column with the mean of the cut dataframe (cut in the time window of interest)
-    channel_mean = concatenated_df_time_cut.groupby("channel")[param].mean().reset_index()
+    channel_mean = (
+        concatenated_df_time_cut.groupby("channel")[param].mean().reset_index()
+    )
 
     # drop potential duplicate rows
     channel_mean = channel_mean.drop_duplicates(subset=["channel"])

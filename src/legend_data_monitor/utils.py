@@ -1111,5 +1111,5 @@ def get_param_df(parameter: str, df: DataFrame) -> DataFrame:
 
     # concatenate everything
     df_param = concat([df_param, df_cols, df_other_cols], axis=1)
-                   
+
     return df_param
