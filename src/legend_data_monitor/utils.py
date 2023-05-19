@@ -936,12 +936,12 @@ def append_new_data(
         out_dict = build_dict(
             plot_settings, plot_info, par_dict_content, old_dict["monitoring"]
         )
-        
+
         # we need to save it, otherwise when looping over the next parameter we lose the appended info for the already inspected parameter
         out_file = shelve.open(plt_path + "-" + plot_info["subsystem"])
         out_file["monitoring"] = out_dict
         out_file.close()
-        
+
     return out_dict
 
 
@@ -1038,7 +1038,9 @@ def get_param_info(param: str, plot_info: dict) -> dict:
     plot_info_param["variation"] = (
         True if plot_info_param["unit_label"] == "%" else False
     )
-    plot_info_param["parameters"] = param if plot_info_param["variation"] is True else parameter
+    plot_info_param["parameters"] = (
+        param if plot_info_param["variation"] is True else parameter
+    )
 
     # ... need to go back to the one parameter case ...
     if "parameters" in plot_info_param.keys():
