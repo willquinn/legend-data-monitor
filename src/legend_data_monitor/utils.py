@@ -1045,7 +1045,7 @@ def get_param_info(param: str, plot_info: dict) -> dict:
     )
 
     # ... need to go back to the one parameter case ...
-    #if "parameters" in plot_info_param.keys():
+    # if "parameters" in plot_info_param.keys():
     #    plot_info_param["parameter"] = plot_info_param.pop("parameters")
 
     return plot_info_param
@@ -1075,30 +1075,36 @@ def get_param_df(parameter: str, df: DataFrame) -> DataFrame:
     ]
     df_param = df.copy().drop(columns={x for x in df.columns if parameter not in x})
     df_cols = df.copy().drop(columns={x for x in df.columns if x not in keep_cols})
-    
+
     # check if the parameter belongs to a special one
     if parameter in SPECIAL_PARAMETERS:
         # get the other columns to keep in the new dataframe
         other_cols_to_keep = SPECIAL_PARAMETERS[parameter]
         # initialize an empty dataframe
         df_other_cols = DataFrame()
-        # we might want to load one or more special columns 
-        # (of course, avoid to load columns if the special parameter does not request any special parameter, 
+        # we might want to load one or more special columns
+        # (of course, avoid to load columns if the special parameter does not request any special parameter,
         # eg event rate or exposure are not build on the basis of any other parameter)
 
         # + one column only
         if isinstance(other_cols_to_keep, str) and other_cols_to_keep is not None:
-            df_other_cols = df.copy().drop(columns={x for x in df.columns if x != other_cols_to_keep})
+            df_other_cols = df.copy().drop(
+                columns={x for x in df.columns if x != other_cols_to_keep}
+            )
         # + more than one column
         if isinstance(other_cols_to_keep, list):
             for col in other_cols_to_keep:
                 if col is not None:
                     # this is the first column we are putting in 'df_other_cols'
                     if df_other_cols.empty:
-                        df_other_cols = df.copy().drop(columns={x for x in df.columns if x != col})
+                        df_other_cols = df.copy().drop(
+                            columns={x for x in df.columns if x != col}
+                        )
                     # there are already column(s) in 'df_other_cols'
                     else:
-                        new_col = df.copy().drop(columns={x for x in df.columns if x != col})
+                        new_col = df.copy().drop(
+                            columns={x for x in df.columns if x != col}
+                        )
                         df_other_cols = concat([df_other_cols, new_col], axis=1)
     else:
         df_other_cols = DataFrame()
