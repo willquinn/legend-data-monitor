@@ -15,7 +15,7 @@ Getting started
 
 .. code-block::
 
-   $ pip install legend-data-monitor@git+https://github.com/legend-exp/legend-data-monitor/main
+   $ pip install legend-data-monitor@git+https://github.com/legend-exp/legend-data-monitor@main
 
 .. attention::
 
