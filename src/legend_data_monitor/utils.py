@@ -4,14 +4,13 @@ import json
 import logging
 import os
 import re
-import shelve
 import sys
 
 # for getting DataLoader time range
 from datetime import datetime, timedelta
 
 import pygama.lgdo.lh5_store as lh5
-from pandas import DataFrame, concat
+from pandas import DataFrame
 
 # -------------------------------------------------------------------------
 
@@ -712,9 +711,6 @@ def add_config_entries(
         sys.exit()
 
     return config
-
-
-
 
 
 # -------------------------------------------------------------------------

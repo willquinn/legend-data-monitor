@@ -1,11 +1,5 @@
-import importlib.resources
-import logging
 import os
-import re
 import shelve
-import sys
-
-from datetime import datetime
 
 from pandas import DataFrame, concat
 
@@ -87,7 +81,9 @@ def build_out_dict(
                 isinstance(plot_settings["parameters"], list)
                 and len(plot_settings["parameters"]) > 1
             ):
-                utils.logger.debug("... appending new data for the multi-parameters case")
+                utils.logger.debug(
+                    "... appending new data for the multi-parameters case"
+                )
                 for param in plot_settings["parameters"]:
                     out_dict = append_new_data(
                         param,
@@ -114,7 +110,9 @@ def build_dict(
 
     # one parameter
     if (isinstance(params, list) and len(params) == 1) or isinstance(params, str):
-        utils.logger.debug("... building the output dictionary in the one-parameter case")
+        utils.logger.debug(
+            "... building the output dictionary in the one-parameter case"
+        )
         if isinstance(params, list):
             param = params[0]
         if isinstance(params, str):
@@ -137,7 +135,9 @@ def build_dict(
                 out_dict[plot_settings["event_type"]] = {parameter: par_dict_content}
     # more than one parameter
     if isinstance(params, list) and len(params) > 1:
-        utils.logger.debug("... building the output dictionary in the multi-parameters case")
+        utils.logger.debug(
+            "... building the output dictionary in the multi-parameters case"
+        )
         # we have to polish our dataframe and plot_info dictionary from other parameters...
         # --- original plot info
         # ::::::::::::::::::::::::::::::::::::::::::: example 'plot_info_all' :::::::::::::::::::::::::::::::::::::::::::
@@ -213,13 +213,14 @@ def append_new_data(
         new_df = par_dict_content["df_" + plot_info["subsystem"]].copy()
         # --- cleaned df
         new_df = get_param_df(parameter, new_df)
-        
-        
+
         # --- we have to copy the new means in the old one, otherwise we end up with two values (consider they have different lengths!)
         # Create a dictionary mapping 'channel' values to 'parameter_mean' values from new_df
-        mean_dict = new_df.set_index('channel')[parameter + '_mean'].to_dict()
+        mean_dict = new_df.set_index("channel")[parameter + "_mean"].to_dict()
         # Update 'parameter_mean' values in old_df based on the dictionary mapping
-        old_df[parameter + '_mean'] = old_df['channel'].map(mean_dict).fillna(old_df[parameter + '_mean'])
+        old_df[parameter + "_mean"] = (
+            old_df["channel"].map(mean_dict).fillna(old_df[parameter + "_mean"])
+        )
 
         # concatenate the two dfs (channels are no more grouped; not a problem)
         merged_df = DataFrame.empty
@@ -254,7 +255,6 @@ def check_level0(dataframe: DataFrame) -> DataFrame:
         return dataframe.drop(columns=["level_0"])
     else:
         return dataframe
-
 
 
 def get_param_info(param: str, plot_info: dict) -> dict:
@@ -379,4 +379,3 @@ def get_param_df(parameter: str, df: DataFrame) -> DataFrame:
     df_param = concat([df_param, df_cols, df_other_cols], axis=1)
 
     return df_param
-

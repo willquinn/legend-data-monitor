@@ -9,7 +9,14 @@ from matplotlib.backends.backend_pdf import PdfPages
 from pandas import DataFrame
 from seaborn import color_palette
 
-from . import analysis_data, plot_styles, save_data, string_visualization, subsystem, utils
+from . import (
+    analysis_data,
+    plot_styles,
+    save_data,
+    string_visualization,
+    subsystem,
+    utils,
+)
 
 # -------------------------------------------------------------------------
 
@@ -288,7 +295,9 @@ def make_subsystem_plots(
 
         # building a dictionary with dataframe/plot_info to be later stored in a shelve object
         if saving is not None:
-            out_dict = save_data.build_out_dict(plot_settings, par_dict_content, out_dict)
+            out_dict = save_data.build_out_dict(
+                plot_settings, par_dict_content, out_dict
+            )
 
     # save in shelve object, overwriting the already existing file with new content (either completely new or new bunches)
     if saving is not None:
