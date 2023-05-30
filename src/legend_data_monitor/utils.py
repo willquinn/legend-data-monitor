@@ -178,9 +178,10 @@ def get_query_times(**kwargs):
         last_file = last_dsp_files[-1]
         # extract timestamps
         first_timestamp = get_key(first_file)
+        # last timestamp is not the key of last file: it's the last timestamp saved in the last file
         last_timestamp = get_last_timestamp(
             last_file
-        )  # ma non e' l'ultimo timestamp, per quello bisogna aprire il file e prendere l'ultima entry!!!
+        )
 
     return timerange, first_timestamp, last_timestamp
 
@@ -917,8 +918,13 @@ def append_new_data(
         new_df = par_dict_content["df_" + plot_info["subsystem"]].copy()
         # --- cleaned df
         new_df = get_param_df(parameter, new_df)
-        # we have to copy the new means in the old one, otherwise we end up with two values
-        old_df[parameter + "_mean"] = new_df[parameter + "_mean"]
+        
+        
+        # --- we have to copy the new means in the old one, otherwise we end up with two values (consider they have different lengths!)
+        # Create a dictionary mapping 'channel' values to 'parameter_mean' values from new_df
+        mean_dict = new_df.set_index('channel')[parameter + '_mean'].to_dict()
+        # Update 'parameter_mean' values in old_df based on the dictionary mapping
+        old_df[parameter + '_mean'] = old_df['channel'].map(mean_dict).fillna(old_df[parameter + '_mean'])
 
         # concatenate the two dfs (channels are no more grouped; not a problem)
         merged_df = DataFrame.empty
