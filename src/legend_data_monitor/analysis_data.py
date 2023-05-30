@@ -422,15 +422,12 @@ class AnalysisData:
                         old_dict = dict(shelf)
 
                     if len(self.parameters) == 1:
-                        param = self.parameters[
-                            0
-                        ] 
+                        param = self.parameters[0]
                         channel_mean = get_saved_df(
                             self, subsys, param, old_dict, self.evt_type
                         )
                         # concatenate column with mean values
                         self.data = concat_channel_mean(self, channel_mean)
-
 
                     if len(self.parameters) > 1:
                         for param in self.parameters:
@@ -571,12 +568,8 @@ def get_saved_df(
 
     # we need to re-calculate the mean value over the new bigger time window!
     # we retrieve absolute values of already saved df, we use
-    old_absolute_values = old_df.copy().filter(
-        items=["channel", "datetime", param]
-    )  
-    new_absolute_values = self.data.copy().filter(
-        items=["channel", "datetime", param]
-    ) 
+    old_absolute_values = old_df.copy().filter(items=["channel", "datetime", param])
+    new_absolute_values = self.data.copy().filter(items=["channel", "datetime", param])
 
     concatenated_df = pd.concat(
         [old_absolute_values, new_absolute_values], ignore_index=True
