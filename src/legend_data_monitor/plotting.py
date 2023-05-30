@@ -9,7 +9,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 from pandas import DataFrame
 from seaborn import color_palette
 
-from . import analysis_data, plot_styles, string_visualization, subsystem, utils
+from . import analysis_data, plot_styles, save_data, string_visualization, subsystem, utils
 
 # -------------------------------------------------------------------------
 
@@ -257,7 +257,7 @@ def make_subsystem_plots(
         # here we are not checking if we are plotting one or more than one parameter
         # the output dataframe and plot_info objects are merged for more than one parameters
         # this will be split at a later stage, when building the output dictionary through utils.build_out_dict(...)
-        par_dict_content = utils.save_df_and_info(data_analysis.data, plot_info)
+        par_dict_content = save_data.save_df_and_info(data_analysis.data, plot_info)
 
         # -------------------------------------------------------------------------
         # call status plot
@@ -277,7 +277,7 @@ def make_subsystem_plots(
                         )
                     if len(params) > 1:
                         # retrieved the necessary info for the specific parameter under study (just in the multi-parameters case)
-                        plot_info_param = utils.get_param_info(param, plot_info)
+                        plot_info_param = save_data.get_param_info(param, plot_info)
                         _ = string_visualization.status_plot(
                             subsystem, data_analysis.data, plot_info_param, pdf
                         )
@@ -288,7 +288,7 @@ def make_subsystem_plots(
 
         # building a dictionary with dataframe/plot_info to be later stored in a shelve object
         if saving is not None:
-            out_dict = utils.build_out_dict(plot_settings, par_dict_content, out_dict)
+            out_dict = save_data.build_out_dict(plot_settings, par_dict_content, out_dict)
 
     # save in shelve object, overwriting the already existing file with new content (either completely new or new bunches)
     if saving is not None:
@@ -942,7 +942,7 @@ def plot_limits(ax: plt.Axes, params: list, limits: Union[list, dict]):
 
 
 def save_pdf(plt, pdf: PdfPages):
-    """Save the plot to a PDF file. The plot is closed after saving."""
+    """Save the plot to a PDF file. The plot is closed after save_data."""
     if pdf:
         plt.savefig(pdf, format="pdf", bbox_inches="tight")
         plt.close()
