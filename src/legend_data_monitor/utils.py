@@ -179,9 +179,7 @@ def get_query_times(**kwargs):
         # extract timestamps
         first_timestamp = get_key(first_file)
         # last timestamp is not the key of last file: it's the last timestamp saved in the last file
-        last_timestamp = get_last_timestamp(
-            last_file
-        )
+        last_timestamp = get_last_timestamp(last_file)
 
     return timerange, first_timestamp, last_timestamp
 

@@ -245,7 +245,7 @@ def make_subsystem_plots(
             )
         else:
             utils.logger.debug("Plot structure: %s", plot_settings["plot_structure"])
-            #plot_structure(data_analysis.data, plot_info, pdf)
+            # plot_structure(data_analysis.data, plot_info, pdf)
 
         # For some reason, after some plotting functions the index is set to "channel".
         # We need to set it back otherwise string_visualization.py gets crazy and everything crashes.
