@@ -281,31 +281,36 @@ class Subsystem:
         if self.type == "muon":
             self.flag_muon_events()
 
-
     def include_aux(self, params, dataset, plot):
         """Include in a new column data coming from AUX channels, to either compute a ratio or a difference with data coming from the inspected subsystem."""
-        aux_channel = plot["AUX_ratio"] if "AUX_ratio" in plot.keys() else plot["AUX_diff"] # ????????????? does it work for multiple params??
+        aux_channel = (
+            plot["AUX_ratio"] if "AUX_ratio" in plot.keys() else plot["AUX_diff"]
+        )  # ????????????? does it work for multiple params??
         aux_subsys = Subsystem(aux_channel, dataset=dataset)
         # get data for these parameters and time range given in the dataset
         # (if no parameters given to plot, baseline and wfmax will always be loaded to flag pulser events anyway)
         aux_subsys.get_data(params)
 
         # Merge the dataframes based on the 'datetime' column
-        self.data = self.data.merge(aux_subsys.data[['datetime', params]], on='datetime', how='left')
+        self.data = self.data.merge(
+            aux_subsys.data[["datetime", params]], on="datetime", how="left"
+        )
 
         if "AUX_ratio" in plot.keys():
             # calculate the ratio wrt to the AUX entries
-            self.data[f"{params}_x"] = self.data[f"{params}_x"] / self.data[f"{params}_y"]
-        if "AUX_diff" in plot.keys(): 
+            self.data[f"{params}_x"] = (
+                self.data[f"{params}_x"] / self.data[f"{params}_y"]
+            )
+        if "AUX_diff" in plot.keys():
             # calculate the difference, subtracting the AUX entries
-            self.data[f"{params}_x"] = self.data[f"{params}_x"] - self.data[f"{params}_y"]
+            self.data[f"{params}_x"] = (
+                self.data[f"{params}_x"] - self.data[f"{params}_y"]
+            )
 
         # remove AUX entries
         self.data = self.data.drop(columns={f"{params}_y"})
         # rename param column to its original name
         self.data = self.data.rename(columns={f"{params}_x": params})
-
-
 
     def flag_pulser_events(self, pulser=None):
         """Flag pulser events. If a pulser object was provided, flag pulser events in data based on its flag."""

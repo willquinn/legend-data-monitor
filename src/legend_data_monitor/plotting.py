@@ -108,6 +108,7 @@ def make_subsystem_plots(
         )
         print(f"subsystem.data\n{subsystem.data}")
         import sys
+
         sys.exit(1)
 
         # check if the dataframe is empty, if so, skip this plot
