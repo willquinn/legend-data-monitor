@@ -212,6 +212,21 @@ def generate_plots(config: dict, plt_path: str):
             parameters = utils.get_all_plot_parameters(system, config)
             # get data for these parameters and dataset range
             subsystems[system].get_data(parameters)
+
+            # load also aux channel if necessary, and add it to the already existing df
+            for plot in config["subsystems"][system].keys():
+                # both options (diff and ratio) are present -> BAD! For this parameter we do not subtract/divide for any AUX entry
+                if "AUX_ratio" in config["subsystems"][system][plot].keys() and "AUX_diff" in config["subsystems"][system][plot].keys():
+                    utils.logger.warning("\033[93mYou selected both 'AUX_ratio' and 'AUX_diff' for %s, "
+                    + "we do not apply any of them to continue with the plotting (STOP here if you need it, "
+                    + "and select just one of them!)\033[0m", config["subsystems"][system][plot]["parameters"])
+                    continue
+                # one option (either diff or ratio) is present
+                if "AUX_ratio" in config["subsystems"][system][plot].keys() or "AUX_diff" in config["subsystems"][system][plot].keys():
+                    utils.logger.debug("... performing diff/ratio with AUX entries")
+                    params = config["subsystems"][system][plot]["parameters"]
+                    subsystems[system].include_aux(params, config["dataset"], config["subsystems"][system][plot])
+                
             utils.logger.debug(subsystems[system].data)
 
             # -------------------------------------------------------------------------

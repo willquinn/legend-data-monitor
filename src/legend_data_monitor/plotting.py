@@ -53,6 +53,7 @@ def make_subsystem_plots(
 
         # --- original plot settings provided in json
         plot_settings = plots[plot_title]
+        print(f"plot_settings={plot_settings}")
 
         # --- defaults
         # default time window None if not parameter event rate will be accounted for in AnalysisData,
@@ -105,6 +106,9 @@ def make_subsystem_plots(
         data_analysis = analysis_data.AnalysisData(
             subsystem.data, selection=plot_settings
         )
+        print(f"subsystem.data\n{subsystem.data}")
+        import sys
+        sys.exit(1)
 
         # check if the dataframe is empty, if so, skip this plot
         if utils.is_empty(data_analysis.data):
