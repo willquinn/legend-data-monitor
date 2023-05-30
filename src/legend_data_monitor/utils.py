@@ -1036,6 +1036,11 @@ def get_param_info(param: str, plot_info: dict) -> dict:
         if isinstance(plot_info["limits"], dict)
         else plot_info["limits"]
     )
+    plot_info_param["K_events"] = (
+        plot_info["K_events"][param]
+        if isinstance(plot_info["K_events"], dict)
+        else plot_info["K_events"]
+    )
     plot_info_param["param_mean"] = parameter + "_mean"
     plot_info_param["variation"] = (
         True if plot_info_param["unit_label"] == "%" else False

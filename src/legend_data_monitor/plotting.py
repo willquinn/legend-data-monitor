@@ -175,7 +175,7 @@ def make_subsystem_plots(
         # information needed for plot style depending on parameters
 
         # first, treat it like multiple parameters, add dictionary to each entry with values for each parameter
-        multi_param_info = ["unit", "label", "unit_label", "limits"]
+        multi_param_info = ["unit", "label", "unit_label", "limits", "K_events"]
         for info in multi_param_info:
             plot_info[info] = {}
 
@@ -201,10 +201,13 @@ def make_subsystem_plots(
             keyword = "variation" if plot_settings["variation"] else "absolute"
             plot_info["limits"][param] = utils.PLOT_INFO[param_orig]["limits"][
                 subsystem.type
-            ][keyword]
+            ][keyword] if subsystem.type in utils.PLOT_INFO[param_orig]["limits"].keys() else [None, None]
             # unit label should be % if variation was asked
             plot_info["unit_label"][param] = (
                 "%" if plot_settings["variation"] else plot_info["unit"][param_orig]
+            )
+            plot_info["K_events"][param] = (plot_settings["event_type"] == "K_events") and (
+                param == utils.SPECIAL_PARAMETERS["K_events"][0]
             )
 
         if len(params) == 1:
@@ -258,20 +261,20 @@ def make_subsystem_plots(
         # call status plot
         # -------------------------------------------------------------------------
 
-        # ??? how to deal with more than one parameters? still not implemented
         if "status" in plot_settings and plot_settings["status"]:
             if subsystem.type in ["pulser", "pulser_aux", "FC_bsln", "muon"]:
                 utils.logger.debug(
                     f"Thresholds are not enabled for {subsystem.type}! Use you own eyes to do checks there"
                 )
             else:
+                # take care of one parameter and multiple parameters cases
                 for param in params:
-                    # retrieved the necessary info for the specific parameter under study (just in the multi-parameters case)
                     if len(params) == 1:
                         _ = string_visualization.status_plot(
                             subsystem, data_analysis.data, plot_info, pdf
                         )
                     if len(params) > 1:
+                        # retrieved the necessary info for the specific parameter under study (just in the multi-parameters case)
                         plot_info_param = utils.get_param_info(param, plot_info)
                         _ = string_visualization.status_plot(
                             subsystem, data_analysis.data, plot_info_param, pdf
