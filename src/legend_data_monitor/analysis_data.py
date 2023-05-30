@@ -424,17 +424,18 @@ class AnalysisData:
                     if len(self.parameters) == 1:
                         param = self.parameters[0]
                         channel_mean = get_saved_df(
-                            subsys, param, old_dict, self.evt_type
+                            self, subsys, param, old_dict, self.evt_type
                         )
                         # concatenate column with mean values
                         self.data = concat_channel_mean(self, channel_mean)
+
                     if len(self.parameters) > 1:
                         for param in self.parameters:
                             parameter = (
                                 param.split("_var")[0] if "_var" in param else param
                             )
                             channel_mean = get_saved_df(
-                                subsys, parameter, old_dict, self.evt_type
+                                self, subsys, parameter, old_dict, self.evt_type
                             )
                             # we need to repeat this operation for each param, otherwise only the mean of the last one survives
                             self.data = concat_channel_mean(self, channel_mean)
@@ -547,31 +548,42 @@ def get_seconds(time_window: str):
     return int(time_window.rstrip(time_unit)) * str_to_seconds[time_unit]
 
 
-def cut_dataframe(data: pd.DataFrame) -> pd.DataFrame:
-    """Get mean value of the parameters under study over the first 10% of data present in the selected time range."""
-    min_datetime = data["datetime"].min()  # first timestamp
-    max_datetime = data["datetime"].max()  # last timestamp
+def cut_dataframe(df: pd.DataFrame) -> pd.DataFrame:
+    """Get mean value of the parameters under study over the first 10% of data present in the selected time range of the input dataframe."""
+    min_datetime = df["datetime"].min()  # first timestamp
+    max_datetime = df["datetime"].max()  # last timestamp
     duration = max_datetime - min_datetime
     ten_percent_duration = duration * 0.1
     thr_datetime = min_datetime + ten_percent_duration  # 10% timestamp
     # get only the rows for datetimes before the 10% of the specified time range
-    return data.loc[data["datetime"] < thr_datetime]
+    return df.loc[df["datetime"] < thr_datetime]
 
 
 def get_saved_df(
-    subsys: str, param: str, old_dict: dict, evt_type: str
+    self, subsys: str, param: str, old_dict: dict, evt_type: str
 ) -> pd.DataFrame:
-    """Get the already saved dataframe from the already saved output shelve file, for a given parameter ```param```."""
+    """Get the already saved dataframe from the already saved output shelve file, for a given parameter ```param```. In particular, it evaluates again the mean over the new 10% of data in the new larger time window."""
     # get old dataframe (we are interested only in the column with mean values)
-    # !! need to update for multiple parameter case! (check of they are saved to understand what to retrieve with the 'append' option)
     old_df = old_dict["monitoring"][evt_type][param]["df_" + subsys]
 
-    # subselect only columns of: 1) channel 2) mean values of param(s) of interest
-    channel_mean = old_df.filter(items=["channel"] + [param + "_mean"])
+    # we need to re-calculate the mean value over the new bigger time window!
+    # we retrieve absolute values of already saved df, we use
+    old_absolute_values = old_df.copy().filter(items=["channel", "datetime", param])
+    new_absolute_values = self.data.copy().filter(items=["channel", "datetime", param])
 
-    # later there will be a line renaming param to param_mean, so now need to rename back to no mean...
-    # this whole section has to be cleaned up
-    channel_mean = channel_mean.rename(columns={param + "_mean": param})
+    concatenated_df = pd.concat(
+        [old_absolute_values, new_absolute_values], ignore_index=True
+    )
+    # get the dataframe for timestamps below 10% of data present in the selected time window
+    concatenated_df_time_cut = cut_dataframe(concatenated_df)
+    # remove 'datetime' column (it was necessary just to evaluate again the first 10% of data that are necessary to evaluate the mean on the new dataset)
+    concatenated_df_time_cut = concatenated_df_time_cut.drop(columns=["datetime"])
+
+    # create a column with the mean of the cut dataframe (cut in the time window of interest)
+    channel_mean = (
+        concatenated_df_time_cut.groupby("channel")[param].mean().reset_index()
+    )
+
     # drop potential duplicate rows
     channel_mean = channel_mean.drop_duplicates(subset=["channel"])
     # set channel to index because that's how it comes out in previous cases from df.mean()
@@ -580,8 +592,8 @@ def get_saved_df(
     return channel_mean
 
 
-def concat_channel_mean(self, channel_mean):
-    """Build a dataframe accounting for mean values of parameter(s). It removes unnecessary columns too."""
+def concat_channel_mean(self, channel_mean) -> pd.DataFrame:
+    """Add a new column containing the mean values of the inspected parameter."""
     # some means are meaningless -> drop the corresponding column
     if "FWHM" in self.parameters:
         channel_mean.drop("FWHM", axis=1)
@@ -595,5 +607,5 @@ def concat_channel_mean(self, channel_mean):
     # add it as column for convenience - repeating redundant information, but convenient
     self.data = self.data.set_index("channel")
     self.data = pd.concat([self.data, channel_mean.reindex(self.data.index)], axis=1)
-    # put channel back in
+
     return self.data.reset_index()

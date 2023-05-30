@@ -9,7 +9,14 @@ from matplotlib.backends.backend_pdf import PdfPages
 from pandas import DataFrame
 from seaborn import color_palette
 
-from . import analysis_data, plot_styles, string_visualization, subsystem, utils
+from . import (
+    analysis_data,
+    plot_styles,
+    save_data,
+    string_visualization,
+    subsystem,
+    utils,
+)
 
 # -------------------------------------------------------------------------
 
@@ -175,7 +182,7 @@ def make_subsystem_plots(
         # information needed for plot style depending on parameters
 
         # first, treat it like multiple parameters, add dictionary to each entry with values for each parameter
-        multi_param_info = ["unit", "label", "unit_label", "limits"]
+        multi_param_info = ["unit", "label", "unit_label", "limits", "K_events"]
         for info in multi_param_info:
             plot_info[info] = {}
 
@@ -199,13 +206,18 @@ def make_subsystem_plots(
             plot_info["unit"][param] = utils.PLOT_INFO[param_orig]["unit"]
             plot_info["label"][param] = utils.PLOT_INFO[param_orig]["label"]
             keyword = "variation" if plot_settings["variation"] else "absolute"
-            plot_info["limits"][param] = utils.PLOT_INFO[param_orig]["limits"][
-                subsystem.type
-            ][keyword]
+            plot_info["limits"][param] = (
+                utils.PLOT_INFO[param_orig]["limits"][subsystem.type][keyword]
+                if subsystem.type in utils.PLOT_INFO[param_orig]["limits"].keys()
+                else [None, None]
+            )
             # unit label should be % if variation was asked
             plot_info["unit_label"][param] = (
                 "%" if plot_settings["variation"] else plot_info["unit"][param_orig]
             )
+            plot_info["K_events"][param] = (
+                plot_settings["event_type"] == "K_events"
+            ) and (param == utils.SPECIAL_PARAMETERS["K_events"][0])
 
         if len(params) == 1:
             # change "parameters" to "parameter" - for single-param plotting functions
@@ -240,7 +252,7 @@ def make_subsystem_plots(
             )
         else:
             utils.logger.debug("Plot structure: %s", plot_settings["plot_structure"])
-            plot_structure(data_analysis.data, plot_info, pdf)
+            # plot_structure(data_analysis.data, plot_info, pdf)
 
         # For some reason, after some plotting functions the index is set to "channel".
         # We need to set it back otherwise string_visualization.py gets crazy and everything crashes.
@@ -252,27 +264,27 @@ def make_subsystem_plots(
         # here we are not checking if we are plotting one or more than one parameter
         # the output dataframe and plot_info objects are merged for more than one parameters
         # this will be split at a later stage, when building the output dictionary through utils.build_out_dict(...)
-        par_dict_content = utils.save_df_and_info(data_analysis.data, plot_info)
+        par_dict_content = save_data.save_df_and_info(data_analysis.data, plot_info)
 
         # -------------------------------------------------------------------------
         # call status plot
         # -------------------------------------------------------------------------
 
-        # ??? how to deal with more than one parameters? still not implemented
         if "status" in plot_settings and plot_settings["status"]:
             if subsystem.type in ["pulser", "pulser_aux", "FC_bsln", "muon"]:
                 utils.logger.debug(
                     f"Thresholds are not enabled for {subsystem.type}! Use you own eyes to do checks there"
                 )
             else:
+                # take care of one parameter and multiple parameters cases
                 for param in params:
-                    # retrieved the necessary info for the specific parameter under study (just in the multi-parameters case)
                     if len(params) == 1:
                         _ = string_visualization.status_plot(
                             subsystem, data_analysis.data, plot_info, pdf
                         )
                     if len(params) > 1:
-                        plot_info_param = utils.get_param_info(param, plot_info)
+                        # retrieved the necessary info for the specific parameter under study (just in the multi-parameters case)
+                        plot_info_param = save_data.get_param_info(param, plot_info)
                         _ = string_visualization.status_plot(
                             subsystem, data_analysis.data, plot_info_param, pdf
                         )
@@ -283,7 +295,9 @@ def make_subsystem_plots(
 
         # building a dictionary with dataframe/plot_info to be later stored in a shelve object
         if saving is not None:
-            out_dict = utils.build_out_dict(plot_settings, par_dict_content, out_dict)
+            out_dict = save_data.build_out_dict(
+                plot_settings, par_dict_content, out_dict
+            )
 
     # save in shelve object, overwriting the already existing file with new content (either completely new or new bunches)
     if saving is not None:
@@ -913,14 +927,14 @@ def get_fwhm_for_fixed_ch(data_channel: DataFrame, parameter: str) -> float:
 def plot_limits(ax: plt.Axes, params: list, limits: Union[list, dict]):
     """Plot limits (if present) on the plot. The multi-params case is carefully handled."""
     # one parameter case
-    if len(params) == 1:
+    if (isinstance(params, list) and len(params) == 1) or isinstance(params, str):
         if not all([x is None for x in limits]):
             if limits[0] is not None:
                 ax.axhline(y=limits[0], color="red", linestyle="--")
             if limits[1] is not None:
                 ax.axhline(y=limits[1], color="red", linestyle="--")
     # multi-parameters case
-    if len(params) > 1:
+    else:
         for idx, param in enumerate(params):
             limits_param = limits[param]
             if not all([x is None for x in limits_param]):
@@ -937,7 +951,7 @@ def plot_limits(ax: plt.Axes, params: list, limits: Union[list, dict]):
 
 
 def save_pdf(plt, pdf: PdfPages):
-    """Save the plot to a PDF file. The plot is closed after saving."""
+    """Save the plot to a PDF file. The plot is closed after save_data."""
     if pdf:
         plt.savefig(pdf, format="pdf", bbox_inches="tight")
         plt.close()
