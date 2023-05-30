@@ -199,16 +199,18 @@ def make_subsystem_plots(
             plot_info["unit"][param] = utils.PLOT_INFO[param_orig]["unit"]
             plot_info["label"][param] = utils.PLOT_INFO[param_orig]["label"]
             keyword = "variation" if plot_settings["variation"] else "absolute"
-            plot_info["limits"][param] = utils.PLOT_INFO[param_orig]["limits"][
-                subsystem.type
-            ][keyword] if subsystem.type in utils.PLOT_INFO[param_orig]["limits"].keys() else [None, None]
+            plot_info["limits"][param] = (
+                utils.PLOT_INFO[param_orig]["limits"][subsystem.type][keyword]
+                if subsystem.type in utils.PLOT_INFO[param_orig]["limits"].keys()
+                else [None, None]
+            )
             # unit label should be % if variation was asked
             plot_info["unit_label"][param] = (
                 "%" if plot_settings["variation"] else plot_info["unit"][param_orig]
             )
-            plot_info["K_events"][param] = (plot_settings["event_type"] == "K_events") and (
-                param == utils.SPECIAL_PARAMETERS["K_events"][0]
-            )
+            plot_info["K_events"][param] = (
+                plot_settings["event_type"] == "K_events"
+            ) and (param == utils.SPECIAL_PARAMETERS["K_events"][0])
 
         if len(params) == 1:
             # change "parameters" to "parameter" - for single-param plotting functions
