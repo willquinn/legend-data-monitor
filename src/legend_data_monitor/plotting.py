@@ -53,7 +53,6 @@ def make_subsystem_plots(
 
         # --- original plot settings provided in json
         plot_settings = plots[plot_title]
-        print(f"plot_settings={plot_settings}")
 
         # --- defaults
         # default time window None if not parameter event rate will be accounted for in AnalysisData,
@@ -106,9 +105,6 @@ def make_subsystem_plots(
         data_analysis = analysis_data.AnalysisData(
             subsystem.data, selection=plot_settings
         )
-        print(f"subsystem.data\n{subsystem.data}")
-        import sys
-        sys.exit(1)
 
         # check if the dataframe is empty, if so, skip this plot
         if utils.is_empty(data_analysis.data):
@@ -209,6 +205,15 @@ def make_subsystem_plots(
             param_orig = param.rstrip("_var")
             plot_info["unit"][param] = utils.PLOT_INFO[param_orig]["unit"]
             plot_info["label"][param] = utils.PLOT_INFO[param_orig]["label"]
+
+            # modify the labels in case we perform a ratio/diff with aux channel data
+            if "AUX_ratio" in plot_settings.keys():
+                aux_channel = plot_settings["AUX_ratio"]
+                plot_info["label"][param] += f" / {param_orig}({aux_channel})"
+            if "AUX_diff" in plot_settings.keys():
+                aux_channel = plot_settings["AUX_diff"]
+                plot_info["label"][param] += f" - {param_orig}({aux_channel})"
+
             keyword = "variation" if plot_settings["variation"] else "absolute"
             plot_info["limits"][param] = (
                 utils.PLOT_INFO[param_orig]["limits"][subsystem.type][keyword]
@@ -256,7 +261,7 @@ def make_subsystem_plots(
             )
         else:
             utils.logger.debug("Plot structure: %s", plot_settings["plot_structure"])
-            # plot_structure(data_analysis.data, plot_info, pdf)
+            plot_structure(data_analysis.data, plot_info, pdf)
 
         # For some reason, after some plotting functions the index is set to "channel".
         # We need to set it back otherwise string_visualization.py gets crazy and everything crashes.
