@@ -215,8 +215,7 @@ def generate_plots(config: dict, plt_path: str):
 
             # load also aux channel if necessary, and add it to the already existing df
             for plot in config["subsystems"][system].keys():
-                params = config["subsystems"][system][plot]["parameters"]
-                subsystems[system].include_aux(params, config["dataset"], config["subsystems"][system][plot])
+                subsystems[system].include_aux(params=config["subsystems"][system][plot]["parameters"], dataset=config["dataset"], plot=config["subsystems"][system][plot])
                 
             utils.logger.debug(subsystems[system].data)
 

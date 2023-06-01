@@ -303,36 +303,48 @@ class Subsystem:
                 + "and select the correct AUX channel!)\033[0m", plot['AUX_diff'])
                 return
 
-            utils.logger.debug("... performing diff/ratio with AUX entries")
+        utils.logger.debug("... performing diff/ratio with AUX entries")
 
-            # check if the parameter under study is from 'hit' tier; if so, skip it
-            param_tiers = pd.DataFrame.from_dict(utils.PARAMETER_TIERS.items())
-
-            if utils.PARAMETER_TIERS[params] == "hit":
-                utils.logger.warning("\033[93m'%s' is saved in hit tier, for which no AUX channel is present. " +
-                "We skip the ratio/diff wrt the AUX channel and plot the parameter as it is.\033[0m", params)
-                return
-
-            aux_channel = plot["AUX_ratio"] if "AUX_ratio" in plot.keys() else plot["AUX_diff"] # ????????????? does it work for multiple params??
+        def add_aux(param):
+            aux_channel = plot["AUX_ratio"] if "AUX_ratio" in plot.keys() else plot["AUX_diff"] 
             aux_subsys = Subsystem(aux_channel, dataset=dataset)
             # get data for these parameters and time range given in the dataset
             # (if no parameters given to plot, baseline and wfmax will always be loaded to flag pulser events anyway)
-            aux_subsys.get_data(params)
+            aux_subsys.get_data(param)
 
             # Merge the dataframes based on the 'datetime' column
-            self.data = self.data.merge(aux_subsys.data[['datetime', params]], on='datetime', how='left')
+            self.data = self.data.merge(aux_subsys.data[['datetime', param]], on='datetime', how='left')
 
             if "AUX_ratio" in plot.keys():
                 # calculate the ratio wrt to the AUX entries
-                self.data[f"{params}_x"] = self.data[f"{params}_x"] / self.data[f"{params}_y"]
+                self.data[f"{param}_x"] = self.data[f"{param}_x"] / self.data[f"{param}_y"]
             if "AUX_diff" in plot.keys(): 
                 # calculate the difference, subtracting the AUX entries
-                self.data[f"{params}_x"] = self.data[f"{params}_x"] - self.data[f"{params}_y"]
+                self.data[f"{param}_x"] = self.data[f"{param}_x"] - self.data[f"{param}_y"]
 
             # rename AUX entries (might be useful to keep it to retrieve the original param values in the dashboard, for instance)
-            self.data = self.data.rename(columns={f"{params}_y": f"{params}_{aux_channel}"})
+            self.data = self.data.rename(columns={f"{param}_y": f"{param}_{aux_channel}"})
             # rename param column to its original name
-            self.data = self.data.rename(columns={f"{params}_x": params})
+            self.data = self.data.rename(columns={f"{param}_x": param})
+
+        # one-parameter case
+        if (isinstance(params, list) and len(params) == 1) or isinstance(params, str):
+            # check if the parameter under study is from 'hit' tier; if so, skip it
+            if utils.PARAMETER_TIERS[params] == "hit":
+                utils.logger.warning("\033[93m'%s' is saved in hit tier, for which no AUX channel is present. " 
+                + "We skip the ratio/diff wrt the AUX channel and plot the parameter as it is.\033[0m", params)
+                return
+            add_aux(params)
+
+        # multiple-parameters case
+        if isinstance(params, list) and len(params) > 1:
+            for param in params:
+                if utils.PARAMETER_TIERS[param] == "hit":
+                    utils.logger.warning("\033[93m'%s' is saved in hit tier, for which no AUX channel is present. " 
+                    + "We skip the ratio/diff wrt the AUX channel and plot the parameter as it is.\033[0m", param)
+                    continue
+                add_aux(param)
+
 
     def flag_pulser_events(self, pulser=None):
         """Flag pulser events. If a pulser object was provided, flag pulser events in data based on its flag."""
