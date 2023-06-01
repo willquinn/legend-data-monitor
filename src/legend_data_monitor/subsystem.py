@@ -281,7 +281,6 @@ class Subsystem:
         if self.type == "muon":
             self.flag_muon_events()
 
-
     def include_aux(self, params, dataset, plot):
         """Include in a new column data coming from AUX channels, to either compute a ratio or a difference with data coming from the inspected subsystem."""
         # both options (diff and ratio) are present -> BAD! For this parameter we do not subtract/divide for any AUX entry
@@ -334,8 +333,6 @@ class Subsystem:
             self.data = self.data.rename(columns={f"{params}_y": f"{params}_{aux_channel}"})
             # rename param column to its original name
             self.data = self.data.rename(columns={f"{params}_x": params})
-
-
 
     def flag_pulser_events(self, pulser=None):
         """Flag pulser events. If a pulser object was provided, flag pulser events in data based on its flag."""
