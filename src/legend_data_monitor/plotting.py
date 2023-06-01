@@ -71,9 +71,15 @@ def make_subsystem_plots(
         # status plot requires no plot style option (for now)
         if "plot_style" not in plot_settings:
             plot_settings["plot_style"] = None
-        if plot_settings["plot_style"] != "par vs par" and (isinstance(plot_settings["parameters"], list) and len(plot_settings["parameters"])>1):
-            utils.logger.warning("\033[93m'%s' is not enabled for multiple parameters. "
-            + "We switch to the 'par vs par' option.\033[0m", plot_settings["plot_style"])
+        if plot_settings["plot_style"] != "par vs par" and (
+            isinstance(plot_settings["parameters"], list)
+            and len(plot_settings["parameters"]) > 1
+        ):
+            utils.logger.warning(
+                "\033[93m'%s' is not enabled for multiple parameters. "
+                + "We switch to the 'par vs par' option.\033[0m",
+                plot_settings["plot_style"],
+            )
             plot_settings["plot_style"] = "par vs par"
 
         # --- additional not in json
@@ -211,10 +217,16 @@ def make_subsystem_plots(
             plot_info["label"][param] = utils.PLOT_INFO[param_orig]["label"]
 
             # modify the labels in case we perform a ratio/diff with aux channel data
-            if "AUX_ratio" in plot_settings.keys() and utils.PARAMETER_TIERS[param_orig] != "hit":
+            if (
+                "AUX_ratio" in plot_settings.keys()
+                and utils.PARAMETER_TIERS[param_orig] != "hit"
+            ):
                 aux_channel = plot_settings["AUX_ratio"]
                 plot_info["label"][param] += f" / {param_orig}({aux_channel})"
-            if "AUX_diff" in plot_settings.keys() and utils.PARAMETER_TIERS[param_orig] != "hit":
+            if (
+                "AUX_diff" in plot_settings.keys()
+                and utils.PARAMETER_TIERS[param_orig] != "hit"
+            ):
                 aux_channel = plot_settings["AUX_diff"]
                 plot_info["label"][param] += f" - {param_orig}({aux_channel})"
 
