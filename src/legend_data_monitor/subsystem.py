@@ -285,22 +285,41 @@ class Subsystem:
         """Include in a new column data coming from AUX channels, to either compute a ratio or a difference with data coming from the inspected subsystem."""
         # both options (diff and ratio) are present -> BAD! For this parameter we do not subtract/divide for any AUX entry
         if "AUX_ratio" in plot.keys() and "AUX_diff" in plot.keys():
-            utils.logger.warning("\033[93mYou selected both 'AUX_ratio' and 'AUX_diff' for %s, "
-            + "we do not apply any of them and we continue with the plotting (STOP here if you need it, "
-            + "and select just one of them!)\033[0m", plot)
+            utils.logger.warning(
+                "\033[93mYou selected both 'AUX_ratio' and 'AUX_diff' for %s, "
+                + "we do not apply any of them and we continue with the plotting (STOP here if you need it, "
+                + "and select just one of them!)\033[0m",
+                plot,
+            )
             return
         # one option (either diff or ratio) is present
         if "AUX_ratio" in plot.keys() or "AUX_diff" in plot.keys():
             # check if the selected AUX channel exists, otherwise continue
-            if "AUX_ratio" in plot.keys() and plot['AUX_ratio'] not in ["pulser", "pulser_aux", "FC_bsln", "muon"]:
-                utils.logger.warning("\033[93mYou selected '%s' as your AUX channels to perform ratio with, but it does not exist! " 
-                + "We do not apply any ratio and we continue with the plotting (STOP here if you need it, " 
-                + "and select the correct AUX channel!)\033[0m", plot['AUX_ratio'])
+            if "AUX_ratio" in plot.keys() and plot["AUX_ratio"] not in [
+                "pulser",
+                "pulser_aux",
+                "FC_bsln",
+                "muon",
+            ]:
+                utils.logger.warning(
+                    "\033[93mYou selected '%s' as your AUX channels to perform ratio with, but it does not exist! "
+                    + "We do not apply any ratio and we continue with the plotting (STOP here if you need it, "
+                    + "and select the correct AUX channel!)\033[0m",
+                    plot["AUX_ratio"],
+                )
                 return
-            if "AUX_diff" in plot.keys() and plot['AUX_diff'] not in ["pulser", "pulser_aux", "FC_bsln", "muon"]:
-                utils.logger.warning("\033[93mYou selected '%s' as your AUX channels to perform difference with, but it does not exist! " 
-                + "We do not apply any difference and we continue with the plotting (STOP here if you need it, " 
-                + "and select the correct AUX channel!)\033[0m", plot['AUX_diff'])
+            if "AUX_diff" in plot.keys() and plot["AUX_diff"] not in [
+                "pulser",
+                "pulser_aux",
+                "FC_bsln",
+                "muon",
+            ]:
+                utils.logger.warning(
+                    "\033[93mYou selected '%s' as your AUX channels to perform difference with, but it does not exist! "
+                    + "We do not apply any difference and we continue with the plotting (STOP here if you need it, "
+                    + "and select the correct AUX channel!)\033[0m",
+                    plot["AUX_diff"],
+                )
                 return
 
         utils.logger.debug("... performing diff/ratio with AUX entries")
