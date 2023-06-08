@@ -604,7 +604,7 @@ def get_last_timestamp(dsp_fname: str) -> str:
     last_timestamp = unix_timestamp_to_string(last_timestamp)
 
     return last_timestamp
-
+    
 
 # -------------------------------------------------------------------------
 # Config file related functions (for building files)
@@ -746,9 +746,28 @@ def get_livetime(tot_livetime: float):
 
 
 def is_empty(df: DataFrame):
-    """Check if a dataframe is empty. If so, we exit from the code."""
+    """Check if a dataframe is empty."""
     if df.empty:
-        logger.warning(
-            "\033[93mThe dataframe is empty. Plotting the next entry (if present, otherwise exiting from the code).\033[0m"
-        )
         return True
+
+
+def check_empty_df(df) -> bool:
+    """Check if df (DataFrame | analysis_data.AnalysisData) exists and is not empty."""
+    # the dataframe is of type DataFrame
+    if isinstance(df, DataFrame):
+        return is_empty(df)
+    # the dataframe is of type analysis_data.AnalysisData
+    else:
+        return is_empty(df.data)
+
+
+def convert_to_camel_case(string: str, char: str) -> str:
+    """Remove a character from a string and capitalize all initial letters."""
+    # Split the string by underscores
+    words = string.split(char)
+    # Capitalize the initial letters of each word
+    words = [word.capitalize() for word in words]
+    # Join the words back together without any separator
+    camel_case_string = "".join(words)
+    
+    return camel_case_string

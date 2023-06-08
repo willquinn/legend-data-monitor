@@ -48,8 +48,6 @@ class AnalysisData:
         # defaults
         if "time_window" not in analysis_info:
             analysis_info["time_window"] = None
-        if "variation" not in analysis_info:
-            analysis_info["variation"] = False
         if "cuts" not in analysis_info:
             analysis_info["cuts"] = []
         if "plt_path" not in analysis_info:
@@ -62,11 +60,16 @@ class AnalysisData:
 
         event_type_flags = {
             "pulser": ("flag_pulser", "pulser"),
-            "FC_bsln": ("flag_fc_bsln", "FC_bsln"),
+            "FCbsln": ("flag_fc_bsln", "FCbsln"),
             "muon": ("flag_muon", "muon"),
         }
 
         event_type = analysis_info["event_type"]
+
+        # check if the selected event type is within the available ones
+        if event_type not in event_type_flags.keys():
+            utils.logger.error(f"\033[91mThe event type '{event_type}' does not exist and cannot be flagged! Try again with one among {list(event_type_flags.keys())}.\033[0m")
+            sys.exit()
 
         if event_type in event_type_flags:
             flag, subsystem_name = event_type_flags[event_type]
@@ -76,7 +79,7 @@ class AnalysisData:
                     + f"\033[91mRun the function <subsystem>.flag_{subsystem_name}_events(<{subsystem_name}>) first, where <subsystem> is your Subsystem object, \033[0m"
                     + f"\033[91mand <{subsystem_name}> is a Subsystem object of type '{subsystem_name}', which already has its data loaded with <{subsystem_name}>.get_data(); then create an AnalysisData object.\033[0m"
                 )
-                return
+                sys.exit()
 
         # cannot do event rate and another parameter at the same time
         # since event rate is calculated in windows
@@ -105,10 +108,12 @@ class AnalysisData:
         self.parameters = analysis_info["parameters"]
         self.evt_type = analysis_info["event_type"]
         self.time_window = analysis_info["time_window"]
-        self.variation = analysis_info["variation"]
         self.cuts = analysis_info["cuts"]
         self.saving = analysis_info["saving"]
         self.plt_path = analysis_info["plt_path"]
+        # evaluate the variation in any case, so we can save it (later useful for dashboard; 
+        # when plotting, no variation will be included as specified in the config file)
+        self.variation = True
 
         # -------------------------------------------------------------------------
         # subselect data
@@ -187,7 +192,7 @@ class AnalysisData:
         if self.evt_type == "pulser":
             utils.logger.info("... keeping only pulser events")
             self.data = self.data[self.data["flag_pulser"]]
-        elif self.evt_type == "FC_bsln":
+        elif self.evt_type == "FCbsln":
             utils.logger.info("... keeping only FC baseline events")
             self.data = self.data[self.data["flag_fc_bsln"]]
         elif self.evt_type == "muon":
@@ -477,7 +482,7 @@ class AnalysisData:
             and self.data.iloc[0]["position"] == 0
         )
 
-    def is_pulser_aux(self) -> bool:
+    def is_pulser01ana(self) -> bool:
         """Return True if the system is the pulser channel."""
         return (
             self.is_geds()
@@ -505,19 +510,19 @@ class AnalysisData:
         """Return True if the system is an AUX channel."""
         return (
             self.is_pulser()
-            or self.is_pulser_aux()
+            or self.is_pulser01ana()
             or self.is_fc_bsln()
             or self.is_muon()
         )
 
     def get_subsys(self) -> str:
-        """Return 'pulser', 'pulser_aux', 'FC_bsln', 'muon', 'geds' or 'spms' depending on the subsystem type."""
+        """Return 'pulser', 'pulser01ana', 'FCbsln', 'muon', 'geds' or 'spms' depending on the subsystem type."""
         if self.is_pulser():
             return "pulser"
-        if self.is_pulser_aux():
-            return "pulser_aux"
+        if self.is_pulser01ana():
+            return "pulser01ana"
         if self.is_fc_bsln():
-            return "FC_bsln"
+            return "FCbsln"
         if self.is_muon():
             return "muon"
         if self.is_spms():
@@ -590,6 +595,48 @@ def get_saved_df(
     channel_mean = channel_mean.set_index("channel")
 
     return channel_mean
+
+
+def get_aux_df(df: pd.DataFrame, parameter: list, plot_settings: dict, aux_ch: str) -> pd.DataFrame:
+    """Get dataframes containing auxiliary (PULS01ANA) data, storing absolute/diff&ratio/mean/% variations values."""
+    if len(parameter) == 1:
+        param = parameter[0]
+        if (param in utils.PARAMETER_TIERS.keys() and utils.PARAMETER_TIERS[param] == "hit") or param in utils.SPECIAL_PARAMETERS.keys():
+            return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+        # get abs/mean/% variation for data of aux channel --> objects to save
+        utils.logger.debug(f"Getting {aux_ch} data for {param}")
+        aux_data = df.copy()
+        aux_data[param] = aux_data[f'{param}_{aux_ch}']
+        aux_data = aux_data.drop(columns=[f'{param}_{aux_ch}Ratio', f'{param}_{aux_ch}', f'{param}_{aux_ch}Diff'])
+        aux_analysis = AnalysisData(aux_data, selection=plot_settings)
+        utils.logger.debug(aux_analysis.data)
+
+        # get abs/mean/% variation for ratio values with aux channel data --> objects to save
+        utils.logger.debug(f"Getting ratio wrt {aux_ch} data for {param}")
+        aux_ratio_data = df.copy()
+        aux_ratio_data[param] = aux_ratio_data[f'{param}_{aux_ch}Ratio']
+        aux_ratio_data = aux_ratio_data.drop(columns=[f'{param}_{aux_ch}Ratio', f'{param}_{aux_ch}', f'{param}_{aux_ch}Diff'])
+        aux_ratio_analysis = AnalysisData(aux_ratio_data, selection=plot_settings)
+        utils.logger.debug(aux_ratio_analysis.data)
+
+        # get abs/mean/% variation for difference values with aux channel data --> objects to save
+        utils.logger.debug(f"Getting difference wrt {aux_ch} data for {param}")
+        aux_diff_data = df.copy()
+        aux_diff_data[param] = aux_diff_data[f'{param}_{aux_ch}Diff']
+        aux_diff_data = aux_diff_data.drop(columns=[f'{param}_{aux_ch}Ratio', f'{param}_{aux_ch}', f'{param}_{aux_ch}Diff'])
+        aux_diff_analysis = AnalysisData(aux_diff_data, selection=plot_settings)
+        utils.logger.debug(aux_diff_analysis.data)
+
+    if len(parameter) > 1:
+        utils.logger.warning("\033[93mThe aux subtraction/difference is not implemented for multi parameters! We skip it and plot the normal quantities, not corrected for the aux channel.\033[0m")
+        if 'AUX_ratio' in plot_settings.keys():
+            del plot_settings['AUX_ratio']
+        if 'AUX_diff' in plot_settings.keys():
+            del plot_settings['AUX_diff']
+        return None, None, None
+
+
+    return aux_analysis, aux_ratio_analysis, aux_diff_analysis
 
 
 def concat_channel_mean(self, channel_mean) -> pd.DataFrame:

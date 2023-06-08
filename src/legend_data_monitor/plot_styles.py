@@ -4,6 +4,7 @@
 
 # See mapping user plot structure keywords to corresponding functions in the end of this file
 
+import re
 import numpy as np
 import pandas as pd
 from matplotlib.axes import Axes
@@ -112,7 +113,7 @@ def plot_vs_time(
         ax.set_ylim(ymax=plot_info["range"][1])
 
     # plot the position of the two K lines
-    if plot_info["K_events"]:
+    if plot_info["event_type"] == "K_events":
         ax.axhline(y=1460.822, color="gray", linestyle="--")
         ax.axhline(y=1524.6, color="gray", linestyle="--")
 
@@ -128,11 +129,19 @@ def plot_vs_time(
 
     # --- set labels
     fig.supxlabel("UTC Time")
-    y_label = (
-        f"{plot_info['label']}, {plot_info['unit_label']}"
-        if plot_info["unit_label"] == "%"
-        else f"{plot_info['label']} [{plot_info['unit_label']}]"
-    )
+    y_label = plot_info['label']
+    if plot_info["unit_label"] == "%":
+        y_label += ", %"
+    else:
+        if "(PULS01ANA)" in y_label or "(PULS01)" in y_label or "(BSLN01)" in y_label or "(MUON01)" in y_label:
+            separator = "-" if "-" in y_label else "/"
+            parts = y_label.split(separator)
+
+            if len(parts) == 2 and separator == "-":
+                y_label += f" [{plot_info['unit']}]"
+        else:
+            y_label += f" [{plot_info['unit']}]"
+
     fig.supylabel(y_label)
 
 
@@ -223,7 +232,7 @@ def plot_histo(
     # -------------------------------------------------------------------------
 
     # plot the position of the two K lines
-    if plot_info["K_events"]:
+    if plot_info["event_type"] == "K_events":
         ax.axvline(x=1460.822, color="gray", linestyle="--")
         ax.axvline(x=1524.6, color="gray", linestyle="--")
 
@@ -249,7 +258,7 @@ def plot_scatter(
         # edgecolors=color,
     )
 
-    if plot_info["K_events"]:
+    if plot_info["event_type"] == "K_events":
         ax.axhline(y=1460.822, color="gray", linestyle="--")
         ax.axhline(y=1524.6, color="gray", linestyle="--")
 

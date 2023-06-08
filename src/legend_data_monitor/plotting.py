@@ -106,14 +106,37 @@ def make_subsystem_plots(
         # - calculate special parameters if present
         # - get channel mean
         # - calculate variation from mean, if asked
+        # note: subsystem.data contains: absolute value of a param, the respective value for aux channel (with ratio and diff already computed)
         data_analysis = analysis_data.AnalysisData(
             subsystem.data, selection=plot_settings
         )
-
-        # check if the dataframe is empty, if so, skip this plot
-        if utils.is_empty(data_analysis.data):
+        # check if the dataframe is empty; if so, skip this parameter
+        if utils.check_empty_df(data_analysis):
             continue
         utils.logger.debug(data_analysis.data)
+
+        # get list of parameters
+        params = plot_settings["parameters"]
+        if isinstance(params, str):
+            params = [params]
+
+        # this is ok for geds, but for spms? maybe another function will be necessary for this????
+        # note: this will not do anything in case the parameter is from hit tier 
+        aux_analysis, aux_ratio_analysis, aux_diff_analysis = analysis_data.get_aux_df(subsystem.data.copy(), params, plot_settings, "pulser01ana")
+
+        # -------------------------------------------------------------------------
+        # switch to aux data (if specified in config file)
+        # -------------------------------------------------------------------------
+        # check if the aux objects are empty or not
+        if not utils.check_empty_df(aux_ratio_analysis) and not utils.check_empty_df(aux_diff_analysis):
+            if "AUX_ratio" in plot_settings.keys() and plot_settings["AUX_ratio"] is True:
+                data_to_plot = aux_ratio_analysis
+            if "AUX_diff" in plot_settings.keys() and plot_settings["AUX_diff"] is True:
+                data_to_plot = aux_diff_analysis
+            if ("AUX_ratio" not in plot_settings.keys() and "AUX_diff" not in plot_settings.keys()) or ("AUX_ratio" in plot_settings.keys() and plot_settings["AUX_ratio"] is False) or ("AUX_diff" in plot_settings.keys() and plot_settings["AUX_diff"] is False):
+                data_to_plot = data_analysis
+        else:
+            data_to_plot = data_analysis
 
         # -------------------------------------------------------------------------
         # set up plot info
@@ -133,10 +156,10 @@ def make_subsystem_plots(
 
         if plot_structure == "per cc4":
             if (
-                data_analysis.data.iloc[0]["cc4_id"] is None
-                or data_analysis.data.iloc[0]["cc4_channel"] is None
+                data_to_plot.data.iloc[0]["cc4_id"] is None
+                or data_to_plot.data.iloc[0]["cc4_channel"] is None
             ):
-                if subsystem.type in ["spms", "pulser", "pulser_aux", "bsln"]:
+                if subsystem.type in ["spms", "pulser", "pulser01ana", "bsln"]:
                     utils.logger.error(
                         "\033[91mPlotting per CC4 is not available for %s. Try again!\033[0m",
                         subsystem.type,
@@ -149,11 +172,11 @@ def make_subsystem_plots(
                     exit()
             # ...if cc4 are present, group by them
             max_ch_per_string = (
-                data_analysis.data.groupby("cc4_id")["cc4_channel"].nunique().max()
+                data_to_plot.data.groupby("cc4_id")["cc4_channel"].nunique().max()
             )
         else:
             max_ch_per_string = (
-                data_analysis.data.groupby("location")["position"].nunique().max()
+                data_to_plot.data.groupby("location")["position"].nunique().max()
             )
         global COLORS
         COLORS = color_palette("hls", max_ch_per_string).as_hex()
@@ -167,8 +190,8 @@ def make_subsystem_plots(
                 "geds": "string",
                 "spms": "fiber",
                 "pulser": "puls",
-                "pulser_aux": "puls",
-                "FC_bsln": "bsln",
+                "pulser01ana": "pulser01ana",
+                "FCbsln": "FC bsln",
                 "muon": "muon",
             }[subsystem.type],
         }
@@ -186,13 +209,9 @@ def make_subsystem_plots(
         # information needed for plot style depending on parameters
 
         # first, treat it like multiple parameters, add dictionary to each entry with values for each parameter
-        multi_param_info = ["unit", "label", "unit_label", "limits", "K_events"]
+        multi_param_info = ["unit", "label", "unit_label", "limits", "event_type"]
         for info in multi_param_info:
             plot_info[info] = {}
-
-        params = plot_settings["parameters"]
-        if isinstance(params, str):
-            params = [params]
 
         # name(s) of parameter(s) to plot - always list
         plot_info["parameters"] = params
@@ -211,12 +230,13 @@ def make_subsystem_plots(
             plot_info["label"][param] = utils.PLOT_INFO[param_orig]["label"]
 
             # modify the labels in case we perform a ratio/diff with aux channel data
-            if "AUX_ratio" in plot_settings.keys() and utils.PARAMETER_TIERS[param_orig] != "hit":
-                aux_channel = plot_settings["AUX_ratio"]
-                plot_info["label"][param] += f" / {param_orig}({aux_channel})"
-            if "AUX_diff" in plot_settings.keys() and utils.PARAMETER_TIERS[param_orig] != "hit":
-                aux_channel = plot_settings["AUX_diff"]
-                plot_info["label"][param] += f" - {param_orig}({aux_channel})"
+            if param_orig in utils.PARAMETER_TIERS.keys():
+                if "AUX_ratio" in plot_settings.keys() and utils.PARAMETER_TIERS[param_orig] != "hit":
+                    if plot_settings["AUX_ratio"] is True:
+                        plot_info["label"][param] += " / " + plot_info["label"][param] + f"(PULS01ANA)"
+                if "AUX_diff" in plot_settings.keys() and utils.PARAMETER_TIERS[param_orig] != "hit":
+                    if plot_settings["AUX_diff"] is True:
+                        plot_info["label"][param] += " - " + plot_info["label"][param] + f"(PULS01ANA)"
 
             keyword = "variation" if plot_settings["variation"] else "absolute"
             plot_info["limits"][param] = (
@@ -228,9 +248,8 @@ def make_subsystem_plots(
             plot_info["unit_label"][param] = (
                 "%" if plot_settings["variation"] else plot_info["unit"][param_orig]
             )
-            plot_info["K_events"][param] = (
-                plot_settings["event_type"] == "K_events"
-            ) and (param == utils.SPECIAL_PARAMETERS["K_events"][0])
+            plot_info["event_type"][param] = plot_settings["event_type"]
+
 
         if len(params) == 1:
             # change "parameters" to "parameter" - for single-param plotting functions
@@ -244,16 +263,14 @@ def make_subsystem_plots(
 
             # threshold values are needed for status map; might be needed for plotting limits on canvas too
             # only needed for single param plots (for now)
-            if subsystem.type not in ["pulser", "pulser_aux", "FC_bsln", "muon"]:
+            if subsystem.type not in ["pulser", "pulser01ana", "FCbsln", "muon"]:
                 keyword = "variation" if plot_settings["variation"] else "absolute"
                 plot_info["limits"] = utils.PLOT_INFO[params[0]]["limits"][
                     subsystem.type
                 ][keyword]
 
             # needed for grey lines for K lines, in case we are looking at energy itself (not event rate for example)
-            plot_info["K_events"] = (plot_settings["event_type"] == "K_events") and (
-                plot_info["parameter"] == utils.SPECIAL_PARAMETERS["K_events"][0]
-            )
+            plot_info["event_type"] = plot_settings["event_type"]
 
         # -------------------------------------------------------------------------
         # call chosen plot structure + plotting
@@ -261,15 +278,15 @@ def make_subsystem_plots(
 
         if "exposure" in plot_info["parameters"]:
             string_visualization.exposure_plot(
-                subsystem, data_analysis.data, plot_info, pdf
+                subsystem, data_to_plot.data, plot_info, pdf
             )
         else:
             utils.logger.debug("Plot structure: %s", plot_settings["plot_structure"])
-            plot_structure(data_analysis.data, plot_info, pdf)
+            plot_structure(data_to_plot.data, plot_info, pdf)
 
         # For some reason, after some plotting functions the index is set to "channel".
         # We need to set it back otherwise string_visualization.py gets crazy and everything crashes.
-        data_analysis.data = data_analysis.data.reset_index()
+        data_to_plot.data = data_to_plot.data.reset_index()
 
         # -------------------------------------------------------------------------
         # saving dataframe + plot info
@@ -277,14 +294,15 @@ def make_subsystem_plots(
         # here we are not checking if we are plotting one or more than one parameter
         # the output dataframe and plot_info objects are merged for more than one parameters
         # this will be split at a later stage, when building the output dictionary through utils.build_out_dict(...)
-        par_dict_content = save_data.save_df_and_info(data_analysis.data, plot_info)
+        par_dict_content = save_data.save_df_and_info(data_to_plot.data, plot_info)
+        save_data.save_hdf(saving, plt_path + f"-{subsystem.type}.hdf", data_analysis, "pulser01ana", aux_analysis, aux_ratio_analysis, aux_diff_analysis, plot_info)
 
         # -------------------------------------------------------------------------
         # call status plot
         # -------------------------------------------------------------------------
 
         if "status" in plot_settings and plot_settings["status"]:
-            if subsystem.type in ["pulser", "pulser_aux", "FC_bsln", "muon"]:
+            if subsystem.type in ["pulser", "pulser01ana", "FCbsln", "muon"]:
                 utils.logger.debug(
                     f"Thresholds are not enabled for {subsystem.type}! Use you own eyes to do checks there"
                 )
@@ -390,7 +408,7 @@ def plot_per_ch(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
             text += (
                 f"position {df_text['position']}"
                 if plot_info["subsystem"]
-                not in ["pulser", "pulser_aux", "FC_bsln", "muon"]
+                not in ["pulser", "pulser01ana", "FCbsln", "muon"]
                 else ""
             )
             if len(plot_info["parameters"]) == 1:
@@ -403,7 +421,7 @@ def plot_per_ch(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
                     fwhm_ch = get_fwhm_for_fixed_ch(
                         data_channel, plot_info["parameter"]
                     )
-                    text += f"\nFWHM {fwhm_ch}"
+                    text += f"\nFWHM {fwhm_ch}" if fwhm_ch != 0 else ""
 
                 text += "\n" + (
                     f"mean {round(par_mean,3)} [{plot_info['unit']}]"
@@ -426,7 +444,7 @@ def plot_per_ch(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
             ax_idx += 1
 
         # -------------------------------------------------------------------------------
-        if plot_info["subsystem"] in ["pulser", "pulser_aux", "FC_bsln", "muon"]:
+        if plot_info["subsystem"] in ["pulser", "pulser01ana", "FCbsln", "muon"]:
             y_title = 1.05
             axes[0].set_title("")
         else:
@@ -440,7 +458,7 @@ def plot_per_ch(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
 
 
 def plot_per_cc4(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
-    if plot_info["subsystem"] in ["pulser", "pulser_aux", "FC_bsln", "muon"]:
+    if plot_info["subsystem"] in ["pulser", "pulser01ana", "FCbsln", "muon"]:
         utils.logger.error(
             "\033[91mPlotting per CC4 is not available for %s channel.\nTry again with a different plot structure!\033[0m",
             plot_info["subsystem"],
@@ -504,7 +522,7 @@ def plot_per_cc4(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
                     fwhm_ch = get_fwhm_for_fixed_ch(
                         data_channel, plot_info["parameter"]
                     )
-                    labels[-1] = label + f" - FWHM: {fwhm_ch}"
+                    labels[-1] = label + f" - FWHM: {fwhm_ch}" if fwhm_ch != 0 else label
                 else:
                     labels[-1] = label
             col_idx += 1
@@ -527,7 +545,7 @@ def plot_per_cc4(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
     # -------------------------------------------------------------------------------
     y_title = (
         1.05
-        if plot_info["subsystem"] in ["pulser", "pulser_aux", "FC_bsln", "muon"]
+        if plot_info["subsystem"] in ["pulser", "pulser01ana", "FCbsln", "muon"]
         else 1.01
     )
     fig.suptitle(f"{plot_info['subsystem']} - {plot_info['title']}", y=y_title)
@@ -599,7 +617,7 @@ def plot_per_string(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
                     fwhm_ch = get_fwhm_for_fixed_ch(
                         data_channel, plot_info["parameter"]
                     )
-                    labels[-1] = label + f" - FWHM: {fwhm_ch}"
+                    labels[-1] = label + f" - FWHM: {fwhm_ch}" if fwhm_ch != 0 else label
                 else:
                     labels[-1] = label
             col_idx += 1
@@ -622,7 +640,7 @@ def plot_per_string(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
     # -------------------------------------------------------------------------------
     y_title = (
         1.05
-        if plot_info["subsystem"] in ["pulser", "pulser_aux", "FC_bsln", "muon"]
+        if plot_info["subsystem"] in ["pulser", "pulser01ana", "FCbsln", "muon"]
         else 1.01
     )
     fig.suptitle(f"{plot_info['subsystem']} - {plot_info['title']}", y=y_title)
@@ -927,14 +945,17 @@ def get_fwhm_for_fixed_ch(data_channel: DataFrame, parameter: str) -> float:
     entries_avg = np.mean(entries)
     fwhm_ch = 2.355 * np.sqrt(np.mean(np.square(entries - entries_avg)))
 
-    # Determine the number of decimal places based on the magnitude of the value
-    decimal_places = max(0, int(-np.floor(np.log10(abs(fwhm_ch)))) + 2)
-    # Format the FWHM value with the appropriate number of decimal places
-    formatted_fwhm = "{:.{dp}f}".format(fwhm_ch, dp=decimal_places)
-    # Remove trailing zeros from the formatted value
-    formatted_fwhm = formatted_fwhm.rstrip("0").rstrip(".")
+    if fwhm_ch != 0:
+        # Determine the number of decimal places based on the magnitude of the value
+        decimal_places = max(0, int(-np.floor(np.log10(abs(fwhm_ch)))) + 2)
+        # Format the FWHM value with the appropriate number of decimal places
+        formatted_fwhm = "{:.{dp}f}".format(fwhm_ch, dp=decimal_places)
+        # Remove trailing zeros from the formatted value
+        formatted_fwhm = formatted_fwhm.rstrip("0").rstrip(".")
 
-    return formatted_fwhm
+        return formatted_fwhm
+    else:
+        return 0
 
 
 def plot_limits(ax: plt.Axes, params: list, limits: Union[list, dict]):
