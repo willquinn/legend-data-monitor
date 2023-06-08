@@ -254,10 +254,17 @@ def make_subsystem_plots(
                     and utils.PARAMETER_TIERS[param_orig] != "hit"
                 ):
                     if plot_settings["AUX_ratio"] is True:
-                        plot_info["label"][param] += " / " + plot_info["label"][param] + "(PULS01ANA)"
-                if "AUX_diff" in plot_settings.keys() and utils.PARAMETER_TIERS[param_orig] != "hit":
+                        plot_info["label"][param] += (
+                            " / " + plot_info["label"][param] + "(PULS01ANA)"
+                        )
+                if (
+                    "AUX_diff" in plot_settings.keys()
+                    and utils.PARAMETER_TIERS[param_orig] != "hit"
+                ):
                     if plot_settings["AUX_diff"] is True:
-                        plot_info["label"][param] += " - " + plot_info["label"][param] + "(PULS01ANA)"
+                        plot_info["label"][param] += (
+                            " - " + plot_info["label"][param] + "(PULS01ANA)"
+                        )
 
             keyword = "variation" if plot_settings["variation"] else "absolute"
             plot_info["limits"][param] = (
