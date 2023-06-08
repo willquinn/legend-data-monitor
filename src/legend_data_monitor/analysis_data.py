@@ -68,7 +68,9 @@ class AnalysisData:
 
         # check if the selected event type is within the available ones
         if event_type not in event_type_flags.keys():
-            utils.logger.error(f"\033[91mThe event type '{event_type}' does not exist and cannot be flagged! Try again with one among {list(event_type_flags.keys())}.\033[0m")
+            utils.logger.error(
+                f"\033[91mThe event type '{event_type}' does not exist and cannot be flagged! Try again with one among {list(event_type_flags.keys())}.\033[0m"
+            )
             sys.exit()
 
         if event_type in event_type_flags:
@@ -111,7 +113,7 @@ class AnalysisData:
         self.cuts = analysis_info["cuts"]
         self.saving = analysis_info["saving"]
         self.plt_path = analysis_info["plt_path"]
-        # evaluate the variation in any case, so we can save it (later useful for dashboard; 
+        # evaluate the variation in any case, so we can save it (later useful for dashboard;
         # when plotting, no variation will be included as specified in the config file)
         self.variation = True
 
@@ -597,44 +599,68 @@ def get_saved_df(
     return channel_mean
 
 
-def get_aux_df(df: pd.DataFrame, parameter: list, plot_settings: dict, aux_ch: str) -> pd.DataFrame:
+def get_aux_df(
+    df: pd.DataFrame, parameter: list, plot_settings: dict, aux_ch: str
+) -> pd.DataFrame:
     """Get dataframes containing auxiliary (PULS01ANA) data, storing absolute/diff&ratio/mean/% variations values."""
     if len(parameter) == 1:
         param = parameter[0]
-        if (param in utils.PARAMETER_TIERS.keys() and utils.PARAMETER_TIERS[param] == "hit") or param in utils.SPECIAL_PARAMETERS.keys():
+        if (
+            param in utils.PARAMETER_TIERS.keys()
+            and utils.PARAMETER_TIERS[param] == "hit"
+        ) or param in utils.SPECIAL_PARAMETERS.keys():
             return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
         # get abs/mean/% variation for data of aux channel --> objects to save
         utils.logger.debug(f"Getting {aux_ch} data for {param}")
         aux_data = df.copy()
-        aux_data[param] = aux_data[f'{param}_{aux_ch}']
-        aux_data = aux_data.drop(columns=[f'{param}_{aux_ch}Ratio', f'{param}_{aux_ch}', f'{param}_{aux_ch}Diff'])
+        aux_data[param] = aux_data[f"{param}_{aux_ch}"]
+        aux_data = aux_data.drop(
+            columns=[
+                f"{param}_{aux_ch}Ratio",
+                f"{param}_{aux_ch}",
+                f"{param}_{aux_ch}Diff",
+            ]
+        )
         aux_analysis = AnalysisData(aux_data, selection=plot_settings)
         utils.logger.debug(aux_analysis.data)
 
         # get abs/mean/% variation for ratio values with aux channel data --> objects to save
         utils.logger.debug(f"Getting ratio wrt {aux_ch} data for {param}")
         aux_ratio_data = df.copy()
-        aux_ratio_data[param] = aux_ratio_data[f'{param}_{aux_ch}Ratio']
-        aux_ratio_data = aux_ratio_data.drop(columns=[f'{param}_{aux_ch}Ratio', f'{param}_{aux_ch}', f'{param}_{aux_ch}Diff'])
+        aux_ratio_data[param] = aux_ratio_data[f"{param}_{aux_ch}Ratio"]
+        aux_ratio_data = aux_ratio_data.drop(
+            columns=[
+                f"{param}_{aux_ch}Ratio",
+                f"{param}_{aux_ch}",
+                f"{param}_{aux_ch}Diff",
+            ]
+        )
         aux_ratio_analysis = AnalysisData(aux_ratio_data, selection=plot_settings)
         utils.logger.debug(aux_ratio_analysis.data)
 
         # get abs/mean/% variation for difference values with aux channel data --> objects to save
         utils.logger.debug(f"Getting difference wrt {aux_ch} data for {param}")
         aux_diff_data = df.copy()
-        aux_diff_data[param] = aux_diff_data[f'{param}_{aux_ch}Diff']
-        aux_diff_data = aux_diff_data.drop(columns=[f'{param}_{aux_ch}Ratio', f'{param}_{aux_ch}', f'{param}_{aux_ch}Diff'])
+        aux_diff_data[param] = aux_diff_data[f"{param}_{aux_ch}Diff"]
+        aux_diff_data = aux_diff_data.drop(
+            columns=[
+                f"{param}_{aux_ch}Ratio",
+                f"{param}_{aux_ch}",
+                f"{param}_{aux_ch}Diff",
+            ]
+        )
         aux_diff_analysis = AnalysisData(aux_diff_data, selection=plot_settings)
         utils.logger.debug(aux_diff_analysis.data)
 
     if len(parameter) > 1:
-        utils.logger.warning("\033[93mThe aux subtraction/difference is not implemented for multi parameters! We skip it and plot the normal quantities, not corrected for the aux channel.\033[0m")
-        if 'AUX_ratio' in plot_settings.keys():
-            del plot_settings['AUX_ratio']
-        if 'AUX_diff' in plot_settings.keys():
-            del plot_settings['AUX_diff']
+        utils.logger.warning(
+            "\033[93mThe aux subtraction/difference is not implemented for multi parameters! We skip it and plot the normal quantities, not corrected for the aux channel.\033[0m"
+        )
+        if "AUX_ratio" in plot_settings.keys():
+            del plot_settings["AUX_ratio"]
+        if "AUX_diff" in plot_settings.keys():
+            del plot_settings["AUX_diff"]
         return None, None, None
-
 
     return aux_analysis, aux_ratio_analysis, aux_diff_analysis
 

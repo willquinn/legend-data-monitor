@@ -2,14 +2,14 @@ import os
 import sys
 import typing
 from datetime import datetime
+from typing import Union
 
 import numpy as np
 import pandas as pd
-from typing import Union
 from legendmeta import LegendMetadata
 from pygama.flow import DataLoader
 
-from . import analysis_data, utils
+from . import utils
 
 list_of_str = list[str]
 tuple_of_str = tuple[str]
@@ -283,8 +283,9 @@ class Subsystem:
         if self.type == "muon":
             self.flag_muon_events()
 
-
-    def include_aux(self, params: Union[str, list], dataset: dict, plot: dict, aux_ch: str):
+    def include_aux(
+        self, params: Union[str, list], dataset: dict, plot: dict, aux_ch: str
+    ):
         """Include in a new column data coming from PULS01ANA aux channel, to either compute a ratio or a difference with data coming from the inspected subsystem."""
         # auxiliary channel of reference (fixed for the moment)
         aux_channel = "pulser01ana"
@@ -292,18 +293,24 @@ class Subsystem:
         if "AUX_ratio" in plot.keys() and "AUX_diff" in plot.keys():
             utils.logger.error(
                 "\033[91mYou selected both 'AUX_ratio' and 'AUX_diff' for %s. Pick one!\033[0m",
-                plot['parameters'],
+                plot["parameters"],
             )
             sys.exit()
         # one option (either diff or ratio) is present
         if "AUX_ratio" in plot.keys() or "AUX_diff" in plot.keys():
             # check if the selected AUX channel exists, otherwise continue
-            if "AUX_ratio" in plot.keys() and plot['AUX_ratio'] is True:
-                utils.logger.debug("... you are going to plot the parameter accounting for the ratio wrt PULS01ANA data")
-            if "AUX_diff" in plot.keys() and plot['AUX_diff'] is True:
-                utils.logger.debug("... you are going to plot the parameter accounting for the difference wrt PULS01ANA data")
+            if "AUX_ratio" in plot.keys() and plot["AUX_ratio"] is True:
+                utils.logger.debug(
+                    "... you are going to plot the parameter accounting for the ratio wrt PULS01ANA data"
+                )
+            if "AUX_diff" in plot.keys() and plot["AUX_diff"] is True:
+                utils.logger.debug(
+                    "... you are going to plot the parameter accounting for the difference wrt PULS01ANA data"
+                )
 
-        utils.logger.debug("... but now we are going to perform diff/ratio with PULS01ANA entries")
+        utils.logger.debug(
+            "... but now we are going to perform diff/ratio with PULS01ANA entries"
+        )
 
         def add_aux(param):
             aux_subsys = Subsystem(aux_channel, dataset=dataset)
@@ -312,28 +319,47 @@ class Subsystem:
             aux_subsys.get_data(param)
 
             # Merge the dataframes based on the 'datetime' column
-            utils.logger.debug("... merging the PULS01ANA dataframe with the original one")
-            self.data = self.data.merge(aux_subsys.data[['datetime', param]], on='datetime', how='left')
+            utils.logger.debug(
+                "... merging the PULS01ANA dataframe with the original one"
+            )
+            self.data = self.data.merge(
+                aux_subsys.data[["datetime", param]], on="datetime", how="left"
+            )
 
             # ratio
-            self.data[f"{param}_{aux_ch}Ratio"] = self.data[f"{param}_x"] / self.data[f"{param}_y"]
+            self.data[f"{param}_{aux_ch}Ratio"] = (
+                self.data[f"{param}_x"] / self.data[f"{param}_y"]
+            )
             # diff
-            self.data[f"{param}_{aux_ch}Diff"] = self.data[f"{param}_x"] - self.data[f"{param}_y"]
+            self.data[f"{param}_{aux_ch}Diff"] = (
+                self.data[f"{param}_x"] - self.data[f"{param}_y"]
+            )
             # rename columns (absolute values)
-            self.data = self.data.rename(columns={f"{param}_x": param, f"{param}_y": f"{param}_{aux_ch}"})
+            self.data = self.data.rename(
+                columns={f"{param}_x": param, f"{param}_y": f"{param}_{aux_ch}"}
+            )
 
         # one-parameter case
         if (isinstance(params, list) and len(params) == 1) or isinstance(params, str):
             param = params if isinstance(params, str) else params[0]
             # check if the parameter under study is special; if so, skip it
             if param in utils.SPECIAL_PARAMETERS.keys():
-                utils.logger.warning("\033[93m'%s' is a special parameter. " 
-                + "For the moment, we skip the ratio/diff wrt the AUX channel and plot the parameter as it is.\033[0m", params)
+                utils.logger.warning(
+                    "\033[93m'%s' is a special parameter. "
+                    + "For the moment, we skip the ratio/diff wrt the AUX channel and plot the parameter as it is.\033[0m",
+                    params,
+                )
                 return
             # check if the parameter under study is from 'hit' tier; if so, skip it
-            if param in utils.PARAMETER_TIERS.keys() and utils.PARAMETER_TIERS[param] == "hit":
-                utils.logger.warning("\033[93m'%s' is saved in hit tier, for which no AUX channel is present. " 
-                + "We skip the ratio/diff wrt the AUX channel and plot the parameter as it is.\033[0m", params)
+            if (
+                param in utils.PARAMETER_TIERS.keys()
+                and utils.PARAMETER_TIERS[param] == "hit"
+            ):
+                utils.logger.warning(
+                    "\033[93m'%s' is saved in hit tier, for which no AUX channel is present. "
+                    + "We skip the ratio/diff wrt the AUX channel and plot the parameter as it is.\033[0m",
+                    params,
+                )
                 return
             if f"{param}_{aux_channel}" not in list(self.data.columns):
                 add_aux(params)
@@ -342,8 +368,11 @@ class Subsystem:
         if isinstance(params, list) and len(params) > 1:
             for param in params:
                 if param in utils.SPECIAL_PARAMETERS.keys():
-                    utils.logger.warning("\033[93m'%s' is a special parameter. " 
-                    + "For the moment, we skip the ratio/diff wrt the AUX channel and plot the parameter as it is.\033[0m", params)
+                    utils.logger.warning(
+                        "\033[93m'%s' is a special parameter. "
+                        + "For the moment, we skip the ratio/diff wrt the AUX channel and plot the parameter as it is.\033[0m",
+                        params,
+                    )
                     return
                 if utils.PARAMETER_TIERS[param] == "hit":
                     utils.logger.warning(
