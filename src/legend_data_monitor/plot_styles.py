@@ -4,7 +4,7 @@
 
 # See mapping user plot structure keywords to corresponding functions in the end of this file
 
-import re
+
 import numpy as np
 import pandas as pd
 from matplotlib.axes import Axes
@@ -133,11 +133,16 @@ def plot_vs_time(
 
     # --- set labels
     fig.supxlabel("UTC Time")
-    y_label = plot_info['label']
+    y_label = plot_info["label"]
     if plot_info["unit_label"] == "%":
         y_label += ", %"
     else:
-        if "(PULS01ANA)" in y_label or "(PULS01)" in y_label or "(BSLN01)" in y_label or "(MUON01)" in y_label:
+        if (
+            "(PULS01ANA)" in y_label
+            or "(PULS01)" in y_label
+            or "(BSLN01)" in y_label
+            or "(MUON01)" in y_label
+        ):
             separator = "-" if "-" in y_label else "/"
             parts = y_label.split(separator)
 

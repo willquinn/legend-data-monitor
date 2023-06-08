@@ -127,19 +127,30 @@ def make_subsystem_plots(
             params = [params]
 
         # this is ok for geds, but for spms? maybe another function will be necessary for this????
-        # note: this will not do anything in case the parameter is from hit tier 
-        aux_analysis, aux_ratio_analysis, aux_diff_analysis = analysis_data.get_aux_df(subsystem.data.copy(), params, plot_settings, "pulser01ana")
+        # note: this will not do anything in case the parameter is from hit tier
+        aux_analysis, aux_ratio_analysis, aux_diff_analysis = analysis_data.get_aux_df(
+            subsystem.data.copy(), params, plot_settings, "pulser01ana"
+        )
 
         # -------------------------------------------------------------------------
         # switch to aux data (if specified in config file)
         # -------------------------------------------------------------------------
         # check if the aux objects are not empty
-        if not utils.check_empty_df(aux_ratio_analysis) and not utils.check_empty_df(aux_diff_analysis):
-            if "AUX_ratio" in plot_settings.keys() and plot_settings["AUX_ratio"] is True:
+        if not utils.check_empty_df(aux_ratio_analysis) and not utils.check_empty_df(
+            aux_diff_analysis
+        ):
+            if (
+                "AUX_ratio" in plot_settings.keys()
+                and plot_settings["AUX_ratio"] is True
+            ):
                 data_to_plot = aux_ratio_analysis
             if "AUX_diff" in plot_settings.keys() and plot_settings["AUX_diff"] is True:
                 data_to_plot = aux_diff_analysis
-            if ("AUX_ratio" not in plot_settings and "AUX_diff" not in plot_settings) or (plot_settings.get("AUX_ratio") is False) or (plot_settings.get("AUX_diff") is False):
+            if (
+                ("AUX_ratio" not in plot_settings and "AUX_diff" not in plot_settings)
+                or (plot_settings.get("AUX_ratio") is False)
+                or (plot_settings.get("AUX_diff") is False)
+            ):
                 data_to_plot = data_analysis
         # if empty, ...
         else:
@@ -238,12 +249,22 @@ def make_subsystem_plots(
 
             # modify the labels in case we perform a ratio/diff with aux channel data
             if param_orig in utils.PARAMETER_TIERS.keys():
-                if "AUX_ratio" in plot_settings.keys() and utils.PARAMETER_TIERS[param_orig] != "hit":
+                if (
+                    "AUX_ratio" in plot_settings.keys()
+                    and utils.PARAMETER_TIERS[param_orig] != "hit"
+                ):
                     if plot_settings["AUX_ratio"] is True:
-                        plot_info["label"][param] += " / " + plot_info["label"][param] + f"(PULS01ANA)"
-                if "AUX_diff" in plot_settings.keys() and utils.PARAMETER_TIERS[param_orig] != "hit":
+                        plot_info["label"][param] += (
+                            " / " + plot_info["label"][param] + f"(PULS01ANA)"
+                        )
+                if (
+                    "AUX_diff" in plot_settings.keys()
+                    and utils.PARAMETER_TIERS[param_orig] != "hit"
+                ):
                     if plot_settings["AUX_diff"] is True:
-                        plot_info["label"][param] += " - " + plot_info["label"][param] + f"(PULS01ANA)"
+                        plot_info["label"][param] += (
+                            " - " + plot_info["label"][param] + f"(PULS01ANA)"
+                        )
 
             keyword = "variation" if plot_settings["variation"] else "absolute"
             plot_info["limits"][param] = (
@@ -256,7 +277,6 @@ def make_subsystem_plots(
                 "%" if plot_settings["variation"] else plot_info["unit"][param_orig]
             )
             plot_info["event_type"][param] = plot_settings["event_type"]
-
 
         if len(params) == 1:
             # change "parameters" to "parameter" - for single-param plotting functions
@@ -302,7 +322,16 @@ def make_subsystem_plots(
         # the output dataframe and plot_info objects are merged for more than one parameters
         # this will be split at a later stage, when building the output dictionary through utils.build_out_dict(...)
         par_dict_content = save_data.save_df_and_info(data_to_plot.data, plot_info)
-        save_data.save_hdf(saving, plt_path + f"-{subsystem.type}.hdf", data_analysis, "pulser01ana", aux_analysis, aux_ratio_analysis, aux_diff_analysis, plot_info)
+        save_data.save_hdf(
+            saving,
+            plt_path + f"-{subsystem.type}.hdf",
+            data_analysis,
+            "pulser01ana",
+            aux_analysis,
+            aux_ratio_analysis,
+            aux_diff_analysis,
+            plot_info,
+        )
 
         # -------------------------------------------------------------------------
         # call status plot
@@ -529,7 +558,9 @@ def plot_per_cc4(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
                     fwhm_ch = get_fwhm_for_fixed_ch(
                         data_channel, plot_info["parameter"]
                     )
-                    labels[-1] = label + f" - FWHM: {fwhm_ch}" if fwhm_ch != 0 else label
+                    labels[-1] = (
+                        label + f" - FWHM: {fwhm_ch}" if fwhm_ch != 0 else label
+                    )
                 else:
                     labels[-1] = label
             col_idx += 1
@@ -624,7 +655,9 @@ def plot_per_string(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
                     fwhm_ch = get_fwhm_for_fixed_ch(
                         data_channel, plot_info["parameter"]
                     )
-                    labels[-1] = label + f" - FWHM: {fwhm_ch}" if fwhm_ch != 0 else label
+                    labels[-1] = (
+                        label + f" - FWHM: {fwhm_ch}" if fwhm_ch != 0 else label
+                    )
                 else:
                     labels[-1] = label
             col_idx += 1

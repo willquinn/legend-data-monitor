@@ -604,7 +604,7 @@ def get_last_timestamp(dsp_fname: str) -> str:
     last_timestamp = unix_timestamp_to_string(last_timestamp)
 
     return last_timestamp
-    
+
 
 # -------------------------------------------------------------------------
 # Config file related functions (for building files)
@@ -769,5 +769,5 @@ def convert_to_camel_case(string: str, char: str) -> str:
     words = [word.capitalize() for word in words]
     # Join the words back together without any separator
     camel_case_string = "".join(words)
-    
+
     return camel_case_string

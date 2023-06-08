@@ -215,8 +215,13 @@ def generate_plots(config: dict, plt_path: str):
 
             # load also aux channel if necessary, and add it to the already existing df
             for plot in config["subsystems"][system].keys():
-                subsystems[system].include_aux(config["subsystems"][system][plot]["parameters"], config["dataset"], config["subsystems"][system][plot], "pulser01ana")
-            
+                subsystems[system].include_aux(
+                    config["subsystems"][system][plot]["parameters"],
+                    config["dataset"],
+                    config["subsystems"][system][plot],
+                    "pulser01ana",
+                )
+
             utils.logger.debug(subsystems[system].data)
 
             # -------------------------------------------------------------------------

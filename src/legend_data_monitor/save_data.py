@@ -2,7 +2,6 @@ import os
 import shelve
 
 from pandas import DataFrame, concat
-from legendmeta import LegendMetadata
 
 from . import analysis_data, utils
 
@@ -11,10 +10,10 @@ from . import analysis_data, utils
 # -------------------------------------------------------------------------
 
 
-
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # SHELVE OBJECTS
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 
 def save_df_and_info(df: DataFrame, plot_info: dict) -> dict:
     """Return a dictionary containing a dataframe for the parameter(s) under study for a given subsystem. The plotting info are saved too."""
@@ -116,9 +115,7 @@ def build_dict(
 
     # one parameter
     if (isinstance(params, list) and len(params) == 1) or isinstance(params, str):
-        utils.logger.debug(
-            "Building the output dictionary in the one-parameter case"
-        )
+        utils.logger.debug("Building the output dictionary in the one-parameter case")
         if isinstance(params, list):
             param = params[0]
         if isinstance(params, str):
@@ -391,16 +388,42 @@ def get_param_df(parameter: str, df: DataFrame) -> DataFrame:
 # HDF OBJECTS
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-def save_hdf(saving: str, file_path: str, df: analysis_data.AnalysisData, aux_ch: str, aux_analysis: analysis_data.AnalysisData, aux_ratio_analysis: analysis_data.AnalysisData, aux_diff_analysis: analysis_data.AnalysisData, plot_info: dict) -> dict:
+
+def save_hdf(
+    saving: str,
+    file_path: str,
+    df: analysis_data.AnalysisData,
+    aux_ch: str,
+    aux_analysis: analysis_data.AnalysisData,
+    aux_ratio_analysis: analysis_data.AnalysisData,
+    aux_diff_analysis: analysis_data.AnalysisData,
+    plot_info: dict,
+) -> dict:
     """Save the input dataframe in an external hdf file, using a different structure (time vs channel, with values in cells). Plot info are saved too."""
     if saving == "append":
-        utils.logger.warning("\033[93m'append' saving option not implemented -> we skip saving hdf file\033[0m")
+        utils.logger.warning(
+            "\033[93m'append' saving option not implemented -> we skip saving hdf file\033[0m"
+        )
         return
 
     utils.logger.info(f"Building HDF file(s)")
     # save the final dataframe as a hdf object
     parameters = plot_info["parameters"]
-    keys_to_drop = ['std', 'range', 'plot_style', 'variation', 'limits', 'title', 'parameters', 'parameter', 'param_mean', 'locname', 'time_window', 'resampled', 'unit_label']
+    keys_to_drop = [
+        "std",
+        "range",
+        "plot_style",
+        "variation",
+        "limits",
+        "title",
+        "parameters",
+        "parameter",
+        "param_mean",
+        "locname",
+        "time_window",
+        "resampled",
+        "unit_label",
+    ]
     flag_rename = {
         "pulser": "IsPulser",
         "FCbsln": "IsBsln",
@@ -408,7 +431,11 @@ def save_hdf(saving: str, file_path: str, df: analysis_data.AnalysisData, aux_ch
     }
 
     for param in parameters:
-        evt_type = plot_info["event_type"][param] if isinstance(plot_info["event_type"], dict) else plot_info["event_type"]
+        evt_type = (
+            plot_info["event_type"][param]
+            if isinstance(plot_info["event_type"], dict)
+            else plot_info["event_type"]
+        )
         param_orig = param.rstrip("_var") if "_var" in param else param
         param_orig_camel = utils.convert_to_camel_case(param_orig, "_")
 
@@ -420,8 +447,22 @@ def save_hdf(saving: str, file_path: str, df: analysis_data.AnalysisData, aux_ch
         # fix the label (in general, it could contain info for aux data too - here, we want a simple version of the label)
         plot_info_param["label"] = utils.PLOT_INFO[param_orig]["label"]
 
-        limits_var = utils.PLOT_INFO[param_orig]["limits"][plot_info_param["subsystem"]]["variation"] if plot_info_param["subsystem"] in utils.PLOT_INFO[param_orig]["limits"].keys() else [None, None]
-        limits_abs = utils.PLOT_INFO[param_orig]["limits"][plot_info_param["subsystem"]]["absolute"] if plot_info_param["subsystem"] in utils.PLOT_INFO[param_orig]["limits"].keys() else [None, None]
+        limits_var = (
+            utils.PLOT_INFO[param_orig]["limits"][plot_info_param["subsystem"]][
+                "variation"
+            ]
+            if plot_info_param["subsystem"]
+            in utils.PLOT_INFO[param_orig]["limits"].keys()
+            else [None, None]
+        )
+        limits_abs = (
+            utils.PLOT_INFO[param_orig]["limits"][plot_info_param["subsystem"]][
+                "absolute"
+            ]
+            if plot_info_param["subsystem"]
+            in utils.PLOT_INFO[param_orig]["limits"].keys()
+            else [None, None]
+        )
 
         # for limits, change from 'None' to 'False' to be hdf-friendlyF
         plot_info_param["lower_lim_var"] = str(limits_var[0]) or False
@@ -433,7 +474,7 @@ def save_hdf(saving: str, file_path: str, df: analysis_data.AnalysisData, aux_ch
         for key in keys_to_drop:
             del plot_info_param[key]
 
-        # one-param case 
+        # one-param case
         if len(parameters) == 1:
             df_to_save = df.data.copy()
             if not utils.check_empty_df(aux_analysis):
@@ -451,25 +492,47 @@ def save_hdf(saving: str, file_path: str, df: analysis_data.AnalysisData, aux_ch
                 df_aux_ratio_to_save = get_param_df(param_orig, aux_ratio_analysis.data)
             if not utils.check_empty_df(aux_diff_analysis):
                 df_aux_diff_to_save = get_param_df(param_orig, aux_diff_analysis.data)
-            
+
         # still need to check ovewrite/append (and existence of file!!!)
         # if not os.path.exists(plt_path + "-" + plot_info["subsystem"] + ".dat"):
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # PLOTTING INFO
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        df_info = DataFrame.from_dict(plot_info_param, orient='index', columns=['Value'])
-        df_info.to_hdf(file_path, key=f'{flag_rename[evt_type]}_{param_orig_camel}_info', mode='a')
+        df_info = DataFrame.from_dict(
+            plot_info_param, orient="index", columns=["Value"]
+        )
+        df_info.to_hdf(
+            file_path, key=f"{flag_rename[evt_type]}_{param_orig_camel}_info", mode="a"
+        )
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # PURE VALUES
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # ... absolute values
-        get_pivot(df_to_save, param_orig, f"{flag_rename[evt_type]}_{param_orig_camel}", file_path, 'a')
+        get_pivot(
+            df_to_save,
+            param_orig,
+            f"{flag_rename[evt_type]}_{param_orig_camel}",
+            file_path,
+            "a",
+        )
         # ... mean values
-        get_pivot(df_to_save, param_orig + "_mean", f"{flag_rename[evt_type]}_{param_orig_camel}_mean", file_path, 'a')
-        # ... % variations wrt absolute values 
-        get_pivot(df_to_save, param_orig + "_var", f"{flag_rename[evt_type]}_{param_orig_camel}_var", file_path, 'a')
+        get_pivot(
+            df_to_save,
+            param_orig + "_mean",
+            f"{flag_rename[evt_type]}_{param_orig_camel}_mean",
+            file_path,
+            "a",
+        )
+        # ... % variations wrt absolute values
+        get_pivot(
+            df_to_save,
+            param_orig + "_var",
+            f"{flag_rename[evt_type]}_{param_orig_camel}_var",
+            file_path,
+            "a",
+        )
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # PURE VALUES - AUX CHANNEL
@@ -478,21 +541,45 @@ def save_hdf(saving: str, file_path: str, df: analysis_data.AnalysisData, aux_ch
             plot_info_aux = plot_info_param.copy()
             plot_info_aux["subsystem"] = aux_ch
             # --- plotting info
-            df_info_aux = DataFrame.from_dict(plot_info_aux, orient='index', columns=['Value'])
-            df_info_aux.to_hdf(file_path.replace(plot_info_param['subsystem'], aux_ch), key=f'{flag_rename[evt_type]}_{param_orig_camel}_info', mode='a')
-            
+            df_info_aux = DataFrame.from_dict(
+                plot_info_aux, orient="index", columns=["Value"]
+            )
+            df_info_aux.to_hdf(
+                file_path.replace(plot_info_param["subsystem"], aux_ch),
+                key=f"{flag_rename[evt_type]}_{param_orig_camel}_info",
+                mode="a",
+            )
+
             # keep one channel only
-            first_ch = df_aux_to_save.iloc[0]['channel']
+            first_ch = df_aux_to_save.iloc[0]["channel"]
             df_aux_to_save = df_aux_to_save[df_aux_to_save["channel"] == first_ch]
             if aux_ch == "pulser01ana":
                 df_aux_to_save["channel"] = 1027203
 
             # ... absolute values
-            get_pivot(df_aux_to_save, param_orig, f"{flag_rename[evt_type]}_{param_orig_camel}", file_path.replace(plot_info_param['subsystem'], aux_ch), 'a')
+            get_pivot(
+                df_aux_to_save,
+                param_orig,
+                f"{flag_rename[evt_type]}_{param_orig_camel}",
+                file_path.replace(plot_info_param["subsystem"], aux_ch),
+                "a",
+            )
             # ... mean values
-            get_pivot(df_aux_to_save, param_orig + "_mean", f"{flag_rename[evt_type]}_{param_orig_camel}_mean", file_path.replace(plot_info_param['subsystem'], aux_ch), 'a')
-            # ... % variations wrt absolute values 
-            get_pivot(df_aux_to_save, param_orig + "_var", f"{flag_rename[evt_type]}_{param_orig_camel}_var", file_path.replace(plot_info_param['subsystem'], aux_ch), 'a')
+            get_pivot(
+                df_aux_to_save,
+                param_orig + "_mean",
+                f"{flag_rename[evt_type]}_{param_orig_camel}_mean",
+                file_path.replace(plot_info_param["subsystem"], aux_ch),
+                "a",
+            )
+            # ... % variations wrt absolute values
+            get_pivot(
+                df_aux_to_save,
+                param_orig + "_var",
+                f"{flag_rename[evt_type]}_{param_orig_camel}_var",
+                file_path.replace(plot_info_param["subsystem"], aux_ch),
+                "a",
+            )
             utils.logger.info(
                 f"... HDF file for {aux_ch} - pure AUX values - saved in: \33[4m{file_path.replace(plot_info_param['subsystem'], aux_ch)}\33[0m"
             )
@@ -502,31 +589,67 @@ def save_hdf(saving: str, file_path: str, df: analysis_data.AnalysisData, aux_ch
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         if not utils.check_empty_df(aux_ratio_analysis):
             # ... absolute values
-            get_pivot(df_aux_ratio_to_save, param_orig, f"{flag_rename[evt_type]}_{param_orig_camel}_{aux_ch}Ratio", file_path, 'a')
+            get_pivot(
+                df_aux_ratio_to_save,
+                param_orig,
+                f"{flag_rename[evt_type]}_{param_orig_camel}_{aux_ch}Ratio",
+                file_path,
+                "a",
+            )
             # ... mean values
-            get_pivot(df_aux_ratio_to_save, param_orig + "_mean", f"{flag_rename[evt_type]}_{param_orig_camel}_{aux_ch}Ratio_mean", file_path, 'a')
-            # ... % variations wrt absolute values 
-            get_pivot(df_aux_ratio_to_save, param_orig + "_var", f"{flag_rename[evt_type]}_{param_orig_camel}_{aux_ch}Ratio_var", file_path, 'a')
+            get_pivot(
+                df_aux_ratio_to_save,
+                param_orig + "_mean",
+                f"{flag_rename[evt_type]}_{param_orig_camel}_{aux_ch}Ratio_mean",
+                file_path,
+                "a",
+            )
+            # ... % variations wrt absolute values
+            get_pivot(
+                df_aux_ratio_to_save,
+                param_orig + "_var",
+                f"{flag_rename[evt_type]}_{param_orig_camel}_{aux_ch}Ratio_var",
+                file_path,
+                "a",
+            )
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # DIFFERENCE WRT AUX CHANNEL
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         if not utils.check_empty_df(aux_diff_analysis):
             # ... absolute values
-            get_pivot(df_aux_diff_to_save, param_orig, f"{flag_rename[evt_type]}_{param_orig_camel}_{aux_ch}Diff", file_path, 'a')
+            get_pivot(
+                df_aux_diff_to_save,
+                param_orig,
+                f"{flag_rename[evt_type]}_{param_orig_camel}_{aux_ch}Diff",
+                file_path,
+                "a",
+            )
             # ... mean values
-            get_pivot(df_aux_diff_to_save, param_orig + "_mean", f"{flag_rename[evt_type]}_{param_orig_camel}_{aux_ch}Diff_mean", file_path, 'a')
-            # ... % variations wrt absolute values 
-            get_pivot(df_aux_diff_to_save, param_orig + "_var", f"{flag_rename[evt_type]}_{param_orig_camel}_{aux_ch}Diff_var", file_path, 'a')
+            get_pivot(
+                df_aux_diff_to_save,
+                param_orig + "_mean",
+                f"{flag_rename[evt_type]}_{param_orig_camel}_{aux_ch}Diff_mean",
+                file_path,
+                "a",
+            )
+            # ... % variations wrt absolute values
+            get_pivot(
+                df_aux_diff_to_save,
+                param_orig + "_var",
+                f"{flag_rename[evt_type]}_{param_orig_camel}_{aux_ch}Diff_var",
+                file_path,
+                "a",
+            )
 
-    utils.logger.info(f"... HDF file for {plot_info_param['subsystem']} saved in: \33[4m{file_path}\33[0m")
+    utils.logger.info(
+        f"... HDF file for {plot_info_param['subsystem']} saved in: \33[4m{file_path}\33[0m"
+    )
 
 
 def get_pivot(df: DataFrame, parameter: str, key_name: str, file_path: str, mode):
-    df_pivot = df.pivot(index='datetime', columns='channel', values=parameter)
+    df_pivot = df.pivot(index="datetime", columns="channel", values=parameter)
     # just select one row for mean values (since mean is constant over time for a given channel)
     if "_mean" in parameter:
         df_pivot = df_pivot.iloc[[0]]
-    df_pivot.to_hdf(file_path, key=key_name, mode='a')
-
-
+    df_pivot.to_hdf(file_path, key=key_name, mode="a")
