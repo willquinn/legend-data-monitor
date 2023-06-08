@@ -421,7 +421,7 @@ class Subsystem:
         self.data = self.data.reset_index()
 
     def flag_fcbsln_events(self, fc_bsln=None):
-        """Flag FC baseline events. If a FC baseline object was provided, flag FC baseline events in data based on its flag."""
+        """Flag FC baseline events, keeping the ones that are in correspondence with a pulser event too. If a FC baseline object was provided, flag FC baseline events in data based on its flag."""
         utils.logger.info("... flagging FC baseline events")
 
         # --- if a FC baseline object was provided, flag FC baseline events in data based on its flag
@@ -455,6 +455,16 @@ class Subsystem:
             self.data.loc[fc_bsln_timestamps, "flag_fc_bsln"] = True
 
         self.data = self.data.reset_index()
+
+    def flag_fcbsln_only_events(self, fc_bsln):
+        """Flag FC baseline events. If a FC baseline object was provided, flag FC baseline events in data based on its flag."""
+        utils.logger.info("... flagging FC baseline ONLY events")
+
+        self.data = self.data.merge(fc_bsln.data[["datetime", "flag_fc_bsln"]], on="datetime")
+        self.data["flag_fc_bsln"] = self.data["flag_fc_bsln"] & self.data["flag_pulser"]
+
+        self.data = self.data.reset_index()
+        
 
     def flag_muon_events(self, muon=None):
         """Flag muon events. If a muon object was provided, flag muon events in data based on its flag."""
