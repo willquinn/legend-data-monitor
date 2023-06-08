@@ -71,9 +71,15 @@ def make_subsystem_plots(
         # status plot requires no plot style option (for now)
         if "plot_style" not in plot_settings:
             plot_settings["plot_style"] = None
-        if plot_settings["plot_style"] != "par vs par" and (isinstance(plot_settings["parameters"], list) and len(plot_settings["parameters"])>1):
-            utils.logger.warning("\033[93m'%s' is not enabled for multiple parameters. "
-            + "We switch to the 'par vs par' option.\033[0m", plot_settings["plot_style"])
+        if plot_settings["plot_style"] != "par vs par" and (
+            isinstance(plot_settings["parameters"], list)
+            and len(plot_settings["parameters"]) > 1
+        ):
+            utils.logger.warning(
+                "\033[93m'%s' is not enabled for multiple parameters. "
+                + "We switch to the 'par vs par' option.\033[0m",
+                plot_settings["plot_style"],
+            )
             plot_settings["plot_style"] = "par vs par"
 
         # --- additional not in json
@@ -127,14 +133,15 @@ def make_subsystem_plots(
         # -------------------------------------------------------------------------
         # switch to aux data (if specified in config file)
         # -------------------------------------------------------------------------
-        # check if the aux objects are empty or not
+        # check if the aux objects are not empty
         if not utils.check_empty_df(aux_ratio_analysis) and not utils.check_empty_df(aux_diff_analysis):
             if "AUX_ratio" in plot_settings.keys() and plot_settings["AUX_ratio"] is True:
                 data_to_plot = aux_ratio_analysis
             if "AUX_diff" in plot_settings.keys() and plot_settings["AUX_diff"] is True:
                 data_to_plot = aux_diff_analysis
-            if ("AUX_ratio" not in plot_settings.keys() and "AUX_diff" not in plot_settings.keys()) or ("AUX_ratio" in plot_settings.keys() and plot_settings["AUX_ratio"] is False) or ("AUX_diff" in plot_settings.keys() and plot_settings["AUX_diff"] is False):
+            if ("AUX_ratio" not in plot_settings and "AUX_diff" not in plot_settings) or (plot_settings.get("AUX_ratio") is False) or (plot_settings.get("AUX_diff") is False):
                 data_to_plot = data_analysis
+        # if empty, ...
         else:
             data_to_plot = data_analysis
 

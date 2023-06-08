@@ -31,6 +31,10 @@ def plot_vs_time(
     # changing the type of the column itself with the table does not work
     data_channel = data_channel.sort_values("datetime")
 
+    # if you inspect event rate, change the 'resampled' option from 'only' (if so) to 'no'
+    if plot_info["parameter"] == "event_rate" and plot_info["resampled"] == "only":
+        plot_info["resampled"] = "no"
+
     res_col = color
     all_col = (
         color

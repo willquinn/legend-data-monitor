@@ -213,25 +213,25 @@ def generate_plots(config: dict, plt_path: str):
             # get data for these parameters and dataset range
             subsystems[system].get_data(parameters)
 
-        # load also aux channel if necessary, and add it to the already existing df
-        for plot in config["subsystems"][system].keys():
-            subsystems[system].include_aux(config["subsystems"][system][plot]["parameters"], config["dataset"], config["subsystems"][system][plot], "pulser01ana")
-        
-        utils.logger.debug(subsystems[system].data)
+            # load also aux channel if necessary, and add it to the already existing df
+            for plot in config["subsystems"][system].keys():
+                subsystems[system].include_aux(config["subsystems"][system][plot]["parameters"], config["dataset"], config["subsystems"][system][plot], "pulser01ana")
+            
+            utils.logger.debug(subsystems[system].data)
 
-        # -------------------------------------------------------------------------
-        # flag events
-        # -------------------------------------------------------------------------
-        # flag pulser events for future parameter data selection
-        subsystems[system].flag_pulser_events(subsystems["pulser"])
-        # flag FC baseline events for future parameter data selection
-        subsystems[system].flag_fcbsln_events(subsystems["FCbsln"])
-        # flag muon events for future parameter data selection
-        subsystems[system].flag_muon_events(subsystems["muon"])
+            # -------------------------------------------------------------------------
+            # flag events
+            # -------------------------------------------------------------------------
+            # flag pulser events for future parameter data selection
+            subsystems[system].flag_pulser_events(subsystems["pulser"])
+            # flag FC baseline events for future parameter data selection
+            subsystems[system].flag_fcbsln_events(subsystems["FCbsln"])
+            # flag muon events for future parameter data selection
+            subsystems[system].flag_muon_events(subsystems["muon"])
 
-        # remove timestamps for given detectors (moved here cause otherwise timestamps for flagging don't match)
-        subsystems[system].remove_timestamps(utils.REMOVE_KEYS)
-        utils.logger.debug(subsystems[system].data)
+            # remove timestamps for given detectors (moved here cause otherwise timestamps for flagging don't match)
+            subsystems[system].remove_timestamps(utils.REMOVE_KEYS)
+            utils.logger.debug(subsystems[system].data)
 
         # -------------------------------------------------------------------------
         # make subsystem plots

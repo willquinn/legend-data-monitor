@@ -346,12 +346,14 @@ class Subsystem:
                     + "For the moment, we skip the ratio/diff wrt the AUX channel and plot the parameter as it is.\033[0m", params)
                     return
                 if utils.PARAMETER_TIERS[param] == "hit":
-                    utils.logger.warning("\033[93m'%s' is saved in hit tier, for which no AUX channel is present. " 
-                    + "We skip the ratio/diff wrt the AUX channel and plot the parameter as it is.\033[0m", param)
+                    utils.logger.warning(
+                        "\033[93m'%s' is saved in hit tier, for which no AUX channel is present. "
+                        + "We skip the ratio/diff wrt the AUX channel and plot the parameter as it is.\033[0m",
+                        param,
+                    )
                     continue
                 if f"{param}_{aux_channel}" not in list(self.data.columns):
                     add_aux(params)
-
 
     def flag_pulser_events(self, pulser=None):
         """Flag pulser events. If a pulser object was provided, flag pulser events in data based on its flag."""
