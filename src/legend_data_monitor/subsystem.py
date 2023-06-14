@@ -464,7 +464,6 @@ class Subsystem:
         self.data["flag_fc_bsln"] = self.data["flag_fc_bsln"] & ~self.data["flag_pulser"]
 
         self.data = self.data.reset_index()
-        
 
     def flag_muon_events(self, muon=None):
         """Flag muon events. If a muon object was provided, flag muon events in data based on its flag."""

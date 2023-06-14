@@ -230,7 +230,7 @@ def generate_plots(config: dict, plt_path: str):
             # -------------------------------------------------------------------------
             # flag pulser events for future parameter data selection
             subsystems[system].flag_pulser_events(subsystems["pulser"])
-            # flag FC baseline events (not in correspondence with any pulser event) for future parameter data selection 
+            # flag FC baseline events (not in correspondence with any pulser event) for future parameter data selection
             subsystems[system].flag_fcbsln_only_events(subsystems["FCbsln"])
             # flag muon events for future parameter data selection
             subsystems[system].flag_muon_events(subsystems["muon"])
