@@ -215,6 +215,7 @@ def generate_plots(config: dict, plt_path: str):
 
             # load also aux channel if necessary, and add it to the already existing df
             for plot in config["subsystems"][system].keys():
+                # !!! add if for sipms...
                 subsystems[system].include_aux(
                     config["subsystems"][system][plot]["parameters"],
                     config["dataset"],
@@ -266,3 +267,4 @@ def generate_plots(config: dict, plt_path: str):
         # Write the cleaned text to a new file
         with open(plt_path + "-" + system + ".log", "w") as f:
             f.write(clean_text)
+

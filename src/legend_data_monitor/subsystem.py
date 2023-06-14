@@ -461,7 +461,7 @@ class Subsystem:
         utils.logger.info("... flagging FC baseline ONLY events")
 
         self.data = self.data.merge(fc_bsln.data[["datetime", "flag_fc_bsln"]], on="datetime")
-        self.data["flag_fc_bsln"] = self.data["flag_fc_bsln"] & self.data["flag_pulser"]
+        self.data["flag_fc_bsln"] = self.data["flag_fc_bsln"] & ~self.data["flag_pulser"]
 
         self.data = self.data.reset_index()
         
