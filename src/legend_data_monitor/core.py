@@ -267,4 +267,3 @@ def generate_plots(config: dict, plt_path: str):
         # Write the cleaned text to a new file
         with open(plt_path + "-" + system + ".log", "w") as f:
             f.write(clean_text)
-

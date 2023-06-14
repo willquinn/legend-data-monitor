@@ -460,8 +460,12 @@ class Subsystem:
         """Flag FC baseline events. If a FC baseline object was provided, flag FC baseline events in data based on its flag."""
         utils.logger.info("... flagging FC baseline ONLY events")
 
-        self.data = self.data.merge(fc_bsln.data[["datetime", "flag_fc_bsln"]], on="datetime")
-        self.data["flag_fc_bsln"] = self.data["flag_fc_bsln"] & ~self.data["flag_pulser"]
+        self.data = self.data.merge(
+            fc_bsln.data[["datetime", "flag_fc_bsln"]], on="datetime"
+        )
+        self.data["flag_fc_bsln"] = (
+            self.data["flag_fc_bsln"] & ~self.data["flag_pulser"]
+        )
 
         self.data = self.data.reset_index()
 
