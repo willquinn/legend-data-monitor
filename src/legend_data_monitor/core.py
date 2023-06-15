@@ -182,10 +182,10 @@ def generate_plots(config: dict, plt_path: str):
     # -------------------------------------------------------------------------
     # flag events - FC baseline
     # -------------------------------------------------------------------------
-    subsystems["FC_bsln"] = subsystem.Subsystem("FC_bsln", dataset=config["dataset"])
-    parameters = utils.get_all_plot_parameters("FC_bsln", config)
-    subsystems["FC_bsln"].get_data(parameters)
-    utils.logger.debug(subsystems["FC_bsln"].data)
+    subsystems["FCbsln"] = subsystem.Subsystem("FCbsln", dataset=config["dataset"])
+    parameters = utils.get_all_plot_parameters("FCbsln", config)
+    subsystems["FCbsln"].get_data(parameters)
+    utils.logger.debug(subsystems["FCbsln"].data)
 
     # -------------------------------------------------------------------------
     # flag events - muon
@@ -212,6 +212,17 @@ def generate_plots(config: dict, plt_path: str):
             parameters = utils.get_all_plot_parameters(system, config)
             # get data for these parameters and dataset range
             subsystems[system].get_data(parameters)
+
+            # load also aux channel if necessary, and add it to the already existing df
+            for plot in config["subsystems"][system].keys():
+                # !!! add if for sipms...
+                subsystems[system].include_aux(
+                    config["subsystems"][system][plot]["parameters"],
+                    config["dataset"],
+                    config["subsystems"][system][plot],
+                    "pulser01ana",
+                )
+
             utils.logger.debug(subsystems[system].data)
 
             # -------------------------------------------------------------------------
@@ -219,9 +230,9 @@ def generate_plots(config: dict, plt_path: str):
             # -------------------------------------------------------------------------
             # flag pulser events for future parameter data selection
             subsystems[system].flag_pulser_events(subsystems["pulser"])
-            # flag FC baseline events
-            subsystems[system].flag_fcbsln_events(subsystems["FC_bsln"])
-            # flag muon events
+            # flag FC baseline events (not in correspondence with any pulser event) for future parameter data selection
+            subsystems[system].flag_fcbsln_only_events(subsystems["FCbsln"])
+            # flag muon events for future parameter data selection
             subsystems[system].flag_muon_events(subsystems["muon"])
 
             # remove timestamps for given detectors (moved here cause otherwise timestamps for flagging don't match)

@@ -1,6 +1,8 @@
 import os
+import sys
 import typing
 from datetime import datetime
+from typing import Union
 
 import numpy as np
 import pandas as pd
@@ -17,7 +19,7 @@ class Subsystem:
     """
     Object containing information for a given subsystem such as channel map, channels status etc.
 
-    sub_type [str]: geds | spms | pulser | pulser_aux | FC_bsln | muon
+    sub_type [str]: geds | spms | pulser | pulser01ana | FCbsln | muon
 
     Options for kwargs
 
@@ -276,10 +278,111 @@ class Subsystem:
 
         if self.type == "pulser":
             self.flag_pulser_events()
-        if self.type == "FC_bsln":
+        if self.type == "FCbsln":
             self.flag_fcbsln_events()
         if self.type == "muon":
             self.flag_muon_events()
+
+    def include_aux(
+        self, params: Union[str, list], dataset: dict, plot: dict, aux_ch: str
+    ):
+        """Include in a new column data coming from PULS01ANA aux channel, to either compute a ratio or a difference with data coming from the inspected subsystem."""
+        # auxiliary channel of reference (fixed for the moment)
+        aux_channel = "pulser01ana"
+        # both options (diff and ratio) are present -> BAD! For this parameter we do not subtract/divide for any AUX entry
+        if "AUX_ratio" in plot.keys() and "AUX_diff" in plot.keys():
+            utils.logger.error(
+                "\033[91mYou selected both 'AUX_ratio' and 'AUX_diff' for %s. Pick one!\033[0m",
+                plot["parameters"],
+            )
+            sys.exit()
+        # one option (either diff or ratio) is present
+        if "AUX_ratio" in plot.keys() or "AUX_diff" in plot.keys():
+            # check if the selected AUX channel exists, otherwise continue
+            if "AUX_ratio" in plot.keys() and plot["AUX_ratio"] is True:
+                utils.logger.debug(
+                    "... you are going to plot the parameter accounting for the ratio wrt PULS01ANA data"
+                )
+            if "AUX_diff" in plot.keys() and plot["AUX_diff"] is True:
+                utils.logger.debug(
+                    "... you are going to plot the parameter accounting for the difference wrt PULS01ANA data"
+                )
+
+        utils.logger.debug(
+            "... but now we are going to perform diff/ratio with PULS01ANA entries"
+        )
+
+        def add_aux(param):
+            aux_subsys = Subsystem(aux_channel, dataset=dataset)
+            # get data for these parameters and time range given in the dataset
+            # (if no parameters given to plot, baseline and wfmax will always be loaded to flag pulser events anyway)
+            aux_subsys.get_data(param)
+
+            # Merge the dataframes based on the 'datetime' column
+            utils.logger.debug(
+                "... merging the PULS01ANA dataframe with the original one"
+            )
+            self.data = self.data.merge(
+                aux_subsys.data[["datetime", param]], on="datetime", how="left"
+            )
+
+            # ratio
+            self.data[f"{param}_{aux_ch}Ratio"] = (
+                self.data[f"{param}_x"] / self.data[f"{param}_y"]
+            )
+            # diff
+            self.data[f"{param}_{aux_ch}Diff"] = (
+                self.data[f"{param}_x"] - self.data[f"{param}_y"]
+            )
+            # rename columns (absolute values)
+            self.data = self.data.rename(
+                columns={f"{param}_x": param, f"{param}_y": f"{param}_{aux_ch}"}
+            )
+
+        # one-parameter case
+        if (isinstance(params, list) and len(params) == 1) or isinstance(params, str):
+            param = params if isinstance(params, str) else params[0]
+            # check if the parameter under study is special; if so, skip it
+            if param in utils.SPECIAL_PARAMETERS.keys():
+                utils.logger.warning(
+                    "\033[93m'%s' is a special parameter. "
+                    + "For the moment, we skip the ratio/diff wrt the AUX channel and plot the parameter as it is.\033[0m",
+                    params,
+                )
+                return
+            # check if the parameter under study is from 'hit' tier; if so, skip it
+            if (
+                param in utils.PARAMETER_TIERS.keys()
+                and utils.PARAMETER_TIERS[param] == "hit"
+            ):
+                utils.logger.warning(
+                    "\033[93m'%s' is saved in hit tier, for which no AUX channel is present. "
+                    + "We skip the ratio/diff wrt the AUX channel and plot the parameter as it is.\033[0m",
+                    params,
+                )
+                return
+            if f"{param}_{aux_channel}" not in list(self.data.columns):
+                add_aux(params)
+
+        # multiple-parameters case
+        if isinstance(params, list) and len(params) > 1:
+            for param in params:
+                if param in utils.SPECIAL_PARAMETERS.keys():
+                    utils.logger.warning(
+                        "\033[93m'%s' is a special parameter. "
+                        + "For the moment, we skip the ratio/diff wrt the AUX channel and plot the parameter as it is.\033[0m",
+                        params,
+                    )
+                    return
+                if utils.PARAMETER_TIERS[param] == "hit":
+                    utils.logger.warning(
+                        "\033[93m'%s' is saved in hit tier, for which no AUX channel is present. "
+                        + "We skip the ratio/diff wrt the AUX channel and plot the parameter as it is.\033[0m",
+                        param,
+                    )
+                    continue
+                if f"{param}_{aux_channel}" not in list(self.data.columns):
+                    add_aux(params)
 
     def flag_pulser_events(self, pulser=None):
         """Flag pulser events. If a pulser object was provided, flag pulser events in data based on its flag."""
@@ -318,7 +421,7 @@ class Subsystem:
         self.data = self.data.reset_index()
 
     def flag_fcbsln_events(self, fc_bsln=None):
-        """Flag FC baseline events. If a FC baseline object was provided, flag FC baseline events in data based on its flag."""
+        """Flag FC baseline events, keeping the ones that are in correspondence with a pulser event too. If a FC baseline object was provided, flag FC baseline events in data based on its flag."""
         utils.logger.info("... flagging FC baseline events")
 
         # --- if a FC baseline object was provided, flag FC baseline events in data based on its flag
@@ -350,6 +453,19 @@ class Subsystem:
             # flag them
             self.data["flag_fc_bsln"] = False
             self.data.loc[fc_bsln_timestamps, "flag_fc_bsln"] = True
+
+        self.data = self.data.reset_index()
+
+    def flag_fcbsln_only_events(self, fc_bsln):
+        """Flag FC baseline events. If a FC baseline object was provided, flag FC baseline events in data based on its flag."""
+        utils.logger.info("... flagging FC baseline ONLY events")
+
+        self.data = self.data.merge(
+            fc_bsln.data[["datetime", "flag_fc_bsln"]], on="datetime"
+        )
+        self.data["flag_fc_bsln"] = (
+            self.data["flag_fc_bsln"] & ~self.data["flag_pulser"]
+        )
 
         self.data = self.data.reset_index()
 
@@ -437,7 +553,7 @@ class Subsystem:
                             and entry["daq"][ch_flag] == 1027201
                         )
             # special case for pulser AUX
-            if self.type == "pulser_aux":
+            if self.type == "pulser01ana":
                 if self.experiment == "L60":
                     utils.logger.error(
                         "\033[91mThere is no pulser AUX channel in L60. Remove this subsystem!\033[0m"
@@ -452,7 +568,7 @@ class Subsystem:
                             and entry["daq"][ch_flag] == 1027203
                         )
             # special case for baseline
-            if self.type == "FC_bsln":
+            if self.type == "FCbsln":
                 if self.experiment == "L60":
                     return entry["system"] == "auxs" and entry["daq"]["fcid"] == 0
                 if self.experiment == "L200":
@@ -485,7 +601,7 @@ class Subsystem:
         type_code = {"B": "bege", "C": "coax", "V": "icpc", "P": "ppc"}
 
         # systems for which the location/position has to be handled carefully; values were chosen arbitrarily to avoid conflicts
-        special_systems = {"pulser": 0, "pulser_aux": -1, "FC_bsln": -2, "muon": -3}
+        special_systems = {"pulser": 0, "pulser01ana": -1, "FCbsln": -2, "muon": -3}
 
         # -------------------------------------------------------------------------
         # loop over entries and find out subsystem
@@ -503,17 +619,17 @@ class Subsystem:
             if not is_subsystem(entry_info):
                 continue
 
-            # --- add info for this channel - Raw/FlashCam ID, unique for geds/spms/pulser/pulser_aux/FC_bsln/muon
+            # --- add info for this channel - Raw/FlashCam ID, unique for geds/spms/pulser/pulser01ana/FCbsln/muon
             ch = entry_info["daq"][ch_flag]
 
             df_map.at[ch, "name"] = entry_info["name"]
-            # number/name of string/fiber for geds/spms, dummy for pulser/pulser_aux/FC_bsln/muon
+            # number/name of string/fiber for geds/spms, dummy for pulser/pulser01ana/FCbsln/muon
             df_map.at[ch, "location"] = (
                 special_systems[self.type]
                 if self.type in special_systems
                 else entry_info["location"][loc_code[self.type]]
             )
-            # position in string/fiber for geds/spms, dummy for pulser/pulser_aux/FC_bsln/muon
+            # position in string/fiber for geds/spms, dummy for pulser/pulser01ana/FCbsln/muon
             df_map.at[ch, "position"] = (
                 special_systems[self.type]
                 if self.type in special_systems
@@ -588,7 +704,7 @@ class Subsystem:
             timestamp=self.first_timestamp, system=self.datatype
         )["analysis"]
 
-        # AUX channels are not in status map, so at least for pulser/pulser_aux/FC_bsln/muon need default on
+        # AUX channels are not in status map, so at least for pulser/pulser01ana/FCbsln/muon need default on
         self.channel_map["status"] = "on"
         self.channel_map = self.channel_map.set_index("name")
         # 'channel_name', for instance, has the format 'DNNXXXS' (= "name" column)
@@ -619,7 +735,7 @@ class Subsystem:
         # --- always read timestamp
         params = ["timestamp"]
         # --- always get wf_max & baseline for pulser for flagging
-        if self.type in ["pulser", "FC_bsln", "muon"]:
+        if self.type in ["pulser", "FCbsln", "muon"]:
             params += ["wf_max", "baseline"]
 
         # --- add user requested parameters
