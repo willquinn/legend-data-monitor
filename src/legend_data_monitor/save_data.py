@@ -1,7 +1,7 @@
 import os
 import shelve
 
-from pandas import DataFrame, concat
+from pandas import DataFrame, concat, read_hdf
 
 from . import analysis_data, utils
 
@@ -400,12 +400,6 @@ def save_hdf(
     plot_info: dict,
 ) -> dict:
     """Save the input dataframe in an external hdf file, using a different structure (time vs channel, with values in cells). Plot info are saved too."""
-    if saving == "append":
-        utils.logger.warning(
-            "\033[93m'append' saving option not implemented -> we skip saving hdf file\033[0m"
-        )
-        return
-
     utils.logger.info("Building HDF file(s)")
     # save the final dataframe as a hdf object
     parameters = plot_info["parameters"]
@@ -464,7 +458,7 @@ def save_hdf(
             else [None, None]
         )
 
-        # for limits, change from 'None' to 'False' to be hdf-friendlyF
+        # for limits, change from 'None' to 'False' to be hdf-friendly
         plot_info_param["lower_lim_var"] = str(limits_var[0]) or False
         plot_info_param["upper_lim_var"] = str(limits_var[1]) or False
         plot_info_param["lower_lim_abs"] = str(limits_abs[0]) or False
@@ -494,11 +488,13 @@ def save_hdf(
                 df_aux_diff_to_save = get_param_df(param_orig, aux_diff_analysis.data)
 
         # still need to check overwrite/append (and existence of file!!!)
-        # if not os.path.exists(plt_path + "-" + plot_info["subsystem"] + ".dat"):
+        if saving == "overwrite":
+            check_existence_and_overwrite(file_path)
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # PLOTTING INFO
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # this is constant over time, so with 'append' we simply overwrite previous content
         df_info = DataFrame.from_dict(
             plot_info_param, orient="index", columns=["Value"]
         )
@@ -507,37 +503,14 @@ def save_hdf(
         )
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # PURE VALUES
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # ... absolute values
-        get_pivot(
-            df_to_save,
-            param_orig,
-            f"{flag_rename[evt_type]}_{param_orig_camel}",
-            file_path,
-            "a",
-        )
-        # ... mean values
-        get_pivot(
-            df_to_save,
-            param_orig + "_mean",
-            f"{flag_rename[evt_type]}_{param_orig_camel}_mean",
-            file_path,
-            "a",
-        )
-        # ... % variations wrt absolute values
-        get_pivot(
-            df_to_save,
-            param_orig + "_var",
-            f"{flag_rename[evt_type]}_{param_orig_camel}_var",
-            file_path,
-            "a",
-        )
-
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # PURE VALUES - AUX CHANNEL
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         if not utils.check_empty_df(aux_analysis):
+            if saving == "overwrite":
+                check_existence_and_overwrite(
+                    file_path.replace(plot_info_param["subsystem"], aux_ch)
+                )
+
             plot_info_aux = plot_info_param.copy()
             plot_info_aux["subsystem"] = aux_ch
             # --- plotting info
@@ -562,7 +535,7 @@ def save_hdf(
                 param_orig,
                 f"{flag_rename[evt_type]}_{param_orig_camel}",
                 file_path.replace(plot_info_param["subsystem"], aux_ch),
-                "a",
+                saving,
             )
             # ... mean values
             get_pivot(
@@ -570,7 +543,7 @@ def save_hdf(
                 param_orig + "_mean",
                 f"{flag_rename[evt_type]}_{param_orig_camel}_mean",
                 file_path.replace(plot_info_param["subsystem"], aux_ch),
-                "a",
+                saving,
             )
             # ... % variations wrt absolute values
             get_pivot(
@@ -578,11 +551,39 @@ def save_hdf(
                 param_orig + "_var",
                 f"{flag_rename[evt_type]}_{param_orig_camel}_var",
                 file_path.replace(plot_info_param["subsystem"], aux_ch),
-                "a",
+                saving,
             )
             utils.logger.info(
                 f"... HDF file for {aux_ch} - pure AUX values - saved in: \33[4m{file_path.replace(plot_info_param['subsystem'], aux_ch)}\33[0m"
             )
+
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # PURE VALUES
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # ... absolute values
+        get_pivot(
+            df_to_save,
+            param_orig,
+            f"{flag_rename[evt_type]}_{param_orig_camel}",
+            file_path,
+            saving,
+        )
+        # ... mean values
+        get_pivot(
+            df_to_save,
+            param_orig + "_mean",
+            f"{flag_rename[evt_type]}_{param_orig_camel}_mean",
+            file_path,
+            saving,
+        )
+        # ... % variations wrt absolute values
+        get_pivot(
+            df_to_save,
+            param_orig + "_var",
+            f"{flag_rename[evt_type]}_{param_orig_camel}_var",
+            file_path,
+            saving,
+        )
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # RATIO WRT AUX CHANNEL
@@ -594,7 +595,7 @@ def save_hdf(
                 param_orig,
                 f"{flag_rename[evt_type]}_{param_orig_camel}_{aux_ch}Ratio",
                 file_path,
-                "a",
+                saving,
             )
             # ... mean values
             get_pivot(
@@ -602,7 +603,7 @@ def save_hdf(
                 param_orig + "_mean",
                 f"{flag_rename[evt_type]}_{param_orig_camel}_{aux_ch}Ratio_mean",
                 file_path,
-                "a",
+                saving,
             )
             # ... % variations wrt absolute values
             get_pivot(
@@ -610,7 +611,7 @@ def save_hdf(
                 param_orig + "_var",
                 f"{flag_rename[evt_type]}_{param_orig_camel}_{aux_ch}Ratio_var",
                 file_path,
-                "a",
+                saving,
             )
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -623,7 +624,7 @@ def save_hdf(
                 param_orig,
                 f"{flag_rename[evt_type]}_{param_orig_camel}_{aux_ch}Diff",
                 file_path,
-                "a",
+                saving,
             )
             # ... mean values
             get_pivot(
@@ -631,7 +632,7 @@ def save_hdf(
                 param_orig + "_mean",
                 f"{flag_rename[evt_type]}_{param_orig_camel}_{aux_ch}Diff_mean",
                 file_path,
-                "a",
+                saving,
             )
             # ... % variations wrt absolute values
             get_pivot(
@@ -639,7 +640,7 @@ def save_hdf(
                 param_orig + "_var",
                 f"{flag_rename[evt_type]}_{param_orig_camel}_{aux_ch}Diff_var",
                 file_path,
-                "a",
+                saving,
             )
 
     utils.logger.info(
@@ -647,10 +648,34 @@ def save_hdf(
     )
 
 
-def get_pivot(df: DataFrame, parameter: str, key_name: str, file_path: str, mode):
+def get_pivot(
+    df: DataFrame, parameter: str, key_name: str, file_path: str, saving: str
+):
     """Get pivot: datetimes (first column) vs channels (other columns)."""
     df_pivot = df.pivot(index="datetime", columns="channel", values=parameter)
     # just select one row for mean values (since mean is constant over time for a given channel)
     if "_mean" in parameter:
         df_pivot = df_pivot.iloc[[0]]
-    df_pivot.to_hdf(file_path, key=key_name, mode="a")
+
+    # append new data
+    if saving == "append":
+        # for the mean entry, we overwrite the already existing content with the new mean value
+        if "_mean" in parameter:
+            df_pivot.to_hdf(file_path, key=key_name, mode="a")
+        if "_mean" not in parameter:
+            # Read the existing HDF5 file
+            existing_data = read_hdf(file_path, key=key_name)
+            # Concatenate the existing data and the new data
+            combined_data = concat([existing_data, df_pivot])
+            # Write the combined DataFrame to the HDF5 file
+            combined_data.to_hdf(file_path, key=key_name, mode="a")
+
+    # overwrite already existing data
+    else:
+        df_pivot.to_hdf(file_path, key=key_name, mode="a")
+
+
+def check_existence_and_overwrite(file: str):
+    """Check for the existence of a file, and if it exists removes it."""
+    if os.path.exists(file):
+        os.remove(file)

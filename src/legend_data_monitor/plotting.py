@@ -322,8 +322,10 @@ def make_subsystem_plots(
         # here we are not checking if we are plotting one or more than one parameter
         # the output dataframe and plot_info objects are merged for more than one parameters
         # this will be split at a later stage, when building the output dictionary through utils.build_out_dict(...)
+
         # --- save shelf
-        par_dict_content = save_data.save_df_and_info(data_to_plot.data, plot_info)
+        # normal geds values (??? do we want the rescaled ones to be saved as shelf?)
+        par_dict_content = save_data.save_df_and_info(data_analysis.data, plot_info)
         # --- save hdf
         save_data.save_hdf(
             saving,
