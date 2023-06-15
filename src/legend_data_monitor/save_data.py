@@ -507,7 +507,9 @@ def save_hdf(
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         if not utils.check_empty_df(aux_analysis):
             if saving == "overwrite":
-                check_existence_and_overwrite(file_path.replace(plot_info_param["subsystem"], aux_ch))
+                check_existence_and_overwrite(
+                    file_path.replace(plot_info_param["subsystem"], aux_ch)
+                )
 
             plot_info_aux = plot_info_param.copy()
             plot_info_aux["subsystem"] = aux_ch
@@ -646,7 +648,9 @@ def save_hdf(
     )
 
 
-def get_pivot(df: DataFrame, parameter: str, key_name: str, file_path: str, saving: str):
+def get_pivot(
+    df: DataFrame, parameter: str, key_name: str, file_path: str, saving: str
+):
     """Get pivot: datetimes (first column) vs channels (other columns)."""
     df_pivot = df.pivot(index="datetime", columns="channel", values=parameter)
     # just select one row for mean values (since mean is constant over time for a given channel)
@@ -665,7 +669,7 @@ def get_pivot(df: DataFrame, parameter: str, key_name: str, file_path: str, savi
             combined_data = concat([existing_data, df_pivot])
             # Write the combined DataFrame to the HDF5 file
             combined_data.to_hdf(file_path, key=key_name, mode="a")
-    
+
     # overwrite already existing data
     else:
         df_pivot.to_hdf(file_path, key=key_name, mode="a")
