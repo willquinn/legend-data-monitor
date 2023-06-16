@@ -456,13 +456,17 @@ class Subsystem:
 
         self.data = self.data.reset_index()
 
-    def flag_fcbsln_only_events(self, fc_bsln):
+    def flag_fcbsln_only_events(self, fc_bsln=None):
         """Flag FC baseline events. If a FC baseline object was provided, flag FC baseline events in data based on its flag."""
         utils.logger.info("... flagging FC baseline ONLY events")
 
-        self.data = self.data.merge(
-            fc_bsln.data[["datetime", "flag_fc_bsln"]], on="datetime"
-        )
+        # --- if a FC baseline object was provided, flag FC baseline events in data
+        if fc_bsln:
+            self.data = self.data.merge(
+                fc_bsln.data[["datetime", "flag_fc_bsln"]], on="datetime"
+            )
+
+        # in any case, define FC bsln events as FC bsln events for which there was not a pulser event
         self.data["flag_fc_bsln"] = (
             self.data["flag_fc_bsln"] & ~self.data["flag_pulser"]
         )
@@ -509,7 +513,7 @@ class Subsystem:
 
         setup_info: dict with the keys 'experiment' and 'period'
 
-        Later will probably be changed to get channel map by timestamp (or hopefully run, if possible)
+        Later will probably be changed to get channel map by run, if possible
         Planning to add:
             - barrel column for SiPMs special case
         """

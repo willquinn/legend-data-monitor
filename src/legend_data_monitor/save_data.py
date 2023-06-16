@@ -1,6 +1,7 @@
 import os
 import shelve
 
+from legendmeta import LegendMetadata
 from pandas import DataFrame, concat, read_hdf
 
 from . import analysis_data, utils
@@ -526,8 +527,23 @@ def save_hdf(
             # keep one channel only
             first_ch = df_aux_to_save.iloc[0]["channel"]
             df_aux_to_save = df_aux_to_save[df_aux_to_save["channel"] == first_ch]
+            first_timestamp = utils.unix_timestamp_to_string(
+                df_aux_to_save["datetime"].dt.to_pydatetime()[0].timestamp()
+            )
             if aux_ch == "pulser01ana":
-                df_aux_to_save["channel"] = 1027203
+                chmap = LegendMetadata().hardware.configuration.channelmaps.on(
+                    timestamp=first_timestamp
+                )
+                # PULS01ANA channel
+                if "PULS01ANA" in chmap.keys():
+                    df_aux_to_save["channel"] = (
+                        LegendMetadata().channelmap().PULS01ANA.daq.rawid
+                    )
+                # PULS (=AUX00) channel (for periods below p03)
+                else:
+                    df_aux_to_save["channel"] = (
+                        LegendMetadata().channelmap().AUX00.daq.rawid
+                    )
 
             # ... absolute values
             get_pivot(
