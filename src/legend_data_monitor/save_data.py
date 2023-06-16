@@ -423,6 +423,8 @@ def save_hdf(
         "pulser": "IsPulser",
         "FCbsln": "IsBsln",
         "muon": "IsMuon",
+        "phy": "IsPhysics",
+        "all": "All",
     }
 
     for param in parameters:
