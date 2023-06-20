@@ -447,7 +447,6 @@ class AnalysisData:
                             # we need to repeat this operation for each param, otherwise only the mean of the last one survives
                             self.data = concat_channel_mean(self, channel_mean)
 
-
     def calculate_variation(self):
         """
         Add a new column containing the percentage variation of a given parameter.
@@ -623,7 +622,7 @@ def get_aux_df(
                 f"{param}_{aux_ch}Diff",
             ]
         )
-        # right now, we have the same values repeated for each ged channel 
+        # right now, we have the same values repeated for each ged channel
         # -> keep one and substytute with AUX channel ID
         # (only for this aux df, the others still maintain a relation with geds values)
         # keep one channel only
@@ -698,11 +697,16 @@ def get_aux_info(df: pd.DataFrame, chmap: dict, aux_ch: str) -> pd.DataFrame:
     df["daq_card"] = LegendMetadata().channelmap().PULS01ANA.daq.card.id
     df["daq_crate"] = LegendMetadata().channelmap().PULS01ANA.daq.crate
     df["det_type"] = None
-    df["location"] = utils.SPECIAL_SYSTEMS["pulser01ana"] if aux_ch == "PULS01ANA" else utils.SPECIAL_SYSTEMS["pulser"]
+    df["location"] = (
+        utils.SPECIAL_SYSTEMS["pulser01ana"]
+        if aux_ch == "PULS01ANA"
+        else utils.SPECIAL_SYSTEMS["pulser"]
+    )
     df["position"] = df["location"]
     df["name"] = aux_ch
 
     return df
+
 
 def concat_channel_mean(self, channel_mean) -> pd.DataFrame:
     """Add a new column containing the mean values of the inspected parameter."""
