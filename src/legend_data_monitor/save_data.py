@@ -1,7 +1,6 @@
 import os
 import shelve
 
-from legendmeta import LegendMetadata
 from pandas import DataFrame, concat, read_hdf
 
 from . import analysis_data, utils
@@ -225,6 +224,12 @@ def append_new_data(
         old_df[parameter + "_mean"] = (
             old_df["channel"].map(mean_dict).fillna(old_df[parameter + "_mean"])
         )
+
+        # we have to re-calculate the % variations based on the new mean values (new-df is ok, but old_df isn't!)
+        old_df[parameter + "_var"] = (
+            old_df[parameter] / old_df[parameter + "_mean"] - 1
+        ) * 100
+        old_df = old_df.reset_index(drop=True)
 
         # concatenate the two dfs (channels are no more grouped; not a problem)
         merged_df = DataFrame.empty
@@ -491,8 +496,9 @@ def save_hdf(
                 df_aux_diff_to_save = get_param_df(param_orig, aux_diff_analysis.data)
 
         # still need to check overwrite/append (and existence of file!!!)
-        if saving == "overwrite":
-            check_existence_and_overwrite(file_path)
+        # SOLVE THIS!!!
+        # if saving == "overwrite":
+        #    check_existence_and_overwrite(file_path)
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # PLOTTING INFO
@@ -501,6 +507,7 @@ def save_hdf(
         df_info = DataFrame.from_dict(
             plot_info_param, orient="index", columns=["Value"]
         )
+
         df_info.to_hdf(
             file_path, key=f"{flag_rename[evt_type]}_{param_orig_camel}_info", mode="a"
         )
@@ -509,10 +516,11 @@ def save_hdf(
         # PURE VALUES - AUX CHANNEL
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         if not utils.check_empty_df(aux_analysis):
-            if saving == "overwrite":
-                check_existence_and_overwrite(
-                    file_path.replace(plot_info_param["subsystem"], aux_ch)
-                )
+            # SOLVE THIS!!!
+            # if saving == "overwrite":
+            #    check_existence_and_overwrite(
+            #        file_path.replace(plot_info_param["subsystem"], aux_ch)
+            #    )
 
             plot_info_aux = plot_info_param.copy()
             plot_info_aux["subsystem"] = aux_ch
@@ -525,27 +533,6 @@ def save_hdf(
                 key=f"{flag_rename[evt_type]}_{param_orig_camel}_info",
                 mode="a",
             )
-
-            # keep one channel only
-            first_ch = df_aux_to_save.iloc[0]["channel"]
-            df_aux_to_save = df_aux_to_save[df_aux_to_save["channel"] == first_ch]
-            first_timestamp = utils.unix_timestamp_to_string(
-                df_aux_to_save["datetime"].dt.to_pydatetime()[0].timestamp()
-            )
-            if aux_ch == "pulser01ana":
-                chmap = LegendMetadata().hardware.configuration.channelmaps.on(
-                    timestamp=first_timestamp
-                )
-                # PULS01ANA channel
-                if "PULS01ANA" in chmap.keys():
-                    df_aux_to_save["channel"] = (
-                        LegendMetadata().channelmap().PULS01ANA.daq.rawid
-                    )
-                # PULS (=AUX00) channel (for periods below p03)
-                else:
-                    df_aux_to_save["channel"] = (
-                        LegendMetadata().channelmap().AUX00.daq.rawid
-                    )
 
             # ... absolute values
             get_pivot(
@@ -681,12 +668,42 @@ def get_pivot(
         if "_mean" in parameter:
             df_pivot.to_hdf(file_path, key=key_name, mode="a")
         if "_mean" not in parameter:
-            # Read the existing HDF5 file
-            existing_data = read_hdf(file_path, key=key_name)
-            # Concatenate the existing data and the new data
-            combined_data = concat([existing_data, df_pivot])
-            # Write the combined DataFrame to the HDF5 file
-            combined_data.to_hdf(file_path, key=key_name, mode="a")
+            # if % variations, we have to re-calculate all of them for the new mean values
+            if "_var" in parameter:
+                key_name_orig = key_name.replace("_var", "")
+                new_mean = read_hdf(
+                    file_path, key=key_name_orig + "_mean"
+                )  # gia' aggiornata (perche' la media la aggiorniamo prima delle variazioni %)
+                all_abs_data = read_hdf(
+                    file_path, key=key_name_orig
+                )  # df vecchio con TUTTI i valori assoluti (anche quelli di prima)
+                new_var_data = all_abs_data.copy()
+
+                # one channel (AUX)
+                channels = list(df["channel"].unique())
+                if len(channels) == 1:
+                    channel = channels[0]
+                    new_var_data[channel] = (
+                        all_abs_data[channel] / new_mean[channel][0] - 1
+                    ) * 100
+                # more channels (geds)
+                else:
+                    for channel in channels:
+                        new_var_data[channel] = (
+                            all_abs_data[channel] / new_mean[channel][0] - 1
+                        ) * 100
+
+                # Write the combined DataFrame to the HDF5 file
+                new_var_data.to_hdf(file_path, key=key_name, mode="a")
+
+            # otherwise, just read the existing HDF5 file
+            else:
+                # Read the existing HDF5 file
+                existing_data = read_hdf(file_path, key=key_name)
+                # Concatenate the existing data and the new data
+                combined_data = concat([existing_data, df_pivot])
+                # Write the combined DataFrame to the HDF5 file
+                combined_data.to_hdf(file_path, key=key_name, mode="a")
 
     # overwrite already existing data
     else:
