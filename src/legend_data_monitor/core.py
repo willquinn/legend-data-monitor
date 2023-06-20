@@ -185,6 +185,10 @@ def generate_plots(config: dict, plt_path: str):
     subsystems["FCbsln"] = subsystem.Subsystem("FCbsln", dataset=config["dataset"])
     parameters = utils.get_all_plot_parameters("FCbsln", config)
     subsystems["FCbsln"].get_data(parameters)
+    # the following 3 lines help to tag FC bsln events that are not in coincidence with a pulser
+    subsystems["FCbsln"].flag_pulser_events(subsystems["pulser"])
+    subsystems["FCbsln"].flag_fcbsln_only_events()
+    subsystems["FCbsln"].data.drop(columns={"flag_pulser"})
     utils.logger.debug(subsystems["FCbsln"].data)
 
     # -------------------------------------------------------------------------
@@ -213,31 +217,31 @@ def generate_plots(config: dict, plt_path: str):
             # get data for these parameters and dataset range
             subsystems[system].get_data(parameters)
 
-            # load also aux channel if necessary, and add it to the already existing df
-            for plot in config["subsystems"][system].keys():
-                # !!! add if for sipms...
-                subsystems[system].include_aux(
-                    config["subsystems"][system][plot]["parameters"],
-                    config["dataset"],
-                    config["subsystems"][system][plot],
-                    "pulser01ana",
-                )
+        # load also aux channel if necessary (FOR ALL SYSTEMS), and add it to the already existing df
+        for plot in config["subsystems"][system].keys():
+            # !!! add if for sipms...
+            subsystems[system].include_aux(
+                config["subsystems"][system][plot]["parameters"],
+                config["dataset"],
+                config["subsystems"][system][plot],
+                "pulser01ana",
+            )
 
-            utils.logger.debug(subsystems[system].data)
+        utils.logger.debug(subsystems[system].data)
 
-            # -------------------------------------------------------------------------
-            # flag events
-            # -------------------------------------------------------------------------
-            # flag pulser events for future parameter data selection
-            subsystems[system].flag_pulser_events(subsystems["pulser"])
-            # flag FC baseline events (not in correspondence with any pulser event) for future parameter data selection
-            subsystems[system].flag_fcbsln_only_events(subsystems["FCbsln"])
-            # flag muon events for future parameter data selection
-            subsystems[system].flag_muon_events(subsystems["muon"])
+        # -------------------------------------------------------------------------
+        # flag events (FOR ALL SYSTEMS)
+        # -------------------------------------------------------------------------
+        # flag pulser events for future parameter data selection
+        subsystems[system].flag_pulser_events(subsystems["pulser"])
+        # flag FC baseline events (not in correspondence with any pulser event) for future parameter data selection
+        subsystems[system].flag_fcbsln_events(subsystems["FCbsln"])
+        # flag muon events for future parameter data selection
+        subsystems[system].flag_muon_events(subsystems["muon"])
 
-            # remove timestamps for given detectors (moved here cause otherwise timestamps for flagging don't match)
-            subsystems[system].remove_timestamps(utils.REMOVE_KEYS)
-            utils.logger.debug(subsystems[system].data)
+        # remove timestamps for given detectors (moved here cause otherwise timestamps for flagging don't match)
+        subsystems[system].remove_timestamps(utils.REMOVE_KEYS)
+        utils.logger.debug(subsystems[system].data)
 
         # -------------------------------------------------------------------------
         # make subsystem plots

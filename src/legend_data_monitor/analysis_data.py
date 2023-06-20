@@ -67,13 +67,13 @@ class AnalysisData:
         event_type = analysis_info["event_type"]
 
         # check if the selected event type is within the available ones
-        if event_type not in event_type_flags.keys():
+        if event_type != "all" and event_type not in event_type_flags.keys():
             utils.logger.error(
                 f"\033[91mThe event type '{event_type}' does not exist and cannot be flagged! Try again with one among {list(event_type_flags.keys())}.\033[0m"
             )
             sys.exit()
 
-        if event_type in event_type_flags:
+        if event_type != "all" and event_type in event_type_flags:
             flag, subsystem_name = event_type_flags[event_type]
             if flag not in sub_data:
                 utils.logger.error(
