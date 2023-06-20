@@ -327,12 +327,13 @@ def make_subsystem_plots(
         # --- save shelf
         # normal geds values (??? do we want the rescaled ones to be saved as shelf?)
         par_dict_content = save_data.save_df_and_info(data_analysis.data, plot_info)
-        # aux values as shelf (necessary to get the right mean)
-        aux_plot_info = plot_info.copy()
-        aux_plot_info["subsystem"] = "pulser01ana"
-        aux_par_dict_content = save_data.save_df_and_info(
-            aux_analysis.data, aux_plot_info
-        )
+        # aux values as shelf (necessary to get the right mean) - if not empty
+        if not utils.check_empty_df(aux_analysis):
+            aux_plot_info = plot_info.copy()
+            aux_plot_info["subsystem"] = "pulser01ana"
+            aux_par_dict_content = save_data.save_df_and_info(
+                aux_analysis.data, aux_plot_info
+            )
         # --- save hdf
         save_data.save_hdf(
             saving,
@@ -378,7 +379,7 @@ def make_subsystem_plots(
                 plot_settings, par_dict_content, out_dict
             )
             # check if aux is empty or not
-            if not utils.check_empty_df(aux_analysis.data):
+            if not utils.check_empty_df(aux_analysis):
                 aux_out_dict = save_data.build_out_dict(
                     plot_settings, aux_par_dict_content, aux_out_dict
                 )
@@ -390,7 +391,7 @@ def make_subsystem_plots(
         out_file.close()
 
         # check if aux is empty or not
-        if not utils.check_empty_df(aux_analysis.data):
+        if not utils.check_empty_df(aux_analysis):
             aux_out_file = shelve.open(plt_path + "-pulser01ana")
             aux_out_file["monitoring"] = aux_out_dict
             aux_out_file.close()
