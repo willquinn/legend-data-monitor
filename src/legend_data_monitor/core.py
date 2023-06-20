@@ -5,7 +5,7 @@ import sys
 from . import plotting, subsystem, utils
 
 
-def control_plots(user_config_path: str):
+def control_plots(user_config_path: str, n_files=None):
     """Set the configuration file and the output paths when a user config file is provided. The function to generate plots is then automatically called."""
     # -------------------------------------------------------------------------
     # Read user settings
@@ -67,11 +67,11 @@ def control_plots(user_config_path: str):
     plt_path += "-{}".format("_".join(data_types))
 
     # plot
-    generate_plots(config, plt_path)
+    generate_plots(config, plt_path, n_files)
 
 
 def auto_control_plots(
-    plot_config: str, file_keys: str, prod_path: str, prod_config: str
+    plot_config: str, file_keys: str, prod_path: str, prod_config: str, n_files=None
 ):
     """Set the configuration file and the output paths when a config file is provided during automathic plot production."""
     # -------------------------------------------------------------------------
@@ -133,40 +133,60 @@ def auto_control_plots(
     plt_path += "-{}".format("_".join(data_types))
 
     # plot
-    generate_plots(config, plt_path)
+    generate_plots(config, plt_path, n_files)
 
 
-def generate_plots(config: dict, plt_path: str):
-    """Generate plots once the config file is set and once we provide the path and name in which store results."""
-    # -------------------------------------------------------------------------
-    # Get pulser first - needed to flag pulser events
-    # -------------------------------------------------------------------------
+def generate_plots(config: dict, plt_path: str, n_files=None):
+    """Generate plots once the config file is set and once we provide the path and name in which store results. n_files specifies if we want to inspect the entire time window (if n_files is not specified), otherwise we subdivide the time window in smaller datasets, each one being composed by n_files files."""
+    # no subdivision of data (useful when the inspected time window is short enough)
+    if n_files is None:
+        # some output messages, just to warn the user...
+        if config["saving"] is None:
+            utils.logger.warning(
+                "\033[93mData will not be saved, but the pdf will be.\033[0m"
+            )
+        elif config["saving"] == "append":
+            utils.logger.warning(
+                "\033[93mYou're going to append new data to already existing data. If not present, you first create the output file as a very first step.\033[0m"
+            )
+        elif config["saving"] == "overwrite":
+            utils.logger.warning(
+                "\033[93mYou have accepted to overwrite already generated files, there's no way back until you manually stop the code NOW!\033[0m"
+            )
+        else:
+            utils.logger.error(
+                "\033[91mThe selected saving option in the config file is wrong. Try again with 'overwrite', 'append' or nothing!\033[0m"
+            )
+            sys.exit()
+        # do the plots
+        make_plots(config, plt_path, config["saving"])
 
-    # get saving option
-    if "saving" in config:
-        saving = config["saving"]
+    # for subdivision of data, let's loop over lists of timestamps, each one of length n_files
     else:
-        saving = None
+        # list of datasets to loop over later on
+        bunches = utils.bunch_dataset(config.copy(), n_files)
 
-    # some output messages, just to warn the user...
-    if saving is None:
-        utils.logger.warning(
-            "\033[93mData will not be saved, but the pdf will be.\033[0m"
-        )
-    elif saving == "append":
-        utils.logger.warning(
-            "\033[93mYou're going to append new data to already existing data. If not present, you first create the output file as a very first step.\033[0m"
-        )
-    elif saving == "overwrite":
-        utils.logger.warning(
-            "\033[93mYou have accepted to overwrite already generated files, there's no way back until you manually stop the code NOW!\033[0m"
-        )
-    else:
-        utils.logger.error(
-            "\033[91mThe selected saving option in the config file is wrong. Try again with 'overwrite', 'append' or nothing!\033[0m"
-        )
-        sys.exit()
+        # remove unnecessary keys for precaution - we will replace the time selections with individual timestamps/file keys
+        config["dataset"].pop("start", None)
+        config["dataset"].pop("end", None)
+        config["dataset"].pop("runs", None)
 
+        for idx, bunch in enumerate(bunches):
+            utils.logger.debug(f"You are inspecting bunch #{idx}/{len(bunches)}...")
+            # if it is the first dataset, just override previous content
+            if idx == 0:
+                config["saving"] = "overwrite"
+            # if we already inspected the first dataset, append the ones coming after
+            if idx > 0:
+                config["saving"] = "append"
+
+            # get the dataset
+            config["dataset"]["timestamps"] = bunch
+            # make the plots / load data for the dataset of interest
+            make_plots(config.copy(), plt_path, config["saving"])
+
+
+def make_plots(config: dict, plt_path: str, saving: str):
     # -------------------------------------------------------------------------
     # flag events - PULSER
     # -------------------------------------------------------------------------

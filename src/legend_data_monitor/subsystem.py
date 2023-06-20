@@ -410,6 +410,10 @@ class Subsystem:
         else:
             # --- if no object was provided, it's understood that this itself is a pulser
             # find timestamps over threshold
+            # if self.below_period_3_excluded():
+            #    high_thr = 12500
+            # if self.above_period_3_included():
+            #    high_thr = 2500
             high_thr = 12500
             self.data = self.data.set_index("datetime")
             wf_max_rel = self.data["wf_max"] - self.data["baseline"]
@@ -549,11 +553,14 @@ class Subsystem:
                 if self.experiment == "L60":
                     return entry["system"] == "auxs" and entry["daq"]["fcid"] == 0
                 if self.experiment == "L200":
+                    # we get PULS01
                     if self.below_period_3_excluded():
                         return entry["system"] == "puls" and entry["daq"][ch_flag] == 1
+                    # we get PULS01ANA
                     if self.above_period_3_included():
                         return (
                             entry["system"] == "puls"
+                            # and entry["daq"][ch_flag] == 1027203
                             and entry["daq"][ch_flag] == 1027201
                         )
             # special case for pulser AUX
@@ -605,7 +612,7 @@ class Subsystem:
         type_code = {"B": "bege", "C": "coax", "V": "icpc", "P": "ppc"}
 
         # systems for which the location/position has to be handled carefully; values were chosen arbitrarily to avoid conflicts
-        special_systems = {"pulser": 0, "pulser01ana": -1, "FCbsln": -2, "muon": -3}
+        special_systems = utils.SPECIAL_SYSTEMS
 
         # -------------------------------------------------------------------------
         # loop over entries and find out subsystem
@@ -739,7 +746,7 @@ class Subsystem:
         # --- always read timestamp
         params = ["timestamp"]
         # --- always get wf_max & baseline for pulser for flagging
-        if self.type in ["pulser", "FCbsln", "muon"]:
+        if self.type in ["pulser", "pulser01ana", "FCbsln", "muon"]:
             params += ["wf_max", "baseline"]
 
         # --- add user requested parameters

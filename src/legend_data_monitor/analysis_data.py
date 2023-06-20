@@ -610,6 +610,7 @@ def get_aux_df(
             and utils.PARAMETER_TIERS[param] == "hit"
         ) or param in utils.SPECIAL_PARAMETERS.keys():
             return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+
         # get abs/mean/% variation for data of aux channel --> objects to save
         utils.logger.debug(f"Getting {aux_ch} data for {param}")
         aux_data = df.copy()
@@ -621,6 +622,27 @@ def get_aux_df(
                 f"{param}_{aux_ch}Diff",
             ]
         )
+        # right now, we have the same values repeated for each ged channel
+        # -> keep one and substytute with AUX channel ID
+        # (only for this aux df, the others still maintain a relation with geds values)
+        # keep one channel only
+        first_ch = aux_data.iloc[0]["channel"]
+        aux_data = aux_data[aux_data["channel"] == first_ch]
+        first_timestamp = utils.unix_timestamp_to_string(
+            aux_data["datetime"].dt.to_pydatetime()[0].timestamp()
+        )
+        if aux_ch == "pulser01ana":
+            chmap = LegendMetadata().hardware.configuration.channelmaps.on(
+                timestamp=first_timestamp
+            )
+            # PULS01ANA channel
+            if "PULS01ANA" in chmap.keys():
+                aux_data = get_aux_info(aux_data, chmap, "PULS01ANA")
+            # PULS (=AUX00) channel (for periods below p03)
+            else:
+                aux_data = get_aux_info(aux_data, chmap, "PULS01")
+
+        # get channel mean and blabla
         aux_analysis = AnalysisData(aux_data, selection=plot_settings)
         utils.logger.debug(aux_analysis.data)
 
@@ -663,6 +685,27 @@ def get_aux_df(
         return None, None, None
 
     return aux_analysis, aux_ratio_analysis, aux_diff_analysis
+
+
+def get_aux_info(df: pd.DataFrame, chmap: dict, aux_ch: str) -> pd.DataFrame:
+    """Return a DataFrame with correct pulser AUX info."""
+    df["channel"] = LegendMetadata().channelmap().PULS01ANA.daq.rawid
+    df["HV_card"] = None
+    df["HV_channel"] = None
+    df["cc4_channel"] = None
+    df["cc4_id"] = None
+    df["daq_card"] = LegendMetadata().channelmap().PULS01ANA.daq.card.id
+    df["daq_crate"] = LegendMetadata().channelmap().PULS01ANA.daq.crate
+    df["det_type"] = None
+    df["location"] = (
+        utils.SPECIAL_SYSTEMS["pulser01ana"]
+        if aux_ch == "PULS01ANA"
+        else utils.SPECIAL_SYSTEMS["pulser"]
+    )
+    df["position"] = df["location"]
+    df["name"] = aux_ch
+
+    return df
 
 
 def concat_channel_mean(self, channel_mean) -> pd.DataFrame:

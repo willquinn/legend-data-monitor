@@ -68,6 +68,9 @@ COLUMNS_TO_LOAD = [
     "det_type",
 ]
 
+# map position/location for special systems
+SPECIAL_SYSTEMS = {"pulser": 0, "pulser01ana": -1, "FCbsln": -2, "muon": -3}
+
 # dictionary map (helpful when we want to map channels based on their location/position)
 with open(pkg / "settings" / "map-channels.json") as f:
     MAP_DICT = json.load(f)
@@ -604,6 +607,81 @@ def get_last_timestamp(dsp_fname: str) -> str:
     last_timestamp = unix_timestamp_to_string(last_timestamp)
 
     return last_timestamp
+
+
+def bunch_dataset(config: dict, n_files=None):
+    """Bunch the full datasets into smaller pieces, based on the number of files we want to inspect at each iteration.
+
+    It works for "start+end", "runs" and "timestamps" in "dataset" present in the config file.
+    """
+    # --- get dsp filelist of this run
+    path_info = config["dataset"]
+    user_time_range = get_query_timerange(dataset=config["dataset"])
+
+    run = (
+        get_run_name(config, user_time_range)
+        if "timestamp" in user_time_range.keys()
+        else get_time_name(user_time_range)
+    )
+    # format to search /path_to_prod-ref[/vXX.XX]/generated/tier/dsp/phy/pXX/rXXX (version 'vXX.XX' might not be there).
+    # NOTICE that we fixed the tier, otherwise it picks the last one it finds (eg tcm).
+    # NOTICE that this is PERIOD SPECIFIC (unlikely we're gonna inspect two periods together, so we fix it)
+    path_to_files = os.path.join(
+        path_info["path"],
+        path_info["version"],
+        "generated",
+        "tier",
+        "dsp",
+        path_info["type"],
+        path_info["period"],
+        run,
+        "*.lh5",
+    )
+    # get all dsp files
+    dsp_files = glob.glob(path_to_files)
+    dsp_files.sort()
+
+    if "timestamp" in user_time_range.keys():
+        if isinstance(user_time_range["timestamp"], list):
+            # sort in crescent order
+            user_time_range["timestamp"].sort()
+            start_time = datetime.strptime(
+                user_time_range["timestamp"][0], "%Y%m%dT%H%M%SZ"
+            )
+            end_time = datetime.strptime(
+                user_time_range["timestamp"][-1], "%Y%m%dT%H%M%SZ"
+            )
+
+        else:
+            start_time = datetime.strptime(
+                user_time_range["timestamp"]["start"], "%Y%m%dT%H%M%SZ"
+            )
+            end_time = datetime.strptime(
+                user_time_range["timestamp"]["end"], "%Y%m%dT%H%M%SZ"
+            )
+
+    if "run" in user_time_range.keys():
+        timerange, start_tmstmp, end_tmstmp = get_query_times(dataset=config["dataset"])
+        start_time = datetime.strptime(start_tmstmp, "%Y%m%dT%H%M%SZ")
+        end_time = datetime.strptime(end_tmstmp, "%Y%m%dT%H%M%SZ")
+
+    # filter files and keep the ones within the time range of interest
+    filtered_files = []
+    for dsp_file in dsp_files:
+        # Extract the timestamp from the file name
+        timestamp_str = dsp_file.split("-")[-2]
+        file_timestamp = datetime.strptime(timestamp_str, "%Y%m%dT%H%M%SZ")
+        # Check if the file timestamp is within the specified range
+        if start_time <= file_timestamp <= end_time:
+            filtered_files.append(dsp_file)
+
+    filtered_files = [filtered_file.split("-")[-2] for filtered_file in filtered_files]
+    filtered_files = [
+        filtered_files[i : i + int(n_files)]
+        for i in range(0, len(filtered_files), int(n_files))
+    ]
+
+    return filtered_files
 
 
 # -------------------------------------------------------------------------
