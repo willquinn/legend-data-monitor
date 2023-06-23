@@ -44,9 +44,7 @@ class AnalysisData:
         analysis_info = (
             kwargs["selection"].copy() if "selection" in kwargs else kwargs.copy()
         )
-        aux_info = (
-            kwargs["aux_info"] if "aux_info" in kwargs else None
-        )
+        aux_info = kwargs["aux_info"] if "aux_info" in kwargs else None
 
         # -------------------------------------------------------------------------
         # validity checks
@@ -74,13 +72,16 @@ class AnalysisData:
         event_type = analysis_info["event_type"]
 
         # check if the selected event type is within the available ones
-        if event_type  not in ["all", "phy"] and event_type not in event_type_flags.keys():
+        if (
+            event_type not in ["all", "phy"]
+            and event_type not in event_type_flags.keys()
+        ):
             utils.logger.error(
                 f"\033[91mThe event type '{event_type}' does not exist and cannot be flagged! Try again with one among {list(event_type_flags.keys())}.\033[0m"
             )
             sys.exit()
 
-        if event_type  not in ["all", "phy"] and event_type in event_type_flags:
+        if event_type not in ["all", "phy"] and event_type in event_type_flags:
             flag, subsystem_name = event_type_flags[event_type]
             if flag not in sub_data:
                 utils.logger.error(
@@ -665,8 +666,10 @@ def get_aux_df(
                 f"{param}_{aux_ch}Diff",
             ]
         )
-        
-        aux_ratio_analysis = AnalysisData(aux_ratio_data, selection=plot_settings, aux_info="pulser01anaRatio")
+
+        aux_ratio_analysis = AnalysisData(
+            aux_ratio_data, selection=plot_settings, aux_info="pulser01anaRatio"
+        )
         utils.logger.debug("... aux ratio dataframe \n%s", aux_ratio_analysis.data)
 
         # get abs/mean/% variation for difference values with aux channel data --> objects to save
@@ -680,7 +683,9 @@ def get_aux_df(
                 f"{param}_{aux_ch}Diff",
             ]
         )
-        aux_diff_analysis = AnalysisData(aux_diff_data, selection=plot_settings, aux_info="pulser01anaDiff")
+        aux_diff_analysis = AnalysisData(
+            aux_diff_data, selection=plot_settings, aux_info="pulser01anaDiff"
+        )
         utils.logger.debug("... aux difference dataframe \n%s", aux_diff_analysis.data)
 
     if len(parameter) > 1:
