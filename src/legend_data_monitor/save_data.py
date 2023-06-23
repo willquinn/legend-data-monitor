@@ -673,15 +673,16 @@ def get_pivot(
     """Get pivot: datetimes (first column) vs channels (other columns)."""
     df_pivot = df.pivot(index="datetime", columns="channel", values=parameter)
     # just select one row for mean values (since mean is constant over time for a given channel)
-    if "_mean" in parameter:
+    # take into consideration parameters that are named with 'mean' in it, eg "bl_mean"
+    if "_mean" in parameter and parameter.count("mean") > 1:
         df_pivot = df_pivot.iloc[[0]]
 
     # append new data
     if saving == "append":
         # for the mean entry, we overwrite the already existing content with the new mean value
-        if "_mean" in parameter:
+        if "_mean" in parameter and parameter.count("mean") > 1:
             df_pivot.to_hdf(file_path, key=key_name, mode="a")
-        if "_mean" not in parameter:
+        if "_mean" not in parameter or ("_mean" in parameter and parameter.count("mean") == 1):
             # if % variations, we have to re-calculate all of them for the new mean values
             if "_var" in parameter:
                 key_name_orig = key_name.replace("_var", "")
