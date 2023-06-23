@@ -38,6 +38,8 @@ def make_subsystem_plots(
     pdf = PdfPages(plt_path + "-" + subsystem.type + ".pdf")
     out_dict = {}
     aux_out_dict = {}
+    aux_ratio_out_dict = {}
+    aux_diff_out_dict = {}
 
     for plot_title in plots:
         utils.logger.info(
@@ -334,6 +336,18 @@ def make_subsystem_plots(
             aux_par_dict_content = save_data.save_df_and_info(
                 aux_analysis.data, aux_plot_info
             )
+        if not utils.check_empty_df(aux_ratio_analysis):
+            aux_ratio_plot_info = plot_info.copy()
+            aux_ratio_plot_info["subsystem"] = "pulser01anaRatio"
+            aux_ratio_par_dict_content = save_data.save_df_and_info(
+                aux_ratio_analysis.data, aux_ratio_plot_info
+            )
+        if not utils.check_empty_df(aux_diff_analysis):
+            aux_diff_plot_info = plot_info.copy()
+            aux_diff_plot_info["subsystem"] = "pulser01anaDiff"
+            aux_diff_par_dict_content = save_data.save_df_and_info(
+                aux_diff_analysis.data, aux_diff_plot_info
+            )
         # --- save hdf
         save_data.save_hdf(
             saving,
@@ -383,6 +397,14 @@ def make_subsystem_plots(
                 aux_out_dict = save_data.build_out_dict(
                     plot_settings, aux_par_dict_content, aux_out_dict
                 )
+            if not utils.check_empty_df(aux_ratio_analysis):
+                aux_ratio_out_dict = save_data.build_out_dict(
+                    plot_settings, aux_ratio_par_dict_content, aux_ratio_out_dict
+                )
+            if not utils.check_empty_df(aux_diff_analysis):
+                aux_diff_out_dict = save_data.build_out_dict(
+                    plot_settings, aux_diff_par_dict_content, aux_diff_out_dict
+                )
 
     # save in shelve object, overwriting the already existing file with new content (either completely new or new bunches)
     if saving is not None:
@@ -395,6 +417,14 @@ def make_subsystem_plots(
             aux_out_file = shelve.open(plt_path + "-pulser01ana")
             aux_out_file["monitoring"] = aux_out_dict
             aux_out_file.close()
+        if not utils.check_empty_df(aux_ratio_analysis):
+            aux_ratio_out_file = shelve.open(plt_path + "-pulser01anaRatio")
+            aux_ratio_out_file["monitoring"] = aux_ratio_out_dict
+            aux_ratio_out_file.close()
+        if not utils.check_empty_df(aux_diff_analysis):
+            aux_diff_out_file = shelve.open(plt_path + "-pulser01anaDiff")
+            aux_diff_out_file["monitoring"] = aux_diff_out_dict
+            aux_diff_out_file.close()
 
     # save in pdf object
     pdf.close()
