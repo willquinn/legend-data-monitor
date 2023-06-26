@@ -159,7 +159,10 @@ class AnalysisData:
             # the parameter does not exist
             else:
                 utils.logger.error(
-                    "\033[91m'%s' either does not exist in 'par-settings.json' or you misspelled the parameter's name. TRY AGAIN.\033[0m",
+                    "\033[91m'%s' either does not exist in 'par-settings.json' or you misspelled the parameter's name. "
+                    + "Another possibility is that the parameter does not exists in .lh5 processed files, so if the problem "
+                    + "persists check if in the production environment you are looking at the parameter is included. "
+                    + "Check also that you are not trying to plot a flag (ie a quality cut), which is not a parameter by definition.\033[0m",
                     param,
                 )
                 sys.exit()
@@ -183,8 +186,10 @@ class AnalysisData:
         if bad:
             return
 
-        # apply cuts, if any
-        self.apply_all_cuts()
+        # apply cuts, if any - but we pass the hit config file that we need to check for the flag's existence
+        hit_config_first_key = list(LegendMetadata().dataprod.config.tier_hit.keys())[0]
+        hit_config = LegendMetadata().dataprod.config.tier_hit[hit_config_first_key]
+        self.apply_all_cuts(hit_config)
 
         # calculate if special parameter
         self.special_parameter()
@@ -226,25 +231,34 @@ class AnalysisData:
             utils.logger.error("\033[91m%s\033[0m", self.__doc__)
             return "bad"
 
-    def apply_cut(self, cut: str):
+    def apply_cut(self, cut: str, hit_config: str):
         """
         Apply given boolean cut.
 
         Format: cut name as in lh5 files ("is_*") to apply given cut, or cut name preceded by "~" to apply a "not" cut.
         """
-        utils.logger.info("... applying cut: " + cut)
+        if cut not in [
+            "ciao"
+        ]:  # hit_config['outputs']: # change file and use prod ref specific one!
+            utils.logger.warning(
+                "\033[93mThe cut '%s' is not available for the data you are inspecting. "
+                + "We do not apply any cut and keep everything, not to stop the flow.\033[0m",
+                cut,
+            )
+        else:
+            utils.logger.info("... applying cut: " + cut)
 
-        cut_value = 1
-        # check if the cut has "not" in it
-        if cut[0] == "~":
-            cut_value = 0
-            cut = cut[1:]
+            cut_value = 1
+            # check if the cut has "not" in it
+            if cut[0] == "~":
+                cut_value = 0
+                cut = cut[1:]
 
-        self.data = self.data[self.data[cut] == cut_value]
+            self.data = self.data[self.data[cut] == cut_value]
 
-    def apply_all_cuts(self):
+    def apply_all_cuts(self, hit_config: str):
         for cut in self.cuts:
-            self.apply_cut(cut)
+            self.apply_cut(cut, hit_config)
 
     def special_parameter(self):
         for param in self.parameters:
