@@ -186,10 +186,8 @@ class AnalysisData:
         if bad:
             return
 
-        # apply cuts, if any - but we pass the hit config file that we need to check for the flag's existence
-        hit_config_first_key = list(LegendMetadata().dataprod.config.tier_hit.keys())[0]
-        hit_config = LegendMetadata().dataprod.config.tier_hit[hit_config_first_key]
-        self.apply_all_cuts(hit_config)
+        # apply cuts, if any 
+        self.apply_all_cuts()
 
         # calculate if special parameter
         self.special_parameter()
@@ -231,15 +229,16 @@ class AnalysisData:
             utils.logger.error("\033[91m%s\033[0m", self.__doc__)
             return "bad"
 
-    def apply_cut(self, cut: str, hit_config: str):
+    def apply_cut(self, cut: str):
         """
         Apply given boolean cut.
 
         Format: cut name as in lh5 files ("is_*") to apply given cut, or cut name preceded by "~" to apply a "not" cut.
         """
-        if cut not in hit_config["outputs"] or cut not in list(self.data.columns):
+        if cut not in list(self.data.columns):
             utils.logger.warning(
-                "\033[93mThe cut '%s' is not available for the data you are inspecting. "
+                "\033[93mThe cut '%s' is not available " +
+                "(you either misspelled the cut's name or it is not available for the data you are inspecting). "
                 + "We do not apply any cut and keep everything, not to stop the flow.\033[0m",
                 cut,
             )
@@ -254,9 +253,9 @@ class AnalysisData:
 
             self.data = self.data[self.data[cut] == cut_value]
 
-    def apply_all_cuts(self, hit_config: str):
+    def apply_all_cuts(self):
         for cut in self.cuts:
-            self.apply_cut(cut, hit_config)
+            self.apply_cut(cut)
 
     def special_parameter(self):
         for param in self.parameters:
