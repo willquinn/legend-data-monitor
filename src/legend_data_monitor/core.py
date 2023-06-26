@@ -172,7 +172,7 @@ def generate_plots(config: dict, plt_path: str, n_files=None):
         config["dataset"].pop("runs", None)
 
         for idx, bunch in enumerate(bunches):
-            utils.logger.debug(f"You are inspecting bunch #{idx}/{len(bunches)}...")
+            utils.logger.debug(f"You are inspecting bunch #{idx+1}/{len(bunches)}...")
             # if it is the first dataset, just override previous content
             if idx == 0:
                 config["saving"] = "overwrite"

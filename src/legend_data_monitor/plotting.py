@@ -38,6 +38,8 @@ def make_subsystem_plots(
     pdf = PdfPages(plt_path + "-" + subsystem.type + ".pdf")
     out_dict = {}
     aux_out_dict = {}
+    aux_ratio_out_dict = {}
+    aux_diff_out_dict = {}
 
     for plot_title in plots:
         utils.logger.info(
@@ -334,6 +336,18 @@ def make_subsystem_plots(
             aux_par_dict_content = save_data.save_df_and_info(
                 aux_analysis.data, aux_plot_info
             )
+        if not utils.check_empty_df(aux_ratio_analysis):
+            aux_ratio_plot_info = plot_info.copy()
+            aux_ratio_plot_info["subsystem"] = "pulser01anaRatio"
+            aux_ratio_par_dict_content = save_data.save_df_and_info(
+                aux_ratio_analysis.data, aux_ratio_plot_info
+            )
+        if not utils.check_empty_df(aux_diff_analysis):
+            aux_diff_plot_info = plot_info.copy()
+            aux_diff_plot_info["subsystem"] = "pulser01anaDiff"
+            aux_diff_par_dict_content = save_data.save_df_and_info(
+                aux_diff_analysis.data, aux_diff_plot_info
+            )
         # --- save hdf
         save_data.save_hdf(
             saving,
@@ -378,10 +392,24 @@ def make_subsystem_plots(
             out_dict = save_data.build_out_dict(
                 plot_settings, par_dict_content, out_dict
             )
-            # check if aux is empty or not
-            if not utils.check_empty_df(aux_analysis):
+
+            # check if the parameter is a hit or special parameter (still need to include MORE PARAMS case)
+            params = params[0]
+            if (
+                params in utils.PARAMETER_TIERS.keys()
+                and utils.PARAMETER_TIERS[params] != "hit"
+            ) and params not in utils.SPECIAL_PARAMETERS:
+                # aux data
                 aux_out_dict = save_data.build_out_dict(
                     plot_settings, aux_par_dict_content, aux_out_dict
+                )
+                # subsystem data / aux data
+                aux_ratio_out_dict = save_data.build_out_dict(
+                    plot_settings, aux_ratio_par_dict_content, aux_ratio_out_dict
+                )
+                # subsystem data - aux data
+                aux_diff_out_dict = save_data.build_out_dict(
+                    plot_settings, aux_diff_par_dict_content, aux_diff_out_dict
                 )
 
     # save in shelve object, overwriting the already existing file with new content (either completely new or new bunches)
@@ -390,11 +418,17 @@ def make_subsystem_plots(
         out_file["monitoring"] = out_dict
         out_file.close()
 
-        # check if aux is empty or not
-        if not utils.check_empty_df(aux_analysis):
-            aux_out_file = shelve.open(plt_path + "-pulser01ana")
-            aux_out_file["monitoring"] = aux_out_dict
-            aux_out_file.close()
+        aux_out_file = shelve.open(plt_path + "-pulser01ana")
+        aux_out_file["monitoring"] = aux_out_dict
+        aux_out_file.close()
+
+        aux_ratio_out_file = shelve.open(plt_path + "-pulser01anaRatio")
+        aux_ratio_out_file["monitoring"] = aux_ratio_out_dict
+        aux_ratio_out_file.close()
+
+        aux_diff_out_file = shelve.open(plt_path + "-pulser01anaDiff")
+        aux_diff_out_file["monitoring"] = aux_diff_out_dict
+        aux_diff_out_file.close()
 
     # save in pdf object
     pdf.close()

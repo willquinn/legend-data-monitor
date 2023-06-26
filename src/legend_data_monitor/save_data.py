@@ -17,6 +17,27 @@ from . import analysis_data, utils
 
 def save_df_and_info(df: DataFrame, plot_info: dict) -> dict:
     """Return a dictionary containing a dataframe for the parameter(s) under study for a given subsystem. The plotting info are saved too."""
+    columns_to_drop = [
+        "name",
+        "location",
+        "position",
+        "cc4_channel",
+        "cc4_id",
+        "status",
+        "det_type",
+        "flag_muon",
+        "flag_pulser",
+        "flag_fc_bsln",
+        "daq_crate",
+        "daq_card",
+        "HV_card",
+        "HV_channel",
+    ]
+    columns_existing = [col for col in columns_to_drop if col in df.copy().columns]
+
+    if columns_existing:
+        df = df.drop(columns=columns_existing)
+
     par_dict_content = {
         "df_" + plot_info["subsystem"]: df,  # saving dataframe
         "plot_info": plot_info,  # saving plotting info
@@ -205,6 +226,10 @@ def append_new_data(
     parameter = param.split("_var")[0] if "_var" in param else param
     event_type = plot_settings["event_type"]
 
+    utils.logger.info("\33[95m**************************************************\33[0m")
+    utils.logger.info(f"\33[95m*** S A V I N G : {plot_info['subsystem']}\33[0m")
+    utils.logger.info("\33[95m**************************************************\33[0m")
+
     if old_dict["monitoring"][event_type][parameter]:
         # get already present df
         old_df = old_dict["monitoring"][event_type][parameter][
@@ -226,6 +251,7 @@ def append_new_data(
         )
 
         # we have to re-calculate the % variations based on the new mean values (new-df is ok, but old_df isn't!)
+        old_df = old_df.drop(columns={parameter + "_var"})
         old_df[parameter + "_var"] = (
             old_df[parameter] / old_df[parameter + "_mean"] - 1
         ) * 100
@@ -234,8 +260,7 @@ def append_new_data(
         # concatenate the two dfs (channels are no more grouped; not a problem)
         merged_df = DataFrame.empty
         merged_df = concat([old_df, new_df], ignore_index=True, axis=0)
-        merged_df = merged_df.reset_index()
-        merged_df = check_level0(merged_df)
+        merged_df = merged_df.reset_index(drop=True)
         # re-order content in order of channels/timestamps
         merged_df = merged_df.sort_values(["channel", "datetime"])
 
@@ -659,15 +684,18 @@ def get_pivot(
     """Get pivot: datetimes (first column) vs channels (other columns)."""
     df_pivot = df.pivot(index="datetime", columns="channel", values=parameter)
     # just select one row for mean values (since mean is constant over time for a given channel)
-    if "_mean" in parameter:
+    # take into consideration parameters that are named with 'mean' in it, eg "bl_mean"
+    if "_mean" in parameter and parameter.count("mean") > 1:
         df_pivot = df_pivot.iloc[[0]]
 
     # append new data
     if saving == "append":
         # for the mean entry, we overwrite the already existing content with the new mean value
-        if "_mean" in parameter:
+        if "_mean" in parameter and parameter.count("mean") > 1:
             df_pivot.to_hdf(file_path, key=key_name, mode="a")
-        if "_mean" not in parameter:
+        if "_mean" not in parameter or (
+            "_mean" in parameter and parameter.count("mean") == 1
+        ):
             # if % variations, we have to re-calculate all of them for the new mean values
             if "_var" in parameter:
                 key_name_orig = key_name.replace("_var", "")
