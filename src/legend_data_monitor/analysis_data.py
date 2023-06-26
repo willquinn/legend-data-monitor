@@ -159,10 +159,10 @@ class AnalysisData:
             # the parameter does not exist
             else:
                 utils.logger.error(
-                    "\033[91m'%s' either does not exist in 'par-settings.json' or you misspelled the parameter's name. " +
-                    "Another possibility is that the parameter does not exists in .lh5 processed files, so if the problem " +
-                    "persists check if in the production environment you are looking at the parameter is included. "+
-                    "Check also that you are not trying to plot a flag (ie a quality cut), which is not a parameter by definition.\033[0m",
+                    "\033[91m'%s' either does not exist in 'par-settings.json' or you misspelled the parameter's name. "
+                    + "Another possibility is that the parameter does not exists in .lh5 processed files, so if the problem "
+                    + "persists check if in the production environment you are looking at the parameter is included. "
+                    + "Check also that you are not trying to plot a flag (ie a quality cut), which is not a parameter by definition.\033[0m",
                     param,
                 )
                 sys.exit()
@@ -237,9 +237,14 @@ class AnalysisData:
 
         Format: cut name as in lh5 files ("is_*") to apply given cut, or cut name preceded by "~" to apply a "not" cut.
         """
-        if cut not in ['ciao']:#hit_config['outputs']: # change file and use prod ref specific one!
-            utils.logger.warning("\033[93mThe cut '%s' is not available for the data you are inspecting. " +
-                                 "We do not apply any cut and keep everything, not to stop the flow.\033[0m", cut)
+        if cut not in [
+            "ciao"
+        ]:  # hit_config['outputs']: # change file and use prod ref specific one!
+            utils.logger.warning(
+                "\033[93mThe cut '%s' is not available for the data you are inspecting. "
+                + "We do not apply any cut and keep everything, not to stop the flow.\033[0m",
+                cut,
+            )
         else:
             utils.logger.info("... applying cut: " + cut)
 
