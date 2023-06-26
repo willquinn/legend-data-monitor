@@ -186,7 +186,7 @@ class AnalysisData:
         if bad:
             return
 
-        # apply cuts, if any 
+        # apply cuts, if any
         self.apply_all_cuts()
 
         # calculate if special parameter
@@ -237,8 +237,8 @@ class AnalysisData:
         """
         if cut not in list(self.data.columns):
             utils.logger.warning(
-                "\033[93mThe cut '%s' is not available " +
-                "(you either misspelled the cut's name or it is not available for the data you are inspecting). "
+                "\033[93mThe cut '%s' is not available "
+                + "(you either misspelled the cut's name or it is not available for the data you are inspecting). "
                 + "We do not apply any cut and keep everything, not to stop the flow.\033[0m",
                 cut,
             )
