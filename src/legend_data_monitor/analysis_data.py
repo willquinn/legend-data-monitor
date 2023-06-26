@@ -237,7 +237,7 @@ class AnalysisData:
 
         Format: cut name as in lh5 files ("is_*") to apply given cut, or cut name preceded by "~" to apply a "not" cut.
         """
-        if cut not in hit_config['outputs'] or cut not in list(self.data.columns):
+        if cut not in hit_config["outputs"] or cut not in list(self.data.columns):
             utils.logger.warning(
                 "\033[93mThe cut '%s' is not available for the data you are inspecting. "
                 + "We do not apply any cut and keep everything, not to stop the flow.\033[0m",
