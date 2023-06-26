@@ -395,7 +395,10 @@ def make_subsystem_plots(
 
             # check if the parameter is a hit or special parameter (still need to include MORE PARAMS case)
             params = params[0]
-            if (params in utils.PARAMETER_TIERS.keys() and utils.PARAMETER_TIERS[params] != "hit") and params not in utils.SPECIAL_PARAMETERS:
+            if (
+                params in utils.PARAMETER_TIERS.keys()
+                and utils.PARAMETER_TIERS[params] != "hit"
+            ) and params not in utils.SPECIAL_PARAMETERS:
                 # aux data
                 aux_out_dict = save_data.build_out_dict(
                     plot_settings, aux_par_dict_content, aux_out_dict
