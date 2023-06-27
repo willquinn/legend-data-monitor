@@ -9,7 +9,7 @@ import sys
 # for getting DataLoader time range
 from datetime import datetime, timedelta
 
-import pygama.lgdo.lh5_store as lh5
+import lgdo.lh5_store as lh5
 from pandas import DataFrame
 
 # -------------------------------------------------------------------------
