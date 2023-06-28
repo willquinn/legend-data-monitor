@@ -64,60 +64,8 @@ class Subsystem:
         # otherwise kwargs is itself already the dict we need with experiment= and period=
         data_info = kwargs["dataset"] if "dataset" in kwargs else kwargs
 
-        if "experiment" not in data_info:
-            utils.logger.error("\033[91mProvide experiment name!\033[0m")
-            utils.logger.error("\033[91m%s\033[0m", self.__doc__)
-            return
-
-        if "type" not in data_info:
-            utils.logger.error("\033[91mProvide data type!\033[0m")
-            utils.logger.error("\033[91m%s\033[0m", self.__doc__)
-            return
-
-        if "period" not in data_info:
-            utils.logger.error("\033[91mProvide period!\033[0m")
-            utils.logger.error("\033[91m%s\033[0m", self.__doc__)
-            return
-
-        # convert to list for convenience
-        # ! currently not possible with channel status
-        # if isinstance(data_info["type"], str):
-        #     data_info["type"] = [data_info["type"]]
-
-        data_types = ["phy", "cal"]
-        # ! currently not possible with channel status
-        # for datatype in data_info["type"]:
-        # if datatype not in data_types:
-        if not data_info["type"] in data_types:
-            utils.logger.error("\033[91mInvalid data type provided!\033[0m")
-            utils.logger.error("\033[91m%s\033[0m", self.__doc__)
-            return
-
-        if "path" not in data_info:
-            utils.logger.error("\033[91mProvide path to data!\033[0m")
-            utils.logger.error("\033[91m%s\033[0m", self.__doc__)
-            return
-        if not os.path.exists(data_info["path"]):
-            utils.logger.error(
-                "\033[91mThe data path you provided does not exist!\033[0m"
-            )
-            return
-
-        if "version" not in data_info:
-            utils.logger.error(
-                '\033[91mProvide processing version! If not needed, just put an empty string, "".\033[0m'
-            )
-            utils.logger.error("\033[91m%s\033[0m", self.__doc__)
-            return
-
-        # in p03 things change again!!!!
-        # There is no version in '/data2/public/prodenv/prod-blind/tmp/auto/generated/tier/dsp/phy/p03', so for the moment we skip this check...
-        if data_info["period"] != "p03" and not os.path.exists(
-            os.path.join(data_info["path"], data_info["version"])
-        ):
-            utils.logger.error("\033[91mProvide valid processing version!\033[0m")
-            utils.logger.error("\033[91m%s\033[0m", self.__doc__)
-            return
+        # validity check of kwarg
+        utils.dataset_validity_check(data_info)
 
         # validity of time selection will be checked in utils
 

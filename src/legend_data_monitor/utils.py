@@ -291,6 +291,64 @@ def get_query_timerange(**kwargs):
     return time_range
 
 
+def dataset_validity_check(data_info: dict):
+    """Check the validity of the input dictionary to see if it contains all necessary info. Used in Subsystem and SlowControl classes."""
+    if "experiment" not in data_info:
+        logger.error("\033[91mProvide experiment name!\033[0m")
+        logger.error("\033[91m%s\033[0m", self.__doc__)
+        return
+
+    if "type" not in data_info:
+        logger.error("\033[91mProvide data type!\033[0m")
+        logger.error("\033[91m%s\033[0m", self.__doc__)
+        return
+
+    if "period" not in data_info:
+        logger.error("\033[91mProvide period!\033[0m")
+        logger.error("\033[91m%s\033[0m", self.__doc__)
+        return
+
+    # convert to list for convenience
+    # ! currently not possible with channel status
+    # if isinstance(data_info["type"], str):
+    #     data_info["type"] = [data_info["type"]]
+
+    data_types = ["phy", "cal"]
+    # ! currently not possible with channel status
+    # for datatype in data_info["type"]:
+    # if datatype not in data_types:
+    if not data_info["type"] in data_types:
+        logger.error("\033[91mInvalid data type provided!\033[0m")
+        logger.error("\033[91m%s\033[0m", self.__doc__)
+        return
+
+    if "path" not in data_info:
+        logger.error("\033[91mProvide path to data!\033[0m")
+        logger.error("\033[91m%s\033[0m", self.__doc__)
+        return
+    if not os.path.exists(data_info["path"]):
+        logger.error(
+            "\033[91mThe data path you provided does not exist!\033[0m"
+        )
+        return
+
+    if "version" not in data_info:
+        logger.error(
+            '\033[91mProvide processing version! If not needed, just put an empty string, "".\033[0m'
+        )
+        logger.error("\033[91m%s\033[0m", self.__doc__)
+        return
+
+    # in p03 things change again!!!!
+    # There is no version in '/data2/public/prodenv/prod-blind/tmp/auto/generated/tier/dsp/phy/p03', so for the moment we skip this check...
+    if data_info["period"] != "p03" and not os.path.exists(
+        os.path.join(data_info["path"], data_info["version"])
+    ):
+        logger.error("\033[91mProvide valid processing version!\033[0m")
+        logger.error("\033[91m%s\033[0m", self.__doc__)
+        return
+
+
 # -------------------------------------------------------------------------
 # Plotting related functions
 # -------------------------------------------------------------------------
