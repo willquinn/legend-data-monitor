@@ -12,6 +12,8 @@ from datetime import datetime, timedelta
 import lgdo.lh5_store as lh5
 from pandas import DataFrame
 
+from . import subsystem
+
 # -------------------------------------------------------------------------
 
 logger = logging.getLogger(__name__)
@@ -145,9 +147,6 @@ def get_query_times(**kwargs):
         # if setup= keyword was used, get dict; otherwise kwargs is already the dict we need
         path_info = kwargs["dataset"] if "dataset" in kwargs else kwargs
 
-        # format to search /path_to_prod-ref[/vXX.XX]/generated/tier/dsp/phy/pXX/rXXX (version 'vXX.XX' might not be there).
-        # NOTICE that we fixed the tier, otherwise it picks the last one it finds (eg tcm).
-        # NOTICE that this is PERIOD SPECIFIC (unlikely we're gonna inspect two periods together, so we fix it)
         first_glob_path = os.path.join(
             path_info["path"],
             path_info["version"],
@@ -157,7 +156,6 @@ def get_query_times(**kwargs):
             path_info["type"],
             path_info["period"],
             first_run,
-            "*.lh5",
         )
         last_glob_path = os.path.join(
             path_info["path"],
@@ -168,6 +166,30 @@ def get_query_times(**kwargs):
             path_info["type"],
             path_info["period"],
             last_run,
+        )
+
+        if not os.path.exists(first_glob_path):
+            logger.warning(
+                "\033[93mThe path '%s' does not exist, check config['dataset'] and try again.\033[0m",
+                first_glob_path,
+            )
+            exit()
+        if not os.path.exists(last_glob_path):
+            logger.warning(
+                "\033[93mThe path '%s' does not exist, check config['dataset'] and try again.\033[0m",
+                last_glob_path,
+            )
+            exit()
+
+        # format to search /path_to_prod-ref[/vXX.XX]/generated/tier/dsp/phy/pXX/rXXX (version 'vXX.XX' might not be there).
+        # NOTICE that we fixed the tier, otherwise it picks the last one it finds (eg tcm).
+        # NOTICE that this is PERIOD SPECIFIC (unlikely we're gonna inspect two periods together, so we fix it)
+        first_glob_path = os.path.join(
+            first_glob_path,
+            "*.lh5",
+        )
+        last_glob_path = os.path.join(
+            last_glob_path,
             "*.lh5",
         )
         first_dsp_files = glob.glob(first_glob_path)
@@ -295,17 +317,17 @@ def dataset_validity_check(data_info: dict):
     """Check the validity of the input dictionary to see if it contains all necessary info. Used in Subsystem and SlowControl classes."""
     if "experiment" not in data_info:
         logger.error("\033[91mProvide experiment name!\033[0m")
-        logger.error("\033[91m%s\033[0m", self.__doc__)
+        logger.error("\033[91m%s\033[0m", subsystem.Subsystem.__doc__)
         return
 
     if "type" not in data_info:
         logger.error("\033[91mProvide data type!\033[0m")
-        logger.error("\033[91m%s\033[0m", self.__doc__)
+        logger.error("\033[91m%s\033[0m", subsystem.Subsystem.__doc__)
         return
 
     if "period" not in data_info:
         logger.error("\033[91mProvide period!\033[0m")
-        logger.error("\033[91m%s\033[0m", self.__doc__)
+        logger.error("\033[91m%s\033[0m", subsystem.Subsystem.__doc__)
         return
 
     # convert to list for convenience
@@ -319,24 +341,22 @@ def dataset_validity_check(data_info: dict):
     # if datatype not in data_types:
     if not data_info["type"] in data_types:
         logger.error("\033[91mInvalid data type provided!\033[0m")
-        logger.error("\033[91m%s\033[0m", self.__doc__)
+        logger.error("\033[91m%s\033[0m", subsystem.Subsystem.__doc__)
         return
 
     if "path" not in data_info:
         logger.error("\033[91mProvide path to data!\033[0m")
-        logger.error("\033[91m%s\033[0m", self.__doc__)
+        logger.error("\033[91m%s\033[0m", subsystem.Subsystem.__doc__)
         return
     if not os.path.exists(data_info["path"]):
-        logger.error(
-            "\033[91mThe data path you provided does not exist!\033[0m"
-        )
+        logger.error("\033[91mThe data path you provided does not exist!\033[0m")
         return
 
     if "version" not in data_info:
         logger.error(
             '\033[91mProvide processing version! If not needed, just put an empty string, "".\033[0m'
         )
-        logger.error("\033[91m%s\033[0m", self.__doc__)
+        logger.error("\033[91m%s\033[0m", subsystem.Subsystem.__doc__)
         return
 
     # in p03 things change again!!!!
@@ -345,7 +365,7 @@ def dataset_validity_check(data_info: dict):
         os.path.join(data_info["path"], data_info["version"])
     ):
         logger.error("\033[91mProvide valid processing version!\033[0m")
-        logger.error("\033[91m%s\033[0m", self.__doc__)
+        logger.error("\033[91m%s\033[0m", subsystem.Subsystem.__doc__)
         return
 
 
@@ -354,13 +374,49 @@ def dataset_validity_check(data_info: dict):
 # -------------------------------------------------------------------------
 
 
-def check_plot_settings(conf: dict):
+def check_scdb_settings(conf: dict) -> bool:
+    """Check if the 'slow_control' entry in config file is good or not."""
+    # there is no "slow_control" key
+    if "slow_control" not in conf.keys():
+        logger.warning(
+            "\033[93mThere is no 'slow_control' key in the config file. Try again if you want to retrieve slow control data.\033[0m"
+        )
+        return False
+    # there is "slow_control" key, but ...
+    else:
+        # ... there is no "parameters" key
+        if "parameters" not in conf["slow_control"].keys():
+            logger.warning(
+                "\033[93mThere is no 'parameters' key in config 'slow_control' entry. Try again if you want to retrieve slow control data.\033[0m"
+            )
+            return False
+        # ... there is "parameters" key, but ...
+        else:
+            # ... it is not a string or a list (of strings)
+            if not isinstance(
+                conf["slow_control"]["parameters"], str
+            ) and not isinstance(conf["slow_control"]["parameters"], list):
+                logger.error(
+                    "\033[91mSlow control parameters must be a string or a list of strings. Try again if you want to retrieve slow control data.\033[0m"
+                )
+                return False
+
+    return True
+
+
+def check_plot_settings(conf: dict) -> bool:
     from . import plot_styles, plotting
 
     options = {
         "plot_structure": plotting.PLOT_STRUCTURE.keys(),
         "plot_style": plot_styles.PLOT_STYLE.keys(),
     }
+
+    if "subsystems" not in conf.keys():
+        logger.error(
+            "\033[91mThere is no 'subsystems' key in the config file. Try again if you want to plot data.\033[0m"
+        )
+        exit()
 
     for subsys in conf["subsystems"]:
         for plot in conf["subsystems"][subsys]:
@@ -907,3 +963,50 @@ def convert_to_camel_case(string: str, char: str) -> str:
     camel_case_string = "".join(words)
 
     return camel_case_string
+
+
+def get_output_path(config: dict):
+    """Get output path provided a 'dataset' from the config file. The path will be used to save and store pdfs/hdf/etc files."""
+    try:
+        data_types = (
+            [config["dataset"]["type"]]
+            if isinstance(config["dataset"]["type"], str)
+            else config["dataset"]["type"]
+        )
+
+        plt_basename = "{}-{}-".format(
+            config["dataset"]["experiment"].lower(),
+            config["dataset"]["period"],
+        )
+    except (KeyError, TypeError):
+        # means something about dataset is wrong -> print Subsystem doc
+        logger.error(
+            "\033[91mSomething is missing or wrong in your 'dataset' field of the config. You can see the format here under 'dataset=':\033[0m"
+        )
+        logger.info("\033[91m%s\033[0m", subsystem.Subsystem.__doc__)
+        exit()
+
+    user_time_range = get_query_timerange(dataset=config["dataset"])
+    # will be returned as None if something is wrong, and print an error message
+    if not user_time_range:
+        return
+
+    # create output folders for plots
+    period_dir = make_output_paths(config, user_time_range)
+    # get correct time info for subfolder's name
+    name_time = (
+        get_run_name(config, user_time_range)
+        if "timestamp" in user_time_range.keys()
+        else get_time_name(user_time_range)
+    )
+    output_paths = period_dir + name_time + "/"
+    make_dir(output_paths)
+    if not output_paths:
+        return
+
+    # we don't care here about the time keyword timestamp/run -> just get the value
+    plt_basename += name_time
+    out_path = output_paths + plt_basename
+    out_path += "-{}".format("_".join(data_types))
+
+    return out_path

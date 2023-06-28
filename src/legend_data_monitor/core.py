@@ -1,8 +1,67 @@
 import json
+import os
 import re
 import sys
 
-from . import plotting, subsystem, utils
+from . import plot_sc, plotting, subsystem, utils
+
+
+def control_scdb(user_config_path: str):
+    """Set the configuration file and the output paths when a user config file is provided. The function to retrieve Slow Control data from database is then automatically called."""
+    # -------------------------------------------------------------------------
+    # Read user settings
+    # -------------------------------------------------------------------------
+    with open(user_config_path) as f:
+        config = json.load(f)
+
+    # check validity of scdb settings
+    valid = utils.check_scdb_settings(config)
+    if not valid:
+        return
+
+    # -------------------------------------------------------------------------
+    # Define PDF file basename
+    # -------------------------------------------------------------------------
+
+    # Format: l200-p02-{run}-{data_type}; One pdf/log/shelve file for each subsystem
+    out_path = utils.get_output_path(config) + "-slow_control.hdf"
+
+    # -------------------------------------------------------------------------
+    # Load and save data
+    # -------------------------------------------------------------------------
+    for idx, param in enumerate(config["slow_control"]["parameters"]):
+        utils.logger.info(
+            "\33[34m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\33[0m"
+        )
+        utils.logger.info(f"\33[34m~~~ R E T R I E V I N G : {param}\33[0m")
+        utils.logger.info(
+            "\33[34m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\33[0m"
+        )
+
+        # ???
+        sc_analysis = plot_sc.SlowControl(param, dataset=config["dataset"])
+
+        # check if the dataframe is empty or not (no data)
+        if utils.check_empty_df(sc_analysis):
+            utils.logger.warning(
+                "\033[93m'%s' is not inspected, we continue with the next parameter (if present).\033[0m",
+                param,
+            )
+            continue
+
+        # remove the slow control hdf file if
+        #   1) it already exists
+        #   2) we specified "overwrite" as saving option
+        #   3) it is the first parameter we want to save
+        if os.path.exists(out_path) and config["saving"] == "overwrite" and idx == 0:
+            os.remove(out_path)
+
+        # save data to hdf file
+        sc_analysis.data.copy().to_hdf(
+            out_path,
+            key=param.replace("-", "_"),
+            mode="a",
+        )
 
 
 def control_plots(user_config_path: str, n_files=None):
@@ -23,50 +82,11 @@ def control_plots(user_config_path: str, n_files=None):
     # -------------------------------------------------------------------------
 
     # Format: l200-p02-{run}-{data_type}; One pdf/log/shelve file for each subsystem
+    plt_path = utils.get_output_path(config)
 
-    try:
-        data_types = (
-            [config["dataset"]["type"]]
-            if isinstance(config["dataset"]["type"], str)
-            else config["dataset"]["type"]
-        )
-
-        plt_basename = "{}-{}-".format(
-            config["dataset"]["experiment"].lower(),
-            config["dataset"]["period"],
-        )
-    except (KeyError, TypeError):
-        # means something about dataset is wrong -> print Subsystem.get_data doc
-        utils.logger.error(
-            "\033[91mSomething is missing or wrong in your 'dataset' field of the config. You can see the format here under 'dataset=':\033[0m"
-        )
-        utils.logger.info("\033[91m%s\033[0m", subsystem.Subsystem.get_data.__doc__)
-        return
-
-    user_time_range = utils.get_query_timerange(dataset=config["dataset"])
-    # will be returned as None if something is wrong, and print an error message
-    if not user_time_range:
-        return
-
-    # create output folders for plots
-    period_dir = utils.make_output_paths(config, user_time_range)
-    # get correct time info for subfolder's name
-    name_time = (
-        utils.get_run_name(config, user_time_range)
-        if "timestamp" in user_time_range.keys()
-        else utils.get_time_name(user_time_range)
-    )
-    output_paths = period_dir + name_time + "/"
-    utils.make_dir(output_paths)
-    if not output_paths:
-        return
-
-    # we don't care here about the time keyword timestamp/run -> just get the value
-    plt_basename += name_time
-    plt_path = output_paths + plt_basename
-    plt_path += "-{}".format("_".join(data_types))
-
-    # plot
+    # -------------------------------------------------------------------------
+    # Plot
+    # -------------------------------------------------------------------------
     generate_plots(config, plt_path, n_files)
 
 

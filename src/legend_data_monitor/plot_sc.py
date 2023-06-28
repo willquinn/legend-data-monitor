@@ -2,19 +2,24 @@ import sys
 from datetime import datetime, timezone
 from typing import Tuple
 
+import pandas as pd
 from legendmeta import LegendSlowControlDB
 from pandas import DataFrame
 
 from . import utils
 
+scdb = LegendSlowControlDB()
+scdb.connect(password="...")  # look on Confluence for the password
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # SLOW CONTROL LOADING/PLOTTING FUNCTIONS
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+
 class SlowControl:
     """
     Object containing Slow Control database information for a data subselected based on given criteria.
-    
+
     parameter [str] : diode_vmon | diode_imon | PT114 | PT115 | PT118 | PT202 | PT205 | PT208 | LT01 | RREiT | RRNTe | RRSTe | ZUL_T_RR | DaqLeft-Temp1 | DaqLeft-Temp2 | DaqRight-Temp1 | DaqRight-Temp2
 
     Options for kwargs
@@ -51,39 +56,35 @@ class SlowControl:
         # need to remember for DataLoader config
         self.path = data_info["path"]
         self.version = data_info["version"]
-        
+
         # load info from settings/SC-params.json
         self.parameter = parameter
         self.sc_parameters = utils.SC_PARAMETERS
-        
+        self.data = pd.DataFrame()
+
         # check if parameter is within the one listed in settings/SC-params.json
-        if parameter not in self.sc_parameters.keys():
+        if parameter not in self.sc_parameters["SC_DB_params"].keys():
             utils.logger.error(
-                f"\033[91mThe parameter {self.parameter} is not present in 'settings/SC-params.json'. Try again with another parameter or update the json file!\033[0m"
+                f"\033[91mThe parameter '{self.parameter}' is not present in 'settings/SC-params.json'. Try again with another parameter or update the json file!\033[0m"
             )
-            sys.exit()
+            return
 
         (
             self.timerange,
             self.first_timestamp,
             self.last_timestamp,
         ) = utils.get_query_times(**kwargs)
-        
+
         # None will be returned if something went wrong
         if not self.timerange:
             utils.logger.error("\033[91m%s\033[0m", self.get_data.__doc__)
             return
-        
+
         # -------------------------------------------------------------------------
         self.data = self.get_sc_param()
 
-        
-        
     def get_sc_param(self):
         """Load the corresponding table from SC database for the process of interest and apply already the flags for the parameter under study."""
-        scdb = LegendSlowControlDB()
-        scdb.connect(password="legend00")  # look on Confluence for the password
-
         # getting the process and flags of interest from 'settings/SC-params.json' for the provided parameter
         table_param = self.sc_parameters["SC_DB_params"][self.parameter]["table"]
         flags_param = self.sc_parameters["SC_DB_params"][self.parameter]["flags"]
@@ -100,7 +101,7 @@ class SlowControl:
             f"... getting the dataframe for '{table_param}' in the time range of interest\n"
         )
         # SQL query to filter the dataframe based on the time range
-        query = f"SELECT * FROM {table_param} WHERE tstamp >= '{first_tstmp}' AND tstamp <= '{last_tstmp}'"
+        query = f"SELECT * FROM {table_param} WHERE tstamp >= '{self.first_timestamp}' AND tstamp <= '{self.last_timestamp}'"
         get_table_df = scdb.dataframe(query)
 
         # remove unnecessary columns (necessary when retrieving diode parameters)
@@ -119,16 +120,19 @@ class SlowControl:
         # order by timestamp (not automatically done)
         get_table_df = get_table_df.sort_values(by="tstamp")
 
-        utils.logger.debug(get_table_df)
-
         # let's apply the flags for keeping only the parameter of interest
-        utils.logger.debug(f"... applying flags to get the parameter '{self.parameter}'")
+        utils.logger.debug(
+            f"... applying flags to get the parameter '{self.parameter}'"
+        )
         get_table_df = apply_flags(get_table_df, self.sc_parameters, flags_param)
 
         # get units and lower/upper limits for the parameter of interest
         if "diode" not in self.parameter:
             unit, lower_lim, upper_lim = get_plotting_info(
-                self.parameter, self.sc_parameters, first_tstmp, last_tstmp
+                self.parameter,
+                self.sc_parameters,
+                self.first_timestamp,
+                self.last_timestamp,
             )
         else:
             lower_lim = (
@@ -146,7 +150,13 @@ class SlowControl:
         get_table_df["lower_lim"] = lower_lim
         get_table_df["upper_lim"] = upper_lim
 
-        get_table_df = get_table_df.reset_index()
+        # remove unnecessary columns
+        remove_cols = ["rack", "group", "sensor", "name", "almask"]
+        for col in remove_cols:
+            if col in list(get_table_df.columns):
+                get_table_df = get_table_df.drop(columns={col})
+
+        get_table_df = get_table_df.reset_index(drop=True)
 
         utils.logger.debug(
             "... final dataframe (after flagging the events):\n%s", get_table_df
@@ -158,7 +168,8 @@ class SlowControl:
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Other functions
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    
+
+
 def get_plotting_info(
     parameter: str, sc_parameters: dict, first_tstmp: str, last_tstmp: str
 ) -> Tuple[str, float, float]:

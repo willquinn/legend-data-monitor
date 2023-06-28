@@ -512,8 +512,8 @@ def plot_per_ch(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
                     plot_info["param_mean"]
                 ]  # single number
                 if plot_info["parameter"] != "event_rate":
-                    fwhm_ch = get_fwhm_for_fixed_ch(
-                        data_channel, plot_info["parameter"]
+                    fwhm_ch = (
+                        0  # get_fwhm_for_fixed_ch(data_channel, plot_info["parameter"])
                     )
                     text += f"\nFWHM {fwhm_ch}" if fwhm_ch != 0 else ""
 
@@ -613,8 +613,8 @@ def plot_per_cc4(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
             labels.append(label)
             if len(plot_info["parameters"]) == 1:
                 if plot_info["parameter"] != "event_rate":
-                    fwhm_ch = get_fwhm_for_fixed_ch(
-                        data_channel, plot_info["parameter"]
+                    fwhm_ch = (
+                        0  # get_fwhm_for_fixed_ch(data_channel, plot_info["parameter"])
                     )
                     labels[-1] = (
                         label + f" - FWHM: {fwhm_ch}" if fwhm_ch != 0 else label
@@ -710,8 +710,8 @@ def plot_per_string(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
             labels.append(label)
             if len(plot_info["parameters"]) == 1:
                 if plot_info["parameter"] != "event_rate":
-                    fwhm_ch = get_fwhm_for_fixed_ch(
-                        data_channel, plot_info["parameter"]
+                    fwhm_ch = (
+                        0  # get_fwhm_for_fixed_ch(data_channel, plot_info["parameter"])
                     )
                     labels[-1] = (
                         label + f" - FWHM: {fwhm_ch}" if fwhm_ch != 0 else label

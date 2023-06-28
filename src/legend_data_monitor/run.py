@@ -67,6 +67,7 @@ def main():
     subparsers = parser.add_subparsers()
 
     # functions for different purpouses
+    add_user_scdb(subparsers)
     add_user_config_parser(subparsers)
     add_user_bunch_parser(subparsers)
     add_user_rsync_parser(subparsers)
@@ -85,6 +86,28 @@ def main():
         sys.exit()
 
     args.func(args)
+
+
+def add_user_scdb(subparsers):
+    """Configure :func:`.core.control_plots` command line interface."""
+    parser_auto_prod = subparsers.add_parser(
+        "user_scdb",
+        description="""Retrieve Slow Control data from database by giving a full config file with parameters/subsystems info to plot. Available only when working in LNGS machines.""",
+    )
+    parser_auto_prod.add_argument(
+        "--config",
+        help="""Path to config file (e.g. \"some_path/config_L200_r001_phy.json\").""",
+    )
+    parser_auto_prod.set_defaults(func=user_scdb_cli)
+
+
+def user_scdb_cli(args):
+    """Pass command line arguments to :func:`.core.control_scdb`."""
+    # get the path to the user config file
+    config_file = args.config
+
+    # start loading data
+    legend_data_monitor.core.control_scdb(config_file)
 
 
 def add_user_config_parser(subparsers):
