@@ -10,6 +10,15 @@
   },
   "saving": "overwrite",
   "slow_control": {
-    "parameters": ["DaqLeft-Temp1", "DaqLeft-Temp2", "DaqRight-Temp1", "DaqRight-Temp2", "RREiT", "RRNTe", "RRSTe", "ZUL_T_RR"]
+    "parameters": [
+      "DaqLeft-Temp1",
+      "DaqLeft-Temp2",
+      "DaqRight-Temp1",
+      "DaqRight-Temp2",
+      "RREiT",
+      "RRNTe",
+      "RRSTe",
+      "ZUL_T_RR"
+    ]
   }
 }
