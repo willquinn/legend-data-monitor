@@ -102,12 +102,12 @@ def add_user_scdb(subparsers):
 
 
 def user_scdb_cli(args):
-    """Pass command line arguments to :func:`.core.control_scdb`."""
+    """Pass command line arguments to :func:`.core.retrieve_scdb`."""
     # get the path to the user config file
     config_file = args.config
 
     # start loading data
-    legend_data_monitor.core.control_scdb(config_file)
+    legend_data_monitor.core.retrieve_scdb(config_file)
 
 
 def add_user_config_parser(subparsers):

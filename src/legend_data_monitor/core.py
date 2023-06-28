@@ -6,7 +6,7 @@ import sys
 from . import plot_sc, plotting, subsystem, utils
 
 
-def control_scdb(user_config_path: str):
+def retrieve_scdb(user_config_path: str):
     """Set the configuration file and the output paths when a user config file is provided. The function to retrieve Slow Control data from database is then automatically called."""
     # -------------------------------------------------------------------------
     # Read user settings
