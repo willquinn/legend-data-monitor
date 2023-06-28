@@ -8,9 +8,6 @@ from pandas import DataFrame
 
 from . import utils
 
-scdb = LegendSlowControlDB()
-scdb.connect(password="...")  # look on Confluence for the password
-
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # SLOW CONTROL LOADING/PLOTTING FUNCTIONS
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -61,6 +58,8 @@ class SlowControl:
         self.parameter = parameter
         self.sc_parameters = utils.SC_PARAMETERS
         self.data = pd.DataFrame()
+        self.scdb = LegendSlowControlDB()
+        self.scdb.connect(password="...")  # look on Confluence for the password
 
         # check if parameter is within the one listed in settings/SC-params.json
         if parameter not in self.sc_parameters["SC_DB_params"].keys():
@@ -90,7 +89,7 @@ class SlowControl:
         flags_param = self.sc_parameters["SC_DB_params"][self.parameter]["flags"]
 
         # check if the selected table is present in the SC database. If not, arise an error and exit
-        if table_param not in scdb.get_tables():
+        if table_param not in self.scdb.get_tables():
             utils.logger.error(
                 "\033[91mThis is not present in the SC database! Try again.\033[0m"
             )
@@ -102,7 +101,7 @@ class SlowControl:
         )
         # SQL query to filter the dataframe based on the time range
         query = f"SELECT * FROM {table_param} WHERE tstamp >= '{self.first_timestamp}' AND tstamp <= '{self.last_timestamp}'"
-        get_table_df = scdb.dataframe(query)
+        get_table_df = self.scdb.dataframe(query)
 
         # remove unnecessary columns (necessary when retrieving diode parameters)
         # note: there will be a 'status' column such that ON=1 and OFF=0 - right now we are keeping every detector, without removing the OFF ones as we usually do for geds
@@ -115,7 +114,7 @@ class SlowControl:
             get_table_df = get_table_df.rename(columns={"imon": "value"})
         # in case of geds parameters, add the info about the channel name and channel id (right now, there is only crate&slot info)
         if self.parameter == "diode_vmon" or self.parameter == "diode_imon":
-            get_table_df = include_more_diode_info(get_table_df)
+            get_table_df = include_more_diode_info(get_table_df, self.scdb)
 
         # order by timestamp (not automatically done)
         get_table_df = get_table_df.sort_values(by="tstamp")
@@ -133,6 +132,7 @@ class SlowControl:
                 self.sc_parameters,
                 self.first_timestamp,
                 self.last_timestamp,
+                self.scdb,
             )
         else:
             lower_lim = (
@@ -171,7 +171,11 @@ class SlowControl:
 
 
 def get_plotting_info(
-    parameter: str, sc_parameters: dict, first_tstmp: str, last_tstmp: str
+    parameter: str,
+    sc_parameters: dict,
+    first_tstmp: str,
+    last_tstmp: str,
+    scdb: LegendSlowControlDB,
 ) -> Tuple[str, float, float]:
     """Return units and low/high limits of a given parameter."""
     table_param = sc_parameters["SC_DB_params"][parameter]["table"]
@@ -246,7 +250,7 @@ def apply_flags(df: DataFrame, sc_parameters: dict, flags_param: list) -> DataFr
     return df
 
 
-def include_more_diode_info(df: DataFrame) -> DataFrame:
+def include_more_diode_info(df: DataFrame, scdb: LegendSlowControlDB) -> DataFrame:
     """Include more diode info, such as the channel name and the string number to which it belongs."""
     # get the diode info dataframe from the SC database
     df_info = scdb.dataframe("diode_info")
