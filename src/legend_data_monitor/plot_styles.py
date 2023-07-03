@@ -5,6 +5,8 @@
 # See mapping user plot structure keywords to corresponding functions in the end of this file
 
 
+from datetime import datetime
+
 import numpy as np
 import pandas as pd
 from matplotlib.axes import Axes
@@ -125,7 +127,12 @@ def plot_vs_time(
     min_x = date2num(data_channel.iloc[0]["datetime"])
     max_x = date2num(data_channel.iloc[-1]["datetime"])
     time_points = np.linspace(min_x, max_x, 10)
-    labels = [num2date(time).strftime("%Y\n%m/%d\n%H:%M") for time in time_points]
+    labels = [
+        num2date(time, tz=datetime.now().astimezone().tzinfo).strftime(
+            "%Y\n%m/%d\n%H:%M"
+        )
+        for time in time_points
+    ]
 
     # set ticks
     ax.set_xticks(time_points)
