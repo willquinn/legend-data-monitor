@@ -7,6 +7,7 @@
 
 import numpy as np
 import pandas as pd
+from datetime import datetime
 from matplotlib.axes import Axes
 from matplotlib.dates import DateFormatter, date2num, num2date
 from matplotlib.figure import Figure
@@ -125,7 +126,7 @@ def plot_vs_time(
     min_x = date2num(data_channel.iloc[0]["datetime"])
     max_x = date2num(data_channel.iloc[-1]["datetime"])
     time_points = np.linspace(min_x, max_x, 10)
-    labels = [num2date(time).strftime("%Y\n%m/%d\n%H:%M") for time in time_points]
+    labels = [num2date(time, tz = datetime.now().astimezone().tzinfo).strftime("%Y\n%m/%d\n%H:%M") for time in time_points]
 
     # set ticks
     ax.set_xticks(time_points)
