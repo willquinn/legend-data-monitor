@@ -810,6 +810,19 @@ def add_config_entries(
     prod_config: dict,
 ) -> dict:
     """Add missing information (output, dataset) to the configuration file. This function is generally used during automathic data production, where the initiali config file has only the 'subsystem' entry."""
+    # check if there is an output folder specified in the config file
+    if "output" not in config.keys():
+        logger.error(
+            "\033[91mThe config file is missing the 'output' key. Add it and try again!\033[0m"
+        )
+        sys.exit()
+    # check if there is the saving option specified in the config file
+    if "saving" not in config.keys():
+        logger.error(
+            "\033[91mThe config file is missing the 'saving' key. Add it and try again!\033[0m"
+        )
+        sys.exit()
+
     # Get the keys
     with open(file_keys) as f:
         keys = f.readlines()
@@ -832,11 +845,16 @@ def add_config_entries(
         if "version" in config["dataset"].keys():
             version = config["dataset"]["version"]
         else:
-            version = (
-                (prod_path.split("/"))[-2]
-                if prod_path.endswith("/")
-                else (prod_path.split("/"))[-1]
-            )
+            # case of rsync when inspecting temp files to plot for the dashboard
+            if prod_path == "":
+                version = ""
+            # prod-ref version where the version is specified
+            else:
+                version = (
+                    (prod_path.split("/"))[-2]
+                    if prod_path.endswith("/")
+                    else (prod_path.split("/"))[-1]
+                )
         if "type" in config["dataset"].keys():
             type = config["dataset"]["type"]
         else:
@@ -855,28 +873,25 @@ def add_config_entries(
         cal_keys = [key for key in keys if "cal" in key]
         if len(phy_keys) == 0 and len(cal_keys) == 0:
             logger.error("\033[91mNo keys to load. Try again.\033[0m")
-            return
+            sys.exit()
         if len(phy_keys) != 0 and len(cal_keys) == 0:
             type = "phy"
         if len(phy_keys) == 0 and len(cal_keys) != 0:
             type = "cal"
             logger.error("\033[91mcal is still under development! Try again.\033[0m")
-            return
+            sys.exit()
         if len(phy_keys) != 0 and len(cal_keys) != 0:
             type = ["cal", "phy"]
             logger.error(
                 "\033[91mBoth cal and phy are still under development! Try again.\033[0m"
             )
-            return
+            sys.exit()
         # Get the production path
         path = (
             prod_path.split("prod-ref")[0] + "prod-ref"
             if prod_path.split("prod-ref")[0].endswith("/")
             else prod_path.split("prod-ref")[0] + "/prod-ref"
         )
-
-    if "output" in config.keys():
-        prod_path = config["output"]
 
     # create the dataset dictionary
     dataset_dict = {
@@ -889,7 +904,7 @@ def add_config_entries(
         "timestamps": timestamp,
     }
 
-    more_info = {"output": prod_path, "dataset": dataset_dict}
+    more_info = {"dataset": dataset_dict}
 
     # 'saving' and 'subsystem' info must be already there
     config.update(more_info)
