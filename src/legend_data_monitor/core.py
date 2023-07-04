@@ -133,44 +133,9 @@ def auto_control_plots(
     # -------------------------------------------------------------------------
     # Define PDF file basename
     # -------------------------------------------------------------------------
+
     # Format: l200-p02-{run}-{data_type}; One pdf/log/shelve file for each subsystem
-
-    try:
-        data_types = (
-            [config["dataset"]["type"]]
-            if isinstance(config["dataset"]["type"], str)
-            else config["dataset"]["type"]
-        )
-        plt_basename = "{}-{}-".format(
-            config["dataset"]["experiment"].lower(),
-            config["dataset"]["period"],
-        )
-    except (KeyError, TypeError):
-        # means something about dataset is wrong -> print Subsystem.get_data doc
-        utils.logger.error(
-            "\033[91mSomething is missing or wrong in your 'dataset' field of the config. You can see the format here under 'dataset=':\033[0m"
-        )
-        utils.logger.info("\033[91m%s\033[0m", subsystem.Subsystem.get_data.__doc__)
-        return
-
-    user_time_range = utils.get_query_timerange(dataset=config["dataset"])
-    # will be returned as None if something is wrong, and print an error message
-    if not user_time_range:
-        return
-
-    # create output folders for plots
-    period_dir = utils.make_output_paths(config, user_time_range)
-    # get correct time info for subfolder's name
-    name_time = config["dataset"]["run"]
-    output_paths = period_dir + name_time + "/"
-    utils.make_dir(output_paths)
-    if not output_paths:
-        return
-
-    # we don't care here about the time keyword timestamp/run -> just get the value
-    plt_basename += name_time
-    plt_path = output_paths + plt_basename
-    plt_path += "-{}".format("_".join(data_types))
+    plt_path = utils.get_output_path(config)
 
     # plot
     generate_plots(config, plt_path, n_files)
@@ -212,7 +177,9 @@ def generate_plots(config: dict, plt_path: str, n_files=None):
         config["dataset"].pop("runs", None)
 
         for idx, bunch in enumerate(bunches):
-            utils.logger.debug(f"You are inspecting bunch #{idx+1}/{len(bunches)}...")
+            utils.logger.debug(
+                f"\33[44mYou are inspecting bunch #{idx+1}/{len(bunches)}...\33[0m"
+            )
             # if it is the first dataset, just override previous content
             if idx == 0:
                 config["saving"] = "overwrite"
