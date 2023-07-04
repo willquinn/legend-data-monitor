@@ -2,12 +2,24 @@ import json
 import os
 import re
 import sys
+import subprocess
 
-from . import plot_sc, plotting, subsystem, utils
+from . import slow_control, plotting, subsystem, utils
 
 
 def retrieve_scdb(user_config_path: str):
     """Set the configuration file and the output paths when a user config file is provided. The function to retrieve Slow Control data from database is then automatically called."""
+    # -------------------------------------------------------------------------
+    # SSH tunnel to the Slow Control database
+    # -------------------------------------------------------------------------
+    # for the settings, see instructions on Confluence
+    try:
+        subprocess.run("ssh -T -N -f ugnet-proxy", shell=True, check=True)
+        print("SSH tunnel to Slow Control database established successfully.")
+    except subprocess.CalledProcessError as e:
+        print("Error running SSH tunnel to Slow Control database command:", e)
+        sys.exit()
+
     # -------------------------------------------------------------------------
     # Read user settings
     # -------------------------------------------------------------------------
@@ -38,8 +50,12 @@ def retrieve_scdb(user_config_path: str):
             "\33[34m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\33[0m"
         )
 
-        # ???
-        sc_analysis = plot_sc.SlowControl(param, dataset=config["dataset"])
+        # build a SlowControl object
+        # - select parameter of interest from a list of available parameters
+        # - apply time interval cuts
+        # - get values from SC database (available from LNGS only)
+        # - get limits/units/... from SC databasee (available from LNGS only)
+        sc_analysis = slow_control.SlowControl(param, dataset=config["dataset"])
 
         # check if the dataframe is empty or not (no data)
         if utils.check_empty_df(sc_analysis):
@@ -52,7 +68,7 @@ def retrieve_scdb(user_config_path: str):
         # remove the slow control hdf file if
         #   1) it already exists
         #   2) we specified "overwrite" as saving option
-        #   3) it is the first parameter we want to save
+        #   3) it is the first parameter we want to save (idx==0)
         if os.path.exists(out_path) and config["saving"] == "overwrite" and idx == 0:
             os.remove(out_path)
 
