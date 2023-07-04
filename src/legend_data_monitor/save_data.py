@@ -1,6 +1,7 @@
 import os
 import shelve
 
+import h5py
 from pandas import DataFrame, concat, read_hdf
 
 from . import analysis_data, utils
@@ -690,6 +691,18 @@ def get_pivot(
 
     # append new data
     if saving == "append":
+        # check if the file exists: if not, create a new one
+        if not os.path.exists(file_path):
+            df_pivot.to_hdf(file_path, key=key_name, mode="a")
+            return
+        # the file exists, but this specific key was not saved - create the new key
+        saved_keys = []
+        with h5py.File(file_path, "r") as file:
+            saved_keys = list(file.keys())
+        if os.path.exists(file_path) and key_name not in saved_keys:
+            df_pivot.to_hdf(file_path, key=key_name, mode="a")
+            return
+
         # for the mean entry, we overwrite the already existing content with the new mean value
         if "_mean" in parameter and parameter.count("mean") > 1:
             df_pivot.to_hdf(file_path, key=key_name, mode="a")
