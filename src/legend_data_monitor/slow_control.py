@@ -205,9 +205,9 @@ def get_plotting_info(
     for time in reversed(times):
         if first_tstmp < time < last_tstmp:
             unit = list(get_table_info["unit"].unique())[0]
-            lower_lim = upper_lim = None
+            lower_lim = upper_lim = False
             utils.logger.warning(
-                f"\033[93mParameter {parameter} has no valid range in the time period you selected. Upper and lower thresholds are set to None, while units={unit}\033[0m"
+                f"\033[93mParameter {parameter} has no valid range in the time period you selected. Upper and lower thresholds are set to False, while units={unit}\033[0m"
             )
             return unit, lower_lim, upper_lim
 
