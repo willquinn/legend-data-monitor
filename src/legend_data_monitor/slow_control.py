@@ -59,7 +59,7 @@ class SlowControl:
         self.sc_parameters = utils.SC_PARAMETERS
         self.data = pd.DataFrame()
         self.scdb = LegendSlowControlDB()
-        self.scdb.connect(password="legend00")  # look on Confluence for the password
+        self.scdb.connect(password="...")  # look on Confluence for the password
 
         # check if parameter is within the one listed in settings/SC-params.json
         if parameter not in self.sc_parameters["SC_DB_params"].keys():

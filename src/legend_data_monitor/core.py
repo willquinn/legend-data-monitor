@@ -1,10 +1,10 @@
 import json
 import os
 import re
-import sys
 import subprocess
+import sys
 
-from . import slow_control, plotting, subsystem, utils
+from . import plotting, slow_control, subsystem, utils
 
 
 def retrieve_scdb(user_config_path: str):
@@ -15,9 +15,13 @@ def retrieve_scdb(user_config_path: str):
     # for the settings, see instructions on Confluence
     try:
         subprocess.run("ssh -T -N -f ugnet-proxy", shell=True, check=True)
-        print("SSH tunnel to Slow Control database established successfully.")
+        utils.logger.debug(
+            "SSH tunnel to Slow Control database established successfully."
+        )
     except subprocess.CalledProcessError as e:
-        print("Error running SSH tunnel to Slow Control database command:", e)
+        utils.logger.error(
+            f"\033[91mError running SSH tunnel to Slow Control database command: {e}\033[0m"
+        )
         sys.exit()
 
     # -------------------------------------------------------------------------
