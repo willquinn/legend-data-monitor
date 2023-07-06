@@ -98,6 +98,10 @@ def add_user_scdb(subparsers):
         "--config",
         help="""Path to config file (e.g. \"some_path/config_L200_r001_phy.json\").""",
     )
+    parser_auto_prod.add_argument(
+        "--pswd",
+        help="""Password to get access to the Slow Control database (check on Confluence).""",
+    )
     parser_auto_prod.set_defaults(func=user_scdb_cli)
 
 
@@ -105,9 +109,11 @@ def user_scdb_cli(args):
     """Pass command line arguments to :func:`.core.retrieve_scdb`."""
     # get the path to the user config file
     config_file = args.config
+    # get the password to the SC database
+    password = args.pswd
 
     # start loading data
-    legend_data_monitor.core.retrieve_scdb(config_file)
+    legend_data_monitor.core.retrieve_scdb(config_file, password)
 
 
 def add_user_config_parser(subparsers):
