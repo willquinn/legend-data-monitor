@@ -6,7 +6,7 @@ from typing import Union
 
 import numpy as np
 import pandas as pd
-from legendmeta import LegendMetadata
+from legendmeta import JsonDB
 from pygama.flow import DataLoader
 
 from . import utils
@@ -472,13 +472,11 @@ class Subsystem:
         utils.logger.info("... getting channel map")
 
         # -------------------------------------------------------------------------
-        # load full channel map of this exp and period
+        # load full channel map of this exp and period (and version)
         # -------------------------------------------------------------------------
 
-        lmeta = LegendMetadata()
-        full_channel_map = lmeta.hardware.configuration.channelmaps.on(
-            timestamp=self.first_timestamp
-        )
+        map_file = os.path.join(self.path, "inputs/hardware/configuration/channelmaps")
+        full_channel_map = JsonDB(map_file).on(timestamp=self.first_timestamp)
 
         df_map = pd.DataFrame(columns=utils.COLUMNS_TO_LOAD)
         df_map = df_map.set_index("channel")
@@ -655,11 +653,11 @@ class Subsystem:
         utils.logger.info("... getting channel status")
 
         # -------------------------------------------------------------------------
-        # load full status map of this time selection
+        # load full status map of this time selection (and version)
         # -------------------------------------------------------------------------
 
-        lmeta = LegendMetadata()
-        full_status_map = lmeta.dataprod.config.on(
+        map_file = os.path.join(self.path, "inputs/dataprod/config")
+        full_status_map = JsonDB(map_file).on(
             timestamp=self.first_timestamp, system=self.datatype
         )["analysis"]
 
