@@ -1,4 +1,4 @@
-This basic example file can be used to automatically generate monitoring plots, based on new .lh5 dsp/hit files appearing in the production folders. Slow Control data are automatically retrieved from the database. You need to put there the correct password you can find on Confluence.
+This basic example file can be used to automatically generate monitoring plots, based on new .lh5 dsp/hit files appearing in the production folders. Slow Control data are automatically retrieved from the database (you need to provide the port you are using to connect to the database together with the password you can find on Confluence).
 
 You need to specify the period and run you want to analyze in the script. You can then run the code through
 

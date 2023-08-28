@@ -292,7 +292,7 @@ with open(timestamp_file, "w") as file:
 utils.logger.debug("\nRetrieving Slow Control data...")
 scdb_config_file = f"{rsync_path}auto_slow_control.json"
 
-bash_command = f"{cmd} --cleanenv {arg} ~/.local/bin/legend-data-monitor user_scdb --config {scdb_config_file} --pswd BANANE"
+bash_command = f"{cmd} --cleanenv {arg} ~/.local/bin/legend-data-monitor user_scdb --config {scdb_config_file} --port YOUR_PORT --pswd BANANE"
 utils.logger.debug(f"...running command \033[92m{bash_command}\033[0m")
 subprocess.run(bash_command, shell=True)
 utils.logger.debug("...SC done!")
