@@ -113,7 +113,7 @@ def user_scdb_cli(args):
     """Pass command line arguments to :func:`.core.retrieve_scdb`."""
     # get the path to the user config file
     config_file = args.config
-    # get the lcoal port
+    # get the local port
     port = args.port
     # get the password to the SC database
     password = args.pswd
