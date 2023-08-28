@@ -475,7 +475,9 @@ class Subsystem:
         # load full channel map of this exp and period (and version)
         # -------------------------------------------------------------------------
 
-        map_file = os.path.join(self.path, self.version, "inputs/hardware/configuration/channelmaps")
+        map_file = os.path.join(
+            self.path, self.version, "inputs/hardware/configuration/channelmaps"
+        )
         full_channel_map = JsonDB(map_file).on(timestamp=self.first_timestamp)
 
         df_map = pd.DataFrame(columns=utils.COLUMNS_TO_LOAD)

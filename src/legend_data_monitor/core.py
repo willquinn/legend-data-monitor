@@ -59,7 +59,9 @@ def retrieve_scdb(user_config_path: str, port: int, pswd: str):
         # - apply time interval cuts
         # - get values from SC database (available from LNGS only)
         # - get limits/units/... from SC databasee (available from LNGS only)
-        sc_analysis = slow_control.SlowControl(param, port, pswd, dataset=config["dataset"])
+        sc_analysis = slow_control.SlowControl(
+            param, port, pswd, dataset=config["dataset"]
+        )
 
         # check if the dataframe is empty or not (no data)
         if utils.check_empty_df(sc_analysis):
