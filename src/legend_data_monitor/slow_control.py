@@ -36,7 +36,7 @@ class SlowControl:
     Or input kwargs separately experiment=, period=, path=, version=, type=; start=&end=, (or window= - ???), or timestamps=, or runs=
     """
 
-    def __init__(self, parameter: str, pswd: str, **kwargs):
+    def __init__(self, parameter: str, port: int, pswd: str, **kwargs):
         # if setup= kwarg was provided, get dict provided
         # otherwise kwargs is itself already the dict we need with experiment= and period=
         data_info = kwargs["dataset"] if "dataset" in kwargs else kwargs
@@ -59,7 +59,7 @@ class SlowControl:
         self.sc_parameters = utils.SC_PARAMETERS
         self.data = pd.DataFrame()
         self.scdb = LegendSlowControlDB()
-        self.scdb.connect(password=pswd)
+        self.scdb.connect(port=port, password=pswd)
 
         # check if parameter is within the one listed in settings/SC-params.json
         if parameter not in self.sc_parameters["SC_DB_params"].keys():
