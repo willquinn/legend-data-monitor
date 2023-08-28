@@ -7,7 +7,7 @@ import sys
 from . import plotting, slow_control, subsystem, utils
 
 
-def retrieve_scdb(user_config_path: str, pswd: str):
+def retrieve_scdb(user_config_path: str, port: int, pswd: str):
     """Set the configuration file and the output paths when a user config file is provided. The function to retrieve Slow Control data from database is then automatically called."""
     # -------------------------------------------------------------------------
     # SSH tunnel to the Slow Control database
@@ -59,7 +59,7 @@ def retrieve_scdb(user_config_path: str, pswd: str):
         # - apply time interval cuts
         # - get values from SC database (available from LNGS only)
         # - get limits/units/... from SC databasee (available from LNGS only)
-        sc_analysis = slow_control.SlowControl(param, pswd, dataset=config["dataset"])
+        sc_analysis = slow_control.SlowControl(param, port, pswd, dataset=config["dataset"])
 
         # check if the dataframe is empty or not (no data)
         if utils.check_empty_df(sc_analysis):
