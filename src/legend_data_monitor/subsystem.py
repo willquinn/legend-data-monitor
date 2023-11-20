@@ -362,10 +362,12 @@ class Subsystem:
             #    high_thr = 12500
             # if self.above_period_3_included():
             #    high_thr = 2500
-            high_thr = 12500
-            self.data = self.data.set_index("datetime")
-            wf_max_rel = self.data["wf_max"] - self.data["baseline"]
-            pulser_timestamps = self.data[wf_max_rel > high_thr].index
+            #high_thr = 12500
+            #self.data = self.data.set_index("datetime")
+            #wf_max_rel = self.data["wf_max"] - self.data["baseline"]
+            #pulser_timestamps = self.data[wf_max_rel > high_thr].index
+            trapTmax = self.data["trapTmax"] 
+            pulser_timestamps = self.data[trapTmax > 200].index
             # flag them
             self.data["flag_pulser"] = False
             self.data.loc[pulser_timestamps, "flag_pulser"] = True
@@ -665,17 +667,19 @@ class Subsystem:
 
         # AUX channels are not in status map, so at least for pulser/pulser01ana/FCbsln/muon need default on
         self.channel_map["status"] = "on"
+
         self.channel_map = self.channel_map.set_index("name")
-        # 'channel_name', for instance, has the format 'DNNXXXS' (= "name" column)
+        # 'channel_name' has the format 'DNNXXXS' (= "name" column)
         for channel_name in full_status_map:
             # status map contains all channels, check if this channel is in our subsystem
             if channel_name in self.channel_map.index:
                 self.channel_map.at[channel_name, "status"] = full_status_map[
                     channel_name
-                ]["usability"]
+                ]["usability"] #if full_status_map[channel_name]["processable"] is not False else "off"
 
+        # -------------------------------------------------------------------------
         # quick-fix to remove detectors while status maps are not updated
-        # (p03 channels who are not properly behaving in calib data from George's analysis)
+        # -------------------------------------------------------------------------
         for channel_name in utils.REMOVE_DETS:
             # status map contains all channels, check if this channel is in our subsystem
             if channel_name in self.channel_map.index:
@@ -695,7 +699,7 @@ class Subsystem:
         params = ["timestamp"]
         # --- always get wf_max & baseline for pulser for flagging
         if self.type in ["pulser", "pulser01ana", "FCbsln", "muon"]:
-            params += ["wf_max", "baseline"]
+            params += ["wf_max", "baseline", "trapTmax"]
 
         # --- add user requested parameters
         # change to list for convenience, if input was single
