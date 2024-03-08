@@ -4,12 +4,15 @@ import json
 import logging
 import os
 import re
-import shelve
+import sys
 
 # for getting DataLoader time range
 from datetime import datetime, timedelta
 
-from pandas import DataFrame, concat
+import lgdo.lh5_store as lh5
+from pandas import DataFrame
+
+from . import subsystem
 
 # -------------------------------------------------------------------------
 
@@ -23,12 +26,11 @@ stream_handler.setLevel(logging.DEBUG)
 # format
 formatter = logging.Formatter("%(asctime)s:  %(message)s")
 stream_handler.setFormatter(formatter)
-# file_handler.setFormatter(formatter)
 
 # add to logger
 logger.addHandler(stream_handler)
 
-# -------------------------------------------------------------------------
+# ------------------------------------------------------------------------- SOME DICTIONARIES LOADING/DEFINITION
 
 pkg = importlib.resources.files("legend_data_monitor")
 
@@ -44,14 +46,44 @@ with open(pkg / "settings" / "parameter-tiers.json") as f:
 with open(pkg / "settings" / "special-parameters.json") as f:
     SPECIAL_PARAMETERS = json.load(f)
 
-# dictionary map (helpful when we want to map channels based on their location/position)
-with open(pkg / "settings" / "map-channels.json") as f:
-    MAP_DICT = json.load(f)
-
 # convert all to lists for convenience
 for param in SPECIAL_PARAMETERS:
     if isinstance(SPECIAL_PARAMETERS[param], str):
         SPECIAL_PARAMETERS[param] = [SPECIAL_PARAMETERS[param]]
+
+# load SC params and corresponding flags to get specific parameters from big dfs that are stored in the database
+with open(pkg / "settings" / "SC-params.json") as f:
+    SC_PARAMETERS = json.load(f)
+
+# load list of columns to load for a dataframe
+COLUMNS_TO_LOAD = [
+    "name",
+    "location",
+    "channel",
+    "position",
+    "cc4_id",
+    "cc4_channel",
+    "daq_crate",
+    "daq_card",
+    "HV_card",
+    "HV_channel",
+    "det_type",
+]
+
+# map position/location for special systems
+SPECIAL_SYSTEMS = {"pulser": 0, "pulser01ana": -1, "FCbsln": -2, "muon": -3}
+
+# dictionary map (helpful when we want to map channels based on their location/position)
+with open(pkg / "settings" / "map-channels.json") as f:
+    MAP_DICT = json.load(f)
+
+# dictionary with timestamps to remove for specific channels
+with open(pkg / "settings" / "remove-keys.json") as f:
+    REMOVE_KEYS = json.load(f)
+
+# dictionary with detectors to remove
+with open(pkg / "settings" / "remove-dets.json") as f:
+    REMOVE_DETS = json.load(f)
 
 # -------------------------------------------------------------------------
 # Subsystem related functions (for getting channel map & status)
@@ -60,7 +92,7 @@ for param in SPECIAL_PARAMETERS:
 
 def get_query_times(**kwargs):
     """
-    Get time ranges for DataLoader query from user input, as well as first timestamp for channel map/status query.
+    Get time ranges for DataLoader query from user input, as well as first/last timestamp for channel map / status / SC query.
 
     Available kwargs:
 
@@ -71,10 +103,10 @@ def get_query_times(**kwargs):
             - 'version' [str]: < move description here from get_data() >
             - 'type' [str]: < move description here > ! not possible for multiple types now!
             - the following keys depending in time selection mode (choose one)
-                1) 'start' : <start datetime>, 'end': <end datetime> where <datetime> input is of format 'YYYY-MM-DD hh:mm:ss'
-                2) 'window'[str]: time window in the past from current time point, format: 'Xd Xh Xm' for days, hours, minutes
-                2) 'timestamps': str or list of str in format 'YYYYMMDDThhmmssZ'
-                3) 'runs': int or list of ints for run number(s)  e.g. 10 for r010
+                1. 'start' : <start datetime>, 'end': <end datetime> where <datetime> input is of format 'YYYY-MM-DD hh:mm:ss'
+                2. 'window'[str]: time window in the past from current time point, format: 'Xd Xh Xm' for days, hours, minutes
+                2. 'timestamps': str or list of str in format 'YYYYMMDDThhmmssZ'
+                3. 'runs': int or list of ints for run number(s)  e.g. 10 for r010
     Or input kwargs separately path=, ...; start=&end=, or window=, or timestamps=, or runs=
 
     Designed in such a way to accommodate Subsystem init kwargs. A bit cumbersome and can probably be done better.
@@ -92,42 +124,88 @@ def get_query_times(**kwargs):
     timerange = get_query_timerange(**kwargs)
 
     first_timestamp = ""
-    # get first timestamp in case keyword is timestamp
+    # get first/last timestamp in case keyword is timestamp
     if "timestamp" in timerange:
         if "start" in timerange["timestamp"]:
             first_timestamp = timerange["timestamp"]["start"]
-        else:
+        if "end" in timerange["timestamp"]:
+            last_timestamp = timerange["timestamp"]["end"]
+        if (
+            "start" not in timerange["timestamp"]
+            and "end" not in timerange["timestamp"]
+        ):
             first_timestamp = min(timerange["timestamp"])
+            last_timestamp = max(timerange["timestamp"])
     # look in path to find first timestamp if keyword is run
     else:
         # currently only list of runs and not 'start' and 'end', so always list
-        # find earliest run, format rXXX
+        # find earliest/latest run, format rXXX
         first_run = min(timerange["run"])
+        last_run = max(timerange["run"])
 
         # --- get dsp filelist of this run
         # if setup= keyword was used, get dict; otherwise kwargs is already the dict we need
         path_info = kwargs["dataset"] if "dataset" in kwargs else kwargs
 
-        # format to search /path_to_prod-ref[/v06.00]/generated/tier/**/phy/**/r027 (version might not be there)
-        glob_path = os.path.join(
+        first_glob_path = os.path.join(
             path_info["path"],
             path_info["version"],
             "generated",
             "tier",
-            "**",
+            "dsp",
             path_info["type"],
-            "**",
+            path_info["period"],
             first_run,
+        )
+        last_glob_path = os.path.join(
+            path_info["path"],
+            path_info["version"],
+            "generated",
+            "tier",
+            "dsp",
+            path_info["type"],
+            path_info["period"],
+            last_run,
+        )
+
+        if not os.path.exists(first_glob_path):
+            logger.warning(
+                "\033[93mThe path '%s' does not exist, check config['dataset'] and try again.\033[0m",
+                first_glob_path,
+            )
+            exit()
+        if not os.path.exists(last_glob_path):
+            logger.warning(
+                "\033[93mThe path '%s' does not exist, check config['dataset'] and try again.\033[0m",
+                last_glob_path,
+            )
+            exit()
+
+        # format to search /path_to_prod-ref[/vXX.XX]/generated/tier/dsp/phy/pXX/rXXX (version 'vXX.XX' might not be there).
+        # NOTICE that we fixed the tier, otherwise it picks the last one it finds (eg tcm).
+        # NOTICE that this is PERIOD SPECIFIC (unlikely we're gonna inspect two periods together, so we fix it)
+        first_glob_path = os.path.join(
+            first_glob_path,
             "*.lh5",
         )
-        dsp_files = glob.glob(glob_path)
+        last_glob_path = os.path.join(
+            last_glob_path,
+            "*.lh5",
+        )
+        first_dsp_files = glob.glob(first_glob_path)
+        last_dsp_files = glob.glob(last_glob_path)
         # find earliest
-        dsp_files.sort()
-        first_file = dsp_files[0]
-        # extract timestamp
+        first_dsp_files.sort()
+        first_file = first_dsp_files[0]
+        # find latest
+        last_dsp_files.sort()
+        last_file = last_dsp_files[-1]
+        # extract timestamps
         first_timestamp = get_key(first_file)
+        # last timestamp is not the key of last file: it's the last timestamp saved in the last file
+        last_timestamp = get_last_timestamp(last_file)
 
-    return timerange, first_timestamp
+    return timerange, first_timestamp, last_timestamp
 
 
 def get_query_timerange(**kwargs):
@@ -138,10 +216,10 @@ def get_query_timerange(**kwargs):
 
     dataset=
         dict with the following keys depending in time selection mode (choose one)
-            1) 'start' : <start datetime>, 'end': <end datetime> where <datetime> input is of format 'YYYY-MM-DD hh:mm:ss'
-            2) 'window'[str]: time window in the past from current time point, format: 'Xd Xh Xm' for days, hours, minutes
-            2) 'timestamps': str or list of str in format 'YYYYMMDDThhmmssZ'
-            3) 'runs': int or list of ints for run number(s)  e.g. 10 for r010
+            1. 'start' : <start datetime>, 'end': <end datetime> where <datetime> input is of format 'YYYY-MM-DD hh:mm:ss'
+            2. 'window'[str]: time window in the past from current time point, format: 'Xd Xh Xm' for days, hours, minutes
+            2. 'timestamps': str or list of str in format 'YYYYMMDDThhmmssZ'
+            3. 'runs': int or list of ints for run number(s)  e.g. 10 for r010
     Or enter kwargs separately start=&end=, or window=, or timestamp=, or runs=
 
     Designed in such a way to accommodate Subsystem init kwargs. A bit cumbersome and can probably be done better.
@@ -235,12 +313,98 @@ def get_query_timerange(**kwargs):
     return time_range
 
 
+def dataset_validity_check(data_info: dict):
+    """Check the validity of the input dictionary to see if it contains all necessary info. Used in Subsystem and SlowControl classes."""
+    if "experiment" not in data_info:
+        logger.error("\033[91mProvide experiment name!\033[0m")
+        logger.error("\033[91m%s\033[0m", subsystem.Subsystem.__doc__)
+        return
+
+    if "type" not in data_info:
+        logger.error("\033[91mProvide data type!\033[0m")
+        logger.error("\033[91m%s\033[0m", subsystem.Subsystem.__doc__)
+        return
+
+    if "period" not in data_info:
+        logger.error("\033[91mProvide period!\033[0m")
+        logger.error("\033[91m%s\033[0m", subsystem.Subsystem.__doc__)
+        return
+
+    # convert to list for convenience
+    # ! currently not possible with channel status
+    # if isinstance(data_info["type"], str):
+    #     data_info["type"] = [data_info["type"]]
+
+    data_types = ["phy", "cal"]
+    # ! currently not possible with channel status
+    # for datatype in data_info["type"]:
+    # if datatype not in data_types:
+    if not data_info["type"] in data_types:
+        logger.error("\033[91mInvalid data type provided!\033[0m")
+        logger.error("\033[91m%s\033[0m", subsystem.Subsystem.__doc__)
+        return
+
+    if "path" not in data_info:
+        logger.error("\033[91mProvide path to data!\033[0m")
+        logger.error("\033[91m%s\033[0m", subsystem.Subsystem.__doc__)
+        return
+    if not os.path.exists(data_info["path"]):
+        logger.error("\033[91mThe data path you provided does not exist!\033[0m")
+        return
+
+    if "version" not in data_info:
+        logger.error(
+            '\033[91mProvide processing version! If not needed, just put an empty string, "".\033[0m'
+        )
+        logger.error("\033[91m%s\033[0m", subsystem.Subsystem.__doc__)
+        return
+
+    # in p03 things change again!!!!
+    # There is no version in '/data2/public/prodenv/prod-blind/tmp/auto/generated/tier/dsp/phy/p03', so for the moment we skip this check...
+    if data_info["period"] != "p03" and not os.path.exists(
+        os.path.join(data_info["path"], data_info["version"])
+    ):
+        logger.error("\033[91mProvide valid processing version!\033[0m")
+        logger.error("\033[91m%s\033[0m", subsystem.Subsystem.__doc__)
+        return
+
+
 # -------------------------------------------------------------------------
 # Plotting related functions
 # -------------------------------------------------------------------------
 
 
-def check_plot_settings(conf: dict):
+def check_scdb_settings(conf: dict) -> bool:
+    """Check if the 'slow_control' entry in config file is good or not."""
+    # there is no "slow_control" key
+    if "slow_control" not in conf.keys():
+        logger.warning(
+            "\033[93mThere is no 'slow_control' key in the config file. Try again if you want to retrieve slow control data.\033[0m"
+        )
+        return False
+    # there is "slow_control" key, but ...
+    else:
+        # ... there is no "parameters" key
+        if "parameters" not in conf["slow_control"].keys():
+            logger.warning(
+                "\033[93mThere is no 'parameters' key in config 'slow_control' entry. Try again if you want to retrieve slow control data.\033[0m"
+            )
+            return False
+        # ... there is "parameters" key, but ...
+        else:
+            # ... it is not a string or a list (of strings)
+            if not isinstance(
+                conf["slow_control"]["parameters"], str
+            ) and not isinstance(conf["slow_control"]["parameters"], list):
+                logger.error(
+                    "\033[91mSlow control parameters must be a string or a list of strings. Try again if you want to retrieve slow control data.\033[0m"
+                )
+                return False
+
+    return True
+
+
+def check_plot_settings(conf: dict) -> bool:
     from . import plot_styles, plotting
 
     options = {
@@ -248,13 +412,29 @@ def check_plot_settings(conf: dict):
         "plot_style": plot_styles.PLOT_STYLE.keys(),
     }
 
+    if "subsystems" not in conf.keys():
+        logger.error(
+            "\033[91mThere is no 'subsystems' key in the config file. Try again if you want to plot data.\033[0m"
+        )
+        exit()
+
     for subsys in conf["subsystems"]:
         for plot in conf["subsystems"][subsys]:
             # settings for this plot
             plot_settings = conf["subsystems"][subsys][plot]
 
+            # ----------------------------------------------------------------------------------------------
+            # general check
+            # ----------------------------------------------------------------------------------------------
             # check if all necessary fields for param settings were provided
             for field in options:
+                # when plot_structure is summary, plot_style is not needed...
+                # ToDo: neater way to skip the whole loop but still do special checks; break? ugly...
+                # future ToDo: exposure can be plotted in various plot styles e.g. string viz, or plot array, will change
+                if plot_settings["parameters"] == "exposure":
+                    continue
+
+                # ...otherwise, it is required
                 # if this field is not provided by user, tell them to provide it
                 # (if optional to provided, will have been set with defaults before calling set_defaults())
                 if field not in plot_settings:
@@ -281,6 +461,25 @@ def check_plot_settings(conf: dict):
                         )
                     )
                     return False
+
+            # ----------------------------------------------------------------------------------------------
+            # special checks
+            # ----------------------------------------------------------------------------------------------
+
+            # exposure check
+            if plot_settings["parameters"] == "exposure" and (
+                plot_settings["event_type"] not in ["pulser", "all"]
+            ):
+                logger.error(
+                    "\033[91mPulser events are needed to calculate livetime/exposure; choose 'pulser' or 'all' event type\033[0m"
+                )
+                return False
+
+            # ToDo: neater way to skip the whole loop but still do special checks; break? ugly...
+            if plot_settings["parameters"] == "exposure":
+                continue
+
+            # other non-exposure checks
 
             # if vs time was provided, need time window
             if (
@@ -361,16 +560,16 @@ def get_time_name(user_time_range: dict) -> str:
     """Get a name for each available time selection.
 
     careful handling of folder name depending on the selected time range. The possibilities are:
-      1) user_time_range = {'timestamp': {'start': '20220928T080000Z', 'end': '20220928T093000Z'}} => start + end
+      1. user_time_range = {'timestamp': {'start': '20220928T080000Z', 'end': '20220928T093000Z'}} => start + end
               -> folder: 20220928T080000Z_20220928T093000Z/
-      2) user_time_range = {'timestamp': ['20230207T103123Z']} => one key
+      2. user_time_range = {'timestamp': ['20230207T103123Z']} => one key
               -> folder: 20230207T103123Z/
-      3) user_time_range = {'timestamp': ['20230207T103123Z', '20230207T141123Z', '20230207T083323Z']} => multiple keys
+      3. user_time_range = {'timestamp': ['20230207T103123Z', '20230207T141123Z', '20230207T083323Z']} => multiple keys
               -> get min/max and use in the folder name
               -> folder: 20230207T083323Z_20230207T141123Z/
-      4) user_time_range = {'run': ['r010']} => one run
+      4. user_time_range = {'run': ['r010']} => one run
               -> folder: r010/
-      5) user_time_range = {'run': ['r010', 'r014']} => multiple runs
+      5. user_time_range = {'run': ['r010', 'r014']} => multiple runs
               -> folder: r010_r014/
     """
     name_time = ""
@@ -401,6 +600,7 @@ def get_time_name(user_time_range: dict) -> str:
 
 
 def get_timestamp(filename):
+    """Get the timestamp from a filename. For instance, if file='l200-p04-r000-phy-20230421T055556Z-tier_dsp.lh5', then it returns '20230421T055556Z'."""
     # Assumes that the timestamp is in the format YYYYMMDDTHHMMSSZ
     return filename.split("-")[-2]
 
@@ -413,8 +613,14 @@ def get_run_name(config, user_time_range: dict) -> str:
     )
 
     # start/end timestamps of the selected time range of interest
-    start_timestamp = user_time_range["timestamp"]["start"]
-    end_timestamp = user_time_range["timestamp"]["end"]
+    # if range was given, will have keywords "start" and "end"
+    if "start" in user_time_range["timestamp"]:
+        start_timestamp = user_time_range["timestamp"]["start"]
+        end_timestamp = user_time_range["timestamp"]["end"]
+    # if list of timestamps was given (may be not consecutive or in order), it's just a list
+    else:
+        start_timestamp = min(user_time_range["timestamp"])
+        end_timestamp = max(user_time_range["timestamp"])
 
     run_list = []  # this will be updated with the run ID
 
@@ -451,7 +657,7 @@ def get_run_name(config, user_time_range: dict) -> str:
         logger.error(
             "\033[91mThe selected timestamps were not find anywhere. Try again with another time range!\033[0m"
         )
-        exit()
+        sys.exit()
     if len(run_list) > 1:
         return get_multiple_run_id(user_time_range)
 
@@ -469,11 +675,22 @@ def get_all_plot_parameters(subsystem: str, config: dict):
             else:
                 all_parameters += parameters
 
+            # check if event type asked needs a special parameter (K lines need energy)
+            event_type = config["subsystems"][subsystem][plot]["event_type"]
+            if event_type in SPECIAL_PARAMETERS:
+                all_parameters += SPECIAL_PARAMETERS[event_type]
+
             # check if there is any QC entry; if so, add it to the list of parameters to load
-            if "quality_cuts" in config["subsystems"][subsystem][plot]:
-                all_parameters.append(
-                    config["subsystems"][subsystem][plot]["quality_cuts"]
-                )
+            if "cuts" in config["subsystems"][subsystem][plot]:
+                cuts = config["subsystems"][subsystem][plot]["cuts"]
+                # convert to list for convenience
+                if isinstance(cuts, str):
+                    cuts = [cuts]
+                for cut in cuts:
+                    # append original name of the cut to load (remove the "not" ~ symbol if present)
+                    if cut[0] == "~":
+                        cut = cut[1:]
+                    all_parameters.append(cut)
 
     return all_parameters
 
@@ -481,6 +698,104 @@ def get_all_plot_parameters(subsystem: str, config: dict):
 def get_key(dsp_fname: str) -> str:
     """Extract key from lh5 filename."""
     return re.search(r"-\d{8}T\d{6}Z", dsp_fname).group(0)[1:]
+
+
+def unix_timestamp_to_string(unix_timestamp):
+    """Convert a Unix timestamp to a string in the format 'YYYYMMDDTHHMMSSZ' with the timezone indicating UTC+00."""
+    utc_datetime = datetime.utcfromtimestamp(unix_timestamp)
+    formatted_string = utc_datetime.strftime("%Y%m%dT%H%M%SZ")
+    return formatted_string
+
+
+def get_last_timestamp(dsp_fname: str) -> str:
+    """Read a lh5 file and return the last timestamp saved in the file. This works only in case of a global trigger where the whole array is entirely recorded for a given timestamp."""
+    # pick a random channel
+    first_channel = lh5.ls(dsp_fname, "")[0]
+    # get array of timestamps stored in the lh5 file
+    timestamp = lh5.load_nda(dsp_fname, ["timestamp"], f"{first_channel}/dsp/")[
+        "timestamp"
+    ]
+    # get the last entry
+    last_timestamp = timestamp[-1]
+    # convert from UNIX tstamp to string tstmp of format YYYYMMDDTHHMMSSZ
+    last_timestamp = unix_timestamp_to_string(last_timestamp)
+
+    return last_timestamp
+
+
+def bunch_dataset(config: dict, n_files=None):
+    """Bunch the full datasets into smaller pieces, based on the number of files we want to inspect at each iteration.
+
+    It works for "start+end", "runs" and "timestamps" in "dataset" present in the config file.
+    """
+    # --- get dsp filelist of this run
+    path_info = config["dataset"]
+    user_time_range = get_query_timerange(dataset=config["dataset"])
+
+    run = (
+        get_run_name(config, user_time_range)
+        if "timestamp" in user_time_range.keys()
+        else get_time_name(user_time_range)
+    )
+    # format to search /path_to_prod-ref[/vXX.XX]/generated/tier/dsp/phy/pXX/rXXX (version 'vXX.XX' might not be there).
+    # NOTICE that we fixed the tier, otherwise it picks the last one it finds (eg tcm).
+    # NOTICE that this is PERIOD SPECIFIC (unlikely we're gonna inspect two periods together, so we fix it)
+    path_to_files = os.path.join(
+        path_info["path"],
+        path_info["version"],
+        "generated",
+        "tier",
+        "dsp",
+        path_info["type"],
+        path_info["period"],
+        run,
+        "*.lh5",
+    )
+    # get all dsp files
+    dsp_files = glob.glob(path_to_files)
+    dsp_files.sort()
+
+    if "timestamp" in user_time_range.keys():
+        if isinstance(user_time_range["timestamp"], list):
+            # sort in crescent order
+            user_time_range["timestamp"].sort()
+            start_time = datetime.strptime(
+                user_time_range["timestamp"][0], "%Y%m%dT%H%M%SZ"
+            )
+            end_time = datetime.strptime(
+                user_time_range["timestamp"][-1], "%Y%m%dT%H%M%SZ"
+            )
+
+        else:
+            start_time = datetime.strptime(
+                user_time_range["timestamp"]["start"], "%Y%m%dT%H%M%SZ"
+            )
+            end_time = datetime.strptime(
+                user_time_range["timestamp"]["end"], "%Y%m%dT%H%M%SZ"
+            )
+
+    if "run" in user_time_range.keys():
+        timerange, start_tmstmp, end_tmstmp = get_query_times(dataset=config["dataset"])
+        start_time = datetime.strptime(start_tmstmp, "%Y%m%dT%H%M%SZ")
+        end_time = datetime.strptime(end_tmstmp, "%Y%m%dT%H%M%SZ")
+
+    # filter files and keep the ones within the time range of interest
+    filtered_files = []
+    for dsp_file in dsp_files:
+        # Extract the timestamp from the file name
+        timestamp_str = dsp_file.split("-")[-2]
+        file_timestamp = datetime.strptime(timestamp_str, "%Y%m%dT%H%M%SZ")
+        # Check if the file timestamp is within the specified range
+        if start_time <= file_timestamp <= end_time:
+            filtered_files.append(dsp_file)
+
+    filtered_files = [filtered_file.split("-")[-2] for filtered_file in filtered_files]
+    filtered_files = [
+        filtered_files[i : i + int(n_files)]
+        for i in range(0, len(filtered_files), int(n_files))
+    ]
+
+    return filtered_files
 
 
 # -------------------------------------------------------------------------
@@ -495,6 +810,19 @@ def add_config_entries(
     prod_config: dict,
 ) -> dict:
     """Add missing information (output, dataset) to the configuration file. This function is generally used during automathic data production, where the initiali config file has only the 'subsystem' entry."""
+    # check if there is an output folder specified in the config file
+    if "output" not in config.keys():
+        logger.error(
+            "\033[91mThe config file is missing the 'output' key. Add it and try again!\033[0m"
+        )
+        sys.exit()
+    # check if there is the saving option specified in the config file
+    if "saving" not in config.keys():
+        logger.error(
+            "\033[91mThe config file is missing the 'saving' key. Add it and try again!\033[0m"
+        )
+        sys.exit()
+
     # Get the keys
     with open(file_keys) as f:
         keys = f.readlines()
@@ -517,51 +845,53 @@ def add_config_entries(
         if "version" in config["dataset"].keys():
             version = config["dataset"]["version"]
         else:
-            version = (
-                (prod_path.split("/"))[-2]
-                if prod_path.endswith("/")
-                else (prod_path.split("/"))[-1]
-            )
+            # case of rsync when inspecting temp files to plot for the dashboard
+            if prod_path == "":
+                version = ""
+            # prod-ref version where the version is specified
+            else:
+                version = (
+                    (prod_path.split("/"))[-2]
+                    if prod_path.endswith("/")
+                    else (prod_path.split("/"))[-1]
+                )
         if "type" in config["dataset"].keys():
             type = config["dataset"]["type"]
         else:
             logger.error("\033[91mYou need to provide data type! Try again.\033[0m")
-            exit()
+            sys.exit()
         if "path" in config["dataset"].keys():
             path = config["dataset"]["path"]
         else:
             logger.error(
                 "\033[91mYou need to provide path to lh5 files! Try again.\033[0m"
             )
-            exit()
+            sys.exit()
     else:
         # get phy/cal lists
         phy_keys = [key for key in keys if "phy" in key]
         cal_keys = [key for key in keys if "cal" in key]
         if len(phy_keys) == 0 and len(cal_keys) == 0:
             logger.error("\033[91mNo keys to load. Try again.\033[0m")
-            return
+            sys.exit()
         if len(phy_keys) != 0 and len(cal_keys) == 0:
             type = "phy"
         if len(phy_keys) == 0 and len(cal_keys) != 0:
             type = "cal"
             logger.error("\033[91mcal is still under development! Try again.\033[0m")
-            return
+            sys.exit()
         if len(phy_keys) != 0 and len(cal_keys) != 0:
             type = ["cal", "phy"]
             logger.error(
                 "\033[91mBoth cal and phy are still under development! Try again.\033[0m"
             )
-            return
+            sys.exit()
         # Get the production path
         path = (
             prod_path.split("prod-ref")[0] + "prod-ref"
             if prod_path.split("prod-ref")[0].endswith("/")
             else prod_path.split("prod-ref")[0] + "/prod-ref"
         )
-
-    if "output" in config.keys():
-        prod_path = config["output"]
 
     # create the dataset dictionary
     dataset_dict = {
@@ -574,7 +904,7 @@ def add_config_entries(
         "timestamps": timestamp,
     }
 
-    more_info = {"output": prod_path, "dataset": dataset_dict}
+    more_info = {"dataset": dataset_dict}
 
     # 'saving' and 'subsystem' info must be already there
     config.update(more_info)
@@ -585,112 +915,113 @@ def add_config_entries(
             '\033[91mThere are missing entries among ["output", "dataset", "saving", "subsystems"] in the config file (found keys: %s). Try again and check you start with "output" and "dataset" info!\033[0m',
             config.keys(),
         )
-        exit()
+        sys.exit()
 
     return config
 
 
 # -------------------------------------------------------------------------
-# Saving related functions
+# Other functions
 # -------------------------------------------------------------------------
 
 
-def build_out_dict(
-    plot_settings: list,
-    plot_info: list,
-    par_dict_content: dict,
-    out_dict: dict,
-    saving: str,
-    plt_path: str,
-):
-    """Build the output dictionary based on the input 'saving' option."""
-    # we overwrite the object with a new one
-    if saving == "overwrite":
-        out_dict = save_dict(plot_settings, plot_info, par_dict_content, out_dict)
+def get_livetime(tot_livetime: float):
+    """Get the livetime in a human readable format, starting from livetime in seconds.
 
-    # we retrieve the already existing shelve object, and we append new things to it; the parameter here is fixed
-    if saving == "append":
-        # the file does not exist, so first we create it and then, at the next step, we'll append things
-        if not os.path.exists(plt_path + "-" + plot_info["subsystem"] + ".dat"):
-            # logger.warning(
-            #    "\033[93mYou selected 'append' when saving, but the file with already saved data does not exist. For this reason, it will be created first.\033[0m"
-            # )
-            out_dict = save_dict(plot_settings, plot_info, par_dict_content, out_dict)
-
-        # the file exists, so we are going to append data
-        else:
-            logger.info(
-                "There is already a file containing output data. Appending new data to it right now..."
-            )
-            # open already existing shelve file
-            with shelve.open(plt_path + "-" + plot_info["subsystem"], "r") as shelf:
-                old_dict = dict(shelf)
-
-            # the parameter is there
-            parameter = (
-                plot_info["parameter"].split("_var")[0]
-                if "_var" in plot_info["parameter"]
-                else plot_info["parameter"]
-            )
-            if old_dict["monitoring"]["pulser"][parameter]:
-                # get already present df
-                old_df = old_dict["monitoring"]["pulser"][parameter][
-                    "df_" + plot_info["subsystem"]
-                ]
-                old_df = check_level0(old_df)
-                # get new df (plot_info object is the same as before, no need to get it and update it)
-                new_df = par_dict_content["df_" + plot_info["subsystem"]]
-                # concatenate the two dfs (channels are no more grouped; not a problem)
-                merged_df = DataFrame.empty
-                merged_df = concat([old_df, new_df], ignore_index=True, axis=0)
-                merged_df = merged_df.reset_index()
-                merged_df = check_level0(merged_df)
-                # re-order content in order of channels/timestamps
-                merged_df = merged_df.sort_values(["channel", "datetime"])
-
-                # redefine the dict containing the df and plot_info
-                par_dict_content = {}
-                par_dict_content["df_" + plot_info["subsystem"]] = merged_df
-                par_dict_content["plot_info"] = plot_info
-
-                # saved the merged df as usual
-                out_dict = save_dict(
-                    plot_settings, plot_info, par_dict_content, old_dict["monitoring"]
-                )
-                # we need to save it, otherwise when looping over the next parameter we lose the appended info for the already inspected parameter
-                out_file = shelve.open(plt_path + "-" + plot_info["subsystem"])
-                out_file["monitoring"] = out_dict
-                out_file.close()
-
-    return out_dict
-
-
-def save_dict(
-    plot_settings: list, plot_info: list, par_dict_content: dict, out_dict: dict
-):
-    """Create a dictionary with the correct format for being saved in the final shelve object."""
-    parameter = (
-        plot_info["parameter"].split("_var")[0]
-        if "_var" in plot_info["parameter"]
-        else plot_info["parameter"]
-    )
-    # event type key is already there
-    if plot_settings["event_type"] in out_dict.keys():
-        out_dict[plot_settings["event_type"]][parameter] = par_dict_content
-    # event type key is NOT there
+    If tot_livetime is more than 0.1 yr, convert it to years.
+    If tot_livetime is less than 0.1 yr but more than 1 day, convert it to days.
+    If tot_livetime is less than 1 day but more than 1 hour, convert it to hours.
+    If tot_livetime is less than 1 hour but more than 1 minute, convert it to minutes.
+    """
+    if tot_livetime > 60 * 60 * 24 * 365.25:
+        tot_livetime = tot_livetime / 60 / 60 / 24 / 365.25
+        unit = " yr"
+    elif tot_livetime > 60 * 60 * 24:
+        tot_livetime = tot_livetime / 60 / 60 / 24
+        unit = " days"
+    elif tot_livetime > 60 * 60:
+        tot_livetime = tot_livetime / 60 / 60
+        unit = " hrs"
+    elif tot_livetime > 60:
+        tot_livetime = tot_livetime / 60
+        unit = " min"
     else:
-        # empty dictionary (not filled yet)
-        if len(out_dict.keys()) == 0:
-            out_dict = {plot_settings["event_type"]: {parameter: par_dict_content}}
-        # the dictionary already contains something (but for another event type selection)
-        else:
-            out_dict[plot_settings["event_type"]] = {parameter: par_dict_content}
+        unit = " sec"
+    logger.info(f"Total livetime: {tot_livetime:.2f}{unit}")
 
-    return out_dict
+    return tot_livetime, unit
 
 
-def check_level0(dataframe: DataFrame) -> DataFrame:
-    """Check if a dataframe contains the 'level_0' column. If so, remove it."""
-    if "level_0" in dataframe.columns:
-        dataframe = dataframe.drop(columns=["level_0"])
-    return dataframe
+def is_empty(df: DataFrame):
+    """Check if a dataframe is empty."""
+    if df.empty:
+        return True
+
+
+def check_empty_df(df) -> bool:
+    """Check if df (DataFrame | analysis_data.AnalysisData) exists and is not empty."""
+    # the dataframe is of type DataFrame
+    if isinstance(df, DataFrame):
+        return is_empty(df)
+    # the dataframe is of type analysis_data.AnalysisData
+    else:
+        return is_empty(df.data)
+
+
+def convert_to_camel_case(string: str, char: str) -> str:
+    """Remove a character from a string and capitalize all initial letters."""
+    # Split the string by underscores
+    words = string.split(char)
+    # Capitalize the initial letters of each word
+    words = [word.capitalize() for word in words]
+    # Join the words back together without any separator
+    camel_case_string = "".join(words)
+
+    return camel_case_string
+
+
+def get_output_path(config: dict):
+    """Get output path provided a 'dataset' from the config file. The path will be used to save and store pdfs/hdf/etc files."""
+    try:
+        data_types = (
+            [config["dataset"]["type"]]
+            if isinstance(config["dataset"]["type"], str)
+            else config["dataset"]["type"]
+        )
+
+        plt_basename = "{}-{}-".format(
+            config["dataset"]["experiment"].lower(),
+            config["dataset"]["period"],
+        )
+    except (KeyError, TypeError):
+        # means something about dataset is wrong -> print Subsystem doc
+        logger.error(
+            "\033[91mSomething is missing or wrong in your 'dataset' field of the config. You can see the format here under 'dataset=':\033[0m"
+        )
+        logger.info("\033[91m%s\033[0m", subsystem.Subsystem.__doc__)
+        exit()
+
+    user_time_range = get_query_timerange(dataset=config["dataset"])
+    # will be returned as None if something is wrong, and print an error message
+    if not user_time_range:
+        return
+
+    # create output folders for plots
+    period_dir = make_output_paths(config, user_time_range)
+    # get correct time info for subfolder's name
+    name_time = (
+        get_run_name(config, user_time_range)
+        if "timestamp" in user_time_range.keys()
+        else get_time_name(user_time_range)
+    )
+    output_paths = period_dir + name_time + "/"
+    make_dir(output_paths)
+    if not output_paths:
+        return
+
+    # we don't care here about the time keyword timestamp/run -> just get the value
+    plt_basename += name_time
+    out_path = output_paths + plt_basename
+    out_path += "-{}".format("_".join(data_types))
+
+    return out_path

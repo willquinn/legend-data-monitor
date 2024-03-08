@@ -1,10 +1,12 @@
 import os
+import sys
 import typing
 from datetime import datetime
+from typing import Union
 
 import numpy as np
 import pandas as pd
-from legendmeta import LegendMetadata
+from legendmeta import JsonDB
 from pygama.flow import DataLoader
 
 from . import utils
@@ -17,28 +19,32 @@ class Subsystem:
     """
     Object containing information for a given subsystem such as channel map, channels status etc.
 
-    sub_type [str]: geds | spms | pulser
+    sub_type [str]: geds | spms | pulser | pulser01ana | FCbsln | muon
 
     Options for kwargs
 
     dataset=
         dict with the following keys:
             - 'experiment' [str]: 'L60' or 'L200'
-            - 'path' [str]: < move description here from get_data() >
-            - 'version' [str]: < move description here from get_data() >
+            - 'period' [str]: period format pXX
+            - 'path' [str]: path to prod-ref folder (before version)
+            - 'version' [str]: version of pygama data processing format vXX.XX
             - 'type' [str]: 'phy' or 'cal'
             - the following key(s) depending in time selection
-                1) 'start' : <start datetime>, 'end': <end datetime> where <datetime> input is of format 'YYYY-MM-DD hh:mm:ss'
-                2) 'window'[str]: time window in the past from current time point, format: 'Xd Xh Xm' for days, hours, minutes
-                2) 'timestamps': str or list of str in format 'YYYYMMDDThhmmssZ'
-                3) 'runs': int or list of ints for run number(s)  e.g. 10 for r010
-    Or input kwargs separately path=, version=, type=; start=&end=, or window=, or timestamps=, or runs=
+                1. 'start' : <start datetime>, 'end': <end datetime> where <datetime> input is of format 'YYYY-MM-DD hh:mm:ss'
+                2. 'window' [str]: time window in the past from current time point, format: 'Xd Xh Xm' for days, hours, minutes
+                2. 'timestamps': str or list of str in format 'YYYYMMDDThhmmssZ'
+                3. 'runs': int or list of ints for run number(s)  e.g. 10 for r010
+    Or input kwargs separately experiment=, period=, path=, version=, type=; start=&end=, or window=, or timestamps=, or runs=
 
-    Experiment is needed to know which channel belongs to the pulser Subsystem, AUX0 (L60) or AUX1 (L200)
+    Experiment is needed to know which channel belongs to the pulser Subsystem (and its name), "auxs" ch0 (L60) or "puls" ch1 (L200)
+    Period is needed to know channel name ("fcid" or "rawid")
     Selection range is needed for the channel map and status information at that time point, and should be the only information needed,
         however, pylegendmeta only allows query .on(timestamp=...) but not .on(run=...);
         therefore, to be able to get info in case of `runs` selection, we need to know
-        path, version, and run type to look up first timestamp of the run
+        path, version, and run type to look up first timestamp of the run.
+        If this changes in the future, the path will only be asked when data is requested to be loaded with Subsystem.get_data(),
+        but not to just load the channel map and status for given run
 
     Might set default "latest" for version, but gotta be careful.
     """
@@ -58,55 +64,8 @@ class Subsystem:
         # otherwise kwargs is itself already the dict we need with experiment= and period=
         data_info = kwargs["dataset"] if "dataset" in kwargs else kwargs
 
-        if "experiment" not in data_info:
-            utils.logger.error("\033[91mProvide experiment name!\033[0m")
-            utils.logger.error("\033[91m%s\033[0m", self.__doc__)
-            return
-
-        if "type" not in data_info:
-            utils.logger.error("\033[91mProvide data type!\033[0m")
-            utils.logger.error("\033[91m%s\033[0m", self.__doc__)
-            return
-
-        # convert to list for convenience
-        # ! currently not possible with channel status
-        # if isinstance(data_info["type"], str):
-        #     data_info["type"] = [data_info["type"]]
-
-        data_types = ["phy", "cal"]
-        # ! currently not possible with channel status
-        # for datatype in data_info["type"]:
-        # if datatype not in data_types:
-        if not data_info["type"] in data_types:
-            utils.logger.error("\033[91mInvalid data type provided!\033[0m")
-            utils.logger.error("\033[91m%s\033[0m", self.__doc__)
-            return
-
-        if "path" not in data_info:
-            utils.logger.error("\033[91mProvide path to data!\033[0m")
-            utils.logger.error("\033[91m%s\033[0m", self.__doc__)
-            return
-        if not os.path.exists(data_info["path"]):
-            utils.logger.error(
-                "\033[91mThe data path you provided does not exist!\033[0m"
-            )
-            return
-
-        if "version" not in data_info:
-            utils.logger.error(
-                '\033[91mProvide processing version! If not needed, just put an empty string, "".\033[0m'
-            )
-            utils.logger.error("\033[91m%s\033[0m", self.__doc__)
-            return
-
-        # in p03 things change again!!!!
-        # There is no version in '/data2/public/prodenv/prod-blind/tmp/auto/generated/tier/dsp/phy/p03', so for the moment we skip this check...
-        if data_info["period"] != "p03" and not os.path.exists(
-            os.path.join(data_info["path"], data_info["version"])
-        ):
-            utils.logger.error("\033[91mProvide valid processing version!\033[0m")
-            utils.logger.error("\033[91m%s\033[0m", self.__doc__)
-            return
+        # validity check of kwarg
+        utils.dataset_validity_check(data_info)
 
         # validity of time selection will be checked in utils
 
@@ -126,7 +85,17 @@ class Subsystem:
         self.path = data_info["path"]
         self.version = data_info["version"]
 
-        self.timerange, self.first_timestamp = utils.get_query_times(**kwargs)
+        # data stored under these folders have been partitioned!
+        if "tmp-auto" not in self.path:
+            self.partition = True
+        else:
+            self.partition = False
+
+        (
+            self.timerange,
+            self.first_timestamp,
+            self.last_timestamp,
+        ) = utils.get_query_times(**kwargs)
 
         # None will be returned if something went wrong
         if not self.timerange:
@@ -217,14 +186,19 @@ class Subsystem:
         now = datetime.now()
         self.data = dl.load()
         utils.logger.info(f"Total time to load data: {(datetime.now() - now)}")
-
+        
         # -------------------------------------------------------------------------
         # polish things up
         # -------------------------------------------------------------------------
 
-        tier = "hit" if "hit" in dbconfig["columns"] else "dsp"
+        tier = "dsp" 
+        if "hit" in dbconfig["columns"]:
+            tier = "hit"
+        if self.partition and "pht" in dbconfig["columns"]:
+            tier = "pht" 
         # remove columns we don't need
-        self.data = self.data.drop([f"{tier}_idx", "file"], axis=1)
+        if "{tier}_idx" in list(self.data.columns):
+            self.data = self.data.drop([f"{tier}_idx", "file"], axis=1)
         # rename channel to channel
         self.data = self.data.rename(columns={f"{tier}_table": "channel"})
 
@@ -236,6 +210,7 @@ class Subsystem:
         self.data["datetime"] = pd.to_datetime(
             self.data["timestamp"], origin="unix", utc=True, unit="s"
         )
+        self.data = self.data.drop("timestamp", axis=1)
 
         # -------------------------------------------------------------------------
         # add detector name, location and position from map
@@ -262,8 +237,114 @@ class Subsystem:
 
         if self.type == "pulser":
             self.flag_pulser_events()
+        if self.type == "FCbsln":
+            self.flag_fcbsln_events()
+        if self.type == "muon":
+            self.flag_muon_events()
+
+    def include_aux(
+        self, params: Union[str, list], dataset: dict, plot: dict, aux_ch: str
+    ):
+        """Include in a new column data coming from PULS01ANA aux channel, to either compute a ratio or a difference with data coming from the inspected subsystem."""
+        # auxiliary channel of reference (fixed for the moment)
+        aux_channel = "pulser01ana"
+        # both options (diff and ratio) are present -> BAD! For this parameter we do not subtract/divide for any AUX entry
+        if "AUX_ratio" in plot.keys() and "AUX_diff" in plot.keys():
+            utils.logger.error(
+                "\033[91mYou selected both 'AUX_ratio' and 'AUX_diff' for %s. Pick one!\033[0m",
+                plot["parameters"],
+            )
+            sys.exit()
+        # one option (either diff or ratio) is present
+        if "AUX_ratio" in plot.keys() or "AUX_diff" in plot.keys():
+            # check if the selected AUX channel exists, otherwise continue
+            if "AUX_ratio" in plot.keys() and plot["AUX_ratio"] is True:
+                utils.logger.debug(
+                    "... you are going to plot the parameter accounting for the ratio wrt PULS01ANA data"
+                )
+            if "AUX_diff" in plot.keys() and plot["AUX_diff"] is True:
+                utils.logger.debug(
+                    "... you are going to plot the parameter accounting for the difference wrt PULS01ANA data"
+                )
+
+        utils.logger.debug(
+            "... but now we are going to perform diff/ratio with PULS01ANA entries"
+        )
+
+        def add_aux(param):
+            aux_subsys = Subsystem(aux_channel, dataset=dataset)
+            # get data for these parameters and time range given in the dataset
+            # (if no parameters given to plot, baseline and wfmax will always be loaded to flag pulser events anyway)
+            aux_subsys.get_data(param)
+
+            # Merge the dataframes based on the 'datetime' column
+            utils.logger.debug(
+                "... merging the PULS01ANA dataframe with the original one"
+            )
+            self.data = self.data.merge(
+                aux_subsys.data[["datetime", param]], on="datetime", how="left"
+            )
+
+            # ratio
+            self.data[f"{param}_{aux_ch}Ratio"] = (
+                self.data[f"{param}_x"] / self.data[f"{param}_y"]
+            )
+            # diff
+            self.data[f"{param}_{aux_ch}Diff"] = (
+                self.data[f"{param}_x"] - self.data[f"{param}_y"]
+            )
+            # rename columns (absolute values)
+            self.data = self.data.rename(
+                columns={f"{param}_x": param, f"{param}_y": f"{param}_{aux_ch}"}
+            )
+
+        # one-parameter case
+        if (isinstance(params, list) and len(params) == 1) or isinstance(params, str):
+            param = params if isinstance(params, str) else params[0]
+            # check if the parameter under study is special; if so, skip it
+            if param in utils.SPECIAL_PARAMETERS.keys():
+                utils.logger.warning(
+                    "\033[93m'%s' is a special parameter. "
+                    + "For the moment, we skip the ratio/diff wrt the AUX channel and plot the parameter as it is.\033[0m",
+                    params,
+                )
+                return
+            # check if the parameter under study is from 'hit' tier; if so, skip it
+            if (
+                param in utils.PARAMETER_TIERS.keys()
+                and utils.PARAMETER_TIERS[param] == "hit"
+            ):
+                utils.logger.warning(
+                    "\033[93m'%s' is saved in hit tier, for which no AUX channel is present. "
+                    + "We skip the ratio/diff wrt the AUX channel and plot the parameter as it is.\033[0m",
+                    params,
+                )
+                return
+            if f"{param}_{aux_channel}" not in list(self.data.columns):
+                add_aux(params)
+
+        # multiple-parameters case
+        if isinstance(params, list) and len(params) > 1:
+            for param in params:
+                if param in utils.SPECIAL_PARAMETERS.keys():
+                    utils.logger.warning(
+                        "\033[93m'%s' is a special parameter. "
+                        + "For the moment, we skip the ratio/diff wrt the AUX channel and plot the parameter as it is.\033[0m",
+                        params,
+                    )
+                    return
+                if utils.PARAMETER_TIERS[param] == "hit":
+                    utils.logger.warning(
+                        "\033[93m'%s' is saved in hit tier, for which no AUX channel is present. "
+                        + "We skip the ratio/diff wrt the AUX channel and plot the parameter as it is.\033[0m",
+                        param,
+                    )
+                    continue
+                if f"{param}_{aux_channel}" not in list(self.data.columns):
+                    add_aux(params)
 
     def flag_pulser_events(self, pulser=None):
+        """Flag pulser events. If a pulser object was provided, flag pulser events in data based on its flag."""
         utils.logger.info("... flagging pulser events")
 
         # --- if a pulser object was provided, flag pulser events in data based on its flag
@@ -287,14 +368,98 @@ class Subsystem:
 
         else:
             # --- if no object was provided, it's understood that this itself is a pulser
-            # find timestamps over threshold
-            high_thr = 12500
-            self.data = self.data.set_index("datetime")
-            wf_max_rel = self.data["wf_max"] - self.data["baseline"]
-            pulser_timestamps = self.data[wf_max_rel > high_thr].index
+            trapTmax = self.data["trapTmax"] 
+            pulser_timestamps = self.data[trapTmax > 200].index
             # flag them
             self.data["flag_pulser"] = False
             self.data.loc[pulser_timestamps, "flag_pulser"] = True
+
+        self.data = self.data.reset_index()
+
+    def flag_fcbsln_events(self, fc_bsln=None):
+        """Flag FC baseline events, keeping the ones that are in correspondence with a pulser event too. If a FC baseline object was provided, flag FC baseline events in data based on its flag."""
+        utils.logger.info("... flagging FC baseline events")
+
+        # --- if a FC baseline object was provided, flag FC baseline events in data based on its flag
+        if fc_bsln:
+            try:
+                fc_bsln_timestamps = fc_bsln.data[fc_bsln.data["flag_fc_bsln"]][
+                    "datetime"
+                ]  # .set_index('datetime').index
+                self.data["flag_fc_bsln"] = False
+                self.data = self.data.set_index("datetime")
+                self.data.loc[fc_bsln_timestamps, "flag_fc_bsln"] = True
+            except KeyError:
+                utils.logger.warning(
+                    "\033[93mWarning: cannot flag FC baseline events, timestamps don't match!\n \
+                    If you are you looking at calibration data, it's not possible to flag FC baseline events in it this way.\n \
+                    Contact the developers if you would like them to focus on advanced flagging methods.\033[0m"
+                )
+                utils.logger.warning(
+                    "\033[93m! Proceeding without FC baseline flag !\033[0m"
+                )
+
+        else:
+            # --- if no object was provided, it's understood that this itself is a FC baseline
+            # find timestamps over threshold
+            high_thr = 3000
+            self.data = self.data.set_index("datetime")
+            wf_max_rel = self.data["wf_max"] - self.data["baseline"]
+            fc_bsln_timestamps = self.data[wf_max_rel > high_thr].index
+            # flag them
+            self.data["flag_fc_bsln"] = False
+            self.data.loc[fc_bsln_timestamps, "flag_fc_bsln"] = True
+
+        self.data = self.data.reset_index()
+
+    def flag_fcbsln_only_events(self, fc_bsln=None):
+        """Flag FC baseline events. If a FC baseline object was provided, flag FC baseline events in data based on its flag."""
+        utils.logger.info("... flagging FC baseline ONLY events")
+
+        # --- if a FC baseline object was provided, flag FC baseline events in data
+        if fc_bsln:
+            self.data = self.data.merge(
+                fc_bsln.data[["datetime", "flag_fc_bsln"]], on="datetime"
+            )
+
+        # in any case, define FC bsln events as FC bsln events for which there was not a pulser event
+        self.data["flag_fc_bsln"] = (
+            self.data["flag_fc_bsln"] & ~self.data["flag_pulser"]
+        )
+
+        self.data = self.data.reset_index()
+
+    def flag_muon_events(self, muon=None):
+        """Flag muon events. If a muon object was provided, flag muon events in data based on its flag."""
+        utils.logger.info("... flagging muon events")
+
+        # --- if a muon object was provided, flag muon events in data based on its flag
+        if muon:
+            try:
+                muon_timestamps = muon.data[muon.data["flag_muon"]][
+                    "datetime"
+                ]  # .set_index('datetime').index
+                self.data["flag_muon"] = False
+                self.data = self.data.set_index("datetime")
+                self.data.loc[muon_timestamps, "flag_muon"] = True
+            except KeyError:
+                utils.logger.warning(
+                    "\033[93mWarning: cannot flag muon events, timestamps don't match!\n \
+                    If you are you looking at calibration data, it's not possible to flag muon events in it this way.\n \
+                    Contact the developers if you would like them to focus on advanced flagging methods.\033[0m"
+                )
+                utils.logger.warning("\033[93m! Proceeding without muon flag !\033[0m")
+
+        else:
+            # --- if no object was provided, it's understood that this itself is a muon
+            # find timestamps over threshold
+            high_thr = 500
+            self.data = self.data.set_index("datetime")
+            wf_max_rel = self.data["wf_max"] - self.data["baseline"]
+            muon_timestamps = self.data[wf_max_rel > high_thr].index
+            # flag them
+            self.data["flag_muon"] = False
+            self.data.loc[muon_timestamps, "flag_muon"] = True
 
         self.data = self.data.reset_index()
 
@@ -304,36 +469,22 @@ class Subsystem:
 
         setup_info: dict with the keys 'experiment' and 'period'
 
-        Later will probably be changed to get channel map by timestamp (or hopefully run, if possible)
+        Later will probably be changed to get channel map by run, if possible
         Planning to add:
             - barrel column for SiPMs special case
         """
         utils.logger.info("... getting channel map")
 
         # -------------------------------------------------------------------------
-        # load full channel map of this exp and period
+        # load full channel map of this exp and period (and version)
         # -------------------------------------------------------------------------
 
-        lmeta = LegendMetadata()
-        full_channel_map = lmeta.hardware.configuration.channelmaps.on(
-            timestamp=self.first_timestamp
+        map_file = os.path.join(
+            self.path, self.version, "inputs/hardware/configuration/channelmaps"
         )
+        full_channel_map = JsonDB(map_file).on(timestamp=self.first_timestamp)
 
-        df_map = pd.DataFrame(
-            columns=[
-                "name",
-                "location",
-                "channel",
-                "position",
-                "cc4_id",
-                "cc4_channel",
-                "daq_crate",
-                "daq_card",
-                "HV_card",
-                "HV_channel",
-                "det_type",
-            ],
-        )
+        df_map = pd.DataFrame(columns=utils.COLUMNS_TO_LOAD)
         df_map = df_map.set_index("channel")
 
         # -------------------------------------------------------------------------
@@ -341,10 +492,10 @@ class Subsystem:
         # -------------------------------------------------------------------------
 
         # for L60-p01 and L200-p02, keep using 'fcid' as channel
-        if int(self.period[-1]) < 3:
+        if int(self.period.split('p')[-1]) < 3:
             ch_flag = "fcid"
         # from L200-p03 included, uses 'rawid' as channel
-        if int(self.period[-1]) >= 3:
+        if int(self.period.split('p')[-1]) >= 3:
             ch_flag = "rawid"
 
         # dct_key is the subdict corresponding to one chmap entry
@@ -354,12 +505,54 @@ class Subsystem:
                 if self.experiment == "L60":
                     return entry["system"] == "auxs" and entry["daq"]["fcid"] == 0
                 if self.experiment == "L200":
-                    if int(self.period[-1]) < 3:
+                    # we get PULS01
+                    if self.below_period_3_excluded():
                         return entry["system"] == "puls" and entry["daq"][ch_flag] == 1
-                    if int(self.period[-1]) >= 3:
+                    # we get PULS01ANA
+                    if self.above_period_3_included():
                         return (
                             entry["system"] == "puls"
+                            # and entry["daq"][ch_flag] == 1027203
                             and entry["daq"][ch_flag] == 1027201
+                        )
+            # special case for pulser AUX
+            if self.type == "pulser01ana":
+                if self.experiment == "L60":
+                    utils.logger.error(
+                        "\033[91mThere is no pulser AUX channel in L60. Remove this subsystem!\033[0m"
+                    )
+                    exit()
+                if self.experiment == "L200":
+                    if self.below_period_3_excluded():
+                        return entry["system"] == "puls" and entry["daq"][ch_flag] == 3
+                    if self.above_period_3_included():
+                        return (
+                            entry["system"] == "puls"
+                            and entry["daq"][ch_flag] == 1027203
+                        )
+            # special case for baseline
+            if self.type == "FCbsln":
+                if self.experiment == "L60":
+                    return entry["system"] == "auxs" and entry["daq"]["fcid"] == 0
+                if self.experiment == "L200":
+                    if self.below_period_3_excluded():
+                        return entry["system"] == "bsln" and entry["daq"][ch_flag] == 0
+                    if self.above_period_3_included():
+                        return (
+                            entry["system"] == "bsln"
+                            and entry["daq"][ch_flag] == 1027200
+                        )
+            # special case for muon channel
+            if self.type == "muon":
+                if self.experiment == "L60":
+                    return entry["system"] == "auxs" and entry["daq"]["fcid"] == 1
+                if self.experiment == "L200":
+                    if self.below_period_3_excluded():
+                        return entry["system"] == "auxs" and entry["daq"][ch_flag] == 2
+                    if self.above_period_3_included():
+                        return (
+                            entry["system"] == "auxs"
+                            and entry["daq"][ch_flag] == 1027202
                         )
             # for geds or spms
             return entry["system"] == self.type
@@ -370,14 +563,17 @@ class Subsystem:
         # detector type for geds in the channel map
         type_code = {"B": "bege", "C": "coax", "V": "icpc", "P": "ppc"}
 
+        # systems for which the location/position has to be handled carefully; values were chosen arbitrarily to avoid conflicts
+        special_systems = utils.SPECIAL_SYSTEMS
+
         # -------------------------------------------------------------------------
         # loop over entries and find out subsystem
         # -------------------------------------------------------------------------
 
         # config.channel_map is already a dict read from the channel map json
         for entry in full_channel_map:
-            # skip 'BF' (! not needed since BF is auxs)
-            if "BF" in entry:
+            # skip dummy channels
+            if "BF" in entry or "DUMMY" in entry:
                 continue
 
             entry_info = full_channel_map[entry]
@@ -386,19 +582,21 @@ class Subsystem:
             if not is_subsystem(entry_info):
                 continue
 
-            # --- add info for this channel - Raw/FlashCam ID, unique for geds/spms/pulser
+            # --- add info for this channel - Raw/FlashCam ID, unique for geds/spms/pulser/pulser01ana/FCbsln/muon
             ch = entry_info["daq"][ch_flag]
 
             df_map.at[ch, "name"] = entry_info["name"]
-            # number/name of string/fiber for geds/spms, dummy for pulser
+            # number/name of string/fiber for geds/spms, dummy for pulser/pulser01ana/FCbsln/muon
             df_map.at[ch, "location"] = (
-                0
-                if self.type == "pulser"
+                special_systems[self.type]
+                if self.type in special_systems
                 else entry_info["location"][loc_code[self.type]]
             )
-            # position in string/fiber for geds/spms, dummy for pulser (works if there is only one pulser channel)
+            # position in string/fiber for geds/spms, dummy for pulser/pulser01ana/FCbsln/muon
             df_map.at[ch, "position"] = (
-                0 if self.type == "pulser" else entry_info["location"]["position"]
+                special_systems[self.type]
+                if self.type in special_systems
+                else entry_info["location"]["position"]
             )
             # CC4 information - will be None for L60 (set to 'null') or spms (there, but no CC4s)
             df_map.at[ch, "cc4_id"] = (
@@ -461,24 +659,33 @@ class Subsystem:
         utils.logger.info("... getting channel status")
 
         # -------------------------------------------------------------------------
-        # load full status map of this time selection
+        # load full status map of this time selection (and version)
         # -------------------------------------------------------------------------
 
-        lmeta = LegendMetadata()
-        full_status_map = lmeta.dataprod.config.on(
+        map_file = os.path.join(self.path, self.version, "inputs/dataprod/config")
+        full_status_map = JsonDB(map_file).on(
             timestamp=self.first_timestamp, system=self.datatype
         )["analysis"]
 
-        # AUX channels are not in status map, so at least for pulser need default on
+        # AUX channels are not in status map, so at least for pulser/pulser01ana/FCbsln/muon need default on
         self.channel_map["status"] = "on"
+
         self.channel_map = self.channel_map.set_index("name")
-        # 'channel_name', for instance, has the format 'DNNXXXS' (= "name" column)
+        # 'channel_name' has the format 'DNNXXXS' (= "name" column)
         for channel_name in full_status_map:
             # status map contains all channels, check if this channel is in our subsystem
             if channel_name in self.channel_map.index:
                 self.channel_map.at[channel_name, "status"] = full_status_map[
                     channel_name
-                ]["usability"]
+                ]["usability"] 
+
+        # -------------------------------------------------------------------------
+        # quick-fix to remove detectors while status maps are not updated
+        # -------------------------------------------------------------------------
+        for channel_name in utils.REMOVE_DETS:
+            # status map contains all channels, check if this channel is in our subsystem
+            if channel_name in self.channel_map.index:
+                self.channel_map.at[channel_name, "status"] = "off"
 
         self.channel_map = self.channel_map.reset_index()
 
@@ -493,8 +700,8 @@ class Subsystem:
         # --- always read timestamp
         params = ["timestamp"]
         # --- always get wf_max & baseline for pulser for flagging
-        if self.type == "pulser":
-            params += ["wf_max", "baseline"]
+        if self.type in ["pulser", "pulser01ana", "FCbsln", "muon"]:
+            params += ["wf_max", "baseline", "trapTmax"]
 
         # --- add user requested parameters
         # change to list for convenience, if input was single
@@ -518,12 +725,12 @@ class Subsystem:
         # some parameters might be repeated twice - remove
         return list(np.unique(params))
 
+
     def construct_dataloader_configs(self, params: list_of_str):
         """
         Construct DL and DB configs for DataLoader based on parameters and which tiers they belong to.
 
         params: list of parameters to load
-        data_info: dict of containing type:, path:, version:
         """
         # -------------------------------------------------------------------------
         # which parameters belong to which tiers
@@ -535,6 +742,9 @@ class Subsystem:
         # ...
         param_tiers = pd.DataFrame.from_dict(utils.PARAMETER_TIERS.items())
         param_tiers.columns = ["param", "tier"]
+        # change from 'hit' to 'pht' when loading data for partitioned files 
+        if self.partition:
+            param_tiers["tier"] = param_tiers["tier"].replace("hit", "pht")
 
         # which of these are requested by user
         param_tiers = param_tiers[param_tiers["param"].isin(params)]
@@ -559,19 +769,26 @@ class Subsystem:
         # set up tiers depending on what parameters we need
         # -------------------------------------------------------------------------
 
-        # ronly load channels that are on (off channels will crash DataLoader)
-        chlist = list(self.channel_map[self.channel_map["status"] == "on"]["channel"])
+        # only load channels that are on or ac 
+        chlist = list(self.channel_map[(self.channel_map["status"] == "on") | (self.channel_map["status"] == "ac")]["channel"])
+        # remove off channels
         removed_chs = list(
-            self.channel_map[self.channel_map["status"] == "off"]["channel"]
+            self.channel_map[self.channel_map["status"] == "off"]["name"]
         )
-
         utils.logger.info(f"...... not loading channels with status off: {removed_chs}")
+        """
+        # remove on channels that are not processable (ie have no hit entries)
+        removed_unprocessable_chs = list(
+            self.channel_map[self.channel_map["status"] == "on_not_process"]["name"]
+        )
+        utils.logger.info(f"...... not loading on channels that are not processable: {removed_unprocessable_chs}")
+        """
 
         # for L60-p01 and L200-p02, keep using 3 digits
-        if int(self.period[-1]) < 3:
+        if int(self.period.split('p')[-1]) < 3:
             ch_format = "ch:03d"
         # from L200-p03 included, uses 7 digits
-        if int(self.period[-1]) >= 3:
+        if int(self.period.split('p')[-1]) >= 3:
             ch_format = "ch:07d"
 
         # --- settings for each tier
@@ -587,7 +804,8 @@ class Subsystem:
                 + tier
                 + ".lh5"
             )
-            dict_dbconfig["table_format"][tier] = "ch{" + ch_format + "}/" + tier
+            dict_dbconfig["table_format"][tier] =  "ch{" + ch_format + "}/" 
+            dict_dbconfig["table_format"][tier] += "hit" if tier == "pht" else tier 
 
             dict_dbconfig["tables"][tier] = chlist
 
@@ -596,7 +814,7 @@ class Subsystem:
             # dict_dlconfig['levels'][tier] = {'tiers': [tier]}
 
         # --- settings based on tier hierarchy
-        order = {"hit": 3, "dsp": 2, "raw": 1}
+        order = {"pht": 3, "dsp": 2, "raw": 1} if self.partition else {"hit": 3, "dsp": 2, "raw": 1}
         param_tiers["order"] = param_tiers["tier"].apply(lambda x: order[x])
         # find highest tier
         max_tier = param_tiers[param_tiers["order"] == param_tiers["order"].max()][
@@ -608,3 +826,120 @@ class Subsystem:
         }
 
         return dict_dlconfig, dict_dbconfig
+
+    
+    def construct_dataloader_configs_unprocess(self, params: list_of_str):
+        """
+        Construct DL and DB configs for DataLoader based on parameters and which tiers they belong to.
+
+        params: list of parameters to load
+        """
+        
+        param_tiers = pd.DataFrame.from_dict(utils.PARAMETER_TIERS.items())
+        param_tiers.columns = ["param", "tier"]
+
+        param_tiers = param_tiers[param_tiers["param"].isin(params)]
+        utils.logger.info("...... loading parameters from the following tiers:")
+        utils.logger.debug(param_tiers)
+
+        # -------------------------------------------------------------------------
+        # set up config templates
+        # -------------------------------------------------------------------------
+
+        dict_dbconfig = {
+            "data_dir": os.path.join(self.path, self.version, "generated", "tier"),
+            "tier_dirs": {},
+            "file_format": {},
+            "table_format": {},
+            "tables": {},
+            "columns": {},
+        }
+        dict_dlconfig = {"channel_map": {}, "levels": {}}
+
+        # -------------------------------------------------------------------------
+        # set up tiers depending on what parameters we need
+        # -------------------------------------------------------------------------
+
+        chlist = list(self.channel_map[(self.channel_map["status"] == "on_not_process") | (self.channel_map["status"] == "ac")]["channel"])
+        utils.logger.info(f"...... loading on channels that are not processable: {chlist}")
+
+        # for L60-p01 and L200-p02, keep using 3 digits
+        if int(self.period.split('p')[-1]) < 3:
+            ch_format = "ch:03d"
+        # from L200-p03 included, uses 7 digits
+        if int(self.period.split('p')[-1]) >= 3:
+            ch_format = "ch:07d"
+
+        for tier, tier_params in param_tiers.groupby("tier"):
+            dict_dbconfig["tier_dirs"][tier] = f"/{tier}"
+            dict_dbconfig["file_format"][tier] = (
+                "/{type}/"
+                + self.period  # {period}
+                + "/{run}/{exp}-"
+                + self.period  # {period}
+                + "-{run}-{type}-{timestamp}-tier_"
+                + tier
+                + ".lh5"
+            )
+            dict_dbconfig["table_format"][tier] = "ch{" + ch_format + "}/" + tier
+
+            dict_dbconfig["tables"][tier] = chlist
+
+            dict_dbconfig["columns"][tier] = list(tier_params["param"])
+
+        # --- settings based on tier hierarchy
+        order = {"hit": 3, "dsp": 2, "raw": 1}
+        param_tiers["order"] = param_tiers["tier"].apply(lambda x: order[x])
+        max_tier = param_tiers[param_tiers["order"] == param_tiers["order"].max()][
+            "tier"
+        ].iloc[0]
+        dict_dlconfig["levels"][max_tier] = {
+            "tiers": list(param_tiers["tier"].unique())
+        }
+
+        return dict_dlconfig, dict_dbconfig
+
+
+    def remove_timestamps(self, remove_keys: dict):
+        """Remove timestamps from the dataframes for a given channel.
+
+        The time interval in which to remove the channel is provided through an external json file.
+        """
+        # all timestamps we are considering are expressed in UTC0
+        utils.logger.debug("... removing timestamps from the following detectors:")
+
+        # loop over channels for which we want to remove timestamps
+        for detector in remove_keys:
+            if detector in self.data["name"].unique():
+                utils.logger.debug(f".... {detector}")
+                # remove timestamps from self.data that are within time_from and time_to, for a given channel
+                for chunk in remove_keys[detector]:
+                    utils.logger.debug(f"from {chunk['from']} to {chunk['to']}")
+                    # times are in format YYYYMMDDTHHMMSSZ, convert them into a UTC0 timestamp
+                    for point in ["from", "to"]:
+                        # convert UTC timestamp to datetime (unix epoch time)
+                        chunk[point] = pd.to_datetime(
+                            chunk[point], utc=True, format="%Y%m%dT%H%M%SZ"
+                        )
+
+                    # entries to drop for this chunk
+                    rows_to_drop = self.data[
+                        (self.data["name"] == detector)
+                        & (self.data["datetime"] >= chunk["from"])
+                        & (self.data["datetime"] <= chunk["to"])
+                    ]
+                    self.data = self.data.drop(rows_to_drop.index)
+
+        self.data = self.data.reset_index()
+
+    def below_period_3_excluded(self) -> bool:
+        if int(self.period.split('p')[-1]) < 3:
+            return True
+        else:
+            return False
+
+    def above_period_3_included(self) -> bool:
+        if int(self.period.split('p')[-1]) >= 3:
+            return True
+        else:
+            return False

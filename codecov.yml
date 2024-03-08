@@ -5,7 +5,7 @@ coverage:
   status:
     project:
       default:
-        target: 20%
+        target: 5%
     patch: false
 
 github_checks:

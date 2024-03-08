@@ -1,0 +1,72 @@
+{
+  "output": "/data1/users/calgaro/auto_prova",
+  "dataset": {
+    "experiment": "L200",
+    "period": "p03",
+    "version": "",
+    "path": "/data2/public/prodenv/prod-blind/tmp/auto",
+    "type": "phy",
+    "runs": 0
+  },
+  "saving": "overwrite",
+  "subsystems": {
+    "geds": {
+      "Event rate in pulser events": {
+        "parameters": "event_rate",
+        "event_type": "pulser",
+        "plot_structure": "per string",
+        "resampled": "only",
+        "plot_style": "vs time",
+        "time_window": "20S"
+      },
+      "Baselines (dsp/baseline) in pulser events": {
+        "parameters": "baseline",
+        "event_type": "pulser",
+        "plot_structure": "per string",
+        "resampled": "only",
+        "plot_style": "vs time",
+        "AUX_ratio": true,
+        "variation": true,
+        "time_window": "10T"
+      },
+      "Uncalibrated gain (dsp/cuspEmax) in pulser events": {
+        "parameters": "cuspEmax",
+        "event_type": "pulser",
+        "plot_structure": "per string",
+        "resampled": "only",
+        "plot_style": "vs time",
+        "AUX_ratio": true,
+        "variation": true,
+        "time_window": "10T"
+      },
+      "Calibrated gain (hit/cuspEmax_ctc_cal) in FCbsln events": {
+        "parameters": "cuspEmax_ctc_cal",
+        "event_type": "FCbsln",
+        "plot_structure": "per string",
+        "resampled": "only",
+        "plot_style": "vs time",
+        "variation": true,
+        "time_window": "10T"
+      },
+      "Noise (dsp/bl_std) in pulser events": {
+        "parameters": "bl_std",
+        "event_type": "pulser",
+        "plot_structure": "per string",
+        "resampled": "only",
+        "plot_style": "vs time",
+        "AUX_ratio": true,
+        "variation": true,
+        "time_window": "10T"
+      },
+      "A/E (from dsp) in pulser events": {
+        "parameters": "AoE_Custom",
+        "event_type": "pulser",
+        "plot_structure": "per string",
+        "resampled": "only",
+        "plot_style": "vs time",
+        "variation": true,
+        "time_window": "10T"
+      }
+    }
+  }
+}
