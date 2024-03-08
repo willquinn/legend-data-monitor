@@ -70,13 +70,13 @@
       },
       "geds": {
         "variation": [null, null],
-        "absolute": [null, null]
+        "absolute": [0, 20]
       }
     }
   },
   "A_max": {
     "label": "Max. Current Pulse",
-    "unit": "a.u.",
+    "unit": "ADC/sample",
     "facecol": [0.96, 0.73, 1.0],
     "limits": {
       "spms": {
@@ -91,7 +91,7 @@
   },
   "QDrift": {
     "label": "QDrift",
-    "unit": "a.u.",
+    "unit": "ADC",
     "facecol": [0.56, 0.74, 0.56],
     "limits": {
       "spms": {
@@ -106,7 +106,7 @@
   },
   "cuspEftp": {
     "label": "cuspEftp",
-    "unit": "a.u.",
+    "unit": "ADC",
     "facecol": [0.86, 0.86, 0.86],
     "limits": {
       "spms": {
@@ -121,7 +121,7 @@
   },
   "cuspEmax": {
     "label": "cuspEmax",
-    "unit": "a.u.",
+    "unit": "ADC",
     "facecol": [0.86, 0.86, 0.86],
     "limits": {
       "spms": {
@@ -129,7 +129,7 @@
         "absolute": [null, null]
       },
       "geds": {
-        "variation": [-0.25, 0.25],
+        "variation": [-0.025, 0.025],
         "absolute": [null, null]
       }
     }
@@ -144,7 +144,7 @@
         "absolute": [null, null]
       },
       "geds": {
-        "variation": [-0.25, 0.25],
+        "variation": [-0.025, 0.025],
         "absolute": [null, null]
       }
     }
@@ -166,7 +166,7 @@
   },
   "dt_eff": {
     "label": "dt_eff",
-    "unit": "a.u.",
+    "unit": "ns",
     "facecol": "peachpuff",
     "limits": {
       "spms": {
@@ -181,7 +181,7 @@
   },
   "pz_mean": {
     "label": "pz_mean",
-    "unit": "a.u.",
+    "unit": "ADC",
     "facecol": "paleturquoise",
     "limits": {
       "spms": {
@@ -196,7 +196,7 @@
   },
   "pz_slope": {
     "label": "pz_slope",
-    "unit": "a.u.",
+    "unit": "ADC",
     "facecol": "paleturquoise",
     "limits": {
       "spms": {
@@ -211,7 +211,7 @@
   },
   "pz_std": {
     "label": "pz_std",
-    "unit": "a.u.",
+    "unit": "ADC",
     "facecol": "paleturquoise",
     "limits": {
       "spms": {
@@ -376,7 +376,7 @@
   },
   "tp_aoe_max": {
     "label": "tp_aoe_max",
-    "unit": "a.u.",
+    "unit": "ns",
     "facecol": "plum",
     "limits": {
       "spms": {
@@ -406,7 +406,7 @@
   },
   "tp_max": {
     "label": "tp_max",
-    "unit": "a.u.",
+    "unit": "ns",
     "facecol": "palegreen",
     "limits": {
       "spms": {
@@ -421,7 +421,7 @@
   },
   "tp_min": {
     "label": "tp_max",
-    "unit": "a.u.",
+    "unit": "ns",
     "facecol": "palegreen",
     "limits": {
       "spms": {
@@ -436,7 +436,7 @@
   },
   "trapEftp": {
     "label": "trapEftp",
-    "unit": "a.u.",
+    "unit": "ADC",
     "facecol": "palegoldenrod",
     "limits": {
       "spms": {
@@ -451,7 +451,7 @@
   },
   "trapEmax": {
     "label": "trapEmax",
-    "unit": "a.u.",
+    "unit": "ADC",
     "facecol": "palegoldenrod",
     "limits": {
       "spms": {
@@ -459,7 +459,7 @@
         "absolute": [null, null]
       },
       "geds": {
-        "variation": [-0.25, 0.25],
+        "variation": [-0.025, 0.025],
         "absolute": [null, null]
       }
     }
@@ -474,14 +474,14 @@
         "absolute": [null, null]
       },
       "geds": {
-        "variation": [-0.25, 0.25],
+        "variation": [-0.025, 0.025],
         "absolute": [null, null]
       }
     }
   },
   "trapTmax": {
     "label": "trapTmax",
-    "unit": "a.u.",
+    "unit": "ADC",
     "facecol": "palegoldenrod",
     "limits": {
       "spms": {
@@ -489,7 +489,7 @@
         "absolute": [null, null]
       },
       "geds": {
-        "variation": [-0.25, 0.25],
+        "variation": [-0.025, 0.025],
         "absolute": [null, null]
       }
     }
@@ -526,7 +526,7 @@
   },
   "wf_min": {
     "label": "wf_min",
-    "unit": "a.u.",
+    "unit": "ADC",
     "facecol": "pink",
     "limits": {
       "spms": {
@@ -541,7 +541,7 @@
   },
   "zacEftp": {
     "label": "zacEftp",
-    "unit": "a.u.",
+    "unit": "ADC",
     "facecol": "aquamarine",
     "limits": {
       "spms": {
@@ -556,7 +556,7 @@
   },
   "zacEmax": {
     "label": "zacEmax",
-    "unit": "a.u.",
+    "unit": "ADC",
     "facecol": "aquamarine",
     "limits": {
       "spms": {
@@ -584,6 +584,21 @@
       }
     }
   },
+  "exposure": {
+    "label": "Exposure",
+    "unit": "kg yr",
+    "facecol": [0.82, 0.94, 0.75],
+    "limits": {
+      "spms": {
+        "variation": [null, null],
+        "absolute": [null, null]
+      },
+      "geds": {
+        "variation": [null, null],
+        "absolute": [null, null]
+      }
+    }
+  },
   "bl_rms": {
     "label": "Baseline RMS",
     "unit": null,
@@ -593,18 +608,9 @@
       "geds": [null, 0.0]
     }
   },
-  "lc": {
-    "label": "LC",
-    "unit": "?",
-    "facecol": [0.94, 0.87, 0.9],
-    "limits": {
-      "spms": [null, 0.0],
-      "geds": [null, 0.0]
-    }
-  },
   "gain": {
     "label": "Uncalibrated Gain",
-    "unit": "a.u.",
+    "unit": "ADC",
     "facecol": [0.68, 0.87, 0.68],
     "limits": {
       "spms": {
@@ -755,6 +761,21 @@
   "trigger_pos": {
     "label": "Trigger Position",
     "unit": "?",
+    "facecol": [0.74, 0.77, 0.87],
+    "limits": {
+      "spms": {
+        "variation": [null, null],
+        "absolute": [null, null]
+      },
+      "geds": {
+        "variation": [null, null],
+        "absolute": [null, null]
+      }
+    }
+  },
+  "AoE_Custom": {
+    "label": "Custom A/E (A_max / cuspEmax)",
+    "unit": "a.u.",
     "facecol": [0.74, 0.77, 0.87],
     "limits": {
       "spms": {

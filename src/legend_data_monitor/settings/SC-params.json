@@ -1,0 +1,154 @@
+{
+  "SC_DB_params": {
+    "diode_vmon": {
+      "table": "diode_snap",
+      "flags": []
+    },
+    "diode_imon": {
+      "table": "diode_snap",
+      "flags": []
+    },
+    "PT114": {
+      "table": "cryostat_snap",
+      "flags": ["is_Pressure", "is_PT114"]
+    },
+    "PT115": {
+      "table": "cryostat_snap",
+      "flags": ["is_Pressure", "is_PT115"]
+    },
+    "PT118": {
+      "table": "cryostat_snap",
+      "flags": ["is_Pressure", "is_PT118"]
+    },
+    "PT202": {
+      "table": "cryostat_snap",
+      "flags": ["is_Vacuum", "is_PT202"]
+    },
+    "PT205": {
+      "table": "cryostat_snap",
+      "flags": ["is_Vacuum", "is_PT205"]
+    },
+    "PT208": {
+      "table": "cryostat_snap",
+      "flags": ["is_Vacuum", "is_PT208"]
+    },
+    "LT01": {
+      "table": "waterloop_snap",
+      "flags": ["is_WaterLoop", "is_LT01"]
+    },
+    "RREiT": {
+      "table": "cleanroom_snap",
+      "flags": ["is_clean", "is_RREiT"]
+    },
+    "RRNTe": {
+      "table": "cleanroom_snap",
+      "flags": ["is_clean", "is_RRNTe"]
+    },
+    "RRSTe": {
+      "table": "cleanroom_snap",
+      "flags": ["is_clean", "is_RRSTe"]
+    },
+    "ZUL_T_RR": {
+      "table": "cleanroom_snap",
+      "flags": ["is_clean", "is_ZUL_T_RR"]
+    },
+    "DaqLeft-Temp1": {
+      "table": "rack_snap",
+      "flags": ["is_temperature", "is_DaqLeft", "is_Temp_1"]
+    },
+    "DaqRight-Temp1": {
+      "table": "rack_snap",
+      "flags": ["is_temperature", "is_DaqRight", "is_Temp_1"]
+    },
+    "DaqLeft-Temp2": {
+      "table": "rack_snap",
+      "flags": ["is_temperature", "is_DaqLeft", "is_Temp_2"]
+    },
+    "DaqRight-Temp2": {
+      "table": "rack_snap",
+      "flags": ["is_temperature", "is_DaqRight", "is_Temp_2"]
+    }
+  },
+  "expressions": {
+    "is_Pressure": {
+      "column": "group",
+      "entry": "Pressure"
+    },
+    "is_Vacuum": {
+      "column": "group",
+      "entry": "Vacuum"
+    },
+    "is_WaterLoop": {
+      "column": "group",
+      "entry": "WaterLoop"
+    },
+    "is_clean": {
+      "column": "group",
+      "entry": "clean"
+    },
+    "is_PT114": {
+      "column": "name",
+      "entry": "PT114"
+    },
+    "is_PT115": {
+      "column": "name",
+      "entry": "PT115"
+    },
+    "is_PT118": {
+      "column": "name",
+      "entry": "PT118"
+    },
+    "is_PT202": {
+      "column": "name",
+      "entry": "PT202"
+    },
+    "is_PT205": {
+      "column": "name",
+      "entry": "PT205"
+    },
+    "is_PT208": {
+      "column": "name",
+      "entry": "PT208"
+    },
+    "is_LT01": {
+      "column": "name",
+      "entry": "LT01"
+    },
+    "is_RREiT": {
+      "column": "name",
+      "entry": "RREiT"
+    },
+    "is_RRNTe": {
+      "column": "name",
+      "entry": "RRNTe"
+    },
+    "is_RRSTe": {
+      "column": "name",
+      "entry": "RRSTe"
+    },
+    "is_ZUL_T_RR": {
+      "column": "name",
+      "entry": "ZUL_T_RR"
+    },
+    "is_temperature": {
+      "column": "name",
+      "entry": "Temp"
+    },
+    "is_DaqLeft": {
+      "column": "rack",
+      "entry": "CleanRoom-DaqLeft"
+    },
+    "is_DaqRight": {
+      "column": "rack",
+      "entry": "CleanRoom-DaqRight"
+    },
+    "is_Temp_1": {
+      "column": "sensor",
+      "entry": "Temp-1"
+    },
+    "is_Temp_2": {
+      "column": "sensor",
+      "entry": "Temp-2"
+    }
+  }
+}
