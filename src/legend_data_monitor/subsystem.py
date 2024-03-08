@@ -85,6 +85,12 @@ class Subsystem:
         self.path = data_info["path"]
         self.version = data_info["version"]
 
+        # data stored under these folders have been partitioned!
+        if "tmp-auto" not in self.path:
+            self.partition = True
+        else:
+            self.partition = False
+
         (
             self.timerange,
             self.first_timestamp,
@@ -180,14 +186,19 @@ class Subsystem:
         now = datetime.now()
         self.data = dl.load()
         utils.logger.info(f"Total time to load data: {(datetime.now() - now)}")
-
+        
         # -------------------------------------------------------------------------
         # polish things up
         # -------------------------------------------------------------------------
 
-        tier = "hit" if "hit" in dbconfig["columns"] else "dsp"
+        tier = "dsp" 
+        if "hit" in dbconfig["columns"]:
+            tier = "hit"
+        if self.partition and "pht" in dbconfig["columns"]:
+            tier = "pht" 
         # remove columns we don't need
-        self.data = self.data.drop([f"{tier}_idx", "file"], axis=1)
+        if "{tier}_idx" in list(self.data.columns):
+            self.data = self.data.drop([f"{tier}_idx", "file"], axis=1)
         # rename channel to channel
         self.data = self.data.rename(columns={f"{tier}_table": "channel"})
 
@@ -357,15 +368,6 @@ class Subsystem:
 
         else:
             # --- if no object was provided, it's understood that this itself is a pulser
-            # find timestamps over threshold
-            # if self.below_period_3_excluded():
-            #    high_thr = 12500
-            # if self.above_period_3_included():
-            #    high_thr = 2500
-            #high_thr = 12500
-            #self.data = self.data.set_index("datetime")
-            #wf_max_rel = self.data["wf_max"] - self.data["baseline"]
-            #pulser_timestamps = self.data[wf_max_rel > high_thr].index
             trapTmax = self.data["trapTmax"] 
             pulser_timestamps = self.data[trapTmax > 200].index
             # flag them
@@ -490,10 +492,10 @@ class Subsystem:
         # -------------------------------------------------------------------------
 
         # for L60-p01 and L200-p02, keep using 'fcid' as channel
-        if int(self.period[-1]) < 3:
+        if int(self.period.split('p')[-1]) < 3:
             ch_flag = "fcid"
         # from L200-p03 included, uses 'rawid' as channel
-        if int(self.period[-1]) >= 3:
+        if int(self.period.split('p')[-1]) >= 3:
             ch_flag = "rawid"
 
         # dct_key is the subdict corresponding to one chmap entry
@@ -675,7 +677,7 @@ class Subsystem:
             if channel_name in self.channel_map.index:
                 self.channel_map.at[channel_name, "status"] = full_status_map[
                     channel_name
-                ]["usability"] #if full_status_map[channel_name]["processable"] is not False else "off"
+                ]["usability"] 
 
         # -------------------------------------------------------------------------
         # quick-fix to remove detectors while status maps are not updated
@@ -723,12 +725,12 @@ class Subsystem:
         # some parameters might be repeated twice - remove
         return list(np.unique(params))
 
+
     def construct_dataloader_configs(self, params: list_of_str):
         """
         Construct DL and DB configs for DataLoader based on parameters and which tiers they belong to.
 
         params: list of parameters to load
-        data_info: dict of containing type:, path:, version:
         """
         # -------------------------------------------------------------------------
         # which parameters belong to which tiers
@@ -740,6 +742,9 @@ class Subsystem:
         # ...
         param_tiers = pd.DataFrame.from_dict(utils.PARAMETER_TIERS.items())
         param_tiers.columns = ["param", "tier"]
+        # change from 'hit' to 'pht' when loading data for partitioned files 
+        if self.partition:
+            param_tiers["tier"] = param_tiers["tier"].replace("hit", "pht")
 
         # which of these are requested by user
         param_tiers = param_tiers[param_tiers["param"].isin(params)]
@@ -764,18 +769,26 @@ class Subsystem:
         # set up tiers depending on what parameters we need
         # -------------------------------------------------------------------------
 
-        # only load channels that are on (off channels will crash DataLoader)
-        chlist = list(self.channel_map[self.channel_map["status"] == "on"]["channel"])
+        # only load channels that are on or ac 
+        chlist = list(self.channel_map[(self.channel_map["status"] == "on") | (self.channel_map["status"] == "ac")]["channel"])
+        # remove off channels
         removed_chs = list(
             self.channel_map[self.channel_map["status"] == "off"]["name"]
         )
         utils.logger.info(f"...... not loading channels with status off: {removed_chs}")
+        """
+        # remove on channels that are not processable (ie have no hit entries)
+        removed_unprocessable_chs = list(
+            self.channel_map[self.channel_map["status"] == "on_not_process"]["name"]
+        )
+        utils.logger.info(f"...... not loading on channels that are not processable: {removed_unprocessable_chs}")
+        """
 
         # for L60-p01 and L200-p02, keep using 3 digits
-        if int(self.period[-1]) < 3:
+        if int(self.period.split('p')[-1]) < 3:
             ch_format = "ch:03d"
         # from L200-p03 included, uses 7 digits
-        if int(self.period[-1]) >= 3:
+        if int(self.period.split('p')[-1]) >= 3:
             ch_format = "ch:07d"
 
         # --- settings for each tier
@@ -791,7 +804,8 @@ class Subsystem:
                 + tier
                 + ".lh5"
             )
-            dict_dbconfig["table_format"][tier] = "ch{" + ch_format + "}/" + tier
+            dict_dbconfig["table_format"][tier] =  "ch{" + ch_format + "}/" 
+            dict_dbconfig["table_format"][tier] += "hit" if tier == "pht" else tier 
 
             dict_dbconfig["tables"][tier] = chlist
 
@@ -800,7 +814,7 @@ class Subsystem:
             # dict_dlconfig['levels'][tier] = {'tiers': [tier]}
 
         # --- settings based on tier hierarchy
-        order = {"hit": 3, "dsp": 2, "raw": 1}
+        order = {"pht": 3, "dsp": 2, "raw": 1} if self.partition else {"hit": 3, "dsp": 2, "raw": 1}
         param_tiers["order"] = param_tiers["tier"].apply(lambda x: order[x])
         # find highest tier
         max_tier = param_tiers[param_tiers["order"] == param_tiers["order"].max()][
@@ -812,6 +826,79 @@ class Subsystem:
         }
 
         return dict_dlconfig, dict_dbconfig
+
+    
+    def construct_dataloader_configs_unprocess(self, params: list_of_str):
+        """
+        Construct DL and DB configs for DataLoader based on parameters and which tiers they belong to.
+
+        params: list of parameters to load
+        """
+        
+        param_tiers = pd.DataFrame.from_dict(utils.PARAMETER_TIERS.items())
+        param_tiers.columns = ["param", "tier"]
+
+        param_tiers = param_tiers[param_tiers["param"].isin(params)]
+        utils.logger.info("...... loading parameters from the following tiers:")
+        utils.logger.debug(param_tiers)
+
+        # -------------------------------------------------------------------------
+        # set up config templates
+        # -------------------------------------------------------------------------
+
+        dict_dbconfig = {
+            "data_dir": os.path.join(self.path, self.version, "generated", "tier"),
+            "tier_dirs": {},
+            "file_format": {},
+            "table_format": {},
+            "tables": {},
+            "columns": {},
+        }
+        dict_dlconfig = {"channel_map": {}, "levels": {}}
+
+        # -------------------------------------------------------------------------
+        # set up tiers depending on what parameters we need
+        # -------------------------------------------------------------------------
+
+        chlist = list(self.channel_map[(self.channel_map["status"] == "on_not_process") | (self.channel_map["status"] == "ac")]["channel"])
+        utils.logger.info(f"...... loading on channels that are not processable: {chlist}")
+
+        # for L60-p01 and L200-p02, keep using 3 digits
+        if int(self.period.split('p')[-1]) < 3:
+            ch_format = "ch:03d"
+        # from L200-p03 included, uses 7 digits
+        if int(self.period.split('p')[-1]) >= 3:
+            ch_format = "ch:07d"
+
+        for tier, tier_params in param_tiers.groupby("tier"):
+            dict_dbconfig["tier_dirs"][tier] = f"/{tier}"
+            dict_dbconfig["file_format"][tier] = (
+                "/{type}/"
+                + self.period  # {period}
+                + "/{run}/{exp}-"
+                + self.period  # {period}
+                + "-{run}-{type}-{timestamp}-tier_"
+                + tier
+                + ".lh5"
+            )
+            dict_dbconfig["table_format"][tier] = "ch{" + ch_format + "}/" + tier
+
+            dict_dbconfig["tables"][tier] = chlist
+
+            dict_dbconfig["columns"][tier] = list(tier_params["param"])
+
+        # --- settings based on tier hierarchy
+        order = {"hit": 3, "dsp": 2, "raw": 1}
+        param_tiers["order"] = param_tiers["tier"].apply(lambda x: order[x])
+        max_tier = param_tiers[param_tiers["order"] == param_tiers["order"].max()][
+            "tier"
+        ].iloc[0]
+        dict_dlconfig["levels"][max_tier] = {
+            "tiers": list(param_tiers["tier"].unique())
+        }
+
+        return dict_dlconfig, dict_dbconfig
+
 
     def remove_timestamps(self, remove_keys: dict):
         """Remove timestamps from the dataframes for a given channel.
@@ -846,13 +933,13 @@ class Subsystem:
         self.data = self.data.reset_index()
 
     def below_period_3_excluded(self) -> bool:
-        if int(self.period[-1]) < 3:
+        if int(self.period.split('p')[-1]) < 3:
             return True
         else:
             return False
 
     def above_period_3_included(self) -> bool:
-        if int(self.period[-1]) >= 3:
+        if int(self.period.split('p')[-1]) >= 3:
             return True
         else:
             return False

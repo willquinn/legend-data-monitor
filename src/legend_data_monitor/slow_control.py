@@ -150,6 +150,11 @@ class SlowControl:
         get_table_df["lower_lim"] = lower_lim
         get_table_df["upper_lim"] = upper_lim
 
+        # fix time column
+        get_table_df['tstamp'] = pd.to_datetime(get_table_df['tstamp'], utc=True)
+        # fix value column
+        get_table_df['value'] = pd.to_numeric(get_table_df['value'], errors='coerce')  # handle errors as NaN
+
         # remove unnecessary columns
         remove_cols = ["rack", "group", "sensor", "name", "almask"]
         for col in remove_cols:
