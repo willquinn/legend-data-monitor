@@ -40,12 +40,10 @@ Available parameters
 
   In general, all saved timestamps will be plotted.
   But you can also pick some given entries (see the config file), eg.
-  * you can pick only ``pulser``, ``phy`` or ``all`` entries
+  
+  - you can pick only ``phy`` or ``all`` entries
+  - you can flag special events, like ``pulser``, ``pulser01ana``, ``FCbsln`` or ``muon`` events
 
 .. important::
 
   Special parameters are typically saved under ``settings/special-parameters.json`` and carefully handled when loading data.
-
-.. warning::
-
-  Quality cuts have not been introduced!
