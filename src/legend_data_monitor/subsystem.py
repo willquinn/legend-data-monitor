@@ -780,13 +780,6 @@ class Subsystem:
             self.channel_map[self.channel_map["status"] == "off"]["name"]
         )
         utils.logger.info(f"...... not loading channels with status off: {removed_chs}")
-        """
-        # remove on channels that are not processable (ie have no hit entries)
-        removed_unprocessable_chs = list(
-            self.channel_map[self.channel_map["status"] == "on_not_process"]["name"]
-        )
-        utils.logger.info(f"...... not loading on channels that are not processable: {removed_unprocessable_chs}")
-        """
 
         # for L60-p01 and L200-p02, keep using 3 digits
         if int(self.period.split("p")[-1]) < 3:
@@ -829,84 +822,6 @@ class Subsystem:
             "tier"
         ].iloc[0]
         # format {"hit": {"tiers": ["dsp", "hit"]}}
-        dict_dlconfig["levels"][max_tier] = {
-            "tiers": list(param_tiers["tier"].unique())
-        }
-
-        return dict_dlconfig, dict_dbconfig
-
-    def construct_dataloader_configs_unprocess(self, params: list_of_str):
-        """
-        Construct DL and DB configs for DataLoader based on parameters and which tiers they belong to.
-
-        params: list of parameters to load
-        """
-
-        param_tiers = pd.DataFrame.from_dict(utils.PARAMETER_TIERS.items())
-        param_tiers.columns = ["param", "tier"]
-
-        param_tiers = param_tiers[param_tiers["param"].isin(params)]
-        utils.logger.info("...... loading parameters from the following tiers:")
-        utils.logger.debug(param_tiers)
-
-        # -------------------------------------------------------------------------
-        # set up config templates
-        # -------------------------------------------------------------------------
-
-        dict_dbconfig = {
-            "data_dir": os.path.join(self.path, self.version, "generated", "tier"),
-            "tier_dirs": {},
-            "file_format": {},
-            "table_format": {},
-            "tables": {},
-            "columns": {},
-        }
-        dict_dlconfig = {"channel_map": {}, "levels": {}}
-
-        # -------------------------------------------------------------------------
-        # set up tiers depending on what parameters we need
-        # -------------------------------------------------------------------------
-
-        chlist = list(
-            self.channel_map[
-                (self.channel_map["status"] == "on_not_process")
-                | (self.channel_map["status"] == "ac")
-            ]["channel"]
-        )
-        utils.logger.info(
-            f"...... loading on channels that are not processable: {chlist}"
-        )
-
-        # for L60-p01 and L200-p02, keep using 3 digits
-        if int(self.period.split("p")[-1]) < 3:
-            ch_format = "ch:03d"
-        # from L200-p03 included, uses 7 digits
-        if int(self.period.split("p")[-1]) >= 3:
-            ch_format = "ch:07d"
-
-        for tier, tier_params in param_tiers.groupby("tier"):
-            dict_dbconfig["tier_dirs"][tier] = f"/{tier}"
-            dict_dbconfig["file_format"][tier] = (
-                "/{type}/"
-                + self.period  # {period}
-                + "/{run}/{exp}-"
-                + self.period  # {period}
-                + "-{run}-{type}-{timestamp}-tier_"
-                + tier
-                + ".lh5"
-            )
-            dict_dbconfig["table_format"][tier] = "ch{" + ch_format + "}/" + tier
-
-            dict_dbconfig["tables"][tier] = chlist
-
-            dict_dbconfig["columns"][tier] = list(tier_params["param"])
-
-        # --- settings based on tier hierarchy
-        order = {"hit": 3, "dsp": 2, "raw": 1}
-        param_tiers["order"] = param_tiers["tier"].apply(lambda x: order[x])
-        max_tier = param_tiers[param_tiers["order"] == param_tiers["order"].max()][
-            "tier"
-        ].iloc[0]
         dict_dlconfig["levels"][max_tier] = {
             "tiers": list(param_tiers["tier"].unique())
         }
