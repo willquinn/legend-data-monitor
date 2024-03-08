@@ -40,7 +40,7 @@ Available parameters
 
   In general, all saved timestamps will be plotted.
   But you can also pick some given entries (see the config file), eg.
-  
+
   - you can pick only ``phy`` or ``all`` entries
   - you can flag special events, like ``pulser``, ``pulser01ana``, ``FCbsln`` or ``muon`` events
 
