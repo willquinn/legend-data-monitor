@@ -46,9 +46,9 @@ Available parameters
 
 .. warning::
 
-  It has been found out that no muon signals were being recorded in the auxiliary channel MUON01 for periods p08 and p09 (up to r003 included). 
+  It has been found out that no muon signals were being recorded in the auxiliary channel MUON01 for periods p08 and p09 (up to r003 included).
   This means the present code is not able to flag the germanium events for which there was a muon crossing the experiment.
-  In other words, the dataframe associated to the ``muon`` events here will be empty. 
+  In other words, the dataframe associated to the ``muon`` events here will be empty.
   Moreover, if you select ``phy`` entries, these will still contain muons since the cut over this does not work.
 
 

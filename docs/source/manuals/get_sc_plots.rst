@@ -56,7 +56,7 @@ An example of a config.json file is the following:
 The meaning of each entry is explained below:
 
 * ``output``: foldeer where to store output files;
-* ``dataset``: 
+* ``dataset``:
 
     * ``experiment``: either *L60* (to be checked) or *L200*
     * ``period``: period to inspect
@@ -97,4 +97,3 @@ We store SC data in the following way:
   - if ``{'timestamps': ['20230207T103123Z', '20230207T141123Z', '20230207T083323Z']}`` (multiple keys), then <time_selection> = ``20230207T083323Z_20230207T141123Z`` (min/max timestamp interval)
   - if ``{'runs': 1}`` (one run), then <time_selection> = ``r001``;
   - if ``{'runs': [1, 2, 3]}`` (multiple runs), then <time_selection> = ``r001_r002_r003``.
-

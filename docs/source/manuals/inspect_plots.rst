@@ -11,7 +11,7 @@ the last two files are created for each inspected subsystem (pulser, geds, spms)
 .. warning::
 
   Shelve files are produced as an output as well, this was the first format chosen for the output.
-  The code still has to be fixed to remove these files from routines. 
+  The code still has to be fixed to remove these files from routines.
   At the moment, they are important when using the ``"saving": "append"`` option, so do not remove them if you are going to use it!
 
 Files are usually collected in the output folder specified in the ``output`` config entry:
@@ -81,5 +81,5 @@ Output hdf files for ``geds`` have the following dictionary structure, where ``<
 Inspect plots
 -------------
 
-- Some standard plots to monitor detectors' response can be found online on the `Dashboard <https://legend-exp.atlassian.net/wiki/spaces/LEGEND/pages/637861889/Monitoring+Dashboard+Manual>`_ 
+- Some standard plots to monitor detectors' response can be found online on the `Dashboard <https://legend-exp.atlassian.net/wiki/spaces/LEGEND/pages/637861889/Monitoring+Dashboard+Manual>`_
 - Some notebooks to interactively inspect plots can be found under the ``notebook`` folder
