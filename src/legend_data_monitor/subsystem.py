@@ -85,6 +85,12 @@ class Subsystem:
         self.path = data_info["path"]
         self.version = data_info["version"]
 
+        # data stored under these folders have been partitioned!
+        if "tmp-auto" != self.path:
+            self.partition = True
+        else:
+            self.partition = False
+
         (
             self.timerange,
             self.first_timestamp,
@@ -185,9 +191,16 @@ class Subsystem:
         # polish things up
         # -------------------------------------------------------------------------
 
-        tier = "hit" if "hit" in dbconfig["columns"] else "dsp"
+        tier = "dsp"
+        if "hit" in dbconfig["columns"]:
+            tier = "hit"
+        if self.partition and "pht" in dbconfig["columns"]:
+            tier = "pht"
+        if self.partition and "psp" in dbconfig["columns"]:
+            tier = "psp"
         # remove columns we don't need
-        self.data = self.data.drop([f"{tier}_idx", "file"], axis=1)
+        if "{tier}_idx" in list(self.data.columns):
+            self.data = self.data.drop([f"{tier}_idx", "file"], axis=1)
         # rename channel to channel
         self.data = self.data.rename(columns={f"{tier}_table": "channel"})
 
@@ -357,15 +370,8 @@ class Subsystem:
 
         else:
             # --- if no object was provided, it's understood that this itself is a pulser
-            # find timestamps over threshold
-            # if self.below_period_3_excluded():
-            #    high_thr = 12500
-            # if self.above_period_3_included():
-            #    high_thr = 2500
-            high_thr = 12500
-            self.data = self.data.set_index("datetime")
-            wf_max_rel = self.data["wf_max"] - self.data["baseline"]
-            pulser_timestamps = self.data[wf_max_rel > high_thr].index
+            trapTmax = self.data["trapTmax"]
+            pulser_timestamps = self.data[trapTmax > 200].index
             # flag them
             self.data["flag_pulser"] = False
             self.data.loc[pulser_timestamps, "flag_pulser"] = True
@@ -488,10 +494,10 @@ class Subsystem:
         # -------------------------------------------------------------------------
 
         # for L60-p01 and L200-p02, keep using 'fcid' as channel
-        if int(self.period[-1]) < 3:
+        if int(self.period.split("p")[-1]) < 3:
             ch_flag = "fcid"
         # from L200-p03 included, uses 'rawid' as channel
-        if int(self.period[-1]) >= 3:
+        if int(self.period.split("p")[-1]) >= 3:
             ch_flag = "rawid"
 
         # dct_key is the subdict corresponding to one chmap entry
@@ -665,8 +671,9 @@ class Subsystem:
 
         # AUX channels are not in status map, so at least for pulser/pulser01ana/FCbsln/muon need default on
         self.channel_map["status"] = "on"
+
         self.channel_map = self.channel_map.set_index("name")
-        # 'channel_name', for instance, has the format 'DNNXXXS' (= "name" column)
+        # 'channel_name' has the format 'DNNXXXS' (= "name" column)
         for channel_name in full_status_map:
             # status map contains all channels, check if this channel is in our subsystem
             if channel_name in self.channel_map.index:
@@ -674,8 +681,9 @@ class Subsystem:
                     channel_name
                 ]["usability"]
 
+        # -------------------------------------------------------------------------
         # quick-fix to remove detectors while status maps are not updated
-        # (p03 channels who are not properly behaving in calib data from George's analysis)
+        # -------------------------------------------------------------------------
         for channel_name in utils.REMOVE_DETS:
             # status map contains all channels, check if this channel is in our subsystem
             if channel_name in self.channel_map.index:
@@ -695,7 +703,7 @@ class Subsystem:
         params = ["timestamp"]
         # --- always get wf_max & baseline for pulser for flagging
         if self.type in ["pulser", "pulser01ana", "FCbsln", "muon"]:
-            params += ["wf_max", "baseline"]
+            params += ["wf_max", "baseline", "trapTmax"]
 
         # --- add user requested parameters
         # change to list for convenience, if input was single
@@ -724,7 +732,6 @@ class Subsystem:
         Construct DL and DB configs for DataLoader based on parameters and which tiers they belong to.
 
         params: list of parameters to load
-        data_info: dict of containing type:, path:, version:
         """
         # -------------------------------------------------------------------------
         # which parameters belong to which tiers
@@ -736,6 +743,10 @@ class Subsystem:
         # ...
         param_tiers = pd.DataFrame.from_dict(utils.PARAMETER_TIERS.items())
         param_tiers.columns = ["param", "tier"]
+        # change from 'hit' to 'pht' when loading data for partitioned files
+        if self.partition:
+            param_tiers["tier"] = param_tiers["tier"].replace("hit", "pht")
+            param_tiers["tier"] = param_tiers["tier"].replace("dsp", "psp")
 
         # which of these are requested by user
         param_tiers = param_tiers[param_tiers["param"].isin(params)]
@@ -745,33 +756,41 @@ class Subsystem:
         # -------------------------------------------------------------------------
         # set up config templates
         # -------------------------------------------------------------------------
+        self_path = self.path
 
         dict_dbconfig = {
-            "data_dir": os.path.join(self.path, self.version, "generated", "tier"),
+            "data_dir": os.path.join(self_path, self.version, "generated", "tier"),
             "tier_dirs": {},
             "file_format": {},
             "table_format": {},
             "tables": {},
             "columns": {},
         }
+
         dict_dlconfig = {"channel_map": {}, "levels": {}}
 
         # -------------------------------------------------------------------------
         # set up tiers depending on what parameters we need
         # -------------------------------------------------------------------------
 
-        # only load channels that are on (off channels will crash DataLoader)
-        chlist = list(self.channel_map[self.channel_map["status"] == "on"]["channel"])
+        # only load channels that are on or ac
+        chlist = list(
+            self.channel_map[
+                (self.channel_map["status"] == "on")
+                | (self.channel_map["status"] == "ac")
+            ]["channel"]
+        )
+        # remove off channels
         removed_chs = list(
             self.channel_map[self.channel_map["status"] == "off"]["name"]
         )
         utils.logger.info(f"...... not loading channels with status off: {removed_chs}")
 
         # for L60-p01 and L200-p02, keep using 3 digits
-        if int(self.period[-1]) < 3:
+        if int(self.period.split("p")[-1]) < 3:
             ch_format = "ch:03d"
         # from L200-p03 included, uses 7 digits
-        if int(self.period[-1]) >= 3:
+        if int(self.period.split("p")[-1]) >= 3:
             ch_format = "ch:07d"
 
         # --- settings for each tier
@@ -787,7 +806,13 @@ class Subsystem:
                 + tier
                 + ".lh5"
             )
-            dict_dbconfig["table_format"][tier] = "ch{" + ch_format + "}/" + tier
+            dict_dbconfig["table_format"][tier] = "ch{" + ch_format + "}/"
+            if tier == "pht":
+                dict_dbconfig["table_format"][tier] += "hit"
+            elif tier == "psp":
+                dict_dbconfig["table_format"][tier] += "dsp"
+            else:
+                dict_dbconfig["table_format"][tier] += tier
 
             dict_dbconfig["tables"][tier] = chlist
 
@@ -796,7 +821,16 @@ class Subsystem:
             # dict_dlconfig['levels'][tier] = {'tiers': [tier]}
 
         # --- settings based on tier hierarchy
-        order = {"hit": 3, "dsp": 2, "raw": 1}
+        order = (
+            {"pht": 3, "dsp": 2, "raw": 1}
+            if self.partition
+            else {"hit": 3, "dsp": 2, "raw": 1}
+        )
+        order = (
+            {"pht": 3, "dsp": 2, "raw": 1}
+            if "ref-v1" in self.version
+            else {"pht": 3, "psp": 2, "raw": 1}
+        )
         param_tiers["order"] = param_tiers["tier"].apply(lambda x: order[x])
         # find highest tier
         max_tier = param_tiers[param_tiers["order"] == param_tiers["order"].max()][
@@ -842,13 +876,13 @@ class Subsystem:
         self.data = self.data.reset_index()
 
     def below_period_3_excluded(self) -> bool:
-        if int(self.period[-1]) < 3:
+        if int(self.period.split("p")[-1]) < 3:
             return True
         else:
             return False
 
     def above_period_3_included(self) -> bool:
-        if int(self.period[-1]) >= 3:
+        if int(self.period.split("p")[-1]) >= 3:
             return True
         else:
             return False

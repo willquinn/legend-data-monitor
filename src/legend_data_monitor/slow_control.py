@@ -109,11 +109,11 @@ class SlowControl:
             get_table_df = get_table_df.drop(columns="imon")
             # rename the column of interest to 'value' to be consistent with other parameter dataframes
             get_table_df = get_table_df.rename(columns={"vmon": "value"})
-        if "imon" in self.parameter and "vmon" in list(get_table_df.columns):
+        elif "imon" in self.parameter and "vmon" in list(get_table_df.columns):
             get_table_df = get_table_df.drop(columns="vmon")
             get_table_df = get_table_df.rename(columns={"imon": "value"})
         # in case of geds parameters, add the info about the channel name and channel id (right now, there is only crate&slot info)
-        if self.parameter == "diode_vmon" or self.parameter == "diode_imon":
+        else:
             get_table_df = include_more_diode_info(get_table_df, self.scdb)
 
         # order by timestamp (not automatically done)
@@ -135,9 +135,9 @@ class SlowControl:
                 self.scdb,
             )
         else:
-            lower_lim = (
-                upper_lim
-            ) = None  # there are just 'set values', no actual thresholds
+            lower_lim = upper_lim = (
+                None  # there are just 'set values', no actual thresholds
+            )
             if "vmon" in self.parameter:
                 unit = "V"
             elif "imon" in self.parameter:
@@ -149,6 +149,13 @@ class SlowControl:
         get_table_df["unit"] = unit
         get_table_df["lower_lim"] = lower_lim
         get_table_df["upper_lim"] = upper_lim
+
+        # fix time column
+        get_table_df["tstamp"] = pd.to_datetime(get_table_df["tstamp"], utc=True)
+        # fix value column
+        get_table_df["value"] = pd.to_numeric(
+            get_table_df["value"], errors="coerce"
+        )  # handle errors as NaN
 
         # remove unnecessary columns
         remove_cols = ["rack", "group", "sensor", "name", "almask"]

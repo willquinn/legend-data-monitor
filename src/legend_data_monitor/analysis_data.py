@@ -213,8 +213,14 @@ class AnalysisData:
             utils.logger.info("... keeping only muon events")
             self.data = self.data[self.data["flag_muon"]]
         elif self.evt_type == "phy":
-            utils.logger.info("... keeping only physical (non-pulser) events")
-            self.data = self.data[~self.data["flag_pulser"]]
+            utils.logger.info(
+                "... keeping only physical (non-pulser & non-FCbsln & non-muon) events"
+            )
+            self.data = self.data[
+                (~self.data["flag_pulser"])
+                | (~self.data["flag_fc_bsln"])
+                | (~self.data["flag_muon"])
+            ]
         elif self.evt_type == "K_events":
             utils.logger.info("... selecting K lines in physical (non-pulser) events")
             self.data = self.data[~self.data["flag_pulser"]]
@@ -467,6 +473,11 @@ class AnalysisData:
                             # we need to repeat this operation for each param, otherwise only the mean of the last one survives
                             self.data = concat_channel_mean(self, channel_mean)
 
+        if self.data.empty:
+            utils.logger.error(
+                f"\033[91mFor '{self.evt_type}' there are no flagged data (empty dataframe) -> no entries in the output file! Stop here the study.\033[0m"
+            )
+
     def calculate_variation(self):
         """
         Add a new column containing the percentage variation of a given parameter.
@@ -485,6 +496,9 @@ class AnalysisData:
 
     def is_spms(self) -> bool:
         """Return True if 'location' (=fiber) and 'position' (=top, bottom) are strings."""
+        if self.data.empty:
+            return False
+
         if isinstance(self.data.iloc[0]["location"], str) and isinstance(
             self.data.iloc[0]["position"], str
         ):

@@ -518,7 +518,7 @@ def plot_per_ch(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
                     text += f"\nFWHM {fwhm_ch}" if fwhm_ch != 0 else ""
 
                 text += "\n" + (
-                    f"mean {round(par_mean,3)} [{plot_info['unit']}]"
+                    f"mean {round(par_mean, 3)} [{plot_info['unit']}]"
                     if par_mean is not None
                     else ""
                 )  # handle with care mean='None' situations
