@@ -45,9 +45,10 @@ def plot_vs_time(
     )
 
     if plot_info["resampled"] != "only":
+        parameter_array = np.array(data_channel[plot_info["parameter"]])
         ax.plot(
             data_channel["datetime"].dt.to_pydatetime(),
-            data_channel[plot_info["parameter"]],
+            parameter_array[:, None],
             zorder=0,
             color=all_col,
             linewidth=1,
@@ -75,9 +76,10 @@ def plot_vs_time(
                 resampled["datetime"] + Timedelta(plot_info["time_window"]) / 2
             )
 
+            parameter_array = np.array(resampled[plot_info["parameter"]])
             ax.plot(
                 resampled["datetime"].dt.to_pydatetime(),
-                resampled[plot_info["parameter"]],
+                parameter_array[:, None],
                 color=res_col,
                 zorder=1,
                 # marker="o",
