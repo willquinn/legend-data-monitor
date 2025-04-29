@@ -109,11 +109,11 @@ class SlowControl:
             get_table_df = get_table_df.drop(columns="imon")
             # rename the column of interest to 'value' to be consistent with other parameter dataframes
             get_table_df = get_table_df.rename(columns={"vmon": "value"})
-        if "imon" in self.parameter and "vmon" in list(get_table_df.columns):
+        elif "imon" in self.parameter and "vmon" in list(get_table_df.columns):
             get_table_df = get_table_df.drop(columns="vmon")
             get_table_df = get_table_df.rename(columns={"imon": "value"})
         # in case of geds parameters, add the info about the channel name and channel id (right now, there is only crate&slot info)
-        if self.parameter == "diode_vmon" or self.parameter == "diode_imon":
+        else:
             get_table_df = include_more_diode_info(get_table_df, self.scdb)
 
         # order by timestamp (not automatically done)

@@ -86,7 +86,7 @@ class Subsystem:
         self.version = data_info["version"]
 
         # data stored under these folders have been partitioned!
-        if "tmp-auto" not in self.path:
+        if "tmp-auto" != self.path:
             self.partition = True
         else:
             self.partition = False
@@ -196,6 +196,8 @@ class Subsystem:
             tier = "hit"
         if self.partition and "pht" in dbconfig["columns"]:
             tier = "pht"
+        if self.partition and "psp" in dbconfig["columns"]:
+            tier = "psp"
         # remove columns we don't need
         if "{tier}_idx" in list(self.data.columns):
             self.data = self.data.drop([f"{tier}_idx", "file"], axis=1)
@@ -744,6 +746,7 @@ class Subsystem:
         # change from 'hit' to 'pht' when loading data for partitioned files
         if self.partition:
             param_tiers["tier"] = param_tiers["tier"].replace("hit", "pht")
+            param_tiers["tier"] = param_tiers["tier"].replace("dsp", "psp")
 
         # which of these are requested by user
         param_tiers = param_tiers[param_tiers["param"].isin(params)]
@@ -753,15 +756,17 @@ class Subsystem:
         # -------------------------------------------------------------------------
         # set up config templates
         # -------------------------------------------------------------------------
+        self_path = self.path
 
         dict_dbconfig = {
-            "data_dir": os.path.join(self.path, self.version, "generated", "tier"),
+            "data_dir": os.path.join(self_path, self.version, "generated", "tier"),
             "tier_dirs": {},
             "file_format": {},
             "table_format": {},
             "tables": {},
             "columns": {},
         }
+
         dict_dlconfig = {"channel_map": {}, "levels": {}}
 
         # -------------------------------------------------------------------------
@@ -802,7 +807,12 @@ class Subsystem:
                 + ".lh5"
             )
             dict_dbconfig["table_format"][tier] = "ch{" + ch_format + "}/"
-            dict_dbconfig["table_format"][tier] += "hit" if tier == "pht" else tier
+            if tier == "pht":
+                dict_dbconfig["table_format"][tier] += "hit"
+            elif tier == "psp":
+                dict_dbconfig["table_format"][tier] += "dsp"
+            else:
+                dict_dbconfig["table_format"][tier] += tier
 
             dict_dbconfig["tables"][tier] = chlist
 
@@ -815,6 +825,11 @@ class Subsystem:
             {"pht": 3, "dsp": 2, "raw": 1}
             if self.partition
             else {"hit": 3, "dsp": 2, "raw": 1}
+        )
+        order = (
+            {"pht": 3, "dsp": 2, "raw": 1}
+            if "ref-v1" in self.version
+            else {"pht": 3, "psp": 2, "raw": 1}
         )
         param_tiers["order"] = param_tiers["tier"].apply(lambda x: order[x])
         # find highest tier
