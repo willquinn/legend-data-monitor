@@ -152,7 +152,12 @@ def get_query_times(**kwargs):
             path_info["version"],
             "generated",
             "tier",
-            "dsp" if path_info["version"] in ['tmp-auto'] or "ref-v1" in path_info["version"] else "psp",
+            (
+                "dsp"
+                if path_info["version"] in ["tmp-auto"]
+                or "ref-v1" in path_info["version"]
+                else "psp"
+            ),
             path_info["type"],
             path_info["period"],
             first_run,
@@ -162,7 +167,12 @@ def get_query_times(**kwargs):
             path_info["version"],
             "generated",
             "tier",
-            "dsp" if path_info["version"] in ['tmp-auto'] or "ref-v1" in path_info["version"] else "psp",
+            (
+                "dsp"
+                if path_info["version"] in ["tmp-auto"]
+                or "ref-v1" in path_info["version"]
+                else "psp"
+            ),
             path_info["type"],
             path_info["period"],
             last_run,
@@ -745,7 +755,11 @@ def bunch_dataset(config: dict, n_files=None):
         path_info["version"],
         "generated",
         "tier",
-        "dsp" if path_info["version"] in ['tmp-auto'] or "ref-v1" in path_info["version"] else "psp",
+        (
+            "dsp"
+            if path_info["version"] in ["tmp-auto"] or "ref-v1" in path_info["version"]
+            else "psp"
+        ),
         path_info["type"],
         path_info["period"],
         run,
