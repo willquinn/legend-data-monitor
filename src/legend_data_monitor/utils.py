@@ -9,7 +9,7 @@ import sys
 # for getting DataLoader time range
 from datetime import datetime, timedelta
 
-import lgdo.lh5_store as lh5
+from lgdo import lh5
 from pandas import DataFrame
 
 from . import subsystem
@@ -152,7 +152,7 @@ def get_query_times(**kwargs):
             path_info["version"],
             "generated",
             "tier",
-            "dsp",
+            "dsp" if path_info["version"] in ['tmp-auto'] or "ref-v1" in path_info["version"] else "psp",
             path_info["type"],
             path_info["period"],
             first_run,
@@ -162,7 +162,7 @@ def get_query_times(**kwargs):
             path_info["version"],
             "generated",
             "tier",
-            "dsp",
+            "dsp" if path_info["version"] in ['tmp-auto'] or "ref-v1" in path_info["version"] else "psp",
             path_info["type"],
             path_info["period"],
             last_run,
@@ -745,7 +745,7 @@ def bunch_dataset(config: dict, n_files=None):
         path_info["version"],
         "generated",
         "tier",
-        "dsp",
+        "dsp" if path_info["version"] in ['tmp-auto'] or "ref-v1" in path_info["version"] else "psp",
         path_info["type"],
         path_info["period"],
         run,
@@ -1017,6 +1017,7 @@ def get_output_path(config: dict):
     output_paths = period_dir + name_time + "/"
     make_dir(output_paths)
     if not output_paths:
+        logger.info("%s does not exist!", output_paths)
         return
 
     # we don't care here about the time keyword timestamp/run -> just get the value
