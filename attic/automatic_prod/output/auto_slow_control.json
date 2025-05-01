@@ -1,0 +1,1 @@
+{"output": "tmp", "dataset": {"experiment": "L200", "period": "p03", "version": "ref-v1.0.0", "path": "/global/cfs/cdirs/m2676/data/lngs/l200/public/prodenv/prod-blind/", "type": "phy", "runs": 0}, "saving": "overwrite", "slow_control": {"parameters": ["DaqLeft-Temp1", "DaqLeft-Temp2", "DaqRight-Temp1", "DaqRight-Temp2", "RREiT", "RRNTe", "RRSTe", "ZUL_T_RR"]}}
