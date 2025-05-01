@@ -1,2 +1,0 @@
-ALERT: Data monitoring threshold exceeded for run XYZ.
-Please check the logs for more details.
