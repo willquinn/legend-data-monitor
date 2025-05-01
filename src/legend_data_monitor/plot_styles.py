@@ -13,6 +13,8 @@ from matplotlib.axes import Axes
 from matplotlib.dates import DateFormatter, date2num, num2date
 from matplotlib.figure import Figure
 from pandas import DataFrame, Timedelta, concat
+import warnings
+warnings.filterwarnings("ignore", category=FutureWarning)
 
 from . import utils
 
@@ -47,7 +49,7 @@ def plot_vs_time(
     if plot_info["resampled"] != "only":
         parameter_array = np.array(data_channel[plot_info["parameter"]])
         ax.plot(
-            data_channel["datetime"].dt.to_pydatetime(),
+            np.array(data_channel["datetime"].dt.to_pydatetime()),
             parameter_array[:, None],
             zorder=0,
             color=all_col,
@@ -268,7 +270,7 @@ def plot_scatter(
 ):
     # plot data
     ax.scatter(
-        data_channel["datetime"].dt.to_pydatetime(),
+        np.array(data_channel["datetime"].dt.to_pydatetime()),
         data_channel[plot_info["parameter"]],
         color=color,
         # useful if there are overlapping points (but more difficult to see light colour points...)
