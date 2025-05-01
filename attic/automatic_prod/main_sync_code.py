@@ -33,6 +33,8 @@ def main():
     parser.add_argument("--output_folder", help="Path where to store the automatic results (plots and summary files).", default="tmp")
     parser.add_argument("--partition", default=False, help="False (default) if not partition data, else True")
     parser.add_argument("--pswd", help="Password to access the Slow Control database (NOT available on NERSC).")
+    parser.add_argument("--pswd_email", help="Password to access the legend.data.monitoring@gmail.com account for sending alert messages.")
+    
 
     args = parser.parse_args()
     cluster = args.cluster
@@ -41,6 +43,10 @@ def main():
     output_folder = args.output_folder
     partition = False if args.partition=="False" else True
     pswd = args.pswd
+    pswd_email = args.pswd_email
+
+    if not os.path.exists(rsync_path):
+        os.makedirs(rsync_path)
     
     # paths
     auto_dir = "/global/cfs/cdirs/m2676/data/lngs/l200/public/prodenv/prod-blind/" if cluster == "nersc" else "/data2/public/prodenv/prod-blind/"
@@ -295,7 +301,6 @@ def main():
         
         new_files = correct_files
     
-    new_files = new_files[:1] # REMOVE ME
     # ===========================================================================================
     # Analyze not-analyzed files
     # =========================================================================================== 
@@ -348,11 +353,11 @@ def main():
         mtg_folder = os.path.join(output_folder, ref_version, 'generated/mtg')
         if not os.path.exists(mtg_folder):
             os.makedirs(mtg_folder)
-            print(f"Folder '{mtg_folder}' created.")
+            logger.info(f"Folder '{mtg_folder}' created.")
         mtg_folder = os.path.join(mtg_folder, 'phy')
         if not os.path.exists(mtg_folder):
             os.makedirs(mtg_folder)
-            print(f"Folder '{mtg_folder}' created.")
+            logger.info(f"Folder '{mtg_folder}' created.")
     
         # define dataset depending on the (latest) monitored period/run
         avail_runs = sorted(os.listdir(os.path.join(mtg_folder.replace('mtg', 'plt'), period)))
@@ -368,12 +373,12 @@ def main():
 
           # Note: quad_res is set to False by default in these plots
           if partition == False:
-            mtg_bash_command = f"{cmd} python monitoring.py --public_data {auto_dir_path} --hdf_files {phy_mtg_data} --output {mtg_folder} --start {start_key} --p {period} --runs {avail_runs} --cluster {cluster}"
+            mtg_bash_command = f"{cmd} python monitoring.py --public_data {auto_dir_path} --hdf_files {phy_mtg_data} --output {mtg_folder} --start {start_key} --p {period} --runs {avail_runs} --cluster {cluster} --pswd_email {pswd_email}"
           else:
-            mtg_bash_command = f"{cmd} python monitoring.py --public_data {auto_dir_path} --hdf_files {phy_mtg_data} --output {mtg_folder} --start {start_key} --p {period} --runs {avail_runs} --cluster {cluster} --partition True"
+            mtg_bash_command = f"{cmd} python monitoring.py --public_data {auto_dir_path} --hdf_files {phy_mtg_data} --output {mtg_folder} --start {start_key} --p {period} --runs {avail_runs} --cluster {cluster} --pswd_email {pswd_email} --partition True"
 
             subprocess.run(mtg_bash_command, shell=True)
-          print("...monitoring plots generated!")
+          logger.info("...monitoring plots generated!")
     
     
     # Update the last checked timestamp

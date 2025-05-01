@@ -17,7 +17,7 @@ import shelve
 import logging
 import argparse
 import re, pickle
-
+import legend_data_monitor
 from tqdm.notebook import tqdm
 
 # -------------------------------------------------------------------------
@@ -235,11 +235,11 @@ def get_calib_pars(cluster, path, period, run_list, channel, partition, escale=2
     if (isinstance(period,list) and isinstance(run_list, dict)):
         for p in period:
             for r in run_list[p]:
-                get_calib_data_dict(calib_data, channel, tiers, pars, p, r, tier, key_result, fit)
+                calib_data = get_calib_data_dict(calib_data, channel, tiers, pars, p, r, tier, key_result, fit)
     ### one period only
     else:
         for run in run_list:
-            get_calib_data_dict(calib_data, channel, tiers, pars, period, run, tier, key_result, fit)
+            calib_data = get_calib_data_dict(calib_data, channel, tiers, pars, period, run, tier, key_result, fit)
 
     for key, item in calib_data.items(): calib_data[key] = np.array(item)
         
@@ -454,7 +454,7 @@ def get_pulser_data(resampling_time, period, dfs, channel, runs_no, escale):
 
         # if not empty, then remove spikes
         if len(ser_pul_tp0est_new) != 0:
-            logger.debug(f"!!!!! Removing {len_before-len_after} global pulser events !!!!!")
+            logger.debug(f"!!! Removing {len_before-len_after} global pulser events !!!")
             ser_ged_cusp = ser_ged_cusp.loc[ser_pul_tp0est_new.index]
             ser_pul_cusp = ser_pul_cusp.loc[ser_pul_tp0est_new.index]
             #ser_ged_ctc_cal_cusp = ser_ged_ctc_cal_cusp.loc[ser_pul_tp0est_new.index]
@@ -636,6 +636,7 @@ def main():
     parser.add_argument("--zoom", default="True", help="True to zoom over y axis; default: True")
     parser.add_argument("--quad_res", default="False", help="True if you want to plot the quadratic resolution too; default: False")
     parser.add_argument("--cluster", default="lngs", help="Name of the cluster where you are operating; pick among 'lngs' or 'nersc'.")
+    parser.add_argument("--pswd_email", help="Password to access the legend.data.monitoring@gmail.com account for sending alert messages.")
 
     args = parser.parse_args()
 
@@ -646,6 +647,7 @@ def main():
     period = args.p
     runs = args.runs
     cluster = args.cluster
+    pswd_email = args.pswd_email
 
     avail_runs = []
     for entry in runs:
@@ -669,11 +671,14 @@ def main():
     chmap = meta.channelmap(start_key)
     # get string info
     str_chns = {}
+    # TODO: fix this
     for string in range(13):
         if string in [0, 6]: continue 
         channels = [f"ch{chmap[ged].daq.rawid}" for ged, dic in chmap.items() if dic["system"]=='geds' and dic["location"]["string"]==string] # and dic["analysis"]["processable"]==True 
         if len(channels)>0: 
             str_chns[string] = channels
+
+    email_message = ["ALERT: Data monitoring threshold exceeded."]
     
     period_list = list(dataset.keys())
     for index_i in tqdm(range(len(period_list))):
@@ -683,8 +688,6 @@ def main():
         geds_df_cuspEmax_abs, geds_df_cuspEmax_abs_corr, puls_df_cuspEmax_abs, geds_df_cuspEmaxCtcCal_abs = get_dfs(phy_mtg_data, period, run_list)
         geds_df_trapTmax, geds_df_tp0est, puls_df_trapTmax, puls_df_tp0est = get_trapTmax_tp0est(phy_mtg_data, period, run_list)
 
-        #geds_df_cuspEmax_abs2, geds_df_cuspEmax_abs_corr2, puls_df_cuspEmax_abs2, geds_df_cuspEmaxCtcCal_abs2 = get_dfs(phy_mtg_data.replace('v3', 'v2'), period, run_list)
-        #geds_df_trapTmax2, geds_df_tp0est2, puls_df_trapTmax2, puls_df_tp0est2 = get_trapTmax_tp0est(phy_mtg_data.replace('v3', 'v2'), period, run_list)
         if geds_df_cuspEmax_abs is None or geds_df_cuspEmax_abs_corr is None or puls_df_cuspEmax_abs is None:
             logger.debug("Dataframes are None for %s!", period)
             continue
@@ -692,7 +695,6 @@ def main():
             logger.debug("Dataframes are empty for %s!",period)
             continue
         dfs = [geds_df_cuspEmax_abs, geds_df_cuspEmax_abs_corr, puls_df_cuspEmax_abs, geds_df_trapTmax, geds_df_tp0est, puls_df_trapTmax, puls_df_tp0est, geds_df_cuspEmaxCtcCal_abs]
-        #dfs2 = [geds_df_cuspEmax_abs2, geds_df_cuspEmax_abs_corr2, puls_df_cuspEmax_abs2, geds_df_trapTmax2, geds_df_tp0est2, puls_df_trapTmax2, puls_df_tp0est2, geds_df_cuspEmaxCtcCal_abs2]
         
         string_list = list(str_chns.keys())
         for index_j in tqdm(range(len(string_list))):
@@ -702,24 +704,39 @@ def main():
             do_channel = True
             for index_k in range(len(channel_list)):
                 channel = channel_list[index_k]
-                #if chmap.map("daq.rawid")[int(channel[2:])]["name"] in ["P00712A", "V01406A", "V01415A", "B00089D", "V01387A", "B00002A", "P00748B", "B00091B", "B00032C", "B00061B", "B00089B", "V01389A"]:
-                #    continue
+                channel_name = chmap.map("daq.rawid")[int(channel[2:])]["name"]
 
                 resampling_time = "h"#if len(runs)>1 else "10T"
                 if int(channel.split('ch')[-1]) not in list(dfs[0].columns):
-                    logger.debug(f"{channel} is not present in the dataframe!!!")
+                    logger.debug(f"{channel} is not present in the dataframe!")
                     continue
                 pulser_data = get_pulser_data(resampling_time, period, dfs, int(channel.split('ch')[-1]), len(runs), escale=2039)
-                pulser_data2 = pd.DataFrame()
-                #if int(channel[2:]) not in [1108802, 1120000, 1086401]:
-                #    pulser_data2 = get_pulser_data(resampling_time, period, dfs2, int(channel.split('ch')[-1]), len(runs), escale=2039)
-                #if pulser_data is None:
-                #    continue
                 
                 fig, ax = plt.subplots(figsize=(12,4))
                 pars_data = get_calib_pars(cluster, auto_dir_path, period, run_list, channel, partition, escale=2039, fit=fit_flag)
 
-                if channel != 'ch1120004':  
+                # check if gain is over threshold
+                kevdiff = pulser_data['diff']['kevdiff_av']
+                timestamps = kevdiff.index
+                t0 = pars_data['run_start']
+                for i in range(len(t0)):  
+                    time_range_start = t0[i]
+                    time_range_end = time_range_start + pd.Timedelta(days=7)
+                
+                    # filter timestamps/gain within the time range
+                    mask_time_range = (timestamps >= time_range_start) & (timestamps < time_range_end)
+                    filtered_timestamps = timestamps[mask_time_range]
+                    kevdiff_in_range = kevdiff[mask_time_range]
+                
+                    threshold = 1e-5#pars_data['res'][i] / 2 
+                    mask = (kevdiff_in_range > threshold) | (kevdiff_in_range < -threshold)
+                    over_threshold_timestamps = filtered_timestamps[mask]
+                
+                    if not over_threshold_timestamps.empty:
+                        for t in over_threshold_timestamps:
+                            email_message.append(f"- Gain over threshold at {t} ({period}) for {channel_name} ({channel})")
+
+                if channel != 'ch1120004': # =B00089D; TODO: make it generic  
                     #plt.plot(pulser_data['ged']['cusp_av'], 'C0', label='GED')
                     plt.plot(pulser_data['pul_cusp']['kevdiff_av'], 'C2', label='PULS01ANA')
                     plt.plot(pulser_data['diff']['kevdiff_av'], 'C4', label='GED corrected')
@@ -734,10 +751,7 @@ def main():
                 plt.plot(pars_data['run_start'] - pd.Timedelta(hours=5), pars_data['cal_const_diff'], 'rx', label='cal. const. diff')
                 
                 for ti in pars_data['run_start']: plt.axvline(ti, color='k')
-                # if you want a vertical line on the plot at a specific timestamp (hardcoded)
-                #plt.axvline(pd.to_datetime("20240227T094934Z", format='%Y%m%dT%H%M%S%z'), color='r')
                 
-                t0 = pars_data['run_start']
                 for i in range(len(t0)):
                     if i == len(pars_data['run_start'])-1:
                         plt.plot([t0[i], t0[i] + pd.Timedelta(days=7)], [pars_data['res'][i]/2, pars_data['res'][i]/2], 'b-')
@@ -758,16 +772,16 @@ def main():
                         if str(pars_data['res_quad'][i]/2*1.5) != 'nan' and i<len(pars_data['res'])-(xlim_idx-1):
                             plt.text(t0[i], pars_data['res_quad'][i]/2*1.5, '{:.2f}'.format(pars_data['res_quad'][i]), color='dodgerblue')
                     
-                fig.suptitle(f'period: {period} - string: {string} - position: {chmap.map("daq.rawid")[int(channel[2:])]["location"]["position"]} - ged: {chmap.map("daq.rawid")[int(channel[2:])]["name"]}')
+                fig.suptitle(f'period: {period} - string: {string} - position: {chmap.map("daq.rawid")[int(channel[2:])]["location"]["position"]} - ged: {channel_name}')
                 plt.ylabel(r'Energy diff / keV')
                 plt.plot([0,1], [0,1], 'b', label='Qbb FWHM keV lin.')
-                my_det = chmap.map("daq.rawid")[int(channel[2:])]["name"]
+                my_det = channel_name
                 if quadratic:
                     plt.plot([1,2], [1,2], 'dodgerblue', label='Qbb FWHM keV quadr.')
                 
                 if zoom:
                     bound = np.average(pulser_data['diff']['kevdiff_std'].dropna())
-                    if chmap.map("daq.rawid")[int(channel[2:])]["name"] == 'B00089D':plt.ylim(-3,3)
+                    if channel_name == 'B00089D':plt.ylim(-3,3)
                     else: plt.ylim(-2.5*bound,2.5*bound)
                 min_date = pulser_data['pul_cusp']['kevdiff_av'].index.min()
                 max_date = pulser_data['pul_cusp']['kevdiff_av'].index.max()
@@ -783,7 +797,7 @@ def main():
                     logger.debug('...created %s', mgt_folder)
                 
                 # ~~~~~~~~~~~~~~~~ save pdfs with plots for an easy/quick access ~~~~~~~~~~~~~~~~
-                pdf_name = os.path.join(mgt_folder, f"{period}_string{string}_pos{chmap.map("daq.rawid")[int(channel[2:])]["location"]["position"]}_{chmap.map("daq.rawid")[int(channel[2:])]["name"]}_gain_shift.pdf")
+                pdf_name = os.path.join(mgt_folder, f"{period}_string{string}_pos{chmap.map("daq.rawid")[int(channel[2:])]["location"]["position"]}_{channel_name}_gain_shift.pdf")
                 plt.savefig(pdf_name)
 
                 # ~~~~~~~~~~~~~~~~ pickle and save plots in a shelve file ~~~~~~~~~~~~~~~~~~~~~~~
@@ -792,7 +806,7 @@ def main():
                 plt.close(fig) 
                 # store the serialized plot in a shelve object under key 
                 with shelve.open(os.path.join(output_folder, period, f"{period}_gain_shift"), 'c', protocol=pickle.HIGHEST_PROTOCOL) as shelf:
-                    shelf[f'{period}_string{string}_pos{chmap.map("daq.rawid")[int(channel[2:])]["location"]["position"]}_{chmap.map("daq.rawid")[int(channel[2:])]["name"]}'] = serialized_plot
+                    shelf[f'{period}_string{string}_pos{chmap.map("daq.rawid")[int(channel[2:])]["location"]["position"]}_{channel_name}'] = serialized_plot
                 plt.close(fig)
 
                 # structure of pickle files:
@@ -803,161 +817,11 @@ def main():
                 #  - p08_string2_pos2_C000RG1
                 #  - ...
 
-
-def main_more_periods():
-    parser = argparse.ArgumentParser(description="Main code for gain monitoring plots.")
-    parser.add_argument("--public_data", help="Path to tmp-auto public data files (eg /data2/public/prodenv/prod-blind/tmp-auto).")
-    parser.add_argument("--hdf_files", help="Path to hdf files (eg see files in /data1/users/calgaro/prod-ref-v2/generated/plt/phy).")
-    parser.add_argument("--output", help="Path to output folder.")
-    parser.add_argument("--start", help="First timestamp.")
-    parser.add_argument("--p", nargs="+", type=str, help="Period to inspect.")
-    parser.add_argument("--partition", default=False, help="False if not partition data, else True")
-
-    args = parser.parse_args()
-
-    auto_dir_path = args.public_data 
-    phy_mtg_data = args.hdf_files
-    output_folder = args.output
-    start_key = args.start
-    periods = args.p
-    name_out = '_'.join(periods)
-
-    metadb = LegendMetadata()
-    run_list = {
-        'p03': ['r002', 'r003', 'r004', 'r005'], 
-        'p04': ['r000', 'r001', 'r002', 'r003', 'r004'], 
-        'p06': ['r000', 'r001', 'r002', 'r003', 'r004', 'r005', 'r006'], 
-        'p07': ['r001', 'r002', 'r003', 'r004', 'r005', 'r006', 'r007', 'r008'], 
-        'p08': ['r000', 'r001', 'r002', 'r003', 'r004', 'r005', 'r006', 'r007', 'r008', 'r009', 'r010', 'r011','r012','r013','r014'],
-        'p09': ['r000', 'r001', 'r002', 'r003', 'r004', 'r005'],
-        'p10': ['r000', 'r001', 'r003', 'r004', 'r005', 'r006']
-    }#metadb.dataprod.config.analysis_runs
-
-    xlim_idx=1
-    partition=False if args.partition=="False" else True
-    quadratic=False
-    zoom=False#True
-
-    meta = LegendMetadata(os.path.join(auto_dir_path, "inputs/"))
-    chmap = meta.channelmap(start_key)
-    # get string info
-    str_chns = {}
-    for string in range(13):
-        if string in [0, 6]: continue 
-        channels = [f"ch{chmap[ged].daq.rawid}" for ged, dic in chmap.items() if dic["system"]=='geds' and dic["analysis"]["processable"]==True and dic["location"]["string"]==string]
-        if len(channels)>0: 
-            str_chns[string] = channels
-    
-    period_list = list(periods) if isinstance(periods, str) else periods
-        
-    # load all periods together
-    geds_df_cuspEmax_abs, geds_df_cuspEmax_abs_corr, puls_df_cuspEmax_abs, geds_df_cuspEmaxCtcCal_abs = get_dfs(phy_mtg_data, periods, run_list)
-    geds_df_trapTmax, geds_df_tp0est, puls_df_trapTmax, puls_df_tp0est = get_trapTmax_tp0est(phy_mtg_data, periods, run_list)
-    if geds_df_cuspEmax_abs is None or geds_df_cuspEmax_abs_corr is None or puls_df_cuspEmax_abs is None:
-        logger.debug(f"Dataframes are None for {periods}!")
-    if geds_df_cuspEmax_abs.empty or geds_df_cuspEmax_abs_corr.empty or puls_df_cuspEmax_abs.empty:
-        logger.debug(f"Dataframes are empty for {periods}!")
-    dfs = [geds_df_cuspEmax_abs, geds_df_cuspEmax_abs_corr, puls_df_cuspEmax_abs, geds_df_trapTmax, geds_df_tp0est, puls_df_trapTmax, puls_df_tp0est, geds_df_cuspEmaxCtcCal_abs]
-
-    ## loop over strings and channels
-    string_list = list(str_chns.keys())
-    for index_j in tqdm(range(len(string_list))):
-        string = string_list[index_j]
-        
-        channel_list = str_chns[string]
-        do_channel = True
-        for index_k in range(len(channel_list)):
-            channel = channel_list[index_k]
-
-            resampling_time = "h"
-            if int(channel.split('ch')[-1]) not in list(dfs[0].columns):
-                continue
-            ## all periods together, but channel by channel
-            pulser_data = get_pulser_data(resampling_time, periods, dfs, int(channel.split('ch')[-1]), None, escale=2039)
-            
-            fig, ax = plt.subplots(figsize=(16,6))
-            # get pars data for all entries, ie for all periods together
-            pars_data = get_calib_pars(cluster, auto_dir_path, periods, run_list, channel, partition, escale=2039, fit=fit_flag)
-
-            if channel != 'ch1120004':  
-                #plt.plot(pulser_data['ged']['cusp_av'], 'C0', label='GED')
-                plt.plot(pulser_data['pul_cusp']['kevdiff_av'], 'C2', label='PULS01ANA')
-                plt.plot(pulser_data['diff']['kevdiff_av'], 'C4', label='GED corrected')
-                plt.fill_between(
-                    pulser_data['diff']['kevdiff_av'].index.values,
-                    y1=[float(i) - float(j) for i, j in zip(pulser_data['diff']['kevdiff_av'].values, pulser_data['diff']['kevdiff_std'].values)],
-                    y2=[float(i) + float(j) for i, j in zip(pulser_data['diff']['kevdiff_av'].values, pulser_data['diff']['kevdiff_std'].values)],
-                    color='k', alpha=0.2, label=r'±1$\sigma$'
-                )
-            
-            plt.plot(pars_data['run_start'] - pd.Timedelta(hours=5), pars_data['fep_diff'], 'kx', label='FEP gain')
-            plt.plot(pars_data['run_start'] - pd.Timedelta(hours=5), pars_data['cal_const_diff'], 'rx', label='cal. const. diff')
-            
-            for ti in pars_data['run_start']: plt.axvline(ti, color='k')
-            # start of p08-r010
-            plt.axvline(pd.to_datetime("20231205T040733Z", format='%Y%m%dT%H%M%S%z'), color='dodgerblue')
-            # start of p09
-            plt.axvline(pd.to_datetime("20240111T051924Z", format='%Y%m%dT%H%M%S%z'), color='r')
-            
-            t0 = pars_data['run_start']
-            for i in range(len(t0)):
-                if i == len(pars_data['run_start'])-1:
-                    plt.plot([t0[i], t0[i] + pd.Timedelta(days=7)], [pars_data['res'][i]/2, pars_data['res'][i]/2], 'b-')
-                    plt.plot([t0[i], t0[i] + pd.Timedelta(days=7)], [-pars_data['res'][i]/2, -pars_data['res'][i]/2], 'b-')
-                    if quadratic:
-                        plt.plot([t0[i], t0[i] + pd.Timedelta(days=7)], [pars_data['res_quad'][i]/2, pars_data['res_quad'][i]/2], 'y-')
-                        plt.plot([t0[i], t0[i] + pd.Timedelta(days=7)], [-pars_data['res_quad'][i]/2, -pars_data['res_quad'][i]/2], 'y-')
-                else:
-                    plt.plot([t0[i], t0[i+1]], [pars_data['res'][i]/2, pars_data['res'][i]/2], 'b-')
-                    plt.plot([t0[i], t0[i+1]], [-pars_data['res'][i]/2, -pars_data['res'][i]/2], 'b-')
-                    if quadratic:
-                        plt.plot([t0[i], t0[i+1]], [pars_data['res_quad'][i]/2, pars_data['res_quad'][i]/2], 'y-')
-                        plt.plot([t0[i], t0[i+1]], [-pars_data['res_quad'][i]/2, -pars_data['res_quad'][i]/2], 'y-')
-                if str(pars_data['res'][i]/2*1.1) != 'nan' and i<len(pars_data['res'])-(xlim_idx-1):
-                    plt.text(t0[i], pars_data['res'][i]/2*1.1, '{:.2f}'.format(pars_data['res'][i]))
-                
-                if quadratic:
-                    if str(pars_data['res_quad'][i]/2*1.5) != 'nan' and i<len(pars_data['res'])-(xlim_idx-1):
-                        plt.text(t0[i], pars_data['res_quad'][i]/2*1.5, '{:.2f} (Q)'.format(pars_data['res_quad'][i]))
-                
-            fig.suptitle(f'period: {periods} - string: {string} - position: {chmap.map("daq.rawid")[int(channel[2:])]["location"]["position"]} - ged: {chmap.map("daq.rawid")[int(channel[2:])]["name"]}')
-            plt.ylabel(r'Energy diff / keV')
-            plt.plot([0,1], [0,1], 'b', label='Qbb FWHM keV (linear)')
-            my_det = chmap.map("daq.rawid")[int(channel[2:])]["name"]
-            if quadratic:
-                plt.plot([1,2], [1,2], 'y', label='Qbb FWHM keV (quadratic)')
-            
-            if zoom:
-                bound = np.average(pulser_data['diff']['kevdiff_std'].dropna())
-                if chmap.map("daq.rawid")[int(channel[2:])]["name"] == 'B00089D':plt.ylim(-3,3)
-                else: plt.ylim(-2.5*bound,2.5*bound)
-            min_date = pulser_data['pul_cusp']['kevdiff_av'].index.min()
-            max_date = pulser_data['pul_cusp']['kevdiff_av'].index.max()
-            time_difference = max_date - t0[-xlim_idx]
-            time_difference_timedelta = pd.Timedelta(days=time_difference.days)
-            plt.xlim(t0[0] - pd.Timedelta(hours=8), t0[-xlim_idx] + pd.Timedelta(days=0.5))##time_difference*1.5) #pd.Timedelta(days=7))#
-            plt.legend(loc='lower left')
-            plt.tight_layout()
-
-            mgt_folder = os.path.join(output_folder, period, f"st{string}")
-            if not os.path.exists(mgt_folder):
-                os.makedirs(mgt_folder)
-                logger.debug('...created %s', mgt_folder)
-            
-            # ~~~~~~~~~~~~~~~~ save pdfs with plots for an easy/quick access ~~~~~~~~~~~~~~~~
-            png_name = os.path.join(mgt_folder, f"{period}_string{string}_pos{chmap.map("daq.rawid")[int(channel[2:])]["location"]["position"]}_{chmap.map("daq.rawid")[int(channel[2:])]["name"]}_gain_shift.png")
-            plt.savefig(png_name)
-
-            # ~~~~~~~~~~~~~~~~ pickle and save plots in a shelve file ~~~~~~~~~~~~~~~~~~~~~~~
-            # - serialize the plot 
-            serialized_plot = pickle.dumps(plt.gcf())  
-            plt.close(fig) 
-            # store the serialized plot in a shelve object under key 
-            with shelve.open(f'{output_folder}/{name_out}/{name_out}_gain_shift', 'c', protocol=pickle.HIGHEST_PROTOCOL) as shelf:
-                shelf[f'{name_out}_string{string}_pos{chmap.map("daq.rawid")[int(channel[2:])]["location"]["position"]}_{chmap.map("daq.rawid")[int(channel[2:])]["name"]}'] = serialized_plot
-            plt.close(fig)
-            
-
+    if len(email_message) > 1 and pswd_email != None:
+        with open('message.txt', 'w') as f:
+            for line in email_message:
+                f.write(line + '\n')
+        legend_data_monitor.utils.send_email_alert(pswd_email, ['sofia.calgaro@physik.uzh.ch'], "message.txt")
 
 if __name__=="__main__":
     main()

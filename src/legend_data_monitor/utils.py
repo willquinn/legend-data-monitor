@@ -9,7 +9,6 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from datetime import datetime, timedelta
-
 from lgdo import lh5
 from pandas import DataFrame
 
@@ -1043,8 +1042,9 @@ def get_output_path(config: dict):
     return out_path
 
 
-def send_email_alert(app_password, recipients, subject, text_file_path):
+def send_email_alert(app_password, recipients, text_file_path):
     sender = "legend.data.monitoring@gmail.com"
+    subject = "Automatic message - DATA MONITORING ALARM!"
     try:
         with open(text_file_path, 'r') as f:
             text = f.read()

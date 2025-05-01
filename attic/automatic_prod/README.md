@@ -36,13 +36,13 @@ If the crontab command is not available on your cluster, you can use the provide
 ```bash
 #!/bin/bash
 while true; do
-  python /global/cfs/cdirs/m2676/users/<your_username>/legend-data-monitor/attic/automatic_prod/main_sync_code.py --cluster nersc --ref_version tmp-auto
+  python <path>/main_sync_code.py --cluster nersc --ref_version tmp-auto --pswd_email <insert_pswd>
   echo "Running job at $(date)"
   sleep 3600  # every hour
 done
 ```
 
-Here, you can change the absolue path to your `main_sync_code.py`, the name of the cluster (either `lngs` or `nersc`), the processing version, and the time (in seconds) every which you want to execute the python command (here set to 1 H).
+Here, you can change the absolue path to your `main_sync_code.py`, the name of the cluster (either `lngs` or `nersc`), the processing version, the password to access `legend.data.monitor@gmail.com` (in order to send automatic alerts via email), the time (in seconds) every which you want to execute the python command (here set to 1 H).
 
 In order to run the above script in a resilient way such that survives your logout or SSH disconnects, run it like this:
 
