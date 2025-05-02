@@ -85,6 +85,14 @@ def parse_json_or_dict(value):
         # Treat value as dictionary
         return eval(value)
 
+def has_all_nan(df, key):
+    """Check if a dataframe has all entries equal to NaN for a given key."""
+    return (
+        isinstance(df, pd.DataFrame) and
+        key in df.columns and
+        df[key].isna().all()
+    )
+
 def get_calib_data_dict(calib_data, channel, tiers, pars, period, run, tier, key_result, fit):
     sto = lh5.LH5Store()
 
@@ -636,7 +644,7 @@ def main():
     parser.add_argument("--zoom", default="True", help="True to zoom over y axis; default: True")
     parser.add_argument("--quad_res", default="False", help="True if you want to plot the quadratic resolution too; default: False")
     parser.add_argument("--cluster", default="lngs", help="Name of the cluster where you are operating; pick among 'lngs' or 'nersc'.")
-    parser.add_argument("--pswd_email", help="Password to access the legend.data.monitoring@gmail.com account for sending alert messages.")
+    parser.add_argument("--pswd_email", default=None, help="Password to access the legend.data.monitoring@gmail.com account for sending alert messages.")
 
     args = parser.parse_args()
 
@@ -740,7 +748,7 @@ def main():
                         for t in over_threshold_timestamps:
                             email_message.append(f"- Gain over threshold at {t} ({period}) for {channel_name} ({channel})")
 
-                if channel != 'ch1120004': # =B00089D; TODO: make it generic  
+                if not has_all_nan(pulser_data['pul_cusp'], 'kevdiff_av'):
                     #plt.plot(pulser_data['ged']['cusp_av'], 'C0', label='GED')
                     plt.plot(pulser_data['pul_cusp']['kevdiff_av'], 'C2', label='PULS01ANA')
                     plt.plot(pulser_data['diff']['kevdiff_av'], 'C4', label='GED corrected')
