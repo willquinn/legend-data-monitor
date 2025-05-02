@@ -42,7 +42,7 @@ while true; do
 done
 ```
 
-Here, you can change the absolue path to your `main_sync_code.py`, the name of the cluster (either `lngs` or `nersc`), the processing version, the password to access `legend.data.monitor@gmail.com` (in order to send automatic alerts via email), the time (in seconds) every which you want to execute the python command (here set to 1 H).
+Here, you can change the absolute path to your `main_sync_code.py`, the name of the cluster (either `lngs` or `nersc`), the processing version, the password to access `legend.data.monitor@gmail.com` (in order to send automatic alerts via email), the time (in seconds) every which you want to execute the python command (here set to 1 H).
 
 In order to run the above script in a resilient way such that survives your logout or SSH disconnects, run it like this:
 
@@ -69,4 +69,3 @@ Once you have the PID, stop it like this:
 ```console
 kill 12345
 ```
-

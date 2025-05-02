@@ -4,11 +4,12 @@ import json
 import logging
 import os
 import re
-import sys
 import smtplib
+import sys
+from datetime import datetime, timedelta
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from datetime import datetime, timedelta
+
 from lgdo import lh5
 from pandas import DataFrame
 
@@ -1046,7 +1047,7 @@ def send_email_alert(app_password, recipients, text_file_path):
     sender = "legend.data.monitoring@gmail.com"
     subject = "Automatic message - DATA MONITORING ALARM!"
     try:
-        with open(text_file_path, 'r') as f:
+        with open(text_file_path) as f:
             text = f.read()
     except FileNotFoundError:
         logger.info("Error: File not found: %s", text_file_path)
@@ -1054,11 +1055,11 @@ def send_email_alert(app_password, recipients, text_file_path):
 
     # Create email message
     msg = MIMEMultipart()
-    msg['Subject'] = subject
-    msg['From'] = sender
-    msg['To'] = ', '.join(recipients)
+    msg["Subject"] = subject
+    msg["From"] = sender
+    msg["To"] = ", ".join(recipients)
 
-    body = MIMEText(text, 'plain')
+    body = MIMEText(text, "plain")
     msg.attach(body)
 
     try:

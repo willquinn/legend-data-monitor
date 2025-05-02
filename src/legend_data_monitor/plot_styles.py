@@ -2,9 +2,9 @@
 # different plot style functions called from the main one depending on parameter
 # -------------------------------------------------------------------------------
 
+import warnings
+
 # See mapping user plot structure keywords to corresponding functions in the end of this file
-
-
 from datetime import datetime
 
 import numpy as np
@@ -13,10 +13,10 @@ from matplotlib.axes import Axes
 from matplotlib.dates import DateFormatter, date2num, num2date
 from matplotlib.figure import Figure
 from pandas import DataFrame, Timedelta, concat
-import warnings
-warnings.filterwarnings("ignore", category=FutureWarning)
 
 from . import utils
+
+warnings.filterwarnings("ignore", category=FutureWarning)
 
 # -------------------------------------------------------------------------------
 # single parameter plotting functions
