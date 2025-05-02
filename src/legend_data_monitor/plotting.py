@@ -688,6 +688,8 @@ def plot_per_string(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
     # -------------------------------------------------------------------------------
 
     data_analysis = data_analysis.sort_values(["location", "label"])
+    map_dict = utils.get_map_dict(data_analysis)
+
     # new subplot for each string
     ax_idx = 0
     for location, data_location in data_analysis.groupby("location"):
@@ -706,7 +708,14 @@ def plot_per_string(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
         col_idx = 0
         labels = []
         for label, data_channel in data_location.groupby("label"):
-            plot_style(data_channel, fig, axes[ax_idx], plot_info, COLORS[col_idx])
+            plot_style(
+                data_channel,
+                fig,
+                axes[ax_idx],
+                plot_info,
+                COLORS[col_idx],
+                map_dict=map_dict,
+            )
             labels.append(label)
             if len(plot_info["parameters"]) == 1:
                 if plot_info["parameter"] != "event_rate":
@@ -781,6 +790,9 @@ def plot_array(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
     data_analysis["label"] = labels["label"]
     data_analysis = data_analysis.sort_values("label")
 
+    data_analysis = data_analysis.sort_values(["location", "label"])
+    map_dict = utils.get_map_dict(data_analysis)
+
     # -------------------------------------------------------------------------------
     # plot
     # -------------------------------------------------------------------------------
@@ -809,7 +821,6 @@ def plot_array(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
         for label, data_channel in data_location.groupby("label"):
             plot_style(data_channel, fig, axes, plot_info, COLORS[col_idx])
 
-            map_dict = utils.MAP_DICT
             location = data_channel["location"].unique()[0]
             position = data_channel["position"].unique()[0]
 

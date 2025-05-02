@@ -74,10 +74,6 @@ COLUMNS_TO_LOAD = [
 # map position/location for special systems
 SPECIAL_SYSTEMS = {"pulser": 0, "pulser01ana": -1, "FCbsln": -2, "muon": -3}
 
-# dictionary map (helpful when we want to map channels based on their location/position)
-with open(pkg / "settings" / "map-channels.json") as f:
-    MAP_DICT = json.load(f)
-
 # dictionary with timestamps to remove for specific channels
 with open(pkg / "settings" / "remove-keys.json") as f:
     REMOVE_KEYS = json.load(f)
@@ -1070,3 +1066,18 @@ def send_email_alert(app_password, recipients, text_file_path):
             logger.info("Successfully sent emails from %s", sender)
     except smtplib.SMTPException as e:
         logger.info("Error: unable to send email: %s", e)
+
+
+def get_map_dict(data_analysis: DataFrame):
+    """Map string location and geds position for plot of values vs chs."""
+    map_dict = {}
+    offset = 0
+    for string in sorted(data_analysis["location"].unique()):
+        subset = data_analysis[data_analysis["location"] == string]
+        positions = sorted(subset["position"].unique())
+        map_dict[str(string)] = {}
+        for i, position in enumerate(positions):
+            map_dict[str(string)][str(position)] = offset + i
+        offset += len(positions)
+
+    return map_dict

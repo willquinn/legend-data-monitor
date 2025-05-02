@@ -24,7 +24,12 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 
 
 def plot_vs_time(
-    data_channel: DataFrame, fig: Figure, ax: Axes, plot_info: dict, color=None
+    data_channel: DataFrame,
+    fig: Figure,
+    ax: Axes,
+    plot_info: dict,
+    color=None,
+    map_dict=None,
 ):
     # -------------------------------------------------------------------------
     # plot this data vs time
@@ -166,7 +171,12 @@ def plot_vs_time(
 
 
 def par_vs_ch(
-    data_channel: DataFrame, fig: Figure, ax: Axes, plot_info: dict, color=None
+    data_channel: DataFrame,
+    fig: Figure,
+    ax: Axes,
+    plot_info: dict,
+    color=None,
+    map_dict=None,
 ):
     if len(data_channel[plot_info["parameter"]].unique()) > 1:
         utils.logger.error(
@@ -177,9 +187,6 @@ def par_vs_ch(
     # -------------------------------------------------------------------------
     # plot data vs channel ID
     # -------------------------------------------------------------------------
-    # trick to get a correct position of channels, independently from the 'channel' entry
-    # (everything was ok when using 'fcid'; but using 'rawid' as 'channel', we loose the possibility to order channels over x-axis in a decent way)
-    map_dict = utils.MAP_DICT
     location = data_channel["location"].unique()[0]
     position = data_channel["position"].unique()[0]
     ax.scatter(
@@ -205,7 +212,12 @@ def par_vs_ch(
 
 
 def plot_histo(
-    data_channel: DataFrame, fig: Figure, ax: Axes, plot_info: dict, color=None
+    data_channel: DataFrame,
+    fig: Figure,
+    ax: Axes,
+    plot_info: dict,
+    color=None,
+    map_dict=None,
 ):
     # --- histo range
     # take full range if not specified
@@ -266,7 +278,12 @@ def plot_histo(
 
 
 def plot_scatter(
-    data_channel: DataFrame, fig: Figure, ax: Axes, plot_info: dict, color=None
+    data_channel: DataFrame,
+    fig: Figure,
+    ax: Axes,
+    plot_info: dict,
+    color=None,
+    map_dict=None,
 ):
     # plot data
     ax.scatter(
@@ -300,7 +317,12 @@ def plot_scatter(
 
 
 def plot_par_vs_par(
-    data_channel: DataFrame, fig: Figure, ax: Axes, plot_info: dict, color=None
+    data_channel: DataFrame,
+    fig: Figure,
+    ax: Axes,
+    plot_info: dict,
+    color=None,
+    map_dict=None,
 ):
     par_x = plot_info["parameters"][0]
     par_y = plot_info["parameters"][1]
@@ -385,7 +407,12 @@ def plot_par_vs_par(
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # UNDER CONSTRUCTION!!!
 def plot_heatmap(
-    data_channel: DataFrame, fig: Figure, ax: Axes, plot_info: dict, color=None
+    data_channel: DataFrame,
+    fig: Figure,
+    ax: Axes,
+    plot_info: dict,
+    color=None,
+    map_dict=None,
 ):
     # some plotting settings
     xbin = int(
@@ -422,11 +449,14 @@ def plot_heatmap(
             )
             new_df = pd.concat([new_df, new_row], ignore_index=True, axis=0)
 
-    x_values = pd.to_numeric(new_df["datetime"].dt.to_pydatetime()).values
+    # make sure the datetime column is in UTC
+    new_df["datetime"] = pd.to_datetime(new_df["datetime"]).dt.tz_localize("UTC")
+    # convert to numeric values for plotting
+    x_values = pd.to_numeric(
+        new_df["datetime"].dt.tz_convert("UTC").dt.to_pydatetime()
+    ).values
     y_values = new_df[plot_info["parameter"]]
-
     # plot data
-
     h, xedges, yedges = np.histogram2d(
         x_values,
         y_values,
