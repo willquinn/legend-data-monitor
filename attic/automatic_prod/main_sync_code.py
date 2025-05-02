@@ -342,10 +342,6 @@ def main():
 
         new_files = correct_files
 
-    new_files = new_files[:1]
-    # ===========================================================================================
-    # Analyze not-analyzed files
-    # ===========================================================================================
     # If new files are found, run the shell command
     if new_files:
         # Replace this command with your desired shell command
@@ -367,14 +363,14 @@ def main():
 
         bash_command = f"{cmd} ~/.local/bin/legend-data-monitor user_rsync_prod --config {config_file} --keys {keys_file}"
         logger.debug(f"...running command \033[95m{bash_command}\033[0m")
-        # subprocess.run(bash_command, shell=True)
+        subprocess.run(bash_command, shell=True)
         logger.debug("...done!")
 
         # compute resampling + info json
         logger.debug("Resampling outputs...")
         files_folder = os.path.join(output_folder, ref_version)
         bash_command = (
-            f'{cmd} python -c "from fix_hdf_output import build_new_files; '
+            f'{cmd} python -c "from monitoring import build_new_files; '
             f"build_new_files('{files_folder}', '{period}', '{run}')\""
         )
         logger.debug(f"...running command \033[95m{bash_command}\033[0m")
@@ -397,15 +393,9 @@ def main():
         # ===========================================================================================
         # Generate Gain Monitoring Summary Plots
         # ===========================================================================================
-        # create monitoring-plots folder
-        mtg_folder = os.path.join(output_folder, ref_version, "generated/mtg")
-        if not os.path.exists(mtg_folder):
-            os.makedirs(mtg_folder)
-            logger.info(f"Folder '{mtg_folder}' created.")
-        mtg_folder = os.path.join(mtg_folder, "phy")
-        if not os.path.exists(mtg_folder):
-            os.makedirs(mtg_folder)
-            logger.info(f"Folder '{mtg_folder}' created.")
+        mtg_folder = os.path.join(output_folder, ref_version, "generated/mtg/phy")
+        os.makedirs(mtg_folder, exist_ok=True)
+        logger.info(f"Folder {mtg_folder} ensured.")
 
         # define dataset depending on the (latest) monitored period/run
         avail_runs = sorted(
@@ -422,10 +412,9 @@ def main():
             phy_mtg_data = mtg_folder.replace("mtg", "plt")
 
             # Note: quad_res is set to False by default in these plots
-            if partition is False:
-                mtg_bash_command = f"{cmd} python monitoring.py --public_data {auto_dir_path} --hdf_files {phy_mtg_data} --output {mtg_folder} --start {start_key} --p {period} --runs {avail_runs} --cluster {cluster} --pswd_email {pswd_email}"
-            else:
-                mtg_bash_command = f"{cmd} python monitoring.py --public_data {auto_dir_path} --hdf_files {phy_mtg_data} --output {mtg_folder} --start {start_key} --p {period} --runs {avail_runs} --cluster {cluster} --pswd_email {pswd_email} --partition True"
+            mtg_bash_command = f"{cmd} python monitoring.py --public_data {auto_dir_path} --hdf_files {phy_mtg_data} --output {mtg_folder} --start {start_key} --p {period} --runs {avail_runs} --cluster {cluster} --pswd_email {pswd_email}"
+            if partition is True:
+                mtg_bash_command += "--partition True"
 
                 subprocess.run(mtg_bash_command, shell=True)
             logger.info("...monitoring plots generated!")
