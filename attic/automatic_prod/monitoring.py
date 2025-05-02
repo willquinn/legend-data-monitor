@@ -671,9 +671,13 @@ def main():
     chmap = meta.channelmap(start_key)
     # get string info
     str_chns = {}
-    # TODO: fix this
-    for string in range(13):
-        if string in [0, 6]: continue 
+    string_numbers = [
+        int(item.get('location', {}).get('string'))
+        for item in chmap.values()
+        if 'location' in item and 'string' in item['location']
+    ]
+    string_numbers = list(dict.fromkeys(string_numbers)) # unique values
+    for string in string_numbers:
         channels = [f"ch{chmap[ged].daq.rawid}" for ged, dic in chmap.items() if dic["system"]=='geds' and dic["location"]["string"]==string] # and dic["analysis"]["processable"]==True 
         if len(channels)>0: 
             str_chns[string] = channels
@@ -728,7 +732,7 @@ def main():
                     filtered_timestamps = timestamps[mask_time_range]
                     kevdiff_in_range = kevdiff[mask_time_range]
                 
-                    threshold = 1e-5#pars_data['res'][i] / 2 
+                    threshold = pars_data['res'][i] / 2 
                     mask = (kevdiff_in_range > threshold) | (kevdiff_in_range < -threshold)
                     over_threshold_timestamps = filtered_timestamps[mask]
                 
