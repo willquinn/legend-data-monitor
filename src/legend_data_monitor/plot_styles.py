@@ -2,9 +2,9 @@
 # different plot style functions called from the main one depending on parameter
 # -------------------------------------------------------------------------------
 
+import warnings
+
 # See mapping user plot structure keywords to corresponding functions in the end of this file
-
-
 from datetime import datetime
 
 import numpy as np
@@ -15,6 +15,8 @@ from matplotlib.figure import Figure
 from pandas import DataFrame, Timedelta, concat
 
 from . import utils
+
+warnings.filterwarnings("ignore", category=FutureWarning)
 
 # -------------------------------------------------------------------------------
 # single parameter plotting functions
@@ -47,7 +49,7 @@ def plot_vs_time(
     if plot_info["resampled"] != "only":
         parameter_array = np.array(data_channel[plot_info["parameter"]])
         ax.plot(
-            data_channel["datetime"].dt.to_pydatetime(),
+            np.array(data_channel["datetime"].dt.to_pydatetime()),
             parameter_array[:, None],
             zorder=0,
             color=all_col,
@@ -268,7 +270,7 @@ def plot_scatter(
 ):
     # plot data
     ax.scatter(
-        data_channel["datetime"].dt.to_pydatetime(),
+        np.array(data_channel["datetime"].dt.to_pydatetime()),
         data_channel[plot_info["parameter"]],
         color=color,
         # useful if there are overlapping points (but more difficult to see light colour points...)

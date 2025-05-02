@@ -4,10 +4,11 @@ import json
 import logging
 import os
 import re
+import smtplib
 import sys
-
-# for getting DataLoader time range
 from datetime import datetime, timedelta
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 from lgdo import lh5
 from pandas import DataFrame
@@ -1040,3 +1041,32 @@ def get_output_path(config: dict):
     out_path += "-{}".format("_".join(data_types))
 
     return out_path
+
+
+def send_email_alert(app_password, recipients, text_file_path):
+    sender = "legend.data.monitoring@gmail.com"
+    subject = "Automatic message - DATA MONITORING ALARM!"
+    try:
+        with open(text_file_path) as f:
+            text = f.read()
+    except FileNotFoundError:
+        logger.info("Error: File not found: %s", text_file_path)
+        return
+
+    # Create email message
+    msg = MIMEMultipart()
+    msg["Subject"] = subject
+    msg["From"] = sender
+    msg["To"] = ", ".join(recipients)
+
+    body = MIMEText(text, "plain")
+    msg.attach(body)
+
+    try:
+        with smtplib.SMTP("smtp.gmail.com", 587) as smtp:
+            smtp.starttls()
+            smtp.login(sender, app_password)
+            smtp.sendmail(sender, recipients, msg.as_string())
+            logger.info("Successfully sent emails from %s", sender)
+    except smtplib.SMTPException as e:
+        logger.info("Error: unable to send email: %s", e)

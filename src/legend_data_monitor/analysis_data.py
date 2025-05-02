@@ -354,7 +354,7 @@ class AnalysisData:
 
                 # get pulser rate
                 if "PULS01" in full_channel_map.keys():
-                    rate = 0.05  # full_channel_map["PULS01"]["rate_in_Hz"] # L200: p02, p03
+                    rate = 0.05  # L200
                 else:
                     rate = full_channel_map["AUX00"]["rate_in_Hz"]["puls"]  # L60
 
@@ -728,13 +728,13 @@ def get_aux_df(
 
 def get_aux_info(df: pd.DataFrame, chmap: dict, aux_ch: str) -> pd.DataFrame:
     """Return a DataFrame with correct pulser AUX info."""
-    df["channel"] = LegendMetadata().channelmap().PULS01ANA.daq.rawid
+    df["channel"] = chmap.PULS01ANA.daq.rawid
     df["HV_card"] = None
     df["HV_channel"] = None
     df["cc4_channel"] = None
     df["cc4_id"] = None
-    df["daq_card"] = LegendMetadata().channelmap().PULS01ANA.daq.card.id
-    df["daq_crate"] = LegendMetadata().channelmap().PULS01ANA.daq.crate
+    df["daq_card"] = chmap.PULS01ANA.daq.card.id
+    df["daq_crate"] = chmap.PULS01ANA.daq.crate
     df["det_type"] = None
     df["location"] = (
         utils.SPECIAL_SYSTEMS["pulser01ana"]

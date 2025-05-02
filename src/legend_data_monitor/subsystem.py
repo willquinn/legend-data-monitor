@@ -747,6 +747,12 @@ class Subsystem:
         if self.partition:
             param_tiers["tier"] = param_tiers["tier"].replace("hit", "pht")
             param_tiers["tier"] = param_tiers["tier"].replace("dsp", "psp")
+        if "ref-v1" in self.version:
+            param_tiers["tier"] = param_tiers["tier"].replace("hit", "pht")
+            param_tiers["tier"] = param_tiers["tier"].replace("psp", "dsp")
+        else:
+            param_tiers["tier"] = param_tiers["tier"].replace("hit", "pht")
+            param_tiers["tier"] = param_tiers["tier"].replace("hit", "pht")
 
         # which of these are requested by user
         param_tiers = param_tiers[param_tiers["param"].isin(params)]
