@@ -33,7 +33,7 @@ def main():
     parser.add_argument("--output_folder", help="Path where to store the automatic results (plots and summary files).", default="tmp")
     parser.add_argument("--partition", default=False, help="False (default) if not partition data, else True")
     parser.add_argument("--pswd", help="Password to access the Slow Control database (NOT available on NERSC).")
-    parser.add_argument("--pswd_email", help="Password to access the legend.data.monitoring@gmail.com account for sending alert messages.")
+    parser.add_argument("--pswd_email", default=None, help="Password to access the legend.data.monitoring@gmail.com account for sending alert messages.")
     
 
     args = parser.parse_args()
@@ -304,7 +304,6 @@ def main():
     # ===========================================================================================
     # Analyze not-analyzed files
     # =========================================================================================== 
-    
     # If new files are found, run the shell command
     if new_files:
         # Replace this command with your desired shell command
@@ -326,7 +325,7 @@ def main():
     
         bash_command = f"{cmd} ~/.local/bin/legend-data-monitor user_rsync_prod --config {config_file} --keys {keys_file}"
         logger.debug(f"...running command \033[95m{bash_command}\033[0m")
-        #subprocess.run(bash_command, shell=True)
+        subprocess.run(bash_command, shell=True)
         logger.debug("...done!")
     
         # compute resampling + info json
@@ -342,7 +341,7 @@ def main():
         
             bash_command = f"{cmd} ~/.local/bin/legend-data-monitor user_scdb --config {scdb_config_file} --port 8282 --pswd {pswd}"
             logger.debug(f"...running command \033[92m{bash_command}\033[0m")
-            subprocess.run(bash_command, shell=True)
+            #subprocess.run(bash_command, shell=True)
             logger.debug("...SC done!")
     
         

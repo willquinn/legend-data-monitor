@@ -85,14 +85,6 @@ def parse_json_or_dict(value):
         # Treat value as dictionary
         return eval(value)
 
-def has_all_nan(df, key):
-    """Check if a dataframe has all entries equal to NaN for a given key."""
-    return (
-        isinstance(df, pd.DataFrame) and
-        key in df.columns and
-        df[key].isna().all()
-    )
-
 def get_calib_data_dict(calib_data, channel, tiers, pars, period, run, tier, key_result, fit):
     sto = lh5.LH5Store()
 
@@ -704,7 +696,7 @@ def main():
             logger.debug("Dataframes are None for %s!", period)
             continue
         if geds_df_cuspEmax_abs.empty or geds_df_cuspEmax_abs_corr.empty or puls_df_cuspEmax_abs.empty:
-            logger.debug("Dataframes are empty for %s!",period)
+            logger.debug("Dataframes are empty for %s!", period)
             continue
         dfs = [geds_df_cuspEmax_abs, geds_df_cuspEmax_abs_corr, puls_df_cuspEmax_abs, geds_df_trapTmax, geds_df_tp0est, puls_df_trapTmax, puls_df_tp0est, geds_df_cuspEmaxCtcCal_abs]
         
@@ -717,6 +709,7 @@ def main():
             for index_k in range(len(channel_list)):
                 channel = channel_list[index_k]
                 channel_name = chmap.map("daq.rawid")[int(channel[2:])]["name"]
+                B00089D_p3p11 = (channel_name == "B00089D" and (period in ["p03", "p04", "p05", "p06", "p07", "p08", "p09", "p10", "p11"]))
 
                 resampling_time = "h"#if len(runs)>1 else "10T"
                 if int(channel.split('ch')[-1]) not in list(dfs[0].columns):
@@ -731,24 +724,24 @@ def main():
                 kevdiff = pulser_data['diff']['kevdiff_av']
                 timestamps = kevdiff.index
                 t0 = pars_data['run_start']
-                for i in range(len(t0)):  
-                    time_range_start = t0[i]
-                    time_range_end = time_range_start + pd.Timedelta(days=7)
-                
-                    # filter timestamps/gain within the time range
-                    mask_time_range = (timestamps >= time_range_start) & (timestamps < time_range_end)
-                    filtered_timestamps = timestamps[mask_time_range]
-                    kevdiff_in_range = kevdiff[mask_time_range]
-                
-                    threshold = pars_data['res'][i] / 2 
-                    mask = (kevdiff_in_range > threshold) | (kevdiff_in_range < -threshold)
-                    over_threshold_timestamps = filtered_timestamps[mask]
-                
-                    if not over_threshold_timestamps.empty:
-                        for t in over_threshold_timestamps:
-                            email_message.append(f"- Gain over threshold at {t} ({period}) for {channel_name} ({channel})")
+                if not B00089D_p3p11:
+                    for i in range(len(t0)):  
+                        time_range_start = t0[i]
+                        time_range_end = time_range_start + pd.Timedelta(days=7)
+                    
+                        # filter timestamps/gain within the time range
+                        mask_time_range = (timestamps >= time_range_start) & (timestamps < time_range_end)
+                        filtered_timestamps = timestamps[mask_time_range]
+                        kevdiff_in_range = kevdiff[mask_time_range]
+                    
+                        threshold = pars_data['res'][i] / 2 
+                        mask = (kevdiff_in_range > threshold) | (kevdiff_in_range < -threshold)
+                        over_threshold_timestamps = filtered_timestamps[mask]
+                    
+                        if not over_threshold_timestamps.empty:
+                            for t in over_threshold_timestamps:
+                                email_message.append(f"- Gain over threshold at {t} ({period}) for {channel_name} ({channel}) string {string}")
 
-                if not has_all_nan(pulser_data['pul_cusp'], 'kevdiff_av'):
                     #plt.plot(pulser_data['ged']['cusp_av'], 'C0', label='GED')
                     plt.plot(pulser_data['pul_cusp']['kevdiff_av'], 'C2', label='PULS01ANA')
                     plt.plot(pulser_data['diff']['kevdiff_av'], 'C4', label='GED corrected')
@@ -793,7 +786,7 @@ def main():
                 
                 if zoom:
                     bound = np.average(pulser_data['diff']['kevdiff_std'].dropna())
-                    if channel_name == 'B00089D':plt.ylim(-3,3)
+                    if B00089D_p3p11: plt.ylim(-3,3)
                     else: plt.ylim(-2.5*bound,2.5*bound)
                 min_date = pulser_data['pul_cusp']['kevdiff_av'].index.min()
                 max_date = pulser_data['pul_cusp']['kevdiff_av'].index.max()
