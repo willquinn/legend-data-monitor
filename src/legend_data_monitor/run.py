@@ -15,7 +15,7 @@ def main():
 
     .. code-block:: console
       $ legend-data-monitor --help
-      
+
     """
     parser = argparse.ArgumentParser(
         prog="legend-data-monitor", description="Software's command-line interface."
