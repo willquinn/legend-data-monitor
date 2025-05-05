@@ -91,10 +91,9 @@ def get_query_times(**kwargs):
     """
     Get time ranges for DataLoader query from user input, as well as first/last timestamp for channel map / status / SC query.
 
-    Available kwargs:
-
-    Available kwargs:
-    dataset=
+    Parameters
+    ----------
+    dataset
         dict with the following keys:
             - 'path' [str]: < move description here from get_data() >
             - 'version' [str]: < move description here from get_data() >
@@ -104,6 +103,7 @@ def get_query_times(**kwargs):
                 2. 'window'[str]: time window in the past from current time point, format: 'Xd Xh Xm' for days, hours, minutes
                 2. 'timestamps': str or list of str in format 'YYYYMMDDThhmmssZ'
                 3. 'runs': int or list of ints for run number(s)  e.g. 10 for r010
+
     Or input kwargs separately path=, ...; start=&end=, or window=, or timestamps=, or runs=
 
     Designed in such a way to accommodate Subsystem init kwargs. A bit cumbersome and can probably be done better.
@@ -219,9 +219,9 @@ def get_query_timerange(**kwargs):
     """
     Get DataLoader compatible time range.
 
-    Available kwargs:
-
-    dataset=
+    Parameters
+    ----------
+    dataset
         dict with the following keys depending in time selection mode (choose one)
             1. 'start' : <start datetime>, 'end': <end datetime> where <datetime> input is of format 'YYYY-MM-DD hh:mm:ss'
             2. 'window'[str]: time window in the past from current time point, format: 'Xd Xh Xm' for days, hours, minutes
@@ -566,18 +566,21 @@ def get_multiple_run_id(user_time_range: dict) -> str:
 def get_time_name(user_time_range: dict) -> str:
     """Get a name for each available time selection.
 
-    careful handling of folder name depending on the selected time range. The possibilities are:
-      1. user_time_range = {'timestamp': {'start': '20220928T080000Z', 'end': '20220928T093000Z'}} => start + end
-              -> folder: 20220928T080000Z_20220928T093000Z/
-      2. user_time_range = {'timestamp': ['20230207T103123Z']} => one key
-              -> folder: 20230207T103123Z/
-      3. user_time_range = {'timestamp': ['20230207T103123Z', '20230207T141123Z', '20230207T083323Z']} => multiple keys
-              -> get min/max and use in the folder name
-              -> folder: 20230207T083323Z_20230207T141123Z/
-      4. user_time_range = {'run': ['r010']} => one run
-              -> folder: r010/
-      5. user_time_range = {'run': ['r010', 'r014']} => multiple runs
-              -> folder: r010_r014/
+    Parameters
+    ----------
+    user_time_range
+        careful handling of folder name depending on the selected time range. The possibilities are:
+          1. user_time_range = {'timestamp': {'start': '20220928T080000Z', 'end': '20220928T093000Z'}} => start + end
+                  -> folder: 20220928T080000Z_20220928T093000Z/
+          2. user_time_range = {'timestamp': ['20230207T103123Z']} => one key
+                  -> folder: 20230207T103123Z/
+          3. user_time_range = {'timestamp': ['20230207T103123Z', '20230207T141123Z', '20230207T083323Z']} => multiple keys
+                  -> get min/max and use in the folder name
+                  -> folder: 20230207T083323Z_20230207T141123Z/
+          4. user_time_range = {'run': ['r010']} => one run
+                  -> folder: r010/
+          5. user_time_range = {'run': ['r010', 'r014']} => multiple runs
+                  -> folder: r010_r014/
     """
     name_time = ""
     if "timestamp" in user_time_range.keys():
@@ -939,10 +942,13 @@ def add_config_entries(
 def get_livetime(tot_livetime: float):
     """Get the livetime in a human readable format, starting from livetime in seconds.
 
-    If tot_livetime is more than 0.1 yr, convert it to years.
-    If tot_livetime is less than 0.1 yr but more than 1 day, convert it to days.
-    If tot_livetime is less than 1 day but more than 1 hour, convert it to hours.
-    If tot_livetime is less than 1 hour but more than 1 minute, convert it to minutes.
+    Parameters
+    ----------
+    tot_livetime
+        If tot_livetime is more than 0.1 yr, convert it to years.
+        If tot_livetime is less than 0.1 yr but more than 1 day, convert it to days.
+        If tot_livetime is less than 1 day but more than 1 hour, convert it to hours.
+        If tot_livetime is less than 1 hour but more than 1 minute, convert it to minutes.
     """
     if tot_livetime > 60 * 60 * 24 * 365.25:
         tot_livetime = tot_livetime / 60 / 60 / 24 / 365.25
@@ -1040,6 +1046,17 @@ def get_output_path(config: dict):
 
 
 def send_email_alert(app_password, recipients, text_file_path):
+    """Send automatic emails with alert messages.
+
+    Parameters
+    ----------
+    app_password
+        String password to send mails from legend.data.monitoring@gmail.com
+    recipients
+        List of email addresses to send the alert emails
+    text_file_path
+        String path to the .txt file containing the message to send via email
+    """
     sender = "legend.data.monitoring@gmail.com"
     subject = "Automatic message - DATA MONITORING ALARM!"
     try:
@@ -1069,7 +1086,14 @@ def send_email_alert(app_password, recipients, text_file_path):
 
 
 def get_map_dict(data_analysis: DataFrame):
-    """Map string location and geds position for plot of values vs chs."""
+    """
+    Map string location and geds position for plotting values vs chs.
+
+    Parameters
+    ----------
+    data_analysis
+        DataFrame with geds data information, in particular 'location' and 'position'
+    """
     map_dict = {}
     offset = 0
     for string in sorted(data_analysis["location"].unique()):

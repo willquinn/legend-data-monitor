@@ -14,7 +14,7 @@ You can either run the code by importing the ``legend-data-monitor`` module:
 .. code-block:: python
 
   import legend-data-monitor as ldm
-  user_config = path_to_config.json
+  user_config = "path_to_config.json"
   ldm.control_plots(user_config)
 
 Or run it by parsing to the executable the path to the config file:
@@ -23,15 +23,14 @@ Or run it by parsing to the executable the path to the config file:
 
   $ legend-data-monitor user_prod --config path_to_config.json
 
-If you want to inspect bunches of data (useful to avoid the process to get killed
-when loading lots of heavy files), you can use
+If you want to inspect bunches of data (e.g. useful to avoid the process to get killed
+when loading lots of files), you can use
 
 .. code-block:: bash
 
   $ legend-data-monitor user_bunch --config path_to_config.json --n_files N
 
-where ``N`` specifies how many files you want to inspect together at each iteration e.g. ``N=40``
-(one run is usually made up of ca. 160 files).
+where ``N`` specifies how many files you want to inspect together at each iteration e.g. ``N=40``.
 
 
 .. warning::
@@ -60,6 +59,7 @@ Example config
     "start": "2023-02-07 02:00:00",  // time cut (here based on start+end)
     "end": "2023-02-07 03:30:00"
   },
+  "saving": "overwrite",
   "subsystems": {
     "geds": { // type of subsystem to plot (geds, spms, pulser)
       "Baselines in pulser events": {
@@ -76,16 +76,15 @@ Example config
     }
   }
 
-The argument ``output`` is the path to where plots and inspected data will be saved. Will create subfolders in given path for different outputs. Will be created if does not exist.
-
+The argument ``output`` is the path where plots and inspected data will be saved.
 In particular, ``dataset`` settings are:
 
-- ``experiment``: experiment, in uppercase (``L60`` or ``L200``);
-- ``period``: format ``pXX``. Note: not needed for ``DataLoader`` as it finds period by itself based on provided selection (see below), only used in output filename;
-- ``version``: version of production cycle, format ``vXX.YY``. Note: needed for ``DataLoader`` to look in the desired path;
-- ``path``: path to ``prod-ref`` folder;
-- ``type``: type of data, physics (``phy``) or calibration (``cal``). Possible to use one or both to make one dataset (``["phy", "cal"]``);
-- ``selection``: time window to select data;
+- ``experiment``: experiment name (e.g. ``L60`` or ``L200``);
+- ``period``: format ``pXX``. Note that this entry is not mandatory when using `DataLoader <https://pygama.readthedocs.io/en/stable/api/pygama.flow.html#pygama.flow.data_loader.DataLoader>`_ as it finds the period of interest automatically based on the provided time selection (see below); the period is useful for output filenames;
+- ``version``: version of production cycle, format ``vXX.YY`` or ``ref-vXX.YY.ZZ`` or ``tmp-auto``;
+- ``path``: path to ``prod-ref`` folder, e.g. ``/data2/public/prodenv/prod-blind/`` on LNGS cluster or ``/global/cfs/cdirs/m2676/data/lngs/l200/public/prodenv/prod-blind/`` on NERSC cluster;
+- ``type``: type of data, either physics (``phy``), calibration (``cal``), or both (``["phy", "cal"]``);
+- ``selection``: time window to select data.
 
 .. note::
 
@@ -93,41 +92,43 @@ In particular, ``dataset`` settings are:
 
   - ``'start': '2023-02-07 02:00:00', 'end': '2023-02-07 03:30:00'`` (start + end) in format ``YYYY-MM-DD hh:mm:ss``;
   - ``'timestamps': ['20230207T103123Z', '20230207T141123Z', ...]`` (list of keys) in format ``YYYYMMDDThhmmssZ``;
-  - ``'window': '1d 2h 0m'`` ( time window in the past from current time point) in format ``Xd Xh Xm`` for days, hours, minutes;
+  - ``'window': '1d 2h 0m'`` (time window in the past from current time point) in format ``Xd Xh Xm`` for days, hours, minutes;
   - ``'runs': 1`` (one run) or ``'runs': [1, 2, 3]`` (list of runs) in integer format.
 
 
-Then, ``subsystems`` can either be ``pulser``, ``geds`` or ``spms`` (note: spms plots are not implemented yet, but DataLoader can load the respective data if needed).
+A ``saving`` option is available to either ``"overwrite"`` any already present output file (or create a new one if not present) or ``"append"`` new data to the previously obtained output files.
+
+Then, ``subsystems`` can either be ``pulser``, ``geds`` or ``spms`` (note: SiPMs plots are not implemented yet, but DataLoader can load the respective data if needed).
 
 For each subsystem to be plotted, specify
 
 - ``"<some title>"``: the title of the plot you want to generate. eg. "Baselines in pulser events"
-- ``parameters``: one or multiple parameters of interest to be plotted for this subsystem. In addition to any parameter present in ``lh5``, the following special parameters are implemented (see provided examples below for more details on how to select these parameters):
+- ``parameters``: one or multiple parameters of interest to be plotted for this subsystem. In addition to any parameter present in ``lh5`` files, the following special parameters were implemented and are available for plotting (see provided examples below for more details on how to select these parameters):
     - ``"K_lines"``: events whose energy is contained within 1430 and 1575 keV (40K and 42K regions)
     - ``"FWHM"``: FWHM values for each channel
     - ``"wf_max_rel"``: relative difference between ``wf_max`` and baseline
-    - ``"event_rate"``: event rate calculated in windows specified in the field ``"sampling"`` under ``plotting.parameters``.
-- ``"event_type"``: which events to plot. Choose among ``pulser``  (events flagged as pulser based on AUX channel), ``phy`` (physical, i.e. non-pulser events), or ``all``.
+    - ``"event_rate"``: event rate calculated in windows specified in the field ``"sampling"`` under ``plotting.parameters``
+- ``"event_type"``: which events to plot. Choose among ``pulser`` (events flagged as pulser based on AUX channel), ``FCbsln`` (events flagged as FlashCam triggered baseline, i.e. flat events), ``muon`` (events flagged as in coincidence with a muon), ``phy`` (physical, i.e. non-pulser events), ``all`` (pulser + physical events), ``K_events`` (physical events with energies in [1430; 1575] keV)
 - ``"plot_structure"``: plot arrangement. Choose among
-    - ``per channel`` (pulser, geds): group plots by channel (ie each channel has its own AxesSubplot)
-    - ``per cc4`` (geds): group plots by CC4 (ie all channels belonging to the same CC4 are in the same AxesSubplot)
-    - ``per string`` (geds): group plots by string (ie all channels belonging to the same string are in the same AxesSubplot)
-    - ``array`` (geds): group all channels in the same AxesSubplot
-    - ``per fiber`` (spms): group channels separating them into IB and OB, and put top/bottom channels of a given fiber together to look for correlations within the fiber and among neighbouring fibers
+    - ``per channel`` (geds): group plots by channel, i.e. each channel has its canvas
+    - ``per cc4`` (geds): group plots by CC4, i.e. all channels belonging to the same CC4 are in the same canvas
+    - ``per string`` (geds): group plots by string, i.e. all channels belonging to the same string are in the same canvas
+    - ``array`` (geds): group all channels in the same canvas
+    - ``per fiber`` (spms): group channels separating them into the inner barrel (IB) and outer barrel (OB), and put top/bottom channels of a given fiber together to look for correlations within the fiber and among neighbouring fibers
     - ``per barrel`` (spms): group channels separating them into top/bottom IB/OB
 - ``"plot_style"``: plot style. Choose among
-    - ``vs time``: plot parameter VS time, as well as resampled values in window given in plot settings (see ``time_window``)
+    - ``vs time``: plot parameter VS time (all timestamps), as well as resampled values in a time window specified in plot settings (see ``time_window``)
     - ``vs ch``: plot parameter VS channel ID
     - ``histogram``: plot distribution of given parameter
     - ``scatter``: plot all entries of a parameter with points
     - ``heatmap``: plot 2d histos, with time on x axis
 - ``"variation"``: set it to ``True`` if you want % variation instead of absolute values for your parameter. Percentage variations are evaluated as: ``(param/mean - 1)*100``, where ``mean`` is the mean of the parameter under study evaluated over the first 10% of the time interval you specified in the ``dataset`` entry
 - ``"resampled"``: set it to ``"also"`` if you want to plot resampled values for the parameter under study. Resampling is done using the ``"time_window"`` you specify. Possible values are:
-    - ``"none"``: do not plot resampled values, i.e. events for each saved timestamps
-    - ``"only"``: plot resampled values, i.e. averaged events over each saved timestamps (average window equal to ``"time_window"``)
+    - ``"none"``: do not plot resampled values, i.e. plot only events for each saved timestamps
+    - ``"only"``: plot only resampled values, i.e. averaged parameter values after computing an average in a time window equal to ``"time_window"``
     - ``"also"``: plot both resampled and not resampled values
 - ``"time_window"``: resampling time (``T``=minutes, ``H``=hours, ``D``=days) used to print resampled values (useful to spot trends over time)
-- ``"status"``: set it to ``True`` if you want to generate a status map for the subsystem and parameter under study (note, 2023-03-07: this works only for geds). In order to work, you first need to specify the limits you want to set as a either low or high threshold (or both) for the parameter under study by adding the % or absolute threshoold for the subsystem of interest in ``settings/par-setting.json``.
+- ``"status"``: set it to ``True`` if you want to generate a geds status map for the subsystem and parameter under study. Before using this option, you first need to specify the limits you want to set as a low/high threshold for the parameter under study by adding the % or absolute threshold for the subsystem of interest in ``src/legend-data-monitor/settings/par-setting.json``.
 
 .. warning::
 
@@ -135,9 +136,8 @@ For each subsystem to be plotted, specify
   This means you always have to use ``"event_type": "all"`` as long as the different event selections are not properly implemented for calibration data too.
 
 ..
-    "variation": Only implemented for ``"per_channel"`` plot style. Currently required even if the plot style is not ``"per_channel"``, will be fixed in the future.
 
-More that one subsystem can be entered, for instance:
+More than one subsystem can be entered at once, for instance:
 
 .. code-block:: json
 
@@ -171,7 +171,6 @@ More that one subsystem can be entered, for instance:
     }
 
 ..
-  More examples can be found under ``examples/`` folder present in the Github repository.
 
 
 
@@ -181,7 +180,7 @@ More attention must be paid to the following special parameters, for which a par
 
 K lines
 ~~~~~~~
-To plot events having energies within 1430 and 1575 keV (ie, around the 40K and 42K area), grouping channels by string and selecting phy (=not-pulser) events, use
+To plot events having energies within 1430 and 1575 keV (ie, around the 40K and 42K regions), grouping channels by string and selecting physical (=not-pulser) events, use
 
 .. code-block:: json
 
@@ -234,7 +233,7 @@ To plot the relative difference between ``wf_max`` and ``baseline``, use
 
 Event rate
 ~~~~~~~~~~
-To plot the event rate, by sampling over a period of time equal to ``<time_window>`` (T=minutes, H=hours, D=days), use:
+To plot the event rate, by sampling over a period of time equal to ``<time_window>`` (``T``=minutes, ``H``=hours, ``D``=days), use:
 
 .. code-block:: json
 

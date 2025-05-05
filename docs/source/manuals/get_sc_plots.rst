@@ -18,15 +18,17 @@ Available parameters at the moment include:
 * ``PT114``, ``PT115``, ``PT118`` (cryostat pressures)
 * ``PT202``, ``PT205``, ``PT208`` (cryostat vacuum)
 * ``LT01`` (water loop fine fill level)
+* ``vmon`` (Ge diode voltage)
+* ``imon`` (Ge diode current)
 * ``RREiT`` (injected air temperature clean room), ``RRNTe`` (clean room temperature north), ``RRSTe`` (clean room temperature south), ``ZUL_T_RR`` (supply air temperature clean room)
 * ``DaqLeft-Temp1``, ``DaqLeft-Temp2``, ``DaqRight-Temp1``, ``DaqRight-Temp2`` (rack present temperatures)
 * if you want more, contact us!
 
-These can be easily access for any time range of interest by giving a my_config.json file as input to the command line in the following way:
+These can be easily access for any time range of interest by giving a config.json file as input to the command line in the following way:
 
 .. code-block::
 
-  legend-data-monitor user_scdb --config my_config --port N --pswd ThePassword
+  legend-data-monitor user_scdb --config config.json --port N --pswd ThePassword
 
 .. note::
 
@@ -38,7 +40,7 @@ An example of a config.json file is the following:
 .. code-block:: json
 
   {
-  "output": "/data1/users/<your_username>/prod-ref-v2",
+  "output": "output_folder",
   "dataset": {
     "experiment": "L200",
     "period": "p09",
@@ -55,45 +57,34 @@ An example of a config.json file is the following:
 
 The meaning of each entry is explained below:
 
-* ``output``: foldeer where to store output files;
+* ``output``: output folder path;
 * ``dataset``:
-
     * ``experiment``: either *L60* (to be checked) or *L200*
     * ``period``: period to inspect
     * ``version``: prodenv version (eg *tmp-auto* or *ref-v1.0.0*)
     * ``path``: global path to prod-blind prodenv folder
     * ``type``: type of data to inspect (either *cal* or *phy*)
-    *  ``time selection``: list of either ``runs`` or ``timestamps`` (use the format *YMDTHMSZ*), or add entries ``start`` and ``end`` with format *Y-M-D H:M:S* (see below for more detailed info)
+    *  ``time selection``: check how to build a config file to see available options for this entry
 
-* ``saving``: either *overwrite* (overwrites any already present file) or *append* (takes the previous file and append new data, eg for a new inspected time range)
-* ``slow_control``: filed for specifying SC parameters
+* ``saving``: option is available to either ``"overwrite"`` any already present output file (or create a new one if not present) or ``"append"`` new data to the previously obtained output files
+* ``slow_control``: entry for specifying SC parameters
+    * ``parameters``: list of parameters to retrieve
 
-    * ``parameters``: list of parameters to inspect (see among the available ones what you can choose)
+.. note::
 
+  In principle, for plotting the SC data you would need just the start and the end of a time interval of interest. This means that SC data does not depend on any dataset info (i.e. on entries ``experiment``, ``period``, ``version``, ``type``). However, these entries are important to retrieve any channel map of interest for the given time range of interest.
 
-In principle, for plotting the SC data you would need just the start and the end of a time interval of interest. This means that SC data does not depend on any dataset info (i.e. on entries ``experiment``, ``period``, ``version``, ``type``).
-However, these entries are important to retrieve any channel map of interest for the given time range of interest.
 
 We store SC data in the following way:
 
 .. code-block::
 
   <output>
-    └── generated
-      └── plt
-        └── <type>
-          └── <period>
-              └── <time_selection>
-                ├── SC-<time_selection>.hdf
-                └── SC-<time_selection>.{dat,bak,dir}
-
-
-.. note::
-
-  ``time_selection`` can assume one of the following formats, depending on what we put as a time range into ``dataset``:
-
-  - if ``{'start': '20220928T080000Z', 'end': '20220928T093000Z'}`` (start + end), then <time_selection> = ``20220928T080000Z_20220928T093000Z``;
-  - if ``{'timestamps': ['20230207T103123Z']}`` (one key), then <time_selection> = ``20230207T103123Z``;
-  - if ``{'timestamps': ['20230207T103123Z', '20230207T141123Z', '20230207T083323Z']}`` (multiple keys), then <time_selection> = ``20230207T083323Z_20230207T141123Z`` (min/max timestamp interval)
-  - if ``{'runs': 1}`` (one run), then <time_selection> = ``r001``;
-  - if ``{'runs': [1, 2, 3]}`` (multiple runs), then <time_selection> = ``r001_r002_r003``.
+    └── version
+      └── generated
+        └── plt
+          └── <type>
+            └── <period>
+                └── <time_selection>
+                  ├── SC-<time_selection>.hdf
+                  └── SC-<time_selection>.{dat,bak,dir}
