@@ -688,7 +688,9 @@ def get_pivot(
     df_pivot = df.pivot(index="datetime", columns="channel", values=parameter)
     # just select one row for mean values (since mean is constant over time for a given channel)
     # take into consideration parameters that are named with 'mean' in it, eg "bl_mean"
-    if "_mean" in parameter and parameter.count("mean") > 1:
+    if ("_mean" in parameter and parameter.count("mean") > 1) or (
+        "mean" in parameter.split("_")[-1] and "mean" not in parameter.split("_")[:-1]
+    ):
         df_pivot = df_pivot.iloc[[0]]
 
     # append new data

@@ -19,7 +19,7 @@ Getting started
 
 .. attention::
 
-   Before running it, make sure ``~/.local/bin`` (where you can find the legend-data-monitor executable) is appended to ``PATH``.
+   Before starting, make sure ``~/.local/bin`` (where you can find the legend-data-monitor executable) is appended to ``$PATH`` after ``legend-data-monitor`` has been installed via pip.
 
 Table of Contents
 -----------------
