@@ -64,6 +64,8 @@ cap_thick = 0.5
 # colors = cycler('color', ['b', 'g', 'r', 'm', 'y', 'k', 'c', '#8c564b'])
 plt.rc("axes", facecolor="white", edgecolor="black", axisbelow=True, grid=True)
 
+ignore_keys = json.load(open("ignore_keys.json"))
+
 
 def transform_string(input_string):
     """From st1 to String:01."""
@@ -449,30 +451,6 @@ def get_dfs(phy_mtg_data, period, run_list):
             phy_mtg_data_p = os.path.join(phy_mtg_data, p)
             runs = os.listdir(phy_mtg_data_p)
             for r in runs:
-                if (
-                    p == "p08"
-                    and r in ["r010", "r011", "r012", "r013", "r014"]
-                    and "ref-v1.0.0" in phy_mtg_data_p
-                ):
-                    phy_mtg_data_p = phy_mtg_data_p.replace("ref-v1.0.0", "tmp-auto")
-                if (
-                    p == "p08"
-                    and r
-                    in [
-                        "r000",
-                        "r001",
-                        "r002",
-                        "r003",
-                        "r004",
-                        "r005",
-                        "r006",
-                        "r007",
-                        "r008",
-                        "r009",
-                    ]
-                    and "tmp-auto" in phy_mtg_data_p
-                ):
-                    phy_mtg_data_p = phy_mtg_data_p.replace("tmp-auto", "ref-v1.0.0")
                 # keep only specified runs
                 if r not in run_list[p]:
                     logger.debug(phy_mtg_data_p, r, p, run_list[p])
@@ -569,30 +547,6 @@ def get_traptmax_tp0est(phy_mtg_data, period, run_list):
             phy_mtg_data_p = os.path.join(phy_mtg_data, p)
             runs = os.listdir(phy_mtg_data_p)
             for r in runs:
-                if (
-                    p == "p08"
-                    and r in ["r010", "r011", "r012", "r013", "r014"]
-                    and "ref-v1.0.0" in phy_mtg_data_p
-                ):
-                    phy_mtg_data_p = phy_mtg_data_p.replace("ref-v1.0.0", "tmp-auto")
-                if (
-                    p == "p08"
-                    and r
-                    in [
-                        "r000",
-                        "r001",
-                        "r002",
-                        "r003",
-                        "r004",
-                        "r005",
-                        "r006",
-                        "r007",
-                        "r008",
-                        "r009",
-                    ]
-                    and "tmp-auto" in phy_mtg_data_p
-                ):
-                    phy_mtg_data_p = phy_mtg_data_p.replace("tmp-auto", "ref-v1.0.0")
                 # keep only specified runs
                 if r not in run_list[p]:
                     continue
@@ -683,34 +637,19 @@ def get_traptmax_tp0est(phy_mtg_data, period, run_list):
 def get_pulser_data(resampling_time, period, dfs, channel, runs_no, escale):
     ser_pul_cusp = dfs[2][1027203]  # selection of pulser channel
     ser_ged_cusp = dfs[0][channel]  # selection of ged channel
-    # ser_ged_ctc_cal_cusp = dfs[-1][channel]
 
     # check if these dfs are empty or not - if not, then remove spikes
     if isinstance(dfs[6], pd.DataFrame):
-        # ser_ged_trapTmax  = dfs[3][channel]
-        # ser_ged_tp0est    = dfs[4][channel]
         ser_pul_tp0est = dfs[6][1027203]
 
         # remove retriggered events
-        target_time = pd.to_datetime(
-            "20231205T040733Z", format="%Y%m%dT%H%M%S%z"
-        )  # start of p08-r009: 20231127T134659Z
-        condition1 = (
-            (ser_pul_tp0est.index < target_time)
-            & (ser_pul_tp0est < 5e4)
-            & (ser_pul_tp0est > 4.8e4)
-        )
-        condition2 = (
-            (ser_pul_tp0est.index >= target_time)
-            & (ser_pul_tp0est < 5e4)
-            & (ser_pul_tp0est > 4.8e4)
-        )  # (ser_pul_tp0est < 4.8e4) & (ser_pul_tp0est > 4.7e4)
+        condition = (ser_pul_tp0est < 5e4) & (ser_pul_tp0est > 4.8e4)
         len_before = len(ser_pul_tp0est)
         logger.debug(
             "Removed retriggered events:\n",
-            ser_pul_tp0est[(~condition1) & (~condition2)],
+            ser_pul_tp0est[~condition],
         )
-        ser_pul_tp0est_new = ser_pul_tp0est[(condition1) | (condition2)]
+        ser_pul_tp0est_new = ser_pul_tp0est[condition]
         len_after = len(ser_pul_tp0est_new)
 
         # if not empty, then remove spikes
@@ -720,213 +659,43 @@ def get_pulser_data(resampling_time, period, dfs, channel, runs_no, escale):
             )
             ser_ged_cusp = ser_ged_cusp.loc[ser_pul_tp0est_new.index]
             ser_pul_cusp = ser_pul_cusp.loc[ser_pul_tp0est_new.index]
-            # ser_ged_ctc_cal_cusp = ser_ged_ctc_cal_cusp.loc[ser_pul_tp0est_new.index]
 
     ser_ged_cusp = ser_ged_cusp.dropna()
     ser_pul_cusp = ser_pul_cusp.loc[ser_ged_cusp.index]
-    # ser_ged_ctc_cal_cusp = ser_ged_ctc_cal_cusp.loc[ser_ged_cusp.index]
 
-    # multiple periods together
+    # remove keys to ignore...
+    # ...for multiple periods together
+    logger.debug("...removing keys")
     if isinstance(period, list):
         for p in period:
-            # remove individual isolated cycles
-            if p == "p03" or p == "p04" or p == "p06":
-                logger.debug("...removing isolated bunch of data")
-                if p == "p03":
-                    start_keys = ["20230327T145702Z", "20230406T135529Z"]
-                    stop_keys = ["20230327T145751Z", "20230406T235540Z"]
-                if p == "p04":
-                    start_keys = ["20230424T123443Z", "20230424T185631Z"]
-                    stop_keys = ["20230424T185631Z", "20230425T001708Z"]
-                if p == "p06":
-                    start_keys = [
-                        "20230724T145620Z",
-                        "20230615T033328Z",
-                        "20230630T150257Z",
-                        "20230703T134305Z",
-                    ]
-                    stop_keys = [
-                        "20230725T103957Z",
-                        "20230615T093432Z",
-                        "20230630T202244Z",
-                        "20230704T015054Z",
-                    ]
+            start_keys = ignore_keys[p]["start_keys"]
+            stop_keys = ignore_keys[p]["stop_keys"]
 
-                for ki, kf in zip(start_keys, stop_keys):
-                    isolated_ki = pd.to_datetime(ki, format="%Y%m%dT%H%M%S%z")
-                    isolated_kf = pd.to_datetime(kf, format="%Y%m%dT%H%M%S%z")
-                    ser_ged_cusp = ser_ged_cusp[
-                        (ser_ged_cusp.index < isolated_ki)
-                        | (ser_ged_cusp.index > isolated_kf)
-                    ]
-                    ser_pul_cusp = ser_pul_cusp[
-                        (ser_pul_cusp.index < isolated_ki)
-                        | (ser_pul_cusp.index > isolated_kf)
-                    ]
-                    # ser_ged_ctc_cal_cusp = ser_ged_ctc_cal_cusp[(ser_ged_ctc_cal_cusp.index < isolated_ki) | ((ser_ged_ctc_cal_cusp.index > isolated_kf))]
-
-            # remove ranges of temp. fluctuations
-            if p == "p06" or p == "p07" or p == "p08" or p == "p09" or p == "p10":
-                logger.debug("...removing temp. fluctuations from data")
-                if p == "p06":
-                    start_keys = [
-                        "20230615T033328Z",
-                        "20230630T150257Z",
-                        "20230703T134305Z",
-                    ]
-                    stop_keys = [
-                        "20230615T093432Z",
-                        "20230630T202244Z",
-                        "20230704T015054Z",
-                    ]
-                if p == "p07":
-                    start_keys = ["20230914T054230Z", "20230807T150000Z"]
-                    stop_keys = ["20230919T094821Z", "20230814T234656Z"]
-                if p == "p08":
-                    start_keys = [
-                        "20231009T085938Z",
-                        "20231103T080046Z",
-                        "20231106T163056Z",
-                        "20231223T211700Z",
-                        "20240106T034702Z",
-                    ]
-                    stop_keys = [
-                        "20231009T105947Z",
-                        "20231103T180220Z",
-                        "20231109T175924Z",
-                        "20231224T061824Z",
-                        "20240106T104735Z",
-                    ]
-                if p == "p09":
-                    start_keys = [
-                        "20240121T002839Z",
-                        "20240202T015625Z",
-                        "20240204T150447Z",
-                        "20240207T103233Z",
-                    ]
-                    stop_keys = [
-                        "20240121T133012Z",
-                        "20240202T145844Z",
-                        "20240205T140721Z",
-                        "20240207T233547Z",
-                    ]
-                if p == "p10":
-                    start_keys = ["20240225T164758Z"]
-                    stop_keys = ["20240227T094934Z"]
-
-                for ki, kf in zip(start_keys, stop_keys):
-                    isolated_ki = pd.to_datetime(ki, format="%Y%m%dT%H%M%S%z")
-                    isolated_kf = pd.to_datetime(kf, format="%Y%m%dT%H%M%S%z")
-                    ser_ged_cusp = ser_ged_cusp[
-                        (ser_ged_cusp.index < isolated_ki)
-                        | (ser_ged_cusp.index > isolated_kf)
-                    ]
-                    ser_pul_cusp = ser_pul_cusp[
-                        (ser_pul_cusp.index < isolated_ki)
-                        | (ser_pul_cusp.index > isolated_kf)
-                    ]
-                    # ser_ged_ctc_cal_cusp = ser_ged_ctc_cal_cusp[(ser_ged_ctc_cal_cusp.index < isolated_ki) | ((ser_ged_ctc_cal_cusp.index > isolated_kf))]
-    # just one period
+            for ki, kf in zip(start_keys, stop_keys):
+                isolated_ki = pd.to_datetime(ki, format="%Y%m%dT%H%M%S%z")
+                isolated_kf = pd.to_datetime(kf, format="%Y%m%dT%H%M%S%z")
+                ser_ged_cusp = ser_ged_cusp[
+                    (ser_ged_cusp.index < isolated_ki)
+                    | (ser_ged_cusp.index > isolated_kf)
+                ]
+                ser_pul_cusp = ser_pul_cusp[
+                    (ser_pul_cusp.index < isolated_ki)
+                    | (ser_pul_cusp.index > isolated_kf)
+                ]
+    # ...for one period
     else:
-        # remove individual isolated cycles
-        if period == "p03" or period == "p04" or period == "p06":
-            logger.debug("...removing isolated bunch of data")
-            if period == "p03":
-                start_keys = ["20230327T145702Z", "20230406T135529Z"]
-                stop_keys = ["20230327T145751Z", "20230406T235540Z"]
-            if period == "p04":
-                start_keys = ["20230424T123443Z", "20230424T185631Z"]
-                stop_keys = ["20230424T185631Z", "20230425T001708Z"]
-            if period == "p06":
-                start_keys = [
-                    "20230724T145620Z",
-                    "20230615T033328Z",
-                    "20230630T150257Z",
-                    "20230703T134305Z",
-                ]
-                stop_keys = [
-                    "20230725T103957Z",
-                    "20230615T093432Z",
-                    "20230630T202244Z",
-                    "20230704T015054Z",
-                ]
+        start_keys = ignore_keys[period]["start_keys"]
+        stop_keys = ignore_keys[period]["stop_keys"]
 
-            for ki, kf in zip(start_keys, stop_keys):
-                isolated_ki = pd.to_datetime(ki, format="%Y%m%dT%H%M%S%z")
-                isolated_kf = pd.to_datetime(kf, format="%Y%m%dT%H%M%S%z")
-                ser_ged_cusp = ser_ged_cusp[
-                    (ser_ged_cusp.index < isolated_ki)
-                    | (ser_ged_cusp.index > isolated_kf)
-                ]
-                ser_pul_cusp = ser_pul_cusp[
-                    (ser_pul_cusp.index < isolated_ki)
-                    | (ser_pul_cusp.index > isolated_kf)
-                ]
-                # ser_ged_ctc_cal_cusp = ser_ged_ctc_cal_cusp[(ser_ged_ctc_cal_cusp.index < isolated_ki) | ((ser_ged_ctc_cal_cusp.index > isolated_kf))]
-
-        # remove ranges of temp. fluctuations
-        if (
-            period == "p06"
-            or period == "p07"
-            or period == "p08"
-            or period == "p09"
-            or period == "p10"
-        ):
-            logger.debug("...removing temp. fluctuations from data")
-            if period == "p06":
-                start_keys = [
-                    "20230615T033328Z",
-                    "20230630T150257Z",
-                    "20230703T134305Z",
-                ]
-                stop_keys = ["20230615T093432Z", "20230630T202244Z", "20230704T015054Z"]
-            if period == "p07":
-                start_keys = ["20230914T054230Z", "20230807T150000Z"]
-                stop_keys = ["20230919T094821Z", "20230814T234656Z"]
-            if period == "p08":
-                start_keys = [
-                    "20231009T085938Z",
-                    "20231103T080046Z",
-                    "20231106T163056Z",
-                    "20231223T211700Z",
-                    "20240106T034702Z",
-                ]
-                stop_keys = [
-                    "20231009T105947Z",
-                    "20231103T180220Z",
-                    "20231109T175924Z",
-                    "20231224T061824Z",
-                    "20240106T104735Z",
-                ]
-            if period == "p09":
-                start_keys = [
-                    "20240121T002839Z",
-                    "20240202T015625Z",
-                    "20240204T150447Z",
-                    "20240207T103233Z",
-                ]
-                stop_keys = [
-                    "20240121T133012Z",
-                    "20240202T145844Z",
-                    "20240205T140721Z",
-                    "20240207T233547Z",
-                ]
-            if period == "p10":
-                start_keys = ["20240225T164758Z"]
-                stop_keys = ["20240227T094934Z"]
-
-            for ki, kf in zip(start_keys, stop_keys):
-                isolated_ki = pd.to_datetime(ki, format="%Y%m%dT%H%M%S%z")
-                isolated_kf = pd.to_datetime(kf, format="%Y%m%dT%H%M%S%z")
-                ser_ged_cusp = ser_ged_cusp[
-                    (ser_ged_cusp.index < isolated_ki)
-                    | (ser_ged_cusp.index > isolated_kf)
-                ]
-                ser_pul_cusp = ser_pul_cusp[
-                    (ser_pul_cusp.index < isolated_ki)
-                    | (ser_pul_cusp.index > isolated_kf)
-                ]
-                # ser_ged_ctc_cal_cusp = ser_ged_ctc_cal_cusp[(ser_ged_ctc_cal_cusp.index < isolated_ki) | ((ser_ged_ctc_cal_cusp.index > isolated_kf))]
+        for ki, kf in zip(start_keys, stop_keys):
+            isolated_ki = pd.to_datetime(ki, format="%Y%m%dT%H%M%S%z")
+            isolated_kf = pd.to_datetime(kf, format="%Y%m%dT%H%M%S%z")
+            ser_ged_cusp = ser_ged_cusp[
+                (ser_ged_cusp.index < isolated_ki) | (ser_ged_cusp.index > isolated_kf)
+            ]
+            ser_pul_cusp = ser_pul_cusp[
+                (ser_pul_cusp.index < isolated_ki) | (ser_pul_cusp.index > isolated_kf)
+            ]
 
     if runs_no == 1 and resampling_time == "10T":
         hour_counts = ser_pul_cusp.resample(resampling_time).count()
@@ -937,7 +706,7 @@ def get_pulser_data(resampling_time, period, dfs, channel, runs_no, escale):
         ser_ged_cusp.values[:360]
     )  # switch to first 10% of available time interval?
     pul_cusp_av = np.average(ser_pul_cusp.values[:360])
-    # ged_cusp_ctc_cal_av = np.average(ser_ged_ctc_cal_cusp.values[:360])
+
     # if first entries of dataframe are NaN
     if np.isnan(ged_cusp_av):
         logger.debug("the average is a nan")
@@ -951,7 +720,6 @@ def get_pulser_data(resampling_time, period, dfs, channel, runs_no, escale):
         (ser_pul_cusp.values - pul_cusp_av) / pul_cusp_av,
         index=ser_pul_cusp.index.values,
     ).dropna()
-    # ser_ged_cuspdiff_ctc_cal = pd.Series((ser_ged_ctc_cal_cusp.values - ged_cusp_ctc_cal_av)/ged_cusp_ctc_cal_av, index=ser_pul_cusp.index.values).dropna()
     ser_ged_cuspdiff_kev = pd.Series(
         ser_ged_cuspdiff * escale, index=ser_ged_cuspdiff.index.values
     )
@@ -1148,6 +916,7 @@ def main():
                 if int(channel.split("ch")[-1]) not in list(dfs[0].columns):
                     logger.debug(f"{channel} is not present in the dataframe!")
                     continue
+
                 pulser_data = get_pulser_data(
                     resampling_time,
                     period,

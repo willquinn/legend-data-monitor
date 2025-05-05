@@ -69,3 +69,19 @@ Once you have the PID, stop it like this:
 ```console
 kill 12345
 ```
+
+## Keys to ignore
+
+An external file `inore_keys.json` has to be provided with information about time ranges to remove from inspected data.
+The structure of this file is of the following type:
+
+```json
+{
+    "p03": {
+        "start_keys": ["20230327T145702Z", "20230406T135529Z"],
+        "end_keys": ["20230327T145751Z", "20230406T235540Z"]
+    },
+    ...
+```
+
+where for instance we remove all file keys falling in the time range from `20230327T145702Z` (included) to `20230327T145751Z` (excluded), and `20230406T135529Z` (included) to `20230406T235540Z` (excluded).

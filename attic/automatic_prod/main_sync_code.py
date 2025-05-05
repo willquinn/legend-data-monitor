@@ -387,7 +387,7 @@ def main():
 
             bash_command = f"{cmd} ~/.local/bin/legend-data-monitor user_scdb --config {scdb_config_file} --port 8282 --pswd {pswd}"
             logger.debug(f"...running command \033[92m{bash_command}\033[0m")
-            # subprocess.run(bash_command, shell=True)
+            subprocess.run(bash_command, shell=True)
             logger.debug("...SC done!")
 
         # ===========================================================================================
@@ -395,7 +395,7 @@ def main():
         # ===========================================================================================
         mtg_folder = os.path.join(output_folder, ref_version, "generated/mtg/phy")
         os.makedirs(mtg_folder, exist_ok=True)
-        logger.info(f"Folder {mtg_folder} ensured.")
+        logger.info(f"Folder {mtg_folder} ensured")
 
         # define dataset depending on the (latest) monitored period/run
         avail_runs = sorted(
@@ -416,7 +416,7 @@ def main():
             if partition is True:
                 mtg_bash_command += "--partition True"
 
-                subprocess.run(mtg_bash_command, shell=True)
+            subprocess.run(mtg_bash_command, shell=True)
             logger.info("...monitoring plots generated!")
 
     # Update the last checked timestamp
