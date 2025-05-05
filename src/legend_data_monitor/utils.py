@@ -87,6 +87,21 @@ with open(pkg / "settings" / "remove-dets.json") as f:
 # -------------------------------------------------------------------------
 
 
+def get_valid_path(base_path, fallback_subdir="psp"):
+    if os.path.exists(base_path):
+        return base_path
+    fallback_path = base_path.replace("dsp", fallback_subdir)
+
+    if os.path.exists(fallback_path):
+        return fallback_path
+
+    logger.warning(
+        "\033[93mThe path '%s' does not exist, check config['dataset'] and try again.\033[0m",
+        fallback_path,
+    )
+    exit()
+
+
 def get_query_times(**kwargs):
     """
     Get time ranges for DataLoader query from user input, as well as first/last timestamp for channel map / status / SC query.
@@ -149,12 +164,7 @@ def get_query_times(**kwargs):
             path_info["version"],
             "generated",
             "tier",
-            (
-                "dsp"
-                if path_info["version"] in ["tmp-auto"]
-                or "ref-v1" in path_info["version"]
-                else "psp"
-            ),
+            "dsp",
             path_info["type"],
             path_info["period"],
             first_run,
@@ -164,29 +174,14 @@ def get_query_times(**kwargs):
             path_info["version"],
             "generated",
             "tier",
-            (
-                "dsp"
-                if path_info["version"] in ["tmp-auto"]
-                or "ref-v1" in path_info["version"]
-                else "psp"
-            ),
+            "dsp",
             path_info["type"],
             path_info["period"],
             last_run,
         )
 
-        if not os.path.exists(first_glob_path):
-            logger.warning(
-                "\033[93mThe path '%s' does not exist, check config['dataset'] and try again.\033[0m",
-                first_glob_path,
-            )
-            exit()
-        if not os.path.exists(last_glob_path):
-            logger.warning(
-                "\033[93mThe path '%s' does not exist, check config['dataset'] and try again.\033[0m",
-                last_glob_path,
-            )
-            exit()
+        first_glob_path = get_valid_path(first_glob_path)
+        last_glob_path = get_valid_path(last_glob_path)
 
         # format to search /path_to_prod-ref[/vXX.XX]/generated/tier/dsp/phy/pXX/rXXX (version 'vXX.XX' might not be there).
         # NOTICE that we fixed the tier, otherwise it picks the last one it finds (eg tcm).
@@ -755,11 +750,7 @@ def bunch_dataset(config: dict, n_files=None):
         path_info["version"],
         "generated",
         "tier",
-        (
-            "dsp"
-            if path_info["version"] in ["tmp-auto"] or "ref-v1" in path_info["version"]
-            else "psp"
-        ),
+        "dsp",
         path_info["type"],
         path_info["period"],
         run,
@@ -767,6 +758,8 @@ def bunch_dataset(config: dict, n_files=None):
     )
     # get all dsp files
     dsp_files = glob.glob(path_to_files)
+    if not dsp_files:
+        dsp_files = glob.glob(path_to_files.replace("dsp", "psp"))
     dsp_files.sort()
 
     if "timestamp" in user_time_range.keys():
@@ -1105,3 +1098,24 @@ def get_map_dict(data_analysis: DataFrame):
         offset += len(positions)
 
     return map_dict
+
+
+def get_tiers_pars_folders(path: str):
+    """Get the absolute path to different tier and par folders."""
+    # config with info on all tier folder
+    config_proc = json.load(open(os.path.join(path, "config.json")))
+
+    def clean_path(key, path, setup_paths):
+        return os.path.join(path, setup_paths[key].replace("$_/", ""))
+
+    setup_paths = config_proc["setups"]["l200"]["paths"]
+
+    # tier paths
+    tier_keys = ["tier_dsp", "tier_psp", "tier_hit", "tier_pht", "tier_raw"]
+    tiers = [clean_path(key, path, setup_paths) for key in tier_keys]
+
+    # parameter paths
+    par_keys = ["par_dsp", "par_psp", "par_hit", "par_pht"]
+    pars = [clean_path(key, path, setup_paths) for key in par_keys]
+
+    return tiers, pars

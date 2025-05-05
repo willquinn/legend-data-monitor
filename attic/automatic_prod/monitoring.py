@@ -54,14 +54,12 @@ plt.rc("figure", titlesize=SMALL_SIZE)  # fontsize of the figure title
 plt.rcParams["font.family"] = "serif"
 
 matplotlib.rcParams["mathtext.fontset"] = "stix"
-# matplotlib.rcParams['font.family'] = 'STIXGeneral'
 
 marker_size = 2
 line_width = 0.5
 cap_size = 0.5
 cap_thick = 0.5
 
-# colors = cycler('color', ['b', 'g', 'r', 'm', 'y', 'k', 'c', '#8c564b'])
 plt.rc("axes", facecolor="white", edgecolor="black", axisbelow=True, grid=True)
 
 ignore_keys = json.load(open("ignore_keys.json"))
@@ -347,45 +345,12 @@ def get_calib_pars(
         "res_quad": [],
     }
 
-    # config with info on all tier folder
-    config_proc = json.load(
-        open(os.path.join(path.replace("1.0.0", "2.1.5"), "config.json"))
-    )
-
-    tier_dsp = os.path.join(
-        path, config_proc["setups"]["l200"]["paths"]["tier_dsp"].replace("$_/", "")
-    )
-    tier_psp = os.path.join(
-        path, config_proc["setups"]["l200"]["paths"]["tier_psp"].replace("$_/", "")
-    )
-    tier_hit = os.path.join(
-        path, config_proc["setups"]["l200"]["paths"]["tier_hit"].replace("$_/", "")
-    )
-    tier_pht = os.path.join(
-        path, config_proc["setups"]["l200"]["paths"]["tier_pht"].replace("$_/", "")
-    )
-    tier_raw = os.path.join(
-        path, config_proc["setups"]["l200"]["paths"]["tier_raw"].replace("$_/", "")
-    )
-    tiers = [tier_dsp, tier_psp, tier_hit, tier_pht, tier_raw]
-    par_dsp = os.path.join(
-        path, config_proc["setups"]["l200"]["paths"]["par_dsp"].replace("$_/", "")
-    )
-    par_psp = os.path.join(
-        path, config_proc["setups"]["l200"]["paths"]["par_psp"].replace("$_/", "")
-    )
-    par_hit = os.path.join(
-        path, config_proc["setups"]["l200"]["paths"]["par_hit"].replace("$_/", "")
-    )
-    par_pht = os.path.join(
-        path, config_proc["setups"]["l200"]["paths"]["par_pht"].replace("$_/", "")
-    )
-    pars = [par_dsp, par_psp, par_hit, par_pht]
+    tiers, pars = legend_data_monitor.utils.get_tiers_pars_folders(path)
 
     tier = "hit"
     key_result = "ecal"
-    if os.path.isdir(tier_psp):
-        if os.listdir(tier_psp) != []:
+    if os.path.isdir(tiers[1]):
+        if os.listdir(tiers[1]) != []:
             tier = "pht"
             key_result = "partition_ecal"
 

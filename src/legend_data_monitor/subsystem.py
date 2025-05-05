@@ -130,11 +130,27 @@ class Subsystem:
         params_for_dataloader = self.get_parameters_for_dataloader(parameters)
 
         # --- set up DataLoader config
-        # needs to know path and version from data_info
-        dlconfig, dbconfig = self.construct_dataloader_configs(params_for_dataloader)
+        # separate dsp and hit parameters as they might have different paths
+        param_tiers = pd.DataFrame.from_dict(utils.PARAMETER_TIERS.items())
+        param_tiers.columns = ["param", "tier"]
+        my_params = param_tiers[param_tiers["param"].isin(params_for_dataloader)]
+        dsp_params = my_params[my_params["tier"] == "dsp"]["param"].tolist()
+        hit_params = my_params[my_params["tier"] == "hit"]["param"].tolist()
+        utils.logger.debug("dsp/psp parameters: %s", dsp_params)
+        utils.logger.debug("hit/pht parameters: %s", hit_params)
 
-        # --- set up DataLoader
-        dl = DataLoader(dlconfig, dbconfig)
+        dl_dsp = None
+        dl_hit = None
+        if dsp_params != []:
+            dlconfig_dsp, dbconfig_dsp = self.construct_dataloader_configs(
+                param_tiers, dsp_params, "dsp"
+            )
+            dl_dsp = DataLoader(dlconfig_dsp, dbconfig_dsp)  # set up DataLoader
+        if hit_params != []:
+            dlconfig_hit, dbconfig_hit = self.construct_dataloader_configs(
+                param_tiers, hit_params, "hit"
+            )
+            dl_hit = DataLoader(dlconfig_hit, dbconfig_hit)
 
         # -------------------------------------------------------------------------
         # Set up query
@@ -180,29 +196,53 @@ class Subsystem:
         # -------------------------------------------------------------------------
 
         # --- query data loader
-        dl.set_files(query)
-        dl.set_output(fmt="pd.DataFrame", columns=params_for_dataloader)
+        if dsp_params != []:
+            dl_dsp.set_files(query)
+            dl_dsp.set_output(fmt="pd.DataFrame", columns=dsp_params)
+        if hit_params != []:
+            dl_hit.set_files(query)
+            dl_hit.set_output(fmt="pd.DataFrame", columns=hit_params)
 
         now = datetime.now()
-        self.data = dl.load()
+
+        # --- create self.data object
+        dsp_data = None
+        hit_data = None
+        if dsp_params != []:
+            dsp_data = dl_dsp.load()
+        if hit_params != []:
+            hit_data = dl_hit.load()
+
+        if dsp_data is None and hit_data is None:
+            exit()
+            utils.logger.error(
+                "\033[91mdsp_data and hit_data are equal to None. Exit here.\033[0m"
+            )
+            sys.exit()
+        elif dsp_data is None:
+            self.data = hit_data
+        elif hit_data is None:
+            self.data = dsp_data
+        else:
+            self.data = pd.concat([dsp_data, hit_data], axis=1)
+
         utils.logger.info(f"Total time to load data: {(datetime.now() - now)}")
 
         # -------------------------------------------------------------------------
         # polish things up
         # -------------------------------------------------------------------------
+        # drop useless columns
+        self.data = self.data.drop(
+            columns=[col for col in self.data.columns if col.endswith("_idx")]
+        )
+        # rename "table" column to "channel" and drop duplicates
 
-        tier = "dsp"
-        if "hit" in dbconfig["columns"]:
-            tier = "hit"
-        if self.partition and "pht" in dbconfig["columns"]:
-            tier = "pht"
-        if self.partition and "psp" in dbconfig["columns"]:
-            tier = "psp"
-        # remove columns we don't need
-        if "{tier}_idx" in list(self.data.columns):
-            self.data = self.data.drop([f"{tier}_idx", "file"], axis=1)
-        # rename channel to channel
-        self.data = self.data.rename(columns={f"{tier}_table": "channel"})
+        table_cols = [col for col in self.data.columns if col.endswith("_table")]
+        if table_cols:
+            keep_col = table_cols[0]
+            drop_cols = [col for col in table_cols if col != keep_col]
+            self.data = self.data.drop(columns=drop_cols)
+            self.data = self.data.rename(columns={keep_col: "channel"})
 
         # -------------------------------------------------------------------------
         # create datetime column based on initial key and timestamp
@@ -727,32 +767,34 @@ class Subsystem:
         # some parameters might be repeated twice - remove
         return list(np.unique(params))
 
-    def construct_dataloader_configs(self, params: list_of_str):
+    def construct_dataloader_configs(
+        self, param_tiers, params: list_of_str, tier_key: str
+    ):
         """
         Construct DL and DB configs for DataLoader based on parameters and which tiers they belong to.
 
         params: list of parameters to load
         """
-        # -------------------------------------------------------------------------
-        # which parameters belong to which tiers
-        # -------------------------------------------------------------------------
+        tiers, _ = utils.get_tiers_pars_folders(os.path.join(self.path, self.version))
+        data_dir = os.path.join(self.path, self.version, "generated", "tier")
+        tier_folder_part = tiers[1] if tier_key == "dsp" else tiers[3]
+        tier_folder = tiers[0] if tier_key == "dsp" else tiers[2]
+        tier_key_new = tier_key
 
-        # --- convert info in json to DataFrame for convenience
-        # parameter tier
-        # baseline  dsp
-        # ...
-        param_tiers = pd.DataFrame.from_dict(utils.PARAMETER_TIERS.items())
-        param_tiers.columns = ["param", "tier"]
-        # change from 'hit' to 'pht' when loading data for partitioned files
         if self.partition:
-            param_tiers["tier"] = param_tiers["tier"].replace("hit", "pht")
-            param_tiers["tier"] = param_tiers["tier"].replace("dsp", "psp")
-        if "ref-v1" in self.version:
-            param_tiers["tier"] = param_tiers["tier"].replace("hit", "pht")
-            param_tiers["tier"] = param_tiers["tier"].replace("psp", "dsp")
-        else:
-            param_tiers["tier"] = param_tiers["tier"].replace("hit", "pht")
-            param_tiers["tier"] = param_tiers["tier"].replace("hit", "pht")
+            # check if the psp/pht folder exists (ie is not empty)
+            if os.path.isdir(tier_folder_part) and os.listdir(tier_folder_part):
+                tier_key_new = "psp" if tier_key == "dsp" else "pht"
+                param_tiers["tier"] = param_tiers["tier"].replace(
+                    tier_key, tier_key_new
+                )
+                data_dir = os.path.join(
+                    tier_folder_part.split("generated")[0], "generated", "tier"
+                )
+            else:
+                data_dir = os.path.join(
+                    tier_folder.split("generated")[0], "generated", "tier"
+                )
 
         # which of these are requested by user
         param_tiers = param_tiers[param_tiers["param"].isin(params)]
@@ -762,10 +804,8 @@ class Subsystem:
         # -------------------------------------------------------------------------
         # set up config templates
         # -------------------------------------------------------------------------
-        self_path = self.path
-
         dict_dbconfig = {
-            "data_dir": os.path.join(self_path, self.version, "generated", "tier"),
+            "data_dir": data_dir,
             "tier_dirs": {},
             "file_format": {},
             "table_format": {},
@@ -824,19 +864,9 @@ class Subsystem:
 
             dict_dbconfig["columns"][tier] = list(tier_params["param"])
 
-            # dict_dlconfig['levels'][tier] = {'tiers': [tier]}
-
         # --- settings based on tier hierarchy
-        order = (
-            {"pht": 3, "dsp": 2, "raw": 1}
-            if self.partition
-            else {"hit": 3, "dsp": 2, "raw": 1}
-        )
-        order = (
-            {"pht": 3, "dsp": 2, "raw": 1}
-            if "ref-v1" in self.version
-            else {"pht": 3, "psp": 2, "raw": 1}
-        )
+        order = {tier_key_new: 2, "raw": 1}
+        param_tiers = param_tiers.copy()
         param_tiers["order"] = param_tiers["tier"].apply(lambda x: order[x])
         # find highest tier
         max_tier = param_tiers[param_tiers["order"] == param_tiers["order"].max()][

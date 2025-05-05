@@ -80,7 +80,7 @@ We store SC data in the following way:
 .. code-block::
 
   <output>
-    └── version
+    └── <version>
       └── generated
         └── plt
           └── <type>
