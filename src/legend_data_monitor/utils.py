@@ -1105,3 +1105,41 @@ def get_map_dict(data_analysis: DataFrame):
         offset += len(positions)
 
     return map_dict
+
+
+def get_tiers_pars_folders(path: str):
+    """Get the absolute path to different tier and par folders."""
+    # config with info on all tier folder
+    config_proc = json.load(open(os.path.join(path, "config.json")))
+
+    tier_dsp = os.path.join(
+        path, config_proc["setups"]["l200"]["paths"]["tier_dsp"].replace("$_/", "")
+    )
+    tier_psp = os.path.join(
+        path, config_proc["setups"]["l200"]["paths"]["tier_psp"].replace("$_/", "")
+    )
+    tier_hit = os.path.join(
+        path, config_proc["setups"]["l200"]["paths"]["tier_hit"].replace("$_/", "")
+    )
+    tier_pht = os.path.join(
+        path, config_proc["setups"]["l200"]["paths"]["tier_pht"].replace("$_/", "")
+    )
+    tier_raw = os.path.join(
+        path, config_proc["setups"]["l200"]["paths"]["tier_raw"].replace("$_/", "")
+    )
+    tiers = [tier_dsp, tier_psp, tier_hit, tier_pht, tier_raw]
+    par_dsp = os.path.join(
+        path, config_proc["setups"]["l200"]["paths"]["par_dsp"].replace("$_/", "")
+    )
+    par_psp = os.path.join(
+        path, config_proc["setups"]["l200"]["paths"]["par_psp"].replace("$_/", "")
+    )
+    par_hit = os.path.join(
+        path, config_proc["setups"]["l200"]["paths"]["par_hit"].replace("$_/", "")
+    )
+    par_pht = os.path.join(
+        path, config_proc["setups"]["l200"]["paths"]["par_pht"].replace("$_/", "")
+    )
+    pars = [par_dsp, par_psp, par_hit, par_pht]
+
+    return tiers, pars
