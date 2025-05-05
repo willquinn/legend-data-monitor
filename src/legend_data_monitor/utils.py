@@ -1105,34 +1105,17 @@ def get_tiers_pars_folders(path: str):
     # config with info on all tier folder
     config_proc = json.load(open(os.path.join(path, "config.json")))
 
-    tier_dsp = os.path.join(
-        path, config_proc["setups"]["l200"]["paths"]["tier_dsp"].replace("$_/", "")
-    )
-    tier_psp = os.path.join(
-        path, config_proc["setups"]["l200"]["paths"]["tier_psp"].replace("$_/", "")
-    )
-    tier_hit = os.path.join(
-        path, config_proc["setups"]["l200"]["paths"]["tier_hit"].replace("$_/", "")
-    )
-    tier_pht = os.path.join(
-        path, config_proc["setups"]["l200"]["paths"]["tier_pht"].replace("$_/", "")
-    )
-    tier_raw = os.path.join(
-        path, config_proc["setups"]["l200"]["paths"]["tier_raw"].replace("$_/", "")
-    )
-    tiers = [tier_dsp, tier_psp, tier_hit, tier_pht, tier_raw]
-    par_dsp = os.path.join(
-        path, config_proc["setups"]["l200"]["paths"]["par_dsp"].replace("$_/", "")
-    )
-    par_psp = os.path.join(
-        path, config_proc["setups"]["l200"]["paths"]["par_psp"].replace("$_/", "")
-    )
-    par_hit = os.path.join(
-        path, config_proc["setups"]["l200"]["paths"]["par_hit"].replace("$_/", "")
-    )
-    par_pht = os.path.join(
-        path, config_proc["setups"]["l200"]["paths"]["par_pht"].replace("$_/", "")
-    )
-    pars = [par_dsp, par_psp, par_hit, par_pht]
+    def clean_path(key, path, setup_paths):
+        return os.path.join(path, setup_paths[key].replace("$_/", ""))
+
+    setup_paths = config_proc["setups"]["l200"]["paths"]
+
+    # tier paths
+    tier_keys = ["tier_dsp", "tier_psp", "tier_hit", "tier_pht", "tier_raw"]
+    tiers = [clean_path(key, path, setup_paths) for key in tier_keys]
+
+    # parameter paths
+    par_keys = ["par_dsp", "par_psp", "par_hit", "par_pht"]
+    pars = [clean_path(key, path, setup_paths) for key in par_keys]
 
     return tiers, pars
