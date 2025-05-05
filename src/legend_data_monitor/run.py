@@ -14,44 +14,8 @@ def main():
     To learn more, have a look at the help section:
 
     .. code-block:: console
-      $ legend-data-monitor --help # help section
-
-    Example JSON configuration file:
-
-    .. code-block:: json
-        {
-            "dataset": {
-                "exp": "l60",
-                "period": "p01",
-                "version": "v06.00",
-                "path": "/data1/shared/l60/l60-prodven-v1/prod-ref",
-                "type": "phy",
-                "selection": {
-                    "runs": 25
-                }
-            },
-            "subsystems": {
-                "pulser": {
-                    "quality_cut": false,
-                    "parameters": ["baseline"],
-                    "status": "problematic / all ?"
-                }
-            },
-            "plotting": {
-                "output": "dm_out",
-                "sampling": "3T",
-                "parameters": {
-                    "baseline": {
-                        "events": "all",
-                        "plot_style" : "histogram",
-                        "some_name": "absolute"
-                    }
-                }
-            },
-            "verbose": true
-        }
-
-    Otherwise, you can provide a path to a file containing a list of keys of the format: {exp}-{period}-{run}-{data_type}-{timestamp}.
+      $ legend-data-monitor --help
+      
     """
     parser = argparse.ArgumentParser(
         prog="legend-data-monitor", description="Software's command-line interface."
