@@ -8,7 +8,7 @@ from legendmeta import LegendMetadata
 
 # needed to know which parameters are not in DataLoader
 # but need to be calculated, such as event rate
-from . import utils
+from . import save_data, subsystem, utils
 
 # -------------------------------------------------------------------------
 
@@ -138,7 +138,7 @@ class AnalysisData:
             if "flag_pulser" in col or "flag_fc_bsln" in col or "flag_muon" in col:
                 params_to_get.append(col)
             # QC flag is present only if inserted as a cut in the config file -> this part is needed to apply
-            if "is_" in col:
+            if col.startswith("is_") or col.endswith("_classifier"):
                 params_to_get.append(col)
 
         # if special parameter, get columns needed to calculate it
@@ -156,6 +156,11 @@ class AnalysisData:
                 else:
                     # otherwise just load it
                     params_to_get.append(param)
+            elif param == "quality_cuts":
+                utils.logger.info(
+                    "... you are already loading individual QC flags and classifiers"
+                )
+                self.parameters = [p for p in params_to_get if "is_" in p]
             # the parameter does not exist
             else:
                 utils.logger.error(
@@ -249,15 +254,24 @@ class AnalysisData:
                 cut,
             )
         else:
-            utils.logger.info("... applying cut: " + cut)
+            if not pd.api.types.is_bool_dtype(self.data[cut]):
+                utils.logger.warning(
+                    "\033[93mWARNING: The cut '%s' is not of boolean type. It should contain only True/False values. "
+                    "We will skip applying this cut.\033[0m",
+                    cut,
+                )
+            else:
+                utils.logger.info("... applying cut: " + cut)
+                cut_value = 1
+                # check if the cut has "not" in it
+                if "~" in cut:
+                    utils.logger.error(
+                        "\033[91mThe cut %s is not available at the moment. Exit here.\033[0m",
+                        cut,
+                    )
+                    sys.exit()
 
-            cut_value = 1
-            # check if the cut has "not" in it
-            if cut[0] == "~":
-                cut_value = 0
-                cut = cut[1:]
-
-            self.data = self.data[self.data[cut] == cut_value]
+                self.data = self.data[self.data[cut] == cut_value]
 
     def apply_all_cuts(self):
         for cut in self.cuts:
@@ -764,3 +778,149 @@ def concat_channel_mean(self, channel_mean) -> pd.DataFrame:
     self.data = pd.concat([self.data, channel_mean.reindex(self.data.index)], axis=1)
 
     return self.data.reset_index()
+
+
+def load_subsystem_data(
+    subsystem: subsystem.Subsystem, plots: dict, plt_path: str, saving=None
+):
+    out_dict = {}
+
+    for plot_title in plots:
+        if "plot_structure" in plots[plot_title].keys():
+            continue
+
+        utils.logger.info(
+            "\33[95m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\33[0m"
+        )
+        utils.logger.info(f"\33[95m~~~ L O A D I N G : {plot_title}\33[0m")
+        utils.logger.info(
+            "\33[95m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\33[0m"
+        )
+
+        # --- use original plot settings provided in json
+        plot_settings = plots[plot_title]
+
+        # --- AnalysisData:
+        # - select parameter(s) of interest
+        # - subselect type of events (pulser/phy/all/klines)
+        # - apply cuts
+        # - calculate special parameters if present
+        # - get channel mean
+        # - calculate variation from mean, if asked
+        data_analysis = AnalysisData(subsystem.data, selection=plot_settings)
+        if utils.check_empty_df(data_analysis):
+            continue
+        utils.logger.debug(data_analysis.data)
+
+        # get list of parameters
+        params = plot_settings["parameters"]
+        if isinstance(params, str):
+            params = [params]
+
+        # -------------------------------------------------------------------------
+        # set up plot info
+        # -------------------------------------------------------------------------
+
+        # basic information needed for plot structure
+        plot_info = {
+            "title": plot_title,
+            "subsystem": subsystem.type,
+            "locname": {
+                "geds": "string",
+                "spms": "fiber",
+                "pulser": "puls",
+                "pulser01ana": "pulser01ana",
+                "FCbsln": "FC bsln",
+                "muon": "muon",
+            }[subsystem.type],
+        }
+
+        # parameters from plot settings to be simply propagated
+        plot_info["plot_style"] = (
+            plot_settings["plot_style"]
+            if "plot_style" in plot_settings.keys()
+            else None
+        )
+        plot_info["time_window"] = (
+            plot_settings["time_window"]
+            if "time_window" in plot_settings.keys()
+            else None
+        )
+        plot_info["resampled"] = (
+            plot_settings["resampled"] if "resampled" in plot_settings.keys() else None
+        )
+        plot_info["range"] = (
+            plot_settings["range"] if "range" in plot_settings.keys() else None
+        )
+        plot_info["std"] = None
+
+        # -------------------------------------------------------------------------
+        multi_param_info = ["unit", "label", "unit_label", "limits", "event_type"]
+        for info in multi_param_info:
+            plot_info[info] = {}
+
+        # name(s) of parameter(s) to plot - always list
+        plot_info["parameters"] = params
+        # preserve original param_mean before potentially adding _var to name
+        plot_info["param_mean"] = [x + "_mean" for x in params]
+        # add _var if variation asked
+        if plot_settings.get("variation"):
+            plot_info["parameters"] = [x + "_var" for x in params]
+
+        for param in plot_info["parameters"]:
+            # plot info should contain final parameter to plot i.e. _var if var is asked
+            # unit, label and limits are connected to original parameter name
+            param_orig = param.rstrip("_var")
+            plot_info["unit"][param] = None
+            plot_info["label"][param] = param
+
+            plot_info["limits"][param] = [None, None]
+            # unit label should be % if variation was asked
+            plot_info["unit_label"][param] = (
+                "%" if plot_settings.get("variation") else plot_info["unit"][param_orig]
+            )
+            plot_info["event_type"][param] = plot_settings["event_type"]
+
+        if len(params) == 1:
+            # change "parameters" to "parameter" - for single-param plotting functions
+            plot_info["parameter"] = plot_info["parameters"][0]
+            # now, if it was actually a single parameter, convert {param: value} dict structure to just the value
+            # this is how one-parameter plotting functions are designed
+            for info in multi_param_info:
+                plot_info[info] = plot_info[info][plot_info["parameter"]]
+            # same for mean
+            plot_info["param_mean"] = plot_info["param_mean"][0]
+
+            # threshold values are needed for status map; might be needed for plotting limits on canvas too
+            # only needed for single param plots (for now)
+            if subsystem.type not in ["pulser", "pulser01ana", "FCbsln", "muon"]:
+                plot_info["limits"] = [None, None]
+
+            # needed for grey lines for K lines, in case we are looking at energy itself (not event rate for example)
+            plot_info["event_type"] = plot_settings["event_type"]
+
+        # --- save shelf
+        par_dict_content = save_data.save_df_and_info(data_analysis.data, plot_info)
+        # --- save hdf
+        save_data.save_hdf(
+            saving,
+            plt_path + f"-{subsystem.type}.hdf",
+            data_analysis,
+            "pulser01ana",
+            pd.DataFrame(),
+            pd.DataFrame(),
+            pd.DataFrame(),
+            plot_info,
+        )
+
+        # building a dictionary with dataframe/plot_info to be later stored in a shelve object
+        if saving is not None:
+            out_dict = save_data.build_out_dict(
+                plot_settings, par_dict_content, out_dict
+            )
+
+    # save in shelve object, overwriting the already existing file with new content (either completely new or new bunches)
+    if saving is not None:
+        out_file = shelve.open(plt_path + f"-{subsystem.type}")
+        out_file["monitoring"] = out_dict
+        out_file.close()

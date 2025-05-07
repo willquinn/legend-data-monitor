@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
+import yaml
 from lgdo import lh5
 from pandas import DataFrame
 
@@ -430,10 +431,8 @@ def check_plot_settings(conf: dict) -> bool:
             # ----------------------------------------------------------------------------------------------
             # check if all necessary fields for param settings were provided
             for field in options:
-                # when plot_structure is summary, plot_style is not needed...
-                # ToDo: neater way to skip the whole loop but still do special checks; break? ugly...
-                # future ToDo: exposure can be plotted in various plot styles e.g. string viz, or plot array, will change
-                if plot_settings["parameters"] == "exposure":
+                # when plot_structure is summary or you simply want to load QCs, plot_style is not needed...
+                if plot_settings["parameters"] in ("exposure", "quality_cuts"):
                     continue
 
                 # ...otherwise, it is required
@@ -478,7 +477,7 @@ def check_plot_settings(conf: dict) -> bool:
                 return False
 
             # ToDo: neater way to skip the whole loop but still do special checks; break? ugly...
-            if plot_settings["parameters"] == "exposure":
+            if plot_settings["parameters"] in ("exposure", "quality_cuts"):
                 continue
 
             # other non-exposure checks
@@ -671,31 +670,80 @@ def get_run_name(config, user_time_range: dict) -> str:
 
 def get_all_plot_parameters(subsystem: str, config: dict):
     """Get list of all parameters needed for all plots for given subsystem."""
+    version = config["dataset"]["version"]
+    path = config["dataset"]["path"]
+    # load hit QC and classifier flags
+    possible_dirs = ["tier/hit", "tier_hit"]
+    file_patterns = ["*-ICPC-hit_config.yaml", "*-ICPC-hit_config.json"]
+    hit_config = None
+    for subdir in possible_dirs:
+        for pattern in file_patterns:
+            filepath_pattern = os.path.join(
+                path, version, "inputs/dataprod/config", subdir, pattern
+            )
+            files = glob.glob(filepath_pattern)
+            if files:
+                filepath = files[0]
+                with open(filepath) as file:
+                    if filepath.endswith(".yaml"):
+                        hit_config = yaml.safe_load(file)
+                    elif filepath.endswith(".json"):
+                        hit_config = json.load(file)
+                break
+        if hit_config:
+            break
+    if not hit_config:
+        logger.error(
+            "No matching config files found in either 'tier/hit' or 'tier_hit'."
+        )
+        sys.exit()
+
+    is_entries = [
+        entry
+        for entry in hit_config["outputs"]
+        if entry.startswith("is_") and not entry.endswith("_classifier")
+    ]
+    is_classifiers = [
+        entry
+        for entry in hit_config["outputs"]
+        if entry.startswith("is_") and entry.endswith("_classifier")
+    ]
+
     all_parameters = []
     if subsystem in config["subsystems"]:
         for plot in config["subsystems"][subsystem]:
             parameters = config["subsystems"][subsystem][plot]["parameters"]
-            if isinstance(parameters, str):
-                all_parameters.append(parameters)
-            else:
-                all_parameters += parameters
+            if parameters not in ("quality_cuts"):
+                if isinstance(parameters, str):
+                    all_parameters.append(parameters)
+                else:
+                    all_parameters += parameters
 
-            # check if event type asked needs a special parameter (K lines need energy)
+            # check if event type asked needs a special parameter (eg K lines need energy)
             event_type = config["subsystems"][subsystem][plot]["event_type"]
             if event_type in SPECIAL_PARAMETERS:
                 all_parameters += SPECIAL_PARAMETERS[event_type]
 
-            # check if there is any QC entry; if so, add it to the list of parameters to load
+            # check if there is any cut to apply; if so, add it to the list of parameters to load
             if "cuts" in config["subsystems"][subsystem][plot]:
                 cuts = config["subsystems"][subsystem][plot]["cuts"]
                 # convert to list for convenience
                 if isinstance(cuts, str):
                     cuts = [cuts]
                 for cut in cuts:
-                    # append original name of the cut to load (remove the "not" ~ symbol if present)
-                    if cut[0] == "~":
-                        cut = cut[1:]
+                    if "~" in cut:
+                        logger.error(
+                            "\033[91mThe cut %s is not available at the moment. Exit here.\033[0m",
+                            cut,
+                        )
+                        sys.exit()
                     all_parameters.append(cut)
+
+            # check if we have to load individual QC and classifiers
+            if config["subsystems"][subsystem][plot].get("qc_flags") is True:
+                all_parameters.extend(is_entries)
+            if config["subsystems"][subsystem][plot].get("qc_classifiers") is True:
+                all_parameters.extend(is_classifiers)
 
     return all_parameters
 

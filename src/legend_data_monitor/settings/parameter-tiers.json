@@ -58,22 +58,5 @@
   "AoE_Classifier": "hit",
   "AoE_Low_Cut": "hit",
   "AoE_Double_Sided_Cut": "hit",
-  "is_valid_cal": "hit",
-  "is_valid_0vbb": "hit",
-  "is_negative": "hit",
-  "is_saturated": "hit",
-  "is_valid_rt": "hit",
-  "is_valid_t0": "hit",
-  "is_valid_tmax": "hit",
-  "is_valid_dteff": "hit",
-  "is_valid_ediff": "hit",
-  "is_valid_efrac": "hit",
-  "is_negative_crosstalk": "hit",
-  "is_discharge": "hit",
-  "is_neg_energy": "hit",
-  "is_valid_tail": "hit",
-  "is_downgoing_baseline": "hit",
-  "is_upgoing_baseline": "hit",
-  "is_noise_burst": "hit",
-  "is_valid_baseline": "hit"
+  "is_surface": "hit"
 }
