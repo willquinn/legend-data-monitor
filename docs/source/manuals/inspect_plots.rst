@@ -45,7 +45,11 @@ Output hdf files for ``geds`` have the following dictionary structure, where ``<
 - ``<flag>_<param>_pulser01anaDiff_mean`` = average over the first 10% of data (within the selected time window) of ``<flag>_<param>_pulser01anaDiff``
 - ``<flag>_<param>_pulser01anaDiff_var`` = % variations of ``<flag>_<param>_pulser01anaDiff`` wrt ``<flag>_<param>_pulser01anaDiff_mean``
 
+.. note::
 
+  For entries related to quality cut flags, we do not store any mean or percentage variation key.
+  Moreover, no ratio or different with respect to AUX channels is performed.
+  No plots (ie pdf files) are generated when loading quality cut flags.
 
 Inspect plots
 -------------

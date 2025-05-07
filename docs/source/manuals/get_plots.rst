@@ -173,6 +173,70 @@ More than one subsystem can be entered at once, for instance:
 ..
 
 
+Quality cuts
+------------
+Different methods were implemented to either apply or retrieve quality cuts (QC).
+
+Apply QC
+~~~~~~~~
+If you are loading a parameter for geds channels and you want to apply one or multiple QC flags, you just specify it in the subsystem plot entry:
+
+.. code-block:: json
+
+  "subsystems": {
+    "geds": {
+      "Baselines in pulser events": {
+        "parameters": "baseline",
+        "event_type": "pulser",
+        "plot_structure": "per channel",
+        "plot_style": "vs time",
+        "variation": true,
+        "time_window": "1H",
+        "cuts": ["is_valid_bl_slope"]
+      }
+    }
+..
+
+In the above example, you are loading the baseline for pulser events and applying the ``is_valid_bl_slope`` QC as well to remove events for which the baseline slope is not valid.
+
+.. warning::
+
+  At the moment, the code does not take care of bitmask QC flags, but only boolean QC flags.
+  For bitmask QC flags, we simply do not apply any cut.
+
+..
+
+
+Retrieve QC
+~~~~~~~~~~~
+QC are not parameters like the baseline, energy, etc. so there is no purpose in plotting them as they are.
+However, QC rates are of fundamental importance as well as distribution of QC classifiers.
+Below, we show a way to retrieve all available QC flags and/or classifiers by selecting ``"parameters": "quality_cuts"``:
+
+.. code-block:: json
+
+  "subsystems": {
+    "geds": {
+        "Quality cuts in phy events": {
+            "parameters": "quality_cuts",
+            "event_type": "phy",
+            "qc_flags": true,
+            "qc_classifiers": true
+        }
+    }
+..
+
+This will create a unique table with QC flags/classifiers as columns, with an entry for each hit in each geds detector.
+
+.. warning::
+
+  At the moment, there is no differentation based on the detector type for the available QC flags/classifiers.
+  In other words, to load all QC info we read at the flags/classifiers listed under a path of type ``../ref-v2.1.5/inputs/dataprod/config/tier_hit/l200-p01-r%-T%-ICPC-hit_config.json``.
+  If any of these listed flags/classifiers is not present for a given detector typ (eg COAX), then all entries of the flag/classifier are set to ``False`` by default.
+  Any difference will be better handled in the future.
+
+..
+
 
 Special parameters
 ------------------
@@ -194,6 +258,8 @@ To plot events having energies within 1430 and 1575 keV (ie, around the 40K and 
         }
       }
     }
+..
+
 
 FWHM
 ~~~~
@@ -211,6 +277,8 @@ To plot FWHM values for each channel, grouping them by strings, selecting only p
           }
         }
     }
+..
+
 
 Relative maximum of the waveform
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -230,6 +298,7 @@ To plot the relative difference between ``wf_max`` and ``baseline``, use
             }
         }
     }
+..
 
 Event rate
 ~~~~~~~~~~
@@ -250,3 +319,4 @@ To plot the event rate, by sampling over a period of time equal to ``<time_windo
             }
         }
     }
+..
