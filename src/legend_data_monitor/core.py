@@ -291,7 +291,11 @@ def make_plots(config: dict, plt_path: str, saving: str):
         # save loaded data avoiding to plot it (eg quality cuts)
         # -------------------------------------------------------------------------
         analysis_data.load_subsystem_data(
-            subsystems[system], config["subsystems"][system], plt_path, saving
+            subsystems[system],
+            config["dataset"],
+            config["subsystems"][system],
+            plt_path,
+            saving,
         )
 
         # -------------------------------------------------------------------------

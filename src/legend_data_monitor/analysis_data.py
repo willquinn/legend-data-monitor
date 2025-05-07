@@ -1,9 +1,12 @@
+import glob
 import os
+import re
 import shelve
 import sys
 
 import numpy as np
 import pandas as pd
+import yaml
 from legendmeta import LegendMetadata
 
 # needed to know which parameters are not in DataLoader
@@ -780,8 +783,49 @@ def concat_channel_mean(self, channel_mean) -> pd.DataFrame:
     return self.data.reset_index()
 
 
+def convert_bitmasks(df, dataset):
+
+    path = dataset["path"]
+    version = dataset["version"]
+    possible_dirs = ["tier_evt", "tier/evt"]
+    file_pattern = "*-all-evt_config.yaml"
+    evt_config = None
+
+    for subdir in possible_dirs:
+        filepath_pattern = os.path.join(
+            path, version, "inputs/dataprod/config", subdir, file_pattern
+        )
+        files = glob.glob(filepath_pattern)
+        if files:
+            filepath = files[0]
+            with open(filepath) as file:
+                evt_config = yaml.safe_load(file)
+            break
+    expression = evt_config["operations"]["_geds___quality___is_bb_like"]["expression"]
+    # extract key-value pairs like: hit.is_something == number
+    pattern = r"hit\.(\w+)\s*==\s*(\d+)"
+    matches = re.findall(pattern, expression)
+    expr_dict = {key: int(value) for key, value in matches}
+
+    for col in df.columns:
+        if col.startswith("is_") or col.endswith("_classifier"):
+            if df[col].dtype != bool:
+                if col in expr_dict:
+                    target_value = expr_dict[col]
+                    df[col] = df[col] == target_value  # Convert to boolean
+                    utils.logger.info(
+                        f"Column '{col}' converted to boolean using value {target_value}."
+                    )
+
+    return df
+
+
 def load_subsystem_data(
-    subsystem: subsystem.Subsystem, plots: dict, plt_path: str, saving=None
+    subsystem: subsystem.Subsystem,
+    dataset: dict,
+    plots: dict,
+    plt_path: str,
+    saving=None,
 ):
     out_dict = {}
 
@@ -801,12 +845,6 @@ def load_subsystem_data(
         plot_settings = plots[plot_title]
 
         # --- AnalysisData:
-        # - select parameter(s) of interest
-        # - subselect type of events (pulser/phy/all/klines)
-        # - apply cuts
-        # - calculate special parameters if present
-        # - get channel mean
-        # - calculate variation from mean, if asked
         data_analysis = AnalysisData(subsystem.data, selection=plot_settings)
         if utils.check_empty_df(data_analysis):
             continue
@@ -816,6 +854,10 @@ def load_subsystem_data(
         params = plot_settings["parameters"]
         if isinstance(params, str):
             params = [params]
+
+        # add conversion of bitmasks in booleans
+        if "quality_cuts" in params:
+            data_analysis.data = convert_bitmasks(data_analysis.data, dataset)
 
         # -------------------------------------------------------------------------
         # set up plot info
