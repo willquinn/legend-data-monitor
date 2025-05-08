@@ -4,7 +4,7 @@ import re
 import subprocess
 import sys
 
-from . import plotting, slow_control, subsystem, utils
+from . import analysis_data, plotting, slow_control, subsystem, utils
 
 
 def retrieve_scdb(user_config_path: str, port: int, pswd: str):
@@ -284,7 +284,22 @@ def make_plots(config: dict, plt_path: str, saving: str):
         utils.logger.addHandler(file_handler)
 
         plotting.make_subsystem_plots(
-            subsystems[system], config["subsystems"][system], plt_path, saving
+            subsystems[system],
+            config["subsystems"][system],
+            config["dataset"],
+            plt_path,
+            saving,
+        )
+
+        # -------------------------------------------------------------------------
+        # save loaded data avoiding to plot it (eg quality cuts)
+        # -------------------------------------------------------------------------
+        analysis_data.load_subsystem_data(
+            subsystems[system],
+            config["dataset"],
+            config["subsystems"][system],
+            plt_path,
+            saving,
         )
 
         # -------------------------------------------------------------------------

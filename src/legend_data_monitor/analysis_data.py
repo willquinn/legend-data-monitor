@@ -1,14 +1,17 @@
+import glob
 import os
+import re
 import shelve
 import sys
 
 import numpy as np
 import pandas as pd
+import yaml
 from legendmeta import LegendMetadata
 
 # needed to know which parameters are not in DataLoader
 # but need to be calculated, such as event rate
-from . import utils
+from . import save_data, subsystem, utils
 
 # -------------------------------------------------------------------------
 
@@ -138,7 +141,7 @@ class AnalysisData:
             if "flag_pulser" in col or "flag_fc_bsln" in col or "flag_muon" in col:
                 params_to_get.append(col)
             # QC flag is present only if inserted as a cut in the config file -> this part is needed to apply
-            if "is_" in col:
+            if col.startswith("is_") or col.endswith("_classifier"):
                 params_to_get.append(col)
 
         # if special parameter, get columns needed to calculate it
@@ -156,6 +159,11 @@ class AnalysisData:
                 else:
                     # otherwise just load it
                     params_to_get.append(param)
+            elif param == "quality_cuts":
+                utils.logger.info(
+                    "... you are already loading individual QC flags and classifiers"
+                )
+                self.parameters = [p for p in params_to_get if "is_" in p]
             # the parameter does not exist
             else:
                 utils.logger.error(
@@ -186,7 +194,10 @@ class AnalysisData:
         if bad:
             return
 
-        # apply cuts, if any
+        # convert cuts to boolean + apply cuts, if any
+        self.path = analysis_info["path"]
+        self.version = analysis_info["version"]
+        self.convert_bitmasks()
         self.apply_all_cuts()
 
         # calculate if special parameter
@@ -235,6 +246,42 @@ class AnalysisData:
             utils.logger.error("\033[91m%s\033[0m", self.__doc__)
             return "bad"
 
+    def convert_bitmasks(self):
+        """Convert float64 bitmask columns into boolean columns based on the conditions saved in metadata."""
+        path = self.path
+        version = self.version
+        possible_dirs = ["tier_evt", "tier/evt"]
+        file_pattern = "*-all-evt_config.yaml"
+        evt_config = None
+
+        for subdir in possible_dirs:
+            filepath_pattern = os.path.join(
+                path, version, "inputs/dataprod/config", subdir, file_pattern
+            )
+            files = glob.glob(filepath_pattern)
+            if files:
+                filepath = files[0]
+                with open(filepath) as file:
+                    evt_config = yaml.safe_load(file)
+                break
+        expression = evt_config["operations"]["_geds___quality___is_bb_like"][
+            "expression"
+        ]
+        # extract key-value pairs like: hit.is_something == number
+        pattern = r"hit\.(\w+)\s*==\s*(\d+)"
+        matches = re.findall(pattern, expression)
+        expr_dict = {key: int(value) for key, value in matches}
+
+        for col in self.data.columns:
+            if col.startswith("is_") or col.endswith("_classifier"):
+                if self.data[col].dtype != bool:
+                    if col in expr_dict:
+                        target_value = expr_dict[col]
+                        self.data[col] = self.data[col] == target_value
+                        utils.logger.info(
+                            f"Column '{col}' converted to boolean using value {target_value}."
+                        )
+
     def apply_cut(self, cut: str):
         """
         Apply given boolean cut.
@@ -249,15 +296,18 @@ class AnalysisData:
                 cut,
             )
         else:
-            utils.logger.info("... applying cut: " + cut)
+            if pd.api.types.is_bool_dtype(self.data[cut]):
+                utils.logger.info("... applying cut: " + cut)
+                cut_value = 1
+                # check if the cut has "not" in it
+                if "~" in cut:
+                    utils.logger.error(
+                        "\033[91mThe cut %s is not available at the moment. Exit here.\033[0m",
+                        cut,
+                    )
+                    sys.exit()
 
-            cut_value = 1
-            # check if the cut has "not" in it
-            if cut[0] == "~":
-                cut_value = 0
-                cut = cut[1:]
-
-            self.data = self.data[self.data[cut] == cut_value]
+                self.data = self.data[self.data[cut] == cut_value]
 
     def apply_all_cuts(self):
         for cut in self.cuts:
@@ -492,7 +542,7 @@ class AnalysisData:
                 # % variation: subtract mean from value for each channel
                 self.data[param + "_var"] = (
                     self.data[param] / self.data[param + "_mean"] - 1
-                ) * 100  # %
+                ) * 100
 
     def is_spms(self) -> bool:
         """Return True if 'location' (=fiber) and 'position' (=top, bottom) are strings."""
@@ -764,3 +814,129 @@ def concat_channel_mean(self, channel_mean) -> pd.DataFrame:
     self.data = pd.concat([self.data, channel_mean.reindex(self.data.index)], axis=1)
 
     return self.data.reset_index()
+
+
+def load_subsystem_data(
+    subsystem: subsystem.Subsystem,
+    dataset: dict,
+    plots: dict,
+    plt_path: str,
+    saving=None,
+):
+    out_dict = {}
+
+    for plot_title in plots:
+        if "plot_structure" in plots[plot_title].keys():
+            continue
+
+        banner = "\33[95m" + "~" * 50 + "\33[0m"
+        utils.logger.info(banner)
+        utils.logger.info(f"\33[95m L O A D I N G : {plot_title}\33[0m")
+        utils.logger.info(banner)
+
+        # --- use original plot settings provided in json
+        plot_settings = plots[plot_title]
+
+        # --- AnalysisData:
+        data_analysis = AnalysisData(subsystem.data, selection=plot_settings | dataset)
+        if utils.check_empty_df(data_analysis):
+            continue
+        utils.logger.debug(data_analysis.data)
+
+        # get list of parameters
+        params = plot_settings["parameters"]
+        if isinstance(params, str):
+            params = [params]
+
+        # -------------------------------------------------------------------------
+        # set up plot info
+        # -------------------------------------------------------------------------
+
+        # basic information needed for plot structure
+        plot_info = {
+            "title": plot_title,
+            "subsystem": subsystem.type,
+            "locname": {
+                "geds": "string",
+                "spms": "fiber",
+                "pulser": "puls",
+                "pulser01ana": "pulser01ana",
+                "FCbsln": "FC bsln",
+                "muon": "muon",
+            }[subsystem.type],
+        }
+
+        # parameters from plot settings to be simply propagated
+        for key in ["plot_style", "time_window", "resampled", "range"]:
+            plot_info[key] = plot_settings.get(key, None)
+        plot_info["std"] = None
+
+        # -------------------------------------------------------------------------
+        multi_param_info = ["unit", "label", "unit_label", "limits", "event_type"]
+        for info in multi_param_info:
+            plot_info[info] = {}
+
+        # name(s) of parameter(s) to plot - always list
+        plot_info["parameters"] = params
+        # preserve original param_mean before potentially adding _var to name
+        plot_info["param_mean"] = [x + "_mean" for x in params]
+        # add _var if variation asked
+        if plot_settings.get("variation"):
+            plot_info["parameters"] = [x + "_var" for x in params]
+
+        for param in plot_info["parameters"]:
+            # plot info should contain final parameter to plot i.e. _var if var is asked
+            # unit, label and limits are connected to original parameter name
+            param_orig = param.rstrip("_var")
+            plot_info["unit"][param] = None
+            plot_info["label"][param] = param
+            plot_info["limits"][param] = [None, None]
+            # unit label should be % if variation was asked
+            plot_info["unit_label"][param] = (
+                "%" if plot_settings.get("variation") else plot_info["unit"][param_orig]
+            )
+            plot_info["event_type"][param] = plot_settings["event_type"]
+
+        if len(params) == 1:
+            # change "parameters" to "parameter" - for single-param plotting functions
+            plot_info["parameter"] = plot_info["parameters"][0]
+            # now, if it was actually a single parameter, convert {param: value} dict structure to just the value
+            # this is how one-parameter plotting functions are designed
+            for info in multi_param_info:
+                plot_info[info] = plot_info[info][plot_info["parameter"]]
+            # same for mean
+            plot_info["param_mean"] = plot_info["param_mean"][0]
+
+            # threshold values are needed for status map; might be needed for plotting limits on canvas too
+            # only needed for single param plots (for now)
+            if subsystem.type not in ["pulser", "pulser01ana", "FCbsln", "muon"]:
+                plot_info["limits"] = [None, None]
+
+            # needed for grey lines for K lines, in case we are looking at energy itself (not event rate for example)
+            plot_info["event_type"] = plot_settings["event_type"]
+
+        # --- save shelf
+        par_dict_content = save_data.save_df_and_info(data_analysis.data, plot_info)
+        # --- save hdf
+        save_data.save_hdf(
+            saving,
+            plt_path + f"-{subsystem.type}.hdf",
+            data_analysis,
+            "pulser01ana",
+            pd.DataFrame(),
+            pd.DataFrame(),
+            pd.DataFrame(),
+            plot_info,
+        )
+
+        # building a dictionary with dataframe/plot_info to be later stored in a shelve object
+        if saving is not None:
+            out_dict = save_data.build_out_dict(
+                plot_settings, par_dict_content, out_dict
+            )
+
+    # save in shelve object, overwriting the already existing file with new content (either completely new or new bunches)
+    if saving is not None:
+        out_file = shelve.open(plt_path + f"-{subsystem.type}")
+        out_file["monitoring"] = out_dict
+        out_file.close()

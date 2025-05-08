@@ -4,7 +4,7 @@ import shelve
 import h5py
 from pandas import DataFrame, concat, read_hdf
 
-from . import analysis_data, utils
+from . import utils
 
 # -------------------------------------------------------------------------
 # Saving related functions
@@ -64,7 +64,9 @@ def build_out_dict(
     out_dict
         Dictionary that is returned, containing the objects that need to be saved.
     """
-    saving = plot_settings["saving"] if "saving" in plot_settings.keys() else None
+    saving = (
+        plot_settings["saving"] if "saving" in plot_settings.keys() else "overwrite"
+    )
     plt_path = plot_settings["plt_path"] if "plt_path" in plot_settings.keys() else None
     plot_info = par_dict_content["plot_info"]
 
@@ -225,7 +227,6 @@ def append_new_data(
     par_dict_content: dict,
     plt_path: str,
 ) -> dict:
-    # the parameter is there
     parameter = param.split("_var")[0] if "_var" in param else param
     event_type = plot_settings["event_type"]
 
@@ -426,11 +427,11 @@ def get_param_df(parameter: str, df: DataFrame) -> DataFrame:
 def save_hdf(
     saving: str,
     file_path: str,
-    df: analysis_data.AnalysisData,
+    df,
     aux_ch: str,
-    aux_analysis: analysis_data.AnalysisData,
-    aux_ratio_analysis: analysis_data.AnalysisData,
-    aux_diff_analysis: analysis_data.AnalysisData,
+    aux_analysis,
+    aux_ratio_analysis,
+    aux_diff_analysis,
     plot_info: dict,
 ) -> dict:
     """Save the input dataframe in an external hdf file, using a different structure (time vs channel, with values in cells). Plot info are saved too."""
@@ -475,24 +476,36 @@ def save_hdf(
         # this helps to avoid mixing types with PyTables
 
         # fix the label (in general, it could contain info for aux data too - here, we want a simple version of the label)
-        plot_info_param["label"] = utils.PLOT_INFO[param_orig]["label"]
+        plot_info_param["label"] = (
+            None if param == "quality_cuts" else utils.PLOT_INFO[param_orig]["label"]
+        )
 
-        limits_var = (
-            utils.PLOT_INFO[param_orig]["limits"][plot_info_param["subsystem"]][
-                "variation"
-            ]
-            if plot_info_param["subsystem"]
-            in utils.PLOT_INFO[param_orig]["limits"].keys()
-            else [None, None]
-        )
-        limits_abs = (
-            utils.PLOT_INFO[param_orig]["limits"][plot_info_param["subsystem"]][
-                "absolute"
-            ]
-            if plot_info_param["subsystem"]
-            in utils.PLOT_INFO[param_orig]["limits"].keys()
-            else [None, None]
-        )
+        try:
+            subsystem = plot_info_param.get("subsystem")
+            if subsystem in utils.PLOT_INFO.get(param_orig, {}).get("limits", {}):
+                limits_var = utils.PLOT_INFO[param_orig]["limits"][subsystem][
+                    "variation"
+                ]
+            else:
+                limits_var = [None, None]
+        except Exception as e:
+            utils.logger.error(
+                "\033[91mError in determining limits_var: %s. Exit here.\033[0m", e
+            )
+            raise
+        try:
+            subsystem = plot_info_param.get("subsystem")
+            if subsystem in utils.PLOT_INFO.get(param_orig, {}).get("limits", {}):
+                limits_abs = utils.PLOT_INFO[param_orig]["limits"][subsystem][
+                    "absolute"
+                ]
+            else:
+                limits_abs = [None, None]
+        except Exception as e:
+            utils.logger.error(
+                "\033[91mError in determining limits_abs: %s. Exit here.\033[0m", e
+            )
+            raise
 
         # for limits, change from 'None' to 'False' to be hdf-friendly
         plot_info_param["lower_lim_var"] = str(limits_var[0]) or False
@@ -531,14 +544,17 @@ def save_hdf(
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # PLOTTING INFO
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # this is constant over time, so with 'append' we simply overwrite previous content
-        df_info = DataFrame.from_dict(
-            plot_info_param, orient="index", columns=["Value"]
-        )
+        if param != "quality_cuts":
+            # this is constant over time, so with 'append' we simply overwrite previous content
+            df_info = DataFrame.from_dict(
+                plot_info_param, orient="index", columns=["Value"]
+            )
 
-        df_info.to_hdf(
-            file_path, key=f"{flag_rename[evt_type]}_{param_orig_camel}_info", mode="a"
-        )
+            df_info.to_hdf(
+                file_path,
+                key=f"{flag_rename[evt_type]}_{param_orig_camel}_info",
+                mode="a",
+            )
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # PURE VALUES - AUX CHANNEL
@@ -593,88 +609,108 @@ def save_hdf(
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # PURE VALUES
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # ... absolute values
-        get_pivot(
-            df_to_save,
-            param_orig,
-            f"{flag_rename[evt_type]}_{param_orig_camel}",
-            file_path,
-            saving,
-        )
-        # ... mean values
-        get_pivot(
-            df_to_save,
-            param_orig + "_mean",
-            f"{flag_rename[evt_type]}_{param_orig_camel}_mean",
-            file_path,
-            saving,
-        )
-        # ... % variations wrt absolute values
-        get_pivot(
-            df_to_save,
-            param_orig + "_var",
-            f"{flag_rename[evt_type]}_{param_orig_camel}_var",
-            file_path,
-            saving,
-        )
-
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # RATIO WRT AUX CHANNEL
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        if not utils.check_empty_df(aux_ratio_analysis):
+        if param == "quality_cuts":
+            # save each flag/classifier separately
+            is_cols = [
+                col
+                for col in df_to_save.columns
+                if (col.startswith("is_") or col.endswith("_classifier"))
+                and "_mean" not in col
+                and "_var" not in col
+            ]
+            for param_orig in is_cols:
+                param_orig_camel = utils.convert_to_camel_case(param_orig, "_")
+                # ... absolute values ONLY
+                get_pivot(
+                    df_to_save,
+                    param_orig,
+                    f"{flag_rename[evt_type]}_{param_orig_camel}",
+                    file_path,
+                    saving,
+                )
+        else:
             # ... absolute values
             get_pivot(
-                df_aux_ratio_to_save,
+                df_to_save,
                 param_orig,
-                f"{flag_rename[evt_type]}_{param_orig_camel}_{aux_ch}Ratio",
+                f"{flag_rename[evt_type]}_{param_orig_camel}",
                 file_path,
                 saving,
             )
             # ... mean values
             get_pivot(
-                df_aux_ratio_to_save,
+                df_to_save,
                 param_orig + "_mean",
-                f"{flag_rename[evt_type]}_{param_orig_camel}_{aux_ch}Ratio_mean",
+                f"{flag_rename[evt_type]}_{param_orig_camel}_mean",
                 file_path,
                 saving,
             )
             # ... % variations wrt absolute values
             get_pivot(
-                df_aux_ratio_to_save,
+                df_to_save,
                 param_orig + "_var",
-                f"{flag_rename[evt_type]}_{param_orig_camel}_{aux_ch}Ratio_var",
+                f"{flag_rename[evt_type]}_{param_orig_camel}_var",
                 file_path,
                 saving,
             )
 
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # DIFFERENCE WRT AUX CHANNEL
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        if not utils.check_empty_df(aux_diff_analysis):
-            # ... absolute values
-            get_pivot(
-                df_aux_diff_to_save,
-                param_orig,
-                f"{flag_rename[evt_type]}_{param_orig_camel}_{aux_ch}Diff",
-                file_path,
-                saving,
-            )
-            # ... mean values
-            get_pivot(
-                df_aux_diff_to_save,
-                param_orig + "_mean",
-                f"{flag_rename[evt_type]}_{param_orig_camel}_{aux_ch}Diff_mean",
-                file_path,
-                saving,
-            )
-            # ... % variations wrt absolute values
-            get_pivot(
-                df_aux_diff_to_save,
-                param_orig + "_var",
-                f"{flag_rename[evt_type]}_{param_orig_camel}_{aux_ch}Diff_var",
-                file_path,
-                saving,
-            )
+            # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            # RATIO WRT AUX CHANNEL
+            # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            if not utils.check_empty_df(aux_ratio_analysis):
+                # ... absolute values
+                get_pivot(
+                    df_aux_ratio_to_save,
+                    param_orig,
+                    f"{flag_rename[evt_type]}_{param_orig_camel}_{aux_ch}Ratio",
+                    file_path,
+                    saving,
+                )
+                # ... mean values
+                get_pivot(
+                    df_aux_ratio_to_save,
+                    param_orig + "_mean",
+                    f"{flag_rename[evt_type]}_{param_orig_camel}_{aux_ch}Ratio_mean",
+                    file_path,
+                    saving,
+                )
+                # ... % variations wrt absolute values
+                get_pivot(
+                    df_aux_ratio_to_save,
+                    param_orig + "_var",
+                    f"{flag_rename[evt_type]}_{param_orig_camel}_{aux_ch}Ratio_var",
+                    file_path,
+                    saving,
+                )
+
+            # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            # DIFFERENCE WRT AUX CHANNEL
+            # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            if not utils.check_empty_df(aux_diff_analysis):
+                # ... absolute values
+                get_pivot(
+                    df_aux_diff_to_save,
+                    param_orig,
+                    f"{flag_rename[evt_type]}_{param_orig_camel}_{aux_ch}Diff",
+                    file_path,
+                    saving,
+                )
+                # ... mean values
+                get_pivot(
+                    df_aux_diff_to_save,
+                    param_orig + "_mean",
+                    f"{flag_rename[evt_type]}_{param_orig_camel}_{aux_ch}Diff_mean",
+                    file_path,
+                    saving,
+                )
+                # ... % variations wrt absolute values
+                get_pivot(
+                    df_aux_diff_to_save,
+                    param_orig + "_var",
+                    f"{flag_rename[evt_type]}_{param_orig_camel}_{aux_ch}Diff_var",
+                    file_path,
+                    saving,
+                )
 
     utils.logger.info(
         f"... HDF file for {plot_info_param['subsystem']} saved in: \33[4m{file_path}\33[0m"

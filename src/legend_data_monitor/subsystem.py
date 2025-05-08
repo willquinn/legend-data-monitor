@@ -50,9 +50,11 @@ class Subsystem:
     """
 
     def __init__(self, sub_type: str, **kwargs):
-        utils.logger.info("\33[35m---------------------------------------------\33[0m")
-        utils.logger.info(f"\33[35m--- S E T T I N G  UP : {sub_type}\33[0m")
-        utils.logger.info("\33[35m---------------------------------------------\33[0m")
+
+        banner = "\33[95m" + "-" * 50 + "\33[0m"
+        utils.logger.info(banner)
+        utils.logger.info(f"\33[95m S E T T I N G  UP : {sub_type}\33[0m")
+        utils.logger.info(banner)
 
         self.type = sub_type
 
@@ -66,10 +68,6 @@ class Subsystem:
 
         # validity check of kwarg
         utils.dataset_validity_check(data_info)
-
-        # validity of time selection will be checked in utils
-
-        # ? create a checking function taking dict in
 
         # -------------------------------------------------------------------------
         # get channel info for this subsystem
@@ -102,7 +100,7 @@ class Subsystem:
             utils.logger.error("\033[91m%s\033[0m", self.get_data.__doc__)
             return
 
-        self.channel_map = self.get_channel_map()  # pd.DataFrame
+        self.channel_map = self.get_channel_map()
 
         # add column status to channel map stating on/off
         self.get_channel_status()
@@ -133,11 +131,22 @@ class Subsystem:
         # separate dsp and hit parameters as they might have different paths
         param_tiers = pd.DataFrame.from_dict(utils.PARAMETER_TIERS.items())
         param_tiers.columns = ["param", "tier"]
+        # keep only parameters that have an associated entry in the parameter-tiers.json file
         my_params = param_tiers[param_tiers["param"].isin(params_for_dataloader)]
         dsp_params = my_params[my_params["tier"] == "dsp"]["param"].tolist()
         hit_params = my_params[my_params["tier"] == "hit"]["param"].tolist()
         utils.logger.debug("dsp/psp parameters: %s", dsp_params)
         utils.logger.debug("hit/pht parameters: %s", hit_params)
+
+        # find parameters that are not in the JSON
+        missing_params = [
+            p for p in params_for_dataloader if p not in param_tiers["param"].values
+        ]
+        if missing_params:
+            utils.logger.warning(
+                "\033[93mThe following parameters are not in settings/parameter-tiers.json and will be skipped:\033[0m %s",
+                ", ".join(missing_params),
+            )
 
         dl_dsp = None
         dl_hit = None
@@ -180,20 +189,13 @@ class Subsystem:
         # )
         query += f" and (type == '{self.datatype}')"
 
-        # !!!! QUICKFIX
         # p02 keys (missing ch068)
-        query += " and (timestamp != '20230125T222013Z')"
-        query += " and (timestamp != '20230126T015308Z')"
-        query += " and (timestamp != '20230222T231553Z')"
-
-        utils.logger.info(
-            "...... querying DataLoader (includes quickfix-removed faulty files)"
+        query += (
+            " and (timestamp != '20230125T222013Z')"
+            + " and (timestamp != '20230126T015308Z')"
+            + " and (timestamp != '20230222T231553Z')"
         )
-        utils.logger.info(query)
-
-        # -------------------------------------------------------------------------
-        # Query DataLoader & load data
-        # -------------------------------------------------------------------------
+        utils.logger.info("...... querying DataLoader")
 
         # --- query data loader
         if dsp_params != []:
@@ -233,10 +235,13 @@ class Subsystem:
         # -------------------------------------------------------------------------
         # drop useless columns
         self.data = self.data.drop(
-            columns=[col for col in self.data.columns if col.endswith("_idx")]
+            columns=[
+                col
+                for col in self.data.columns
+                if col.endswith("_idx") or col == "file"
+            ]
         )
         # rename "table" column to "channel" and drop duplicates
-
         table_cols = [col for col in self.data.columns if col.endswith("_table")]
         if table_cols:
             keep_col = table_cols[0]
@@ -348,6 +353,12 @@ class Subsystem:
                 utils.logger.warning(
                     "\033[93m'%s' is a special parameter. "
                     + "For the moment, we skip the ratio/diff wrt the AUX channel and plot the parameter as it is.\033[0m",
+                    params,
+                )
+                return
+            if param == "quality_cuts":
+                utils.logger.warning(
+                    "\033[93m'%s' does not require the ratio/diff wrt the AUX channel. Skip this step.\033[0m",
                     params,
                 )
                 return
@@ -750,7 +761,6 @@ class Subsystem:
         if isinstance(parameters, str):
             parameters = [parameters]
 
-        global USER_TO_PYGAMA
         for param in parameters:
             if param in utils.SPECIAL_PARAMETERS:
                 # for special parameters, look up which parameters are needed to be loaded for their calculation

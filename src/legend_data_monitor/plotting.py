@@ -33,22 +33,28 @@ COLORS = []
 
 
 def make_subsystem_plots(
-    subsystem: subsystem.Subsystem, plots: dict, plt_path: str, saving=None
+    subsystem: subsystem.Subsystem,
+    plots: dict,
+    dataset_info: dict,
+    plt_path: str,
+    saving=None,
 ):
     pdf = PdfPages(plt_path + "-" + subsystem.type + ".pdf")
+    is_pdf_saved = False
     out_dict = {}
     aux_out_dict = {}
     aux_ratio_out_dict = {}
     aux_diff_out_dict = {}
 
     for plot_title in plots:
-        utils.logger.info(
-            "\33[95m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\33[0m"
-        )
-        utils.logger.info(f"\33[95m~~~ P L O T T I N G : {plot_title}\33[0m")
-        utils.logger.info(
-            "\33[95m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\33[0m"
-        )
+        if "plot_structure" not in plots[plot_title].keys():
+            utils.logger.info(f"'{plot_title}' can't be plotted. Skip it.")
+            continue
+
+        banner = "\33[95m" + "~" * 50 + "\33[0m"
+        utils.logger.info(banner)
+        utils.logger.info(f"\33[95m P L O T T I N G : {plot_title}\33[0m")
+        utils.logger.info(banner)
 
         # -------------------------------------------------------------------------
         # settings checks
@@ -117,7 +123,7 @@ def make_subsystem_plots(
         # - calculate variation from mean, if asked
         # note: subsystem.data contains: absolute value of a param, the respective value for aux channel (with ratio and diff already computed)
         data_analysis = analysis_data.AnalysisData(
-            subsystem.data, selection=plot_settings
+            subsystem.data, selection=plot_settings | dataset_info
         )
         # check if the dataframe is empty; if so, skip this parameter
         if utils.check_empty_df(data_analysis):
@@ -129,10 +135,10 @@ def make_subsystem_plots(
         if isinstance(params, str):
             params = [params]
 
-        # this is ok for geds, but for spms? maybe another function will be necessary for this????
+        # this is ok for geds, but for spms? maybe another function will be necessary for this?
         # note: this will not do anything in case the parameter is from hit tier
         aux_analysis, aux_ratio_analysis, aux_diff_analysis = analysis_data.get_aux_df(
-            subsystem.data.copy(), params, plot_settings, "pulser01ana"
+            subsystem.data.copy(), params, plot_settings | dataset_info, "pulser01ana"
         )
 
         # -------------------------------------------------------------------------
@@ -156,7 +162,6 @@ def make_subsystem_plots(
                 or (plot_settings.get("AUX_diff") is False)
             ):
                 data_to_plot = data_analysis
-        # if empty, ...
         else:
             data_to_plot = data_analysis
 
@@ -412,6 +417,8 @@ def make_subsystem_plots(
                     plot_settings, aux_diff_par_dict_content, aux_diff_out_dict
                 )
 
+        is_pdf_saved = True
+
     # save in shelve object, overwriting the already existing file with new content (either completely new or new bunches)
     if saving is not None:
         out_file = shelve.open(plt_path + f"-{subsystem.type}")
@@ -433,9 +440,10 @@ def make_subsystem_plots(
     # save in pdf object
     pdf.close()
 
-    utils.logger.info(
-        f"All plots saved in: \33[4m{plt_path}-{subsystem.type}.pdf\33[0m"
-    )
+    if is_pdf_saved:
+        utils.logger.info(
+            f"All plots saved in: \33[4m{plt_path}-{subsystem.type}.pdf\33[0m"
+        )
 
 
 # -------------------------------------------------------------------------------
