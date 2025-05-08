@@ -33,7 +33,11 @@ COLORS = []
 
 
 def make_subsystem_plots(
-    subsystem: subsystem.Subsystem, plots: dict, plt_path: str, saving=None
+    subsystem: subsystem.Subsystem,
+    plots: dict,
+    dataset_info: dict,
+    plt_path: str,
+    saving=None,
 ):
     pdf = PdfPages(plt_path + "-" + subsystem.type + ".pdf")
     is_pdf_saved = False
@@ -122,7 +126,7 @@ def make_subsystem_plots(
         # - calculate variation from mean, if asked
         # note: subsystem.data contains: absolute value of a param, the respective value for aux channel (with ratio and diff already computed)
         data_analysis = analysis_data.AnalysisData(
-            subsystem.data, selection=plot_settings
+            subsystem.data, selection=plot_settings | dataset_info
         )
         # check if the dataframe is empty; if so, skip this parameter
         if utils.check_empty_df(data_analysis):
@@ -137,7 +141,7 @@ def make_subsystem_plots(
         # this is ok for geds, but for spms? maybe another function will be necessary for this?
         # note: this will not do anything in case the parameter is from hit tier
         aux_analysis, aux_ratio_analysis, aux_diff_analysis = analysis_data.get_aux_df(
-            subsystem.data.copy(), params, plot_settings, "pulser01ana"
+            subsystem.data.copy(), params, plot_settings | dataset_info, "pulser01ana"
         )
 
         # -------------------------------------------------------------------------
@@ -161,7 +165,6 @@ def make_subsystem_plots(
                 or (plot_settings.get("AUX_diff") is False)
             ):
                 data_to_plot = data_analysis
-        # if empty, ...
         else:
             data_to_plot = data_analysis
 

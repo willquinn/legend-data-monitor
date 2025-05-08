@@ -284,7 +284,11 @@ def make_plots(config: dict, plt_path: str, saving: str):
         utils.logger.addHandler(file_handler)
 
         plotting.make_subsystem_plots(
-            subsystems[system], config["subsystems"][system], plt_path, saving
+            subsystems[system],
+            config["subsystems"][system],
+            config["dataset"],
+            plt_path,
+            saving,
         )
 
         # -------------------------------------------------------------------------

@@ -194,7 +194,10 @@ class AnalysisData:
         if bad:
             return
 
-        # apply cuts, if any
+        # convert cuts to boolean + apply cuts, if any
+        self.path = analysis_info["path"]
+        self.version = analysis_info["version"]
+        self.convert_bitmasks()
         self.apply_all_cuts()
 
         # calculate if special parameter
@@ -243,6 +246,42 @@ class AnalysisData:
             utils.logger.error("\033[91m%s\033[0m", self.__doc__)
             return "bad"
 
+    def convert_bitmasks(self):
+        """Convert float64 bitmask columns into boolean columns based on the conditions saved in metadata."""
+        path = self.path
+        version = self.version
+        possible_dirs = ["tier_evt", "tier/evt"]
+        file_pattern = "*-all-evt_config.yaml"
+        evt_config = None
+
+        for subdir in possible_dirs:
+            filepath_pattern = os.path.join(
+                path, version, "inputs/dataprod/config", subdir, file_pattern
+            )
+            files = glob.glob(filepath_pattern)
+            if files:
+                filepath = files[0]
+                with open(filepath) as file:
+                    evt_config = yaml.safe_load(file)
+                break
+        expression = evt_config["operations"]["_geds___quality___is_bb_like"][
+            "expression"
+        ]
+        # extract key-value pairs like: hit.is_something == number
+        pattern = r"hit\.(\w+)\s*==\s*(\d+)"
+        matches = re.findall(pattern, expression)
+        expr_dict = {key: int(value) for key, value in matches}
+
+        for col in self.data.columns:
+            if col.startswith("is_") or col.endswith("_classifier"):
+                if self.data[col].dtype != bool:
+                    if col in expr_dict:
+                        target_value = expr_dict[col]
+                        self.data[col] = self.data[col] == target_value
+                        utils.logger.info(
+                            f"Column '{col}' converted to boolean using value {target_value}."
+                        )
+
     def apply_cut(self, cut: str):
         """
         Apply given boolean cut.
@@ -257,13 +296,7 @@ class AnalysisData:
                 cut,
             )
         else:
-            if not pd.api.types.is_bool_dtype(self.data[cut]):
-                utils.logger.warning(
-                    "\033[93mWARNING: The cut '%s' is not of boolean type. It should contain only True/False values. "
-                    "We will skip applying this cut.\033[0m",
-                    cut,
-                )
-            else:
+            if pd.api.types.is_bool_dtype(self.data[cut]):
                 utils.logger.info("... applying cut: " + cut)
                 cut_value = 1
                 # check if the cut has "not" in it
@@ -783,43 +816,6 @@ def concat_channel_mean(self, channel_mean) -> pd.DataFrame:
     return self.data.reset_index()
 
 
-def convert_bitmasks(df, dataset):
-
-    path = dataset["path"]
-    version = dataset["version"]
-    possible_dirs = ["tier_evt", "tier/evt"]
-    file_pattern = "*-all-evt_config.yaml"
-    evt_config = None
-
-    for subdir in possible_dirs:
-        filepath_pattern = os.path.join(
-            path, version, "inputs/dataprod/config", subdir, file_pattern
-        )
-        files = glob.glob(filepath_pattern)
-        if files:
-            filepath = files[0]
-            with open(filepath) as file:
-                evt_config = yaml.safe_load(file)
-            break
-    expression = evt_config["operations"]["_geds___quality___is_bb_like"]["expression"]
-    # extract key-value pairs like: hit.is_something == number
-    pattern = r"hit\.(\w+)\s*==\s*(\d+)"
-    matches = re.findall(pattern, expression)
-    expr_dict = {key: int(value) for key, value in matches}
-
-    for col in df.columns:
-        if col.startswith("is_") or col.endswith("_classifier"):
-            if df[col].dtype != bool:
-                if col in expr_dict:
-                    target_value = expr_dict[col]
-                    df[col] = df[col] == target_value  # Convert to boolean
-                    utils.logger.info(
-                        f"Column '{col}' converted to boolean using value {target_value}."
-                    )
-
-    return df
-
-
 def load_subsystem_data(
     subsystem: subsystem.Subsystem,
     dataset: dict,
@@ -845,7 +841,7 @@ def load_subsystem_data(
         plot_settings = plots[plot_title]
 
         # --- AnalysisData:
-        data_analysis = AnalysisData(subsystem.data, selection=plot_settings)
+        data_analysis = AnalysisData(subsystem.data, selection=plot_settings | dataset)
         if utils.check_empty_df(data_analysis):
             continue
         utils.logger.debug(data_analysis.data)
@@ -854,10 +850,6 @@ def load_subsystem_data(
         params = plot_settings["parameters"]
         if isinstance(params, str):
             params = [params]
-
-        # add conversion of bitmasks in booleans
-        if "quality_cuts" in params:
-            data_analysis.data = convert_bitmasks(data_analysis.data, dataset)
 
         # -------------------------------------------------------------------------
         # set up plot info

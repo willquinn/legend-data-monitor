@@ -198,14 +198,7 @@ If you are loading a parameter for geds channels and you want to apply one or mu
 ..
 
 In the above example, you are loading the baseline for pulser events and applying the ``is_valid_bl_slope`` QC as well to remove events for which the baseline slope is not valid.
-
-.. warning::
-
-  At the moment, the code does not take care of bitmask QC flags, but only boolean QC flags.
-  For bitmask QC flags, we simply do not apply any cut.
-
-..
-
+Any bitmask entry is automatically converted into a boolean entry based on the information stored in legend-metadata.
 
 Retrieve QC
 ~~~~~~~~~~~
@@ -227,6 +220,7 @@ Below, we show a way to retrieve all available QC flags and/or classifiers by se
 ..
 
 This will create a unique table with QC flags/classifiers as columns, with an entry for each hit in each geds detector.
+Any bitmask entry is automatically converted into a boolean entry based on the information stored in legend-metadata.
 
 .. warning::
 
