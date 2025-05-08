@@ -50,7 +50,7 @@ class Subsystem:
     """
 
     def __init__(self, sub_type: str, **kwargs):
-        
+
         banner = "\33[95m" + "-" * 50 + "\33[0m"
         utils.logger.info(banner)
         utils.logger.info(f"\33[95m S E T T I N G  UP : {sub_type}\33[0m")
@@ -100,7 +100,7 @@ class Subsystem:
             utils.logger.error("\033[91m%s\033[0m", self.get_data.__doc__)
             return
 
-        self.channel_map = self.get_channel_map()  
+        self.channel_map = self.get_channel_map()
 
         # add column status to channel map stating on/off
         self.get_channel_status()
@@ -190,7 +190,11 @@ class Subsystem:
         query += f" and (type == '{self.datatype}')"
 
         # p02 keys (missing ch068)
-        query += " and (timestamp != '20230125T222013Z')" + " and (timestamp != '20230126T015308Z')" + " and (timestamp != '20230222T231553Z')"
+        query += (
+            " and (timestamp != '20230125T222013Z')"
+            + " and (timestamp != '20230126T015308Z')"
+            + " and (timestamp != '20230222T231553Z')"
+        )
         utils.logger.info("...... querying DataLoader")
 
         # --- query data loader

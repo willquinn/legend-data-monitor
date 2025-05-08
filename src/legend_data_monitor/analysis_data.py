@@ -542,7 +542,7 @@ class AnalysisData:
                 # % variation: subtract mean from value for each channel
                 self.data[param + "_var"] = (
                     self.data[param] / self.data[param + "_mean"] - 1
-                ) * 100 
+                ) * 100
 
     def is_spms(self) -> bool:
         """Return True if 'location' (=fiber) and 'position' (=top, bottom) are strings."""
