@@ -227,7 +227,6 @@ def append_new_data(
     par_dict_content: dict,
     plt_path: str,
 ) -> dict:
-    # the parameter is there
     parameter = param.split("_var")[0] if "_var" in param else param
     event_type = plot_settings["event_type"]
 

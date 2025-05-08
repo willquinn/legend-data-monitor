@@ -542,7 +542,7 @@ class AnalysisData:
                 # % variation: subtract mean from value for each channel
                 self.data[param + "_var"] = (
                     self.data[param] / self.data[param + "_mean"] - 1
-                ) * 100  # %
+                ) * 100 
 
     def is_spms(self) -> bool:
         """Return True if 'location' (=fiber) and 'position' (=top, bottom) are strings."""
@@ -829,13 +829,10 @@ def load_subsystem_data(
         if "plot_structure" in plots[plot_title].keys():
             continue
 
-        utils.logger.info(
-            "\33[95m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\33[0m"
-        )
-        utils.logger.info(f"\33[95m~~~ L O A D I N G : {plot_title}\33[0m")
-        utils.logger.info(
-            "\33[95m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\33[0m"
-        )
+        banner = "\33[95m" + "~" * 50 + "\33[0m"
+        utils.logger.info(banner)
+        utils.logger.info(f"\33[95m L O A D I N G : {plot_title}\33[0m")
+        utils.logger.info(banner)
 
         # --- use original plot settings provided in json
         plot_settings = plots[plot_title]
@@ -870,22 +867,8 @@ def load_subsystem_data(
         }
 
         # parameters from plot settings to be simply propagated
-        plot_info["plot_style"] = (
-            plot_settings["plot_style"]
-            if "plot_style" in plot_settings.keys()
-            else None
-        )
-        plot_info["time_window"] = (
-            plot_settings["time_window"]
-            if "time_window" in plot_settings.keys()
-            else None
-        )
-        plot_info["resampled"] = (
-            plot_settings["resampled"] if "resampled" in plot_settings.keys() else None
-        )
-        plot_info["range"] = (
-            plot_settings["range"] if "range" in plot_settings.keys() else None
-        )
+        for key in ["plot_style", "time_window", "resampled", "range"]:
+            plot_info[key] = plot_settings.get(key, None)
         plot_info["std"] = None
 
         # -------------------------------------------------------------------------
@@ -907,7 +890,6 @@ def load_subsystem_data(
             param_orig = param.rstrip("_var")
             plot_info["unit"][param] = None
             plot_info["label"][param] = param
-
             plot_info["limits"][param] = [None, None]
             # unit label should be % if variation was asked
             plot_info["unit_label"][param] = (

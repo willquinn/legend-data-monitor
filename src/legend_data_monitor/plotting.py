@@ -51,13 +51,10 @@ def make_subsystem_plots(
             utils.logger.info(f"'{plot_title}' can't be plotted. Skip it.")
             continue
 
-        utils.logger.info(
-            "\33[95m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\33[0m"
-        )
-        utils.logger.info(f"\33[95m~~~ P L O T T I N G : {plot_title}\33[0m")
-        utils.logger.info(
-            "\33[95m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\33[0m"
-        )
+        banner = "\33[95m" + "~" * 50 + "\33[0m"
+        utils.logger.info(banner)
+        utils.logger.info(f"\33[95m P L O T T I N G : {plot_title}\33[0m")
+        utils.logger.info(banner)
 
         # -------------------------------------------------------------------------
         # settings checks
