@@ -21,7 +21,7 @@ def status_plot(subsystem, data_analysis: DataFrame, plot_info: dict, pdf: PdfPa
     # -------------------------------------------------------------------------
     # plot a map with statuses of channels
     # -------------------------------------------------------------------------
-    
+
     banner = "\33[95m" + "~" * 50 + "\33[0m"
     utils.logger.info(banner)
     utils.logger.info(f"\33[95m S T A T U S  M A P : %s\33[0m", plot_info["title"])
