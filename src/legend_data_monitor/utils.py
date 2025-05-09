@@ -1151,12 +1151,20 @@ def get_map_dict(data_analysis: DataFrame):
 def get_tiers_pars_folders(path: str):
     """Get the absolute path to different tier and par folders."""
     # config with info on all tier folder
-    config_proc = json.load(open(os.path.join(path, "config.json")))
+    try:
+        with open(os.path.join(path, "config.json")) as f:
+            config_proc = json.load(f)
+    except FileNotFoundError:
+        with open(os.path.join(path, "dataflow-config.yaml")) as f:
+            config_proc = yaml.safe_load(f)
 
     def clean_path(key, path, setup_paths):
         return os.path.join(path, setup_paths[key].replace("$_/", ""))
 
-    setup_paths = config_proc["setups"]["l200"]["paths"]
+    try:
+        setup_paths = config_proc["setups"]["l200"]["paths"]
+    except KeyError:
+        setup_paths = config_proc["paths"]
 
     # tier paths
     tier_keys = ["tier_dsp", "tier_psp", "tier_hit", "tier_pht", "tier_raw"]
