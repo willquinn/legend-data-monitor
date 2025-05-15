@@ -192,6 +192,9 @@ class AnalysisData:
         # select phy/puls/all/Klines events
         bad = self.select_events()
         if bad:
+            utils.logger.error(
+                "\033[91mThe selection of desired events went wrong. Exit here!\033[0m"
+            )
             return
 
         # convert cuts to boolean + apply cuts, if any

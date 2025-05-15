@@ -31,9 +31,7 @@ def retrieve_scdb(user_config_path: str, port: int, pswd: str):
         config = json.load(f)
 
     # check validity of scdb settings
-    valid = utils.check_scdb_settings(config)
-    if not valid:
-        return
+    utils.check_scdb_settings(config)
 
     # -------------------------------------------------------------------------
     # Define PDF file basename
@@ -95,9 +93,7 @@ def control_plots(user_config_path: str, n_files=None):
         config = json.load(f)
 
     # check validity of plot settings
-    valid = utils.check_plot_settings(config)
-    if not valid:
-        return
+    utils.check_plot_settings(config)
 
     # -------------------------------------------------------------------------
     # Define PDF file basename
@@ -123,9 +119,7 @@ def auto_control_plots(
         config = json.load(f)
 
     # check validity of plot settings
-    valid = utils.check_plot_settings(config)
-    if not valid:
-        return
+    utils.check_plot_settings(config)
 
     # -------------------------------------------------------------------------
     # Add missing information (output, dataset) to the config
@@ -172,6 +166,9 @@ def generate_plots(config: dict, plt_path: str, n_files=None):
     else:
         # list of datasets to loop over later on
         bunches = utils.bunch_dataset(config.copy(), n_files)
+        if bunches == []:
+            utils.logger.info("No bunches of files were found. Exit here.")
+            return
 
         # remove unnecessary keys for precaution - we will replace the time selections with individual timestamps/file keys
         config["dataset"].pop("start", None)

@@ -88,13 +88,15 @@ with open(pkg / "settings" / "remove-dets.json") as f:
 # -------------------------------------------------------------------------
 
 
-def get_valid_path(base_path, fallback_subdir="psp"):
+def get_valid_path(base_path, fallback_subdirs=["psp","hit","pht","pet","evt","skm"]):
     if os.path.exists(base_path):
         return base_path
-    fallback_path = base_path.replace("dsp", fallback_subdir)
 
-    if os.path.exists(fallback_path):
-        return fallback_path
+    for fallback_subdir in fallback_subdirs:
+        fallback_path = base_path.replace("dsp", fallback_subdir)
+    
+        if os.path.exists(fallback_path):
+            return fallback_path
 
     logger.warning(
         "\033[93mThe path '%s' does not exist, check config['dataset'] and try again.\033[0m",
@@ -301,7 +303,7 @@ def get_query_timerange(**kwargs):
         for run in runs:
             if not isinstance(run, int):
                 logger.error("\033[91mInvalid run format!\033[0m")
-                return
+                sys.exit()
 
         # format rXXX for DataLoader
         time_range = {"run": []}
@@ -404,7 +406,12 @@ def check_scdb_settings(conf: dict) -> bool:
                 )
                 return False
 
-    return True
+    
+    if not valid:
+        utils.logger.error(
+            "\033[91mPlot settings are not valid. Exit here.\033[0m"
+        )
+        return
 
 
 def check_plot_settings(conf: dict) -> bool:
@@ -760,14 +767,22 @@ def unix_timestamp_to_string(unix_timestamp):
     return formatted_string
 
 
-def get_last_timestamp(dsp_fname: str) -> str:
+def get_last_timestamp(fname: str) -> str:
     """Read a lh5 file and return the last timestamp saved in the file. This works only in case of a global trigger where the whole array is entirely recorded for a given timestamp."""
     # pick a random channel
-    first_channel = lh5.ls(dsp_fname, "")[0]
-    # get array of timestamps stored in the lh5 file
-    timestamp = lh5.load_nda(dsp_fname, ["timestamp"], f"{first_channel}/dsp/")[
-        "timestamp"
-    ]
+    channels = lh5.ls(fname, "")
+    tier = fname.split("-")[-1].replace(".lh5", "").replace("tier_", "")
+    tier_map = {"psp": "dsp", "pht": "hit", "pet": "evt"}
+    tier = tier_map.get(tier, tier)
+    timestamp = None
+    # pick the first channel that has a valid timestamp entry
+    for ch in channels:
+        try:
+            # get array of timestamps stored in the lh5 file 
+            timestamp = lh5.read(f"{ch}/{tier}/timestamp", fname)
+            break  
+        except:
+            pass
     # get the last entry
     last_timestamp = timestamp[-1]
     # convert from UNIX tstamp to string tstmp of format YYYYMMDDTHHMMSSZ
@@ -784,7 +799,6 @@ def bunch_dataset(config: dict, n_files=None):
     # --- get dsp filelist of this run
     path_info = config["dataset"]
     user_time_range = get_query_timerange(dataset=config["dataset"])
-
     run = (
         get_run_name(config, user_time_range)
         if "timestamp" in user_time_range.keys()
