@@ -88,13 +88,14 @@ with open(pkg / "settings" / "remove-dets.json") as f:
 # -------------------------------------------------------------------------
 
 
-def get_valid_path(base_path, fallback_subdirs=["psp","hit","pht","pet","evt","skm"]):
+def get_valid_path(base_path):
     if os.path.exists(base_path):
         return base_path
 
+    fallback_subdirs = ["psp", "hit", "pht", "pet", "evt", "skm"]
     for fallback_subdir in fallback_subdirs:
         fallback_path = base_path.replace("dsp", fallback_subdir)
-    
+
         if os.path.exists(fallback_path):
             return fallback_path
 
@@ -386,7 +387,7 @@ def check_scdb_settings(conf: dict) -> bool:
         logger.warning(
             "\033[93mThere is no 'slow_control' key in the config file. Try again if you want to retrieve slow control data.\033[0m"
         )
-        return False
+        sys.exit()
     # there is "slow_control" key, but ...
     else:
         # ... there is no "parameters" key
@@ -394,7 +395,7 @@ def check_scdb_settings(conf: dict) -> bool:
             logger.warning(
                 "\033[93mThere is no 'parameters' key in config 'slow_control' entry. Try again if you want to retrieve slow control data.\033[0m"
             )
-            return False
+            sys.exit()
         # ... there is "parameters" key, but ...
         else:
             # ... it is not a string or a list (of strings)
@@ -404,14 +405,7 @@ def check_scdb_settings(conf: dict) -> bool:
                 logger.error(
                     "\033[91mSlow control parameters must be a string or a list of strings. Try again if you want to retrieve slow control data.\033[0m"
                 )
-                return False
-
-    
-    if not valid:
-        utils.logger.error(
-            "\033[91mPlot settings are not valid. Exit here.\033[0m"
-        )
-        return
+                sys.exit()
 
 
 def check_plot_settings(conf: dict) -> bool:
@@ -778,10 +772,10 @@ def get_last_timestamp(fname: str) -> str:
     # pick the first channel that has a valid timestamp entry
     for ch in channels:
         try:
-            # get array of timestamps stored in the lh5 file 
+            # get array of timestamps stored in the lh5 file
             timestamp = lh5.read(f"{ch}/{tier}/timestamp", fname)
-            break  
-        except:
+            break
+        except (KeyError, FileNotFoundError):
             pass
     # get the last entry
     last_timestamp = timestamp[-1]

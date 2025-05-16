@@ -733,7 +733,9 @@ def get_pivot(
     if saving == "append":
         # check if the file exists: if not, create a new one
         if not os.path.exists(file_path):
-            utils.logger.info(f"The file {file_path} does not exist, we will create a new one with mode append.")
+            utils.logger.info(
+                f"The file {file_path} does not exist, we will create a new one with mode append."
+            )
             df_pivot.to_hdf(file_path, key=key_name, mode="a")
             return
         # the file exists, but this specific key was not saved - create the new key
@@ -741,7 +743,9 @@ def get_pivot(
         with h5py.File(file_path, "r") as file:
             saved_keys = list(file.keys())
         if os.path.exists(file_path) and key_name not in saved_keys:
-            utils.logger.info(f"The key {key_name} does not exist, we will create a new one.")
+            utils.logger.info(
+                f"The key {key_name} does not exist, we will create a new one."
+            )
             df_pivot.to_hdf(file_path, key=key_name, mode="a")
             return
 

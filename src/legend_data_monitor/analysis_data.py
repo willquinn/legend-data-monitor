@@ -269,7 +269,9 @@ class AnalysisData:
                 break
 
         if evt_config is None:
-            utils.logger.warning("\033[93mNo config files for converting bitmasks into boolean entries were found. Skip it.\033[0m")
+            utils.logger.warning(
+                "\033[93mNo config files for converting bitmasks into boolean entries were found. Skip it.\033[0m"
+            )
         else:
 
             try:
@@ -277,19 +279,25 @@ class AnalysisData:
                     "expression"
                 ]
             except KeyError:
-                filepath_pattern = os.path.join(path, version, "inputs/dataprod/config", subdir, "*-geds_qc-evt_config.yaml")
+                filepath_pattern = os.path.join(
+                    path,
+                    version,
+                    "inputs/dataprod/config",
+                    subdir,
+                    "*-geds_qc-evt_config.yaml",
+                )
                 filepath = glob.glob(filepath_pattern)[0]
                 with open(filepath) as file:
                     evt_config = yaml.safe_load(file)
                 expression = evt_config["operations"]["geds___quality___is_bb_like"][
                     "expression"
                 ]
-                
+
             # extract key-value pairs like: hit.is_something == number
             pattern = r"hit\.(\w+)\s*==\s*(\d+)"
             matches = re.findall(pattern, expression)
             expr_dict = {key: int(value) for key, value in matches}
-    
+
             for col in self.data.columns:
                 if col.startswith("is_") or col.endswith("_classifier"):
                     if self.data[col].dtype != bool:
@@ -415,7 +423,7 @@ class AnalysisData:
 
                 # ToDo: already loaded before in Subsystem => 1) load mass already then, 2) inherit channel map from Subsystem ?
                 # get channel map at this timestamp
-                
+
                 map_file = os.path.join(
                     self.path, self.version, "inputs/hardware/configuration/channelmaps"
                 )
@@ -454,9 +462,11 @@ class AnalysisData:
                 # --- calculate exposure for each detector
                 # get diodes map
                 dets_file = os.path.join(
-                    plot_settings["path"], plot_settings["version"], "inputs/hardware/detectors/germanium/diodes"
+                    self.path,
+                    self.version,
+                    "inputs/hardware/detectors/germanium/diodes",
                 )
-                dets_map = JsonDB(dets_file) 
+                dets_map = JsonDB(dets_file)
 
                 # add a new column "mass" to self.data containing mass values evaluated from dets_map[channel_name]["production"]["mass_in_g"], where channel_name is the value in "name" column
                 for det_name in self.data.index.unique():
@@ -739,10 +749,12 @@ def get_aux_df(
         )
         if aux_ch == "pulser01ana":
             map_file = os.path.join(
-                plot_settings["path"], plot_settings["version"], "inputs/hardware/configuration/channelmaps"
+                plot_settings["path"],
+                plot_settings["version"],
+                "inputs/hardware/configuration/channelmaps",
             )
             chmap = JsonDB(map_file).on(timestamp=first_timestamp)
-            
+
             # PULS01ANA channel
             if "PULS01ANA" in chmap.keys():
                 aux_data = get_aux_info(aux_data, chmap, "PULS01ANA")
