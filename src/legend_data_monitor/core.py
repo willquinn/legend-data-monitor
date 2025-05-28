@@ -312,3 +312,9 @@ def make_plots(config: dict, plt_path: str, saving: str):
         # Write the cleaned text to a new file
         with open(plt_path + "-" + system + ".log", "w") as f:
             f.write(clean_text)
+
+    # default extraction of summary run information
+    utils.logger.debug("Building runinfo summary file")
+    utils.build_runinfo(
+        config["dataset"]["path"], config["dataset"]["version"], config["output"]
+    )

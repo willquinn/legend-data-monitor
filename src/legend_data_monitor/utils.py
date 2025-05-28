@@ -10,6 +10,8 @@ from datetime import datetime, timedelta
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
+import h5py
+import pandas as pd
 import yaml
 from lgdo import lh5
 from pandas import DataFrame
@@ -799,7 +801,7 @@ def bunch_dataset(config: dict, n_files=None):
     path = os.path.join(path_info["path"], path_info["version"])
     tiers, _ = get_tiers_pars_folders(path)
     path_to_files = os.path.join(
-        tiers[0], # path to dsp folder
+        tiers[0],  # path to dsp folder
         path_info["type"],
         path_info["period"],
         run,
@@ -1168,7 +1170,15 @@ def get_tiers_pars_folders(path: str):
         setup_paths = config_proc["paths"]
 
     # tier paths
-    tier_keys = ["tier_dsp", "tier_psp", "tier_hit", "tier_pht", "tier_raw"]
+    tier_keys = [
+        "tier_dsp",
+        "tier_psp",
+        "tier_hit",
+        "tier_pht",
+        "tier_raw",
+        "tier_evt",
+        "tier_pet",
+    ]
     tiers = [clean_path(key, path, setup_paths) for key in tier_keys]
 
     # parameter paths
@@ -1176,3 +1186,190 @@ def get_tiers_pars_folders(path: str):
     pars = [clean_path(key, path, setup_paths) for key in par_keys]
 
     return tiers, pars
+
+
+# -------------------------------------------------------------------------
+# Build runinfo file with livetime info
+# -------------------------------------------------------------------------
+def update_runinfo(run_info, period, run, data_type, my_global_path):
+    files = os.listdir(my_global_path)
+    files = [
+        os.path.join(my_global_path, f) for f in files if f"{data_type}-geds.hdf" in f
+    ]
+
+    timestamps_file = json.load(open("settings/timestamps-to-filter.json"))
+    start_timestamps = timestamps_file["start"]
+    end_timestamps = timestamps_file["end"]
+
+    if files == []:
+        return run_info
+    files = files[0]
+
+    with h5py.File(files, "r") as f:
+        keys = sorted(list(f.keys()))
+    my_key = [
+        k for k in keys if "IsPulser" in k and "info" not in k and "_pulser" not in k
+    ]
+
+    tot_livetime = None
+    if my_key is not []:
+        my_hdf_file = pd.read_hdf(files, key=my_key[0])
+
+        # filter the hdf file
+        for ki, kf in zip(start_timestamps, end_timestamps):
+            isolated_ki = pd.to_datetime(ki, format="%Y%m%dT%H%M%S%z")
+            isolated_kf = pd.to_datetime(kf, format="%Y%m%dT%H%M%S%z")
+            my_hdf_file = my_hdf_file[
+                (my_hdf_file.index < isolated_ki) | (my_hdf_file.index > isolated_kf)
+            ]
+
+        no_pulser = my_hdf_file.shape[0]
+        tot_livetime = no_pulser * 20  # already in seconds
+
+    if period in run_info.keys():
+        if run in run_info[period].keys():
+            if data_type in run_info[period][run].keys():
+                run_info[period][run][data_type].update({"livetime_in_s": tot_livetime})
+
+    return run_info
+
+
+def build_runinfo(path: str, version: str, output: str):
+    """Build dictionary with main run information (start key, phy livetime in seconds) for multiple data types (phy, cal, fft, bkg, pzc, pul)."""
+    periods = []
+    runs = []
+    file_runinfo = os.path.join(path, version, "inputs/dataprod/runinfo.json")
+    run_info = json.load(open(file_runinfo))
+    raw_paths = [
+        os.path.join(path, "ref-raw/generated/tier/raw"),
+        os.path.join(path, "tmp-p14-raw/generated/tier/raw"),
+    ]
+
+    # collect starting and ending timestamps
+    for raw_path in raw_paths:
+        data_types = sorted(os.listdir(raw_path))
+        data_types = sorted(data_types, key=lambda x: (x != "phy", x))
+        for data_type in data_types:  # cal | fft | bkg | phy | pul | pzc
+            data_type_path = os.path.join(raw_path, data_type)
+            if not os.listdir(data_type_path):
+                continue
+
+            for period in sorted(os.listdir(data_type_path)):  # p03 | p04 | ...
+                period_path = os.path.join(raw_path, data_type_path, period)
+                if not os.listdir(period_path):
+                    logger.warning(
+                        "\033[93mThere are no files under the path %s\033[0m",
+                        period_path,
+                    )
+                    continue
+
+                period_runs = []
+                for run in sorted(os.listdir(period_path)):  # r000 | r001 | ...
+                    period_runs.append(run)
+
+                    global_path = os.path.join(
+                        raw_path, data_type_path, period_path, run
+                    )
+                    if not os.listdir(global_path):
+                        logger.warning(
+                            "\033[93mThere are no files under the path %s\033[0m",
+                            global_path,
+                        )
+                        continue
+
+                    files = sorted(os.listdir(global_path))
+                    files_global_path = sorted(
+                        [os.path.join(global_path, f) for f in files]
+                    )
+                    filtered = [
+                        f for f in files_global_path if f.endswith((".orca", ".lh5"))
+                    ]
+                    first_file = filtered[0]
+                    first_timestamp = (
+                        (first_file.split("-")[-1]).split(".orca")[0]
+                        if "orca" in first_file
+                        else (first_file.split("/")[-1]).split("-")[4]
+                    )
+
+                    if period in run_info.keys():
+                        if run in run_info[period].keys():
+                            if data_type in run_info[period][run].keys():
+                                run_info[period][run][data_type].update(
+                                    {"start_key": first_timestamp}
+                                )
+                            else:
+                                run_info[period][run].update(
+                                    {data_type: {"start_key": first_timestamp}}
+                                )
+                        else:
+                            run_info[period].update(
+                                {run: {data_type: {"start_key": first_timestamp}}}
+                            )
+                    else:
+                        run_info.update(
+                            {period: {run: {data_type: {"start_key": first_timestamp}}}}
+                        )
+
+                if period not in periods:
+                    periods.append(period)
+                    runs.append(period_runs)
+
+    # evaluate and save livetime from pulser events
+    data_type = "phy"
+    for idx_p, period in enumerate(periods):
+        if period in ["p01", "p02"]:
+            continue
+
+        for run in runs[idx_p]:
+            versions = [version] if version == "tmp-auto" else ["tmp-auto", version]
+
+            for v in versions:
+                tiers, _ = get_tiers_pars_folders(os.path.join(path, v))
+                my_dir = tiers[5] if os.path.isdir(tiers[5]) else tiers[6]
+                my_dir = os.path.join(my_dir, "phy")
+
+                if v != "tmp-auto":
+                    evt_files = os.path.join(
+                        my_dir, f"l200-{period}-{run}-phy-tier_pet.lh5"
+                    )
+                    # load from monitoring files if the pet files were not processed
+                    if not os.path.isfile(evt_files):
+                        mtg_path = os.path.join(
+                            output, f"generated/plt/phy/{period}/{run}/"
+                        )
+                        if not os.path.isdir(mtg_path):
+                            continue
+                        run_info = update_runinfo(
+                            run_info, period, run, "phy", mtg_path
+                        )
+                        continue
+
+                if v == "tmp-auto":
+                    evt_path = os.path.join(my_dir, period, run)
+                    if not os.path.isdir(evt_path):
+                        continue
+                    evt_files = os.listdir(evt_path)
+                    evt_files = [
+                        os.path.join(my_dir, period, run, f) for f in evt_files
+                    ]
+
+                data = lh5.read("evt/coincident/puls", evt_files)
+                df_coincident = pd.DataFrame(data, columns=["puls"])
+                df = pd.concat([df_coincident], axis=1)
+                is_pulser = df["puls"] is True
+                df = df[is_pulser]
+                no_pulser = len(df)
+                tot_livetime = no_pulser * 20
+
+                if period in run_info.keys():
+                    if run in run_info[period].keys():
+                        if data_type in run_info[period][run].keys():
+                            run_info[period][run][data_type].update(
+                                {"livetime_in_s": tot_livetime}
+                            )
+
+    # with open(file_runinfo, 'w') as fp:
+    #    yaml.dump(run_info, fp, default_flow_style=False)
+    save_file = os.path.join(output, version, "generated/plt/phy/runinfo.json")
+    with open(save_file, "w") as fp:
+        json.dump(run_info, fp, indent=2)
