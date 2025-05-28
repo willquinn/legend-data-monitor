@@ -100,8 +100,7 @@ def get_valid_path(base_path):
             return fallback_path
 
     logger.warning(
-        "\033[93mThe path '%s' does not exist, check config['dataset'] and try again.\033[0m",
-        fallback_path,
+        "\033[93mThe path of dsp/hit/evt/psp/pht/pet/skm files is not valid, check config['dataset'] and try again.\033[0m",
     )
     exit()
 
@@ -162,23 +161,17 @@ def get_query_times(**kwargs):
         # --- get dsp filelist of this run
         # if setup= keyword was used, get dict; otherwise kwargs is already the dict we need
         path_info = kwargs["dataset"] if "dataset" in kwargs else kwargs
+        path = os.path.join(path_info["path"], path_info["version"])
+        tiers, _ = get_tiers_pars_folders(path)
 
         first_glob_path = os.path.join(
-            path_info["path"],
-            path_info["version"],
-            "generated",
-            "tier",
-            "dsp",
+            tiers[0],
             path_info["type"],
             path_info["period"],
             first_run,
         )
         last_glob_path = os.path.join(
-            path_info["path"],
-            path_info["version"],
-            "generated",
-            "tier",
-            "dsp",
+            tiers[0],
             path_info["type"],
             path_info["period"],
             last_run,
@@ -521,7 +514,6 @@ def make_output_paths(config: dict, user_time_range: dict) -> str:
         return
 
     # create subfolders for the fixed path
-    logger.info("config[output]:" + config["output"])
     version_dir = os.path.join(config["output"], config["dataset"]["version"])
     generated_dir = os.path.join(version_dir, "generated")
     plt_dir = os.path.join(generated_dir, "plt")
@@ -777,6 +769,9 @@ def get_last_timestamp(fname: str) -> str:
             break
         except (KeyError, FileNotFoundError):
             pass
+    if timestamp is None:
+        logger.error("\033[91mNo timestamps were found. Exit here.\033[0m")
+        sys.exit()
     # get the last entry
     last_timestamp = timestamp[-1]
     # convert from UNIX tstamp to string tstmp of format YYYYMMDDTHHMMSSZ
@@ -801,12 +796,10 @@ def bunch_dataset(config: dict, n_files=None):
     # format to search /path_to_prod-ref[/vXX.XX]/generated/tier/dsp/phy/pXX/rXXX (version 'vXX.XX' might not be there).
     # NOTICE that we fixed the tier, otherwise it picks the last one it finds (eg tcm).
     # NOTICE that this is PERIOD SPECIFIC (unlikely we're gonna inspect two periods together, so we fix it)
+    path = os.path.join(path_info["path"], path_info["version"])
+    tiers, _ = get_tiers_pars_folders(path)
     path_to_files = os.path.join(
-        path_info["path"],
-        path_info["version"],
-        "generated",
-        "tier",
-        "dsp",
+        tiers[0], # path to dsp folder
         path_info["type"],
         path_info["period"],
         run,
