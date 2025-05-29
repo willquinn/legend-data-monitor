@@ -13,6 +13,7 @@ from email.mime.text import MIMEText
 import h5py
 import pandas as pd
 import yaml
+from legendmeta import JsonDB
 from lgdo import lh5
 from pandas import DataFrame
 
@@ -1188,6 +1189,23 @@ def get_tiers_pars_folders(path: str):
     return tiers, pars
 
 
+def get_status_map(path: str, version: str, first_timestamp: str, datatype: str):
+    """Return the correct status map, either reading a .json or .yaml file."""
+    try:
+        map_file = os.path.join(path, version, "inputs/dataprod/config")
+        full_status_map = JsonDB(map_file).on(
+            timestamp=first_timestamp, system=datatype
+        )["analysis"]
+    except (KeyError, TypeError):
+        # fallback if "analysis" key doesn't exist and structure has changed
+        map_file = os.path.join(path, version, "inputs/datasets/statuses")
+        full_status_map = JsonDB(map_file).on(
+            timestamp=first_timestamp, system=datatype
+        )
+
+    return full_status_map
+
+
 # -------------------------------------------------------------------------
 # Build runinfo file with livetime info
 # -------------------------------------------------------------------------
@@ -1373,3 +1391,37 @@ def build_runinfo(path: str, version: str, output: str):
     save_file = os.path.join(output, version, "generated/plt/phy/runinfo.json")
     with open(save_file, "w") as fp:
         json.dump(run_info, fp, indent=2)
+
+
+def read_json_or_yaml(file_path: str):
+    """Open either a yaml or a json file, if not raise an error and exit."""
+    with open(file_path) as f:
+        if file_path.endswith((".yaml", ".yml")):
+            data_dict = yaml.safe_load(f)
+        elif file_path.endswith(".json"):
+            data_dict = json.load(f)
+        else:
+            logger.error(
+                "\033[91mUnsupported file format: expected .json or .yaml/.yml\033[0m"
+            )
+            exit()
+
+    return data_dict
+
+
+def retrieve_json_or_yaml(base_path: str, filename: str):
+    """Return either a yaml or a json file for the specified file looking at the existing available extension."""
+    yaml_path = os.path.join(base_path, f"{filename}.yaml")
+    json_path = os.path.join(base_path, f"{filename}.json")
+
+    if os.path.isfile(yaml_path):
+        path = yaml_path
+    elif os.path.isfile(json_path):
+        path = json_path
+    else:
+        logger.error(
+            "\033[91mNo diode file found for %s in YAML or JSON format\033[0m", filename
+        )
+        exit()
+
+    return path

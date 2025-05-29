@@ -714,17 +714,9 @@ class Subsystem:
         # -------------------------------------------------------------------------
         # load full status map of this time selection (and version)
         # -------------------------------------------------------------------------
-        try:
-            map_file = os.path.join(self.path, self.version, "inputs/dataprod/config")
-            full_status_map = JsonDB(map_file).on(
-                timestamp=self.first_timestamp, system=self.datatype
-            )["analysis"]
-        except (KeyError, TypeError):
-            # fallback if "analysis" key doesn't exist and structure has changed
-            map_file = os.path.join(self.path, self.version, "inputs/datasets/statuses")
-            full_status_map = JsonDB(map_file).on(
-                timestamp=self.first_timestamp, system=self.datatype
-            )
+        full_status_map = utils.get_status_map(
+            self.path, self.version, self.first_timestamp, self.datatype
+        )
 
         # AUX channels are not in status map, so at least for pulser/pulser01ana/FCbsln/muon need default on
         self.channel_map["status"] = "on"

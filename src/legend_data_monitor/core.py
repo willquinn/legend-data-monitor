@@ -4,7 +4,79 @@ import re
 import subprocess
 import sys
 
+from legendmeta import JsonDB
+
 from . import analysis_data, plotting, slow_control, subsystem, utils
+
+
+def retrieve_exposure(
+    period: str, runs: str | list[str], runinfo_path: str, path: str, version: str
+):
+
+    runinfo = utils.read_json_or_yaml(runinfo_path)
+
+    tot_liv = 0
+    ac_exposure = 0
+    on_validPSD_NONvalidPSD_exposure = 0
+    on_validPSD_exposure = 0
+
+    for run in runs:
+        if "phy" not in runinfo[period][run].keys():
+            utils.logger.debug(f"No 'phy' key present in {runinfo_path}. Exit here")
+            return
+        tot_liv += runinfo[period][run]["phy"]["livetime_in_s"] / (60 * 60 * 24)
+
+        first_timestamp = runinfo[period][run]["phy"]["start_key"]
+        full_status_map = utils.get_status_map(path, version, first_timestamp, "geds")
+
+        map_file = os.path.join(
+            path, version, "inputs/hardware/configuration/channelmaps"
+        )
+        full_channel_map = JsonDB(map_file).on(timestamp=first_timestamp)
+
+        for hpge in full_channel_map.group("system").geds.map("name").keys():
+            diode_path = utils.retrieve_json_or_yaml(
+                os.path.join(
+                    path, version, "inputs/hardware/detectors/germanium/diodes"
+                ),
+                hpge,
+            )
+            diode = utils.read_json_or_yaml(diode_path)
+            usability = full_status_map[hpge]["usability"]
+            psd = full_status_map[hpge]["psd"]
+
+            expo = (
+                runinfo[period][run]["phy"]["livetime_in_s"]
+                / (60 * 60 * 24 * 365.25)
+                * diode["production"]["mass_in_g"]
+                / 1000
+            )
+
+            if usability == "ac":
+                ac_exposure += expo
+            if usability == "on":
+                on_validPSD_NONvalidPSD_exposure += expo
+
+                if "is_bb_like" in psd and psd["is_bb_like"] != "missing":
+                    if all(
+                        [
+                            psd["status"][p.strip()] == "valid"
+                            for p in psd["is_bb_like"].split("&")
+                        ]
+                    ):
+                        on_validPSD_exposure += expo
+
+    utils.logger.info("period: %s", period)
+    utils.logger.info("runs: %s", runs)
+    utils.logger.info("Total livetime: %.4f d", tot_liv)
+    utils.logger.info("AC exposure: %.4f kg-yr", round(ac_exposure, 4))
+    utils.logger.info(
+        "ON (valid PSD + non-valid PSD) exposure: %.4f kg-yr",
+        round(on_validPSD_NONvalidPSD_exposure, 4),
+    )
+    utils.logger.info(
+        "ON (valid PSD) exposure: %.4f kg-yr", round(on_validPSD_exposure, 4)
+    )
 
 
 def retrieve_scdb(user_config_path: str, port: int, pswd: str):

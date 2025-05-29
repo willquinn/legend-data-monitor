@@ -36,6 +36,7 @@ def main():
     add_user_bunch_parser(subparsers)
     add_user_rsync_parser(subparsers)
     add_auto_prod_parser(subparsers)
+    add_get_exposure(subparsers)
 
     if len(sys.argv) < 2:
         parser.print_usage(sys.stderr)
@@ -75,14 +76,10 @@ def add_user_scdb(subparsers):
 
 def user_scdb_cli(args):
     """Pass command line arguments to :func:`.core.retrieve_scdb`."""
-    # get the path to the user config file
     config_file = args.config
-    # get the local port
     port = args.port
-    # get the password to the SC database
     password = args.pswd
 
-    # start loading data
     legend_data_monitor.core.retrieve_scdb(config_file, port, password)
 
 
@@ -101,10 +98,8 @@ def add_user_config_parser(subparsers):
 
 def user_config_cli(args):
     """Pass command line arguments to :func:`.core.control_plots`."""
-    # get the path to the user config file
     config_file = args.config
 
-    # start loading data & generating plots
     legend_data_monitor.core.control_plots(config_file)
 
 
@@ -127,12 +122,9 @@ def add_user_bunch_parser(subparsers):
 
 def user_bunch_cli(args):
     """Pass command line arguments to :func:`.core.control_plots`."""
-    # get the path to the user config file
     config_file = args.config
-    # get the number of files for each cycle
     n_files = args.n_files
 
-    # start loading data & generating plots
     legend_data_monitor.core.control_plots(config_file, n_files)
 
 
@@ -155,11 +147,9 @@ def add_user_rsync_parser(subparsers):
 
 def user_rsync_cli(args):
     """Pass command line arguments to :func:`.core.control_rsync_plots`."""
-    # get the path to the user config file
     config_file = args.config
     keys_file = args.keys
 
-    # start loading data & generating plots
     legend_data_monitor.core.auto_control_plots(config_file, keys_file, "", {})
 
 
@@ -186,10 +176,9 @@ def add_auto_prod_parser(subparsers):
 
 def auto_prod_cli(args):
     """Pass command line arguments to :func:`.core.auto_control_plots`."""
-    # get the path to the user config file
-    plot_config = args.plot_config
     file_keys = args.filekeylist
     prod_path = args.prod_path
+    plot_config = args.plot_config
 
     # get the production config file
     prod_config_file = (
@@ -209,7 +198,36 @@ def auto_prod_cli(args):
     )
     file_keys += args.filekeylist if file_keys.endswith("/") else f"/{args.filekeylist}"
 
-    # start loading data & generating plots
     legend_data_monitor.core.auto_control_plots(
         plot_config, file_keys, prod_path, prod_config
+    )
+
+
+def add_get_exposure(subparsers):
+    """Configure :func:`.core.control_rsync_plots` command line interface."""
+    parser_auto_prod = subparsers.add_parser(
+        "get_exposure",
+        description="""Retrieve exposure for active detectors, with or without valid PSD flag.""",
+    )
+    parser_auto_prod.add_argument("--period", help="List of periods.")
+    parser_auto_prod.add_argument("--run", nargs="+", help="List of runs.")
+    parser_auto_prod.add_argument(
+        "--runinfo_path",
+        help="Path to the runinfo.yaml/.json file containing summary run information and livetime in seconds.",
+    )
+    parser_auto_prod.add_argument("--path", help="Path to the processed data.")
+    parser_auto_prod.add_argument("--data_version", help="Version of processed data.")
+    parser_auto_prod.set_defaults(func=get_exposure_cli)
+
+
+def get_exposure_cli(args):
+    """Pass command line arguments to :func:`.core.retrieve_exposure`."""
+    period = args.period
+    run = args.run
+    runinfo_path = args.runinfo_path
+    path = args.path
+    data_version = args.data_version
+
+    legend_data_monitor.core.retrieve_exposure(
+        period, run, runinfo_path, path, data_version
     )
