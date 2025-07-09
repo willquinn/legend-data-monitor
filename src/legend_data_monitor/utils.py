@@ -1361,7 +1361,6 @@ def build_runinfo(path: str, version: str, output: str):
             continue
 
         for run in runs[idx_p]:
-            print(period, run)
             versions = [version] if version == "tmp-auto" else ["tmp-auto", version]
 
             for v in versions:
