@@ -1256,8 +1256,28 @@ def build_runinfo(path: str, version: str, output: str):
     """Build dictionary with main run information (start key, phy livetime in seconds) for multiple data types (phy, cal, fft, bkg, pzc, pul)."""
     periods = []
     runs = []
-    file_runinfo = os.path.join(path, version, "inputs/dataprod/runinfo.json")
-    run_info = json.load(open(file_runinfo))
+    file_runinfo = os.path.join(path, version, "inputs/dataprod/runinfo.yaml")
+
+    possible_dirs = ["inputs/dataprod", "inputs/datasets"]
+    file_patterns = ["runinfo.yaml", "*runinfo.json"]
+    run_info = None
+    for subdir in possible_dirs:
+        for pattern in file_patterns:
+            filepath_pattern = os.path.join(
+                path, version, subdir, pattern
+            )
+            files = glob.glob(filepath_pattern)
+            if files:
+                filepath = files[0]
+                with open(filepath) as file:
+                    if filepath.endswith(".yaml"):
+                        run_info = yaml.safe_load(file)
+                    elif filepath.endswith(".json"):
+                        run_info = json.load(file)
+                break
+        if run_info:
+            break
+    
     raw_paths = [
         os.path.join(path, "ref-raw/generated/tier/raw"),
         os.path.join(path, "tmp-p14-raw/generated/tier/raw"),
@@ -1273,6 +1293,8 @@ def build_runinfo(path: str, version: str, output: str):
                 continue
 
             for period in sorted(os.listdir(data_type_path)):  # p03 | p04 | ...
+                if period in ["p01", "p02"]:
+                    continue
                 period_path = os.path.join(raw_path, data_type_path, period)
                 if not os.listdir(period_path):
                     logger.warning(
@@ -1339,6 +1361,7 @@ def build_runinfo(path: str, version: str, output: str):
             continue
 
         for run in runs[idx_p]:
+            print(period, run)
             versions = [version] if version == "tmp-auto" else ["tmp-auto", version]
 
             for v in versions:
@@ -1386,11 +1409,8 @@ def build_runinfo(path: str, version: str, output: str):
                                 {"livetime_in_s": tot_livetime}
                             )
 
-    # with open(file_runinfo, 'w') as fp:
-    #    yaml.dump(run_info, fp, default_flow_style=False)
-    save_file = os.path.join(output, version, "generated/plt/phy/runinfo.json")
-    with open(save_file, "w") as fp:
-        json.dump(run_info, fp, indent=2)
+    with open(file_runinfo, 'w') as fp:
+        yaml.dump(run_info, fp, default_flow_style=False, sort_keys=False)
 
 
 def read_json_or_yaml(file_path: str):

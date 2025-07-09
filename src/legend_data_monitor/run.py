@@ -37,6 +37,7 @@ def main():
     add_user_rsync_parser(subparsers)
     add_auto_prod_parser(subparsers)
     add_get_exposure(subparsers)
+    add_get_runinfo(subparsers)
 
     if len(sys.argv) < 2:
         parser.print_usage(sys.stderr)
@@ -230,4 +231,27 @@ def get_exposure_cli(args):
 
     legend_data_monitor.core.retrieve_exposure(
         period, run, runinfo_path, path, data_version
+    )
+
+
+def add_get_runinfo(subparsers):
+    """Configure :func:`.core.control_rsync_plots` command line interface."""
+    parser_auto_prod = subparsers.add_parser(
+        "get_runinfo",
+        description="""Build runinfo.yaml summary file.""",
+    )
+    parser_auto_prod.add_argument("--path", help="Path to the processed data.")
+    parser_auto_prod.add_argument("--output", help="Path to the output folder with loaded data.")
+    parser_auto_prod.add_argument("--data_version", help="Version of processed data.")
+    parser_auto_prod.set_defaults(func=get_runinfo_cli)
+
+
+def get_runinfo_cli(args):
+    """Pass command line arguments to :func:`.core.retrieve_runinfo`."""
+    path = args.path
+    output = args.output
+    data_version = args.data_version
+
+    legend_data_monitor.utils.build_runinfo(
+        path, data_version, output
     )
