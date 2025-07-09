@@ -47,14 +47,9 @@ def retrieve_exposure(
             usability = full_status_map[hpge]["usability"]
             psd = full_status_map[hpge]["psd"]
 
-            mass += diode["production"]["mass_in_g"]/1000
+            mass += diode["production"]["mass_in_g"] / 1000
 
-            expo = (
-                livetime_in_d
-                / 365.25
-                * diode["production"]["mass_in_g"]
-                / 1000
-            )
+            expo = livetime_in_d / 365.25 * diode["production"]["mass_in_g"] / 1000
 
             if usability == "ac":
                 ac_exposure += expo
@@ -389,4 +384,3 @@ def make_plots(config: dict, plt_path: str, saving: str):
         # Write the cleaned text to a new file
         with open(plt_path + "-" + system + ".log", "w") as f:
             f.write(clean_text)
-

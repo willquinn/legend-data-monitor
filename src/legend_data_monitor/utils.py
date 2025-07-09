@@ -1263,9 +1263,7 @@ def build_runinfo(path: str, version: str, output: str):
     run_info = None
     for subdir in possible_dirs:
         for pattern in file_patterns:
-            filepath_pattern = os.path.join(
-                path, version, subdir, pattern
-            )
+            filepath_pattern = os.path.join(path, version, subdir, pattern)
             files = glob.glob(filepath_pattern)
             if files:
                 filepath = files[0]
@@ -1277,7 +1275,7 @@ def build_runinfo(path: str, version: str, output: str):
                 break
         if run_info:
             break
-    
+
     raw_paths = [
         os.path.join(path, "ref-raw/generated/tier/raw"),
         os.path.join(path, "tmp-p14-raw/generated/tier/raw"),
@@ -1408,7 +1406,7 @@ def build_runinfo(path: str, version: str, output: str):
                                 {"livetime_in_s": tot_livetime}
                             )
 
-    with open(file_runinfo, 'w') as fp:
+    with open(file_runinfo, "w") as fp:
         yaml.dump(run_info, fp, default_flow_style=False, sort_keys=False)
 
 
