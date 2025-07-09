@@ -76,7 +76,7 @@ class AnalysisData:
 
         # check if the selected event type is within the available ones
         if (
-            event_type not in ["all", "phy"]
+            event_type not in ["all", "phy", "K_lines"]
             and event_type not in event_type_flags.keys()
         ):
             utils.logger.error(
@@ -84,7 +84,7 @@ class AnalysisData:
             )
             sys.exit()
 
-        if event_type not in ["all", "phy"] and event_type in event_type_flags:
+        if event_type not in ["all", "phy", "K_lines"] and event_type in event_type_flags:
             flag, subsystem_name = event_type_flags[event_type]
             if flag not in sub_data:
                 utils.logger.error(
@@ -534,7 +534,7 @@ class AnalysisData:
                 else:
                     # open already existing shelve file
                     with shelve.open(self.plt_path + "-" + subsys, "r") as shelf:
-                        old_dict = dict(shelf)
+                        old_dict = dict(shelf)                    
 
                     if len(self.parameters) == 1:
                         param = self.parameters[0]
@@ -860,10 +860,12 @@ def load_subsystem_data(
     saving=None,
 ):
     out_dict = {}
+    results_to_save = False
 
     for plot_title in plots:
         if "plot_structure" in plots[plot_title].keys():
             continue
+        results_to_save = True
 
         banner = "\33[95m" + "~" * 50 + "\33[0m"
         utils.logger.info(banner)
@@ -972,7 +974,7 @@ def load_subsystem_data(
             )
 
     # save in shelve object, overwriting the already existing file with new content (either completely new or new bunches)
-    if saving is not None:
+    if saving is not None and results_to_save:
         out_file = shelve.open(plt_path + f"-{subsystem.type}")
         out_file["monitoring"] = out_dict
         out_file.close()
