@@ -10,7 +10,10 @@ from datetime import datetime, timedelta
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
+import h5py
+import pandas as pd
 import yaml
+from legendmeta import JsonDB
 from lgdo import lh5
 from pandas import DataFrame
 
@@ -88,17 +91,19 @@ with open(pkg / "settings" / "remove-dets.json") as f:
 # -------------------------------------------------------------------------
 
 
-def get_valid_path(base_path, fallback_subdir="psp"):
+def get_valid_path(base_path):
     if os.path.exists(base_path):
         return base_path
-    fallback_path = base_path.replace("dsp", fallback_subdir)
 
-    if os.path.exists(fallback_path):
-        return fallback_path
+    fallback_subdirs = ["psp", "hit", "pht", "pet", "evt", "skm"]
+    for fallback_subdir in fallback_subdirs:
+        fallback_path = base_path.replace("dsp", fallback_subdir)
+
+        if os.path.exists(fallback_path):
+            return fallback_path
 
     logger.warning(
-        "\033[93mThe path '%s' does not exist, check config['dataset'] and try again.\033[0m",
-        fallback_path,
+        "\033[93mThe path of dsp/hit/evt/psp/pht/pet/skm files is not valid, check config['dataset'] and try again.\033[0m",
     )
     exit()
 
@@ -159,23 +164,17 @@ def get_query_times(**kwargs):
         # --- get dsp filelist of this run
         # if setup= keyword was used, get dict; otherwise kwargs is already the dict we need
         path_info = kwargs["dataset"] if "dataset" in kwargs else kwargs
+        path = os.path.join(path_info["path"], path_info["version"])
+        tiers, _ = get_tiers_pars_folders(path)
 
         first_glob_path = os.path.join(
-            path_info["path"],
-            path_info["version"],
-            "generated",
-            "tier",
-            "dsp",
+            tiers[0],
             path_info["type"],
             path_info["period"],
             first_run,
         )
         last_glob_path = os.path.join(
-            path_info["path"],
-            path_info["version"],
-            "generated",
-            "tier",
-            "dsp",
+            tiers[0],
             path_info["type"],
             path_info["period"],
             last_run,
@@ -301,7 +300,7 @@ def get_query_timerange(**kwargs):
         for run in runs:
             if not isinstance(run, int):
                 logger.error("\033[91mInvalid run format!\033[0m")
-                return
+                sys.exit()
 
         # format rXXX for DataLoader
         time_range = {"run": []}
@@ -384,7 +383,7 @@ def check_scdb_settings(conf: dict) -> bool:
         logger.warning(
             "\033[93mThere is no 'slow_control' key in the config file. Try again if you want to retrieve slow control data.\033[0m"
         )
-        return False
+        sys.exit()
     # there is "slow_control" key, but ...
     else:
         # ... there is no "parameters" key
@@ -392,7 +391,7 @@ def check_scdb_settings(conf: dict) -> bool:
             logger.warning(
                 "\033[93mThere is no 'parameters' key in config 'slow_control' entry. Try again if you want to retrieve slow control data.\033[0m"
             )
-            return False
+            sys.exit()
         # ... there is "parameters" key, but ...
         else:
             # ... it is not a string or a list (of strings)
@@ -402,9 +401,7 @@ def check_scdb_settings(conf: dict) -> bool:
                 logger.error(
                     "\033[91mSlow control parameters must be a string or a list of strings. Try again if you want to retrieve slow control data.\033[0m"
                 )
-                return False
-
-    return True
+                sys.exit()
 
 
 def check_plot_settings(conf: dict) -> bool:
@@ -520,7 +517,6 @@ def make_output_paths(config: dict, user_time_range: dict) -> str:
         return
 
     # create subfolders for the fixed path
-    logger.info("config[output]:" + config["output"])
     version_dir = os.path.join(config["output"], config["dataset"]["version"])
     generated_dir = os.path.join(version_dir, "generated")
     plt_dir = os.path.join(generated_dir, "plt")
@@ -760,14 +756,25 @@ def unix_timestamp_to_string(unix_timestamp):
     return formatted_string
 
 
-def get_last_timestamp(dsp_fname: str) -> str:
+def get_last_timestamp(fname: str) -> str:
     """Read a lh5 file and return the last timestamp saved in the file. This works only in case of a global trigger where the whole array is entirely recorded for a given timestamp."""
     # pick a random channel
-    first_channel = lh5.ls(dsp_fname, "")[0]
-    # get array of timestamps stored in the lh5 file
-    timestamp = lh5.load_nda(dsp_fname, ["timestamp"], f"{first_channel}/dsp/")[
-        "timestamp"
-    ]
+    channels = lh5.ls(fname, "")
+    tier = fname.split("-")[-1].replace(".lh5", "").replace("tier_", "")
+    tier_map = {"psp": "dsp", "pht": "hit", "pet": "evt"}
+    tier = tier_map.get(tier, tier)
+    timestamp = None
+    # pick the first channel that has a valid timestamp entry
+    for ch in channels:
+        try:
+            # get array of timestamps stored in the lh5 file
+            timestamp = lh5.read(f"{ch}/{tier}/timestamp", fname)
+            break
+        except (KeyError, FileNotFoundError):
+            pass
+    if timestamp is None:
+        logger.error("\033[91mNo timestamps were found. Exit here.\033[0m")
+        sys.exit()
     # get the last entry
     last_timestamp = timestamp[-1]
     # convert from UNIX tstamp to string tstmp of format YYYYMMDDTHHMMSSZ
@@ -784,7 +791,6 @@ def bunch_dataset(config: dict, n_files=None):
     # --- get dsp filelist of this run
     path_info = config["dataset"]
     user_time_range = get_query_timerange(dataset=config["dataset"])
-
     run = (
         get_run_name(config, user_time_range)
         if "timestamp" in user_time_range.keys()
@@ -793,12 +799,10 @@ def bunch_dataset(config: dict, n_files=None):
     # format to search /path_to_prod-ref[/vXX.XX]/generated/tier/dsp/phy/pXX/rXXX (version 'vXX.XX' might not be there).
     # NOTICE that we fixed the tier, otherwise it picks the last one it finds (eg tcm).
     # NOTICE that this is PERIOD SPECIFIC (unlikely we're gonna inspect two periods together, so we fix it)
+    path = os.path.join(path_info["path"], path_info["version"])
+    tiers, _ = get_tiers_pars_folders(path)
     path_to_files = os.path.join(
-        path_info["path"],
-        path_info["version"],
-        "generated",
-        "tier",
-        "dsp",
+        tiers[0],  # path to dsp folder
         path_info["type"],
         path_info["period"],
         run,
@@ -1151,15 +1155,31 @@ def get_map_dict(data_analysis: DataFrame):
 def get_tiers_pars_folders(path: str):
     """Get the absolute path to different tier and par folders."""
     # config with info on all tier folder
-    config_proc = json.load(open(os.path.join(path, "config.json")))
+    try:
+        with open(os.path.join(path, "config.json")) as f:
+            config_proc = json.load(f)
+    except FileNotFoundError:
+        with open(os.path.join(path, "dataflow-config.yaml")) as f:
+            config_proc = yaml.safe_load(f)
 
     def clean_path(key, path, setup_paths):
         return os.path.join(path, setup_paths[key].replace("$_/", ""))
 
-    setup_paths = config_proc["setups"]["l200"]["paths"]
+    try:
+        setup_paths = config_proc["setups"]["l200"]["paths"]
+    except KeyError:
+        setup_paths = config_proc["paths"]
 
     # tier paths
-    tier_keys = ["tier_dsp", "tier_psp", "tier_hit", "tier_pht", "tier_raw"]
+    tier_keys = [
+        "tier_dsp",
+        "tier_psp",
+        "tier_hit",
+        "tier_pht",
+        "tier_raw",
+        "tier_evt",
+        "tier_pet",
+    ]
     tiers = [clean_path(key, path, setup_paths) for key in tier_keys]
 
     # parameter paths
@@ -1167,3 +1187,258 @@ def get_tiers_pars_folders(path: str):
     pars = [clean_path(key, path, setup_paths) for key in par_keys]
 
     return tiers, pars
+
+
+def get_status_map(path: str, version: str, first_timestamp: str, datatype: str):
+    """Return the correct status map, either reading a .json or .yaml file."""
+    try:
+        map_file = os.path.join(path, version, "inputs/dataprod/config")
+        full_status_map = JsonDB(map_file).on(
+            timestamp=first_timestamp, system=datatype
+        )["analysis"]
+    except (KeyError, TypeError):
+        # fallback if "analysis" key doesn't exist and structure has changed
+        map_file = os.path.join(path, version, "inputs/datasets/statuses")
+        full_status_map = JsonDB(map_file).on(
+            timestamp=first_timestamp, system=datatype
+        )
+
+    return full_status_map
+
+
+# -------------------------------------------------------------------------
+# Build runinfo file with livetime info
+# -------------------------------------------------------------------------
+def update_runinfo(run_info, period, run, data_type, my_global_path):
+    files = os.listdir(my_global_path)
+    files = [
+        os.path.join(my_global_path, f) for f in files if f"{data_type}-geds.hdf" in f
+    ]
+
+    timestamps_file = json.load(open("settings/timestamps-to-filter.json"))
+    start_timestamps = timestamps_file["start"]
+    end_timestamps = timestamps_file["end"]
+
+    if files == []:
+        return run_info
+    files = files[0]
+
+    with h5py.File(files, "r") as f:
+        keys = sorted(list(f.keys()))
+    my_key = [
+        k for k in keys if "IsPulser" in k and "info" not in k and "_pulser" not in k
+    ]
+
+    tot_livetime = None
+    if my_key is not []:
+        my_hdf_file = pd.read_hdf(files, key=my_key[0])
+
+        # filter the hdf file
+        for ki, kf in zip(start_timestamps, end_timestamps):
+            isolated_ki = pd.to_datetime(ki, format="%Y%m%dT%H%M%S%z")
+            isolated_kf = pd.to_datetime(kf, format="%Y%m%dT%H%M%S%z")
+            my_hdf_file = my_hdf_file[
+                (my_hdf_file.index < isolated_ki) | (my_hdf_file.index > isolated_kf)
+            ]
+
+        no_pulser = my_hdf_file.shape[0]
+        tot_livetime = no_pulser * 20  # already in seconds
+
+    if period in run_info.keys():
+        if run in run_info[period].keys():
+            if data_type in run_info[period][run].keys():
+                run_info[period][run][data_type].update({"livetime_in_s": tot_livetime})
+
+    return run_info
+
+
+def build_runinfo(path: str, version: str, output: str):
+    """Build dictionary with main run information (start key, phy livetime in seconds) for multiple data types (phy, cal, fft, bkg, pzc, pul)."""
+    periods = []
+    runs = []
+    file_runinfo = os.path.join(path, version, "inputs/dataprod/runinfo.yaml")
+
+    possible_dirs = ["inputs/dataprod", "inputs/datasets"]
+    file_patterns = ["runinfo.yaml", "*runinfo.json"]
+    run_info = None
+    for subdir in possible_dirs:
+        for pattern in file_patterns:
+            filepath_pattern = os.path.join(path, version, subdir, pattern)
+            files = glob.glob(filepath_pattern)
+            if files:
+                filepath = files[0]
+                with open(filepath) as file:
+                    if filepath.endswith(".yaml"):
+                        run_info = yaml.safe_load(file)
+                    elif filepath.endswith(".json"):
+                        run_info = json.load(file)
+                break
+        if run_info:
+            break
+
+    raw_paths = [
+        os.path.join(path, "ref-raw/generated/tier/raw"),
+        os.path.join(path, "tmp-p14-raw/generated/tier/raw"),
+    ]
+
+    # collect starting and ending timestamps
+    for raw_path in raw_paths:
+        data_types = sorted(os.listdir(raw_path))
+        data_types = sorted(data_types, key=lambda x: (x != "phy", x))
+        for data_type in data_types:  # cal | fft | bkg | phy | pul | pzc
+            data_type_path = os.path.join(raw_path, data_type)
+            if not os.listdir(data_type_path):
+                continue
+
+            for period in sorted(os.listdir(data_type_path)):  # p03 | p04 | ...
+                if period in ["p01", "p02"]:
+                    continue
+                period_path = os.path.join(raw_path, data_type_path, period)
+                if not os.listdir(period_path):
+                    logger.warning(
+                        "\033[93mThere are no files under the path %s\033[0m",
+                        period_path,
+                    )
+                    continue
+
+                period_runs = []
+                for run in sorted(os.listdir(period_path)):  # r000 | r001 | ...
+                    period_runs.append(run)
+
+                    global_path = os.path.join(
+                        raw_path, data_type_path, period_path, run
+                    )
+                    if not os.listdir(global_path):
+                        logger.warning(
+                            "\033[93mThere are no files under the path %s\033[0m",
+                            global_path,
+                        )
+                        continue
+
+                    files = sorted(os.listdir(global_path))
+                    files_global_path = sorted(
+                        [os.path.join(global_path, f) for f in files]
+                    )
+                    filtered = [
+                        f for f in files_global_path if f.endswith((".orca", ".lh5"))
+                    ]
+                    first_file = filtered[0]
+                    first_timestamp = (
+                        (first_file.split("-")[-1]).split(".orca")[0]
+                        if "orca" in first_file
+                        else (first_file.split("/")[-1]).split("-")[4]
+                    )
+
+                    if period in run_info.keys():
+                        if run in run_info[period].keys():
+                            if data_type in run_info[period][run].keys():
+                                run_info[period][run][data_type].update(
+                                    {"start_key": first_timestamp}
+                                )
+                            else:
+                                run_info[period][run].update(
+                                    {data_type: {"start_key": first_timestamp}}
+                                )
+                        else:
+                            run_info[period].update(
+                                {run: {data_type: {"start_key": first_timestamp}}}
+                            )
+                    else:
+                        run_info.update(
+                            {period: {run: {data_type: {"start_key": first_timestamp}}}}
+                        )
+
+                if period not in periods:
+                    periods.append(period)
+                    runs.append(period_runs)
+
+    # evaluate and save livetime from pulser events
+    data_type = "phy"
+    for idx_p, period in enumerate(periods):
+        if period in ["p01", "p02"]:
+            continue
+
+        for run in runs[idx_p]:
+            versions = [version] if version == "tmp-auto" else ["tmp-auto", version]
+
+            for v in versions:
+                tiers, _ = get_tiers_pars_folders(os.path.join(path, v))
+                my_dir = tiers[5] if os.path.isdir(tiers[5]) else tiers[6]
+                my_dir = os.path.join(my_dir, "phy")
+
+                if v != "tmp-auto":
+                    evt_files = os.path.join(
+                        my_dir, f"l200-{period}-{run}-phy-tier_pet.lh5"
+                    )
+                    # load from monitoring files if the pet files were not processed
+                    if not os.path.isfile(evt_files):
+                        mtg_path = os.path.join(
+                            output, f"generated/plt/phy/{period}/{run}/"
+                        )
+                        if not os.path.isdir(mtg_path):
+                            continue
+                        run_info = update_runinfo(
+                            run_info, period, run, "phy", mtg_path
+                        )
+                        continue
+
+                if v == "tmp-auto":
+                    evt_path = os.path.join(my_dir, period, run)
+                    if not os.path.isdir(evt_path):
+                        continue
+                    evt_files = os.listdir(evt_path)
+                    evt_files = [
+                        os.path.join(my_dir, period, run, f) for f in evt_files
+                    ]
+
+                data = lh5.read("evt/coincident/puls", evt_files)
+                df_coincident = pd.DataFrame(data, columns=["puls"])
+                df = pd.concat([df_coincident], axis=1)
+                is_pulser = df["puls"] is True
+                df = df[is_pulser]
+                no_pulser = len(df)
+                tot_livetime = no_pulser * 20
+
+                if period in run_info.keys():
+                    if run in run_info[period].keys():
+                        if data_type in run_info[period][run].keys():
+                            run_info[period][run][data_type].update(
+                                {"livetime_in_s": tot_livetime}
+                            )
+
+    with open(file_runinfo, "w") as fp:
+        yaml.dump(run_info, fp, default_flow_style=False, sort_keys=False)
+
+
+def read_json_or_yaml(file_path: str):
+    """Open either a yaml or a json file, if not raise an error and exit."""
+    with open(file_path) as f:
+        if file_path.endswith((".yaml", ".yml")):
+            data_dict = yaml.safe_load(f)
+        elif file_path.endswith(".json"):
+            data_dict = json.load(f)
+        else:
+            logger.error(
+                "\033[91mUnsupported file format: expected .json or .yaml/.yml\033[0m"
+            )
+            exit()
+
+    return data_dict
+
+
+def retrieve_json_or_yaml(base_path: str, filename: str):
+    """Return either a yaml or a json file for the specified file looking at the existing available extension."""
+    yaml_path = os.path.join(base_path, f"{filename}.yaml")
+    json_path = os.path.join(base_path, f"{filename}.json")
+
+    if os.path.isfile(yaml_path):
+        path = yaml_path
+    elif os.path.isfile(json_path):
+        path = json_path
+    else:
+        logger.error(
+            "\033[91mNo diode file found for %s in YAML or JSON format\033[0m", filename
+        )
+        exit()
+
+    return path

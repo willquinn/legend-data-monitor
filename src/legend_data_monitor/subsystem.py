@@ -314,9 +314,9 @@ class Subsystem:
                     "... you are going to plot the parameter accounting for the difference wrt PULS01ANA data"
                 )
 
-        utils.logger.debug(
-            "... but now we are going to perform diff/ratio with PULS01ANA entries"
-        )
+            utils.logger.debug(
+                "... but now we are going to perform diff/ratio with PULS01ANA entries"
+            )
 
         def add_aux(param):
             aux_subsys = Subsystem(aux_channel, dataset=dataset)
@@ -714,11 +714,9 @@ class Subsystem:
         # -------------------------------------------------------------------------
         # load full status map of this time selection (and version)
         # -------------------------------------------------------------------------
-
-        map_file = os.path.join(self.path, self.version, "inputs/dataprod/config")
-        full_status_map = JsonDB(map_file).on(
-            timestamp=self.first_timestamp, system=self.datatype
-        )["analysis"]
+        full_status_map = utils.get_status_map(
+            self.path, self.version, self.first_timestamp, self.datatype
+        )
 
         # AUX channels are not in status map, so at least for pulser/pulser01ana/FCbsln/muon need default on
         self.channel_map["status"] = "on"

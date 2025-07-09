@@ -7,7 +7,7 @@ import sys
 import numpy as np
 import pandas as pd
 import yaml
-from legendmeta import LegendMetadata
+from legendmeta import JsonDB
 
 # needed to know which parameters are not in DataLoader
 # but need to be calculated, such as event rate
@@ -76,7 +76,7 @@ class AnalysisData:
 
         # check if the selected event type is within the available ones
         if (
-            event_type not in ["all", "phy"]
+            event_type not in ["all", "phy", "K_lines"]
             and event_type not in event_type_flags.keys()
         ):
             utils.logger.error(
@@ -84,7 +84,10 @@ class AnalysisData:
             )
             sys.exit()
 
-        if event_type not in ["all", "phy"] and event_type in event_type_flags:
+        if (
+            event_type not in ["all", "phy", "K_lines"]
+            and event_type in event_type_flags
+        ):
             flag, subsystem_name = event_type_flags[event_type]
             if flag not in sub_data:
                 utils.logger.error(
@@ -192,6 +195,9 @@ class AnalysisData:
         # select phy/puls/all/Klines events
         bad = self.select_events()
         if bad:
+            utils.logger.error(
+                "\033[91mThe selection of desired events went wrong. Exit here!\033[0m"
+            )
             return
 
         # convert cuts to boolean + apply cuts, if any
@@ -264,23 +270,46 @@ class AnalysisData:
                 with open(filepath) as file:
                     evt_config = yaml.safe_load(file)
                 break
-        expression = evt_config["operations"]["_geds___quality___is_bb_like"][
-            "expression"
-        ]
-        # extract key-value pairs like: hit.is_something == number
-        pattern = r"hit\.(\w+)\s*==\s*(\d+)"
-        matches = re.findall(pattern, expression)
-        expr_dict = {key: int(value) for key, value in matches}
 
-        for col in self.data.columns:
-            if col.startswith("is_") or col.endswith("_classifier"):
-                if self.data[col].dtype != bool:
-                    if col in expr_dict:
-                        target_value = expr_dict[col]
-                        self.data[col] = self.data[col] == target_value
-                        utils.logger.info(
-                            f"Column '{col}' converted to boolean using value {target_value}."
-                        )
+        if evt_config is None:
+            utils.logger.warning(
+                "\033[93mNo config files for converting bitmasks into boolean entries were found. Skip it.\033[0m"
+            )
+        else:
+
+            try:
+                expression = evt_config["operations"]["_geds___quality___is_bb_like"][
+                    "expression"
+                ]
+            except KeyError:
+                filepath_pattern = os.path.join(
+                    path,
+                    version,
+                    "inputs/dataprod/config",
+                    subdir,
+                    "*-geds_qc-evt_config.yaml",
+                )
+                filepath = glob.glob(filepath_pattern)[0]
+                with open(filepath) as file:
+                    evt_config = yaml.safe_load(file)
+                expression = evt_config["operations"]["geds___quality___is_bb_like"][
+                    "expression"
+                ]
+
+            # extract key-value pairs like: hit.is_something == number
+            pattern = r"hit\.(\w+)\s*==\s*(\d+)"
+            matches = re.findall(pattern, expression)
+            expr_dict = {key: int(value) for key, value in matches}
+
+            for col in self.data.columns:
+                if col.startswith("is_") or col.endswith("_classifier"):
+                    if self.data[col].dtype != bool:
+                        if col in expr_dict:
+                            target_value = expr_dict[col]
+                            self.data[col] = self.data[col] == target_value
+                            utils.logger.info(
+                                f"Column '{col}' converted to boolean using value {target_value}."
+                            )
 
     def apply_cut(self, cut: str):
         """
@@ -397,10 +426,11 @@ class AnalysisData:
 
                 # ToDo: already loaded before in Subsystem => 1) load mass already then, 2) inherit channel map from Subsystem ?
                 # get channel map at this timestamp
-                lmeta = LegendMetadata()
-                full_channel_map = lmeta.hardware.configuration.channelmaps.on(
-                    timestamp=first_timestamp
+
+                map_file = os.path.join(
+                    self.path, self.version, "inputs/hardware/configuration/channelmaps"
                 )
+                full_channel_map = JsonDB(map_file).on(timestamp=first_timestamp)
 
                 # get pulser rate
                 if "PULS01" in full_channel_map.keys():
@@ -434,7 +464,12 @@ class AnalysisData:
 
                 # --- calculate exposure for each detector
                 # get diodes map
-                dets_map = lmeta.hardware.detectors.germanium.diodes
+                dets_file = os.path.join(
+                    self.path,
+                    self.version,
+                    "inputs/hardware/detectors/germanium/diodes",
+                )
+                dets_map = JsonDB(dets_file)
 
                 # add a new column "mass" to self.data containing mass values evaluated from dets_map[channel_name]["production"]["mass_in_g"], where channel_name is the value in "name" column
                 for det_name in self.data.index.unique():
@@ -716,9 +751,13 @@ def get_aux_df(
             aux_data["datetime"].dt.to_pydatetime()[0].timestamp()
         )
         if aux_ch == "pulser01ana":
-            chmap = LegendMetadata().hardware.configuration.channelmaps.on(
-                timestamp=first_timestamp
+            map_file = os.path.join(
+                plot_settings["path"],
+                plot_settings["version"],
+                "inputs/hardware/configuration/channelmaps",
             )
+            chmap = JsonDB(map_file).on(timestamp=first_timestamp)
+
             # PULS01ANA channel
             if "PULS01ANA" in chmap.keys():
                 aux_data = get_aux_info(aux_data, chmap, "PULS01ANA")
@@ -824,10 +863,12 @@ def load_subsystem_data(
     saving=None,
 ):
     out_dict = {}
+    results_to_save = False
 
     for plot_title in plots:
         if "plot_structure" in plots[plot_title].keys():
             continue
+        results_to_save = True
 
         banner = "\33[95m" + "~" * 50 + "\33[0m"
         utils.logger.info(banner)
@@ -936,7 +977,7 @@ def load_subsystem_data(
             )
 
     # save in shelve object, overwriting the already existing file with new content (either completely new or new bunches)
-    if saving is not None:
+    if saving is not None and results_to_save:
         out_file = shelve.open(plt_path + f"-{subsystem.type}")
         out_file["monitoring"] = out_dict
         out_file.close()

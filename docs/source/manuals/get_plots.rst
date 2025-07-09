@@ -128,7 +128,7 @@ For each subsystem to be plotted, specify
     - ``"only"``: plot only resampled values, i.e. averaged parameter values after computing an average in a time window equal to ``"time_window"``
     - ``"also"``: plot both resampled and not resampled values
 - ``"time_window"``: resampling time (``T``=minutes, ``H``=hours, ``D``=days) used to print resampled values (useful to spot trends over time)
-- ``"status"``: set it to ``True`` if you want to generate a geds status map for the subsystem and parameter under study. Before using this option, you first need to specify the limits you want to set as a low/high threshold for the parameter under study by adding the % or absolute threshold for the subsystem of interest in ``src/legend-data-monitor/settings/par-setting.json``.
+- ``"status"``: set it to ``True`` if you want to generate a GEDs status map for the subsystem and parameter under study. Before using this option, you first need to specify the limits you want to set as a low/high threshold for the parameter under study by adding the % or absolute threshold for the subsystem of interest in ``src/legend-data-monitor/settings/par-setting.json``.
 
 .. warning::
 
@@ -179,7 +179,7 @@ Different methods were implemented to either apply or retrieve quality cuts (QC)
 
 Apply QC
 ~~~~~~~~
-If you are loading a parameter for geds channels and you want to apply one or multiple QC flags, you just specify it in the subsystem plot entry:
+If you are loading a parameter for GEDs channels and you want to apply one or multiple QC flags, you just specify it in the subsystem plot entry:
 
 .. code-block:: json
 
@@ -219,18 +219,58 @@ Below, we show a way to retrieve all available QC flags and/or classifiers by se
     }
 ..
 
-This will create a unique table with QC flags/classifiers as columns, with an entry for each hit in each geds detector.
+This will create a unique table with QC flags/classifiers as columns, with an entry for each hit in each GEDs detector.
 Any bitmask entry is automatically converted into a boolean entry based on the information stored in legend-metadata.
 
 .. warning::
 
-  At the moment, there is no differentation based on the detector type for the available QC flags/classifiers.
-  In other words, to load all QC info we read at the flags/classifiers listed under a path of type ``../ref-v2.1.5/inputs/dataprod/config/tier_hit/l200-p01-r%-T%-ICPC-hit_config.json``.
-  If any of these listed flags/classifiers is not present for a given detector typ (eg COAX), then all entries of the flag/classifier are set to ``False`` by default.
+  At the moment, there is no differentiation based on the detector type for the available QC flags/classifiers.
+  In other words, to load all QC info we read at the flags/classifiers listed under a path of type ``<path_to_prod_blind>/ref-v2.1.5/inputs/dataprod/config/tier_hit/l200-p01-r%-T%-ICPC-hit_config.json``.
+  If any of these listed flags/classifiers is not present for a given detector type (eg COAX), then all entries of the flag/classifier are set to ``False`` by default.
   Any difference will be better handled in the future.
 
 ..
 
+
+Removal of pulser effects
+-------------------------
+
+When plotting GEDs events that coincide with an injected pulser trace, you might want to remove any effects related to the pulser system (e.g. noise).
+To do this, you can configure the config file to adjust a parameter by subtracting or dividing it by the corresponding auxiliary pulser parameter. In the configuration file, you can specify whether to compute either a ratio or a difference relative to the original parameter param:
+
+.. math::
+
+   \text{param\_ratio} = \frac{\text{param}_\text{geds}}{\text{param}_\text{AUX}}
+
+.. math::
+
+   \text{param\_diff} = \text{param}_\text{geds} - \text{param}_\text{AUX}
+
+In the config file, you just need to set either the key ``AUX_ratio`` or ``AUX_diff" to true (note: it's not possible to select both options at the same time):
+
+.. code-block:: json
+
+  "subsystems": {
+    "geds": {
+      "Baselines in pulser events": {
+        "parameters": "baseline",
+        "event_type": "pulser",
+        "plot_structure": "per channel",
+        "plot_style": "vs time",
+        "variation": true,
+        "AUX_ratio": true,
+        "time_window": "1H",
+        "cuts": ["is_valid_bl_slope"]
+      }
+    }
+..
+
+
+.. note::
+
+  The AUX channel selected for retrieving :math:`\text{param}_\text{AUX}` is always ``PULSER01ANA=1027203`` (when available).
+
+..
 
 Special parameters
 ------------------
