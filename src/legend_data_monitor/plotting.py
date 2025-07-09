@@ -321,54 +321,13 @@ def make_subsystem_plots(
             plot_structure(data_to_plot.data, plot_info, pdf)
 
         # For some reason, after some plotting functions the index is set to "channel".
-        # We need to set it back otherwise string_visualization.py gets crazy and everything crashes.
+        # We need to set it back otherwise string_visualization.py gets crazy.
         data_to_plot.data = data_to_plot.data.reset_index()
-
-        # -------------------------------------------------------------------------
-        # saving dataframe + plot info
-        # -------------------------------------------------------------------------
-        # here we are not checking if we are plotting one or more than one parameter
-        # the output dataframe and plot_info objects are merged for more than one parameters
-        # this will be split at a later stage, when building the output dictionary through utils.build_out_dict(...)
-
-        # --- save shelf
-        # normal geds values (??? do we want the rescaled ones to be saved as shelf?)
-        par_dict_content = save_data.save_df_and_info(data_analysis.data, plot_info)
-        # aux values as shelf (necessary to get the right mean) - if not empty
-        if not utils.check_empty_df(aux_analysis):
-            aux_plot_info = plot_info.copy()
-            aux_plot_info["subsystem"] = "pulser01ana"
-            aux_par_dict_content = save_data.save_df_and_info(
-                aux_analysis.data, aux_plot_info
-            )
-        if not utils.check_empty_df(aux_ratio_analysis):
-            aux_ratio_plot_info = plot_info.copy()
-            aux_ratio_plot_info["subsystem"] = "pulser01anaRatio"
-            aux_ratio_par_dict_content = save_data.save_df_and_info(
-                aux_ratio_analysis.data, aux_ratio_plot_info
-            )
-        if not utils.check_empty_df(aux_diff_analysis):
-            aux_diff_plot_info = plot_info.copy()
-            aux_diff_plot_info["subsystem"] = "pulser01anaDiff"
-            aux_diff_par_dict_content = save_data.save_df_and_info(
-                aux_diff_analysis.data, aux_diff_plot_info
-            )
-        # --- save hdf
-        save_data.save_hdf(
-            saving,
-            plt_path + f"-{subsystem.type}.hdf",
-            data_analysis,
-            "pulser01ana",
-            aux_analysis,
-            aux_ratio_analysis,
-            aux_diff_analysis,
-            plot_info,
-        )
 
         # -------------------------------------------------------------------------
         # call status plot
         # -------------------------------------------------------------------------
-
+        
         if "status" in plot_settings and plot_settings["status"]:
             if subsystem.type in ["pulser", "pulser01ana", "FCbsln", "muon"]:
                 utils.logger.debug(
@@ -389,57 +348,23 @@ def make_subsystem_plots(
                         )
 
         # -------------------------------------------------------------------------
-        # save results
+        # save results (hdf format)
         # -------------------------------------------------------------------------
-
-        # building a dictionary with dataframe/plot_info to be later stored in a shelve object
-        if saving is not None:
-            out_dict = save_data.build_out_dict(
-                plot_settings, par_dict_content, out_dict
-            )
-
-            # check if the parameter is a hit or special parameter (still need to include MORE PARAMS case)
-            params = params[0]
-            if (
-                params in utils.PARAMETER_TIERS.keys()
-                and utils.PARAMETER_TIERS[params] != "hit"
-            ) and params not in utils.SPECIAL_PARAMETERS:
-                # aux data
-                aux_out_dict = save_data.build_out_dict(
-                    plot_settings, aux_par_dict_content, aux_out_dict
-                )
-                # subsystem data / aux data
-                aux_ratio_out_dict = save_data.build_out_dict(
-                    plot_settings, aux_ratio_par_dict_content, aux_ratio_out_dict
-                )
-                # subsystem data - aux data
-                aux_diff_out_dict = save_data.build_out_dict(
-                    plot_settings, aux_diff_par_dict_content, aux_diff_out_dict
-                )
+        
+        save_data.save_hdf(
+            saving,
+            plt_path + f"-{subsystem.type}.hdf",
+            data_analysis,
+            "pulser01ana",
+            aux_analysis,
+            aux_ratio_analysis,
+            aux_diff_analysis,
+            plot_info,
+        )
 
         is_pdf_saved = True
 
-    # save in shelve object, overwriting the already existing file with new content (either completely new or new bunches)
-    if saving is not None:
-        out_file = shelve.open(plt_path + f"-{subsystem.type}")
-        out_file["monitoring"] = out_dict
-        out_file.close()
-
-        aux_out_file = shelve.open(plt_path + "-pulser01ana")
-        aux_out_file["monitoring"] = aux_out_dict
-        aux_out_file.close()
-
-        aux_ratio_out_file = shelve.open(plt_path + "-pulser01anaRatio")
-        aux_ratio_out_file["monitoring"] = aux_ratio_out_dict
-        aux_ratio_out_file.close()
-
-        aux_diff_out_file = shelve.open(plt_path + "-pulser01anaDiff")
-        aux_diff_out_file["monitoring"] = aux_diff_out_dict
-        aux_diff_out_file.close()
-
-    # save in pdf object
     pdf.close()
-
     if is_pdf_saved:
         utils.logger.info(
             f"All plots saved in: \33[4m{plt_path}-{subsystem.type}.pdf\33[0m"
