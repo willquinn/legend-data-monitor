@@ -327,7 +327,7 @@ def make_subsystem_plots(
         # -------------------------------------------------------------------------
         # call status plot
         # -------------------------------------------------------------------------
-        
+
         if "status" in plot_settings and plot_settings["status"]:
             if subsystem.type in ["pulser", "pulser01ana", "FCbsln", "muon"]:
                 utils.logger.debug(
@@ -350,7 +350,7 @@ def make_subsystem_plots(
         # -------------------------------------------------------------------------
         # save results (hdf format)
         # -------------------------------------------------------------------------
-        
+
         save_data.save_hdf(
             saving,
             plt_path + f"-{subsystem.type}.hdf",
