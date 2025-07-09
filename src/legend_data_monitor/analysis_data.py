@@ -509,6 +509,7 @@ class AnalysisData:
             channel_mean = channel_mean.set_index("channel")
             # !! need to update for multiple parameter case!
             self.data = concat_channel_mean(self, channel_mean)
+
         # otherwise, it's either an aux or geds
         else:
             if self.saving is None or self.saving == "overwrite":
@@ -524,7 +525,7 @@ class AnalysisData:
             elif self.saving == "append":
                 subsys = self.get_subsys() if self.aux_info is None else self.aux_info
                 # the file does not exist, so we get the mean as usual
-                if not os.path.exists(self.plt_path + "-" + subsys + ".dat"):
+                if not os.path.exists(self.plt_path + "-" + subsys + ".hdf"):
                     self_data_time_cut = cut_dataframe(self.data)
                     # create a column with the mean of the cut dataframe (cut in the time window of interest)
                     channel_mean = self_data_time_cut.groupby("channel").mean(
@@ -535,15 +536,15 @@ class AnalysisData:
 
                 # the file exist: we have to combine previous data with new data, and re-compute the mean over the first 10% of data (that now, are more than before)
                 else:
-                    # open already existing shelve file
-                    with shelve.open(self.plt_path + "-" + subsys, "r") as shelf:
-                        old_dict = dict(shelf)
-
                     if len(self.parameters) == 1:
                         param = self.parameters[0]
-                        channel_mean = get_saved_df(
-                            self, subsys, param, old_dict, self.evt_type
+                        saved_type = utils.FLAGS_RENAME[self.evt_type]
+                        param_camel = utils.convert_to_camel_case(param, "_")
+                        key_to_load = f"{saved_type}_{param_camel}"
+                        old_data = pd.read_hdf(
+                            self.plt_path + "-" + subsys + ".hdf", key=key_to_load
                         )
+                        channel_mean = get_saved_df_hdf(self, subsys, param, old_data)
                         # concatenate column with mean values
                         self.data = concat_channel_mean(self, channel_mean)
 
@@ -552,8 +553,14 @@ class AnalysisData:
                             parameter = (
                                 param.split("_var")[0] if "_var" in param else param
                             )
-                            channel_mean = get_saved_df(
-                                self, subsys, parameter, old_dict, self.evt_type
+                            saved_type = utils.FLAGS_RENAME[self.evt_type]
+                            param_camel = utils.convert_to_camel_case(parameter, "_")
+                            key_to_load = f"{saved_type}_{param_camel}"
+                            old_data = pd.read_hdf(
+                                self.plt_path + "-" + subsys + ".hdf", key=key_to_load
+                            )
+                            channel_mean = get_saved_df_hdf(
+                                self, subsys, parameter, old_data
                             )
                             # we need to repeat this operation for each param, otherwise only the mean of the last one survives
                             self.data = concat_channel_mean(self, channel_mean)
@@ -674,15 +681,54 @@ def get_seconds(time_window: str):
     return int(time_window.rstrip(time_unit)) * str_to_seconds[time_unit]
 
 
-def cut_dataframe(df: pd.DataFrame) -> pd.DataFrame:
-    """Get mean value of the parameters under study over the first 10% of data present in the selected time range of the input dataframe."""
+def cut_dataframe(df: pd.DataFrame, fraction: float = 0.1) -> pd.DataFrame:
+    """Get mean value of the parameters under study over the first 'fraction' of data present in the selected time range of the input dataframe."""
     min_datetime = df["datetime"].min()  # first timestamp
     max_datetime = df["datetime"].max()  # last timestamp
     duration = max_datetime - min_datetime
-    ten_percent_duration = duration * 0.1
-    thr_datetime = min_datetime + ten_percent_duration  # 10% timestamp
-    # get only the rows for datetimes before the 10% of the specified time range
+    percent_duration = duration * fraction
+    thr_datetime = min_datetime + percent_duration
     return df.loc[df["datetime"] < thr_datetime]
+
+
+def get_saved_df_hdf(
+    self, subsys: str, param: str, old_df: pd.DataFrame
+) -> pd.DataFrame:
+    """Get the already saved dataframe from the already saved output jdf file, for a given parameter ```param```. In particular, it evaluates again the mean over the new 10% of data in the new larger time window."""
+    # reset index to make 'datetime' a column
+    wide_df_reset = old_df.reset_index()
+
+    # melt the dataframe into long format: columns -> 'channel', values -> param
+    # -> now long_df has columns: datetime | channel | baseline
+    long_df = wide_df_reset.melt(
+        id_vars="datetime", var_name="channel", value_name=param
+    )
+
+    # merge self.data with old_df
+    old_absolute_values = long_df.copy().filter(
+        items=["channel", "datetime", "baseline"]
+    )
+    new_absolute_values = self.data.copy().filter(
+        items=["channel", "datetime", "baseline"]
+    )
+
+    # concatenate and cut over first 10%
+    concatenated_df = pd.concat(
+        [old_absolute_values, new_absolute_values], ignore_index=True
+    )
+    concatenated_df_time_cut = cut_dataframe(concatenated_df)
+    concatenated_df_time_cut = concatenated_df_time_cut.drop(columns=["datetime"])
+
+    # calculate mean baseline per channel
+    channel_mean = (
+        concatenated_df_time_cut.groupby("channel")["baseline"].mean().reset_index()
+    )
+    channel_mean = channel_mean.drop_duplicates(subset=["channel"]).set_index("channel")
+
+    # reshape back to wide format if needed
+    # result_wide = channel_mean.reset_index().pivot_table(index=None, columns='channel', values=param)
+
+    return channel_mean
 
 
 def get_saved_df(
