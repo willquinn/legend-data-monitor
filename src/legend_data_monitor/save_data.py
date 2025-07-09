@@ -216,6 +216,7 @@ def build_dict(
                         parameter: par_dict_content
                     }
 
+    utils.logger.info(f"Info dictionary to be saved: {out_dict}")
     return out_dict
 
 
@@ -453,14 +454,7 @@ def save_hdf(
         "resampled",
         "unit_label",
     ]
-    flag_rename = {
-        "pulser": "IsPulser",
-        "FCbsln": "IsBsln",
-        "muon": "IsMuon",
-        "phy": "IsPhysics",
-        "all": "All",
-    }
-
+    
     for param in parameters:
         evt_type = (
             plot_info["event_type"][param]
@@ -552,7 +546,7 @@ def save_hdf(
 
             df_info.to_hdf(
                 file_path,
-                key=f"{flag_rename[evt_type]}_{param_orig_camel}_info",
+                key=f"{utils.FLAGS_RENAME[evt_type]}_{param_orig_camel}_info",
                 mode="a",
             )
 
@@ -574,7 +568,7 @@ def save_hdf(
             )
             df_info_aux.to_hdf(
                 file_path.replace(plot_info_param["subsystem"], aux_ch),
-                key=f"{flag_rename[evt_type]}_{param_orig_camel}_info",
+                key=f"{utils.FLAGS_RENAME[evt_type]}_{param_orig_camel}_info",
                 mode="a",
             )
 
@@ -582,7 +576,7 @@ def save_hdf(
             get_pivot(
                 df_aux_to_save,
                 param_orig,
-                f"{flag_rename[evt_type]}_{param_orig_camel}",
+                f"{utils.FLAGS_RENAME[evt_type]}_{param_orig_camel}",
                 file_path.replace(plot_info_param["subsystem"], aux_ch),
                 saving,
             )
@@ -590,7 +584,7 @@ def save_hdf(
             get_pivot(
                 df_aux_to_save,
                 param_orig + "_mean",
-                f"{flag_rename[evt_type]}_{param_orig_camel}_mean",
+                f"{utils.FLAGS_RENAME[evt_type]}_{param_orig_camel}_mean",
                 file_path.replace(plot_info_param["subsystem"], aux_ch),
                 saving,
             )
@@ -598,7 +592,7 @@ def save_hdf(
             get_pivot(
                 df_aux_to_save,
                 param_orig + "_var",
-                f"{flag_rename[evt_type]}_{param_orig_camel}_var",
+                f"{utils.FLAGS_RENAME[evt_type]}_{param_orig_camel}_var",
                 file_path.replace(plot_info_param["subsystem"], aux_ch),
                 saving,
             )
@@ -624,7 +618,7 @@ def save_hdf(
                 get_pivot(
                     df_to_save,
                     param_orig,
-                    f"{flag_rename[evt_type]}_{param_orig_camel}",
+                    f"{utils.FLAGS_RENAME[evt_type]}_{param_orig_camel}",
                     file_path,
                     saving,
                 )
@@ -633,7 +627,7 @@ def save_hdf(
             get_pivot(
                 df_to_save,
                 param_orig,
-                f"{flag_rename[evt_type]}_{param_orig_camel}",
+                f"{utils.FLAGS_RENAME[evt_type]}_{param_orig_camel}",
                 file_path,
                 saving,
             )
@@ -641,7 +635,7 @@ def save_hdf(
             get_pivot(
                 df_to_save,
                 param_orig + "_mean",
-                f"{flag_rename[evt_type]}_{param_orig_camel}_mean",
+                f"{utils.FLAGS_RENAME[evt_type]}_{param_orig_camel}_mean",
                 file_path,
                 saving,
             )
@@ -649,7 +643,7 @@ def save_hdf(
             get_pivot(
                 df_to_save,
                 param_orig + "_var",
-                f"{flag_rename[evt_type]}_{param_orig_camel}_var",
+                f"{utils.FLAGS_RENAME[evt_type]}_{param_orig_camel}_var",
                 file_path,
                 saving,
             )
@@ -662,7 +656,7 @@ def save_hdf(
                 get_pivot(
                     df_aux_ratio_to_save,
                     param_orig,
-                    f"{flag_rename[evt_type]}_{param_orig_camel}_{aux_ch}Ratio",
+                    f"{utils.FLAGS_RENAME[evt_type]}_{param_orig_camel}_{aux_ch}Ratio",
                     file_path,
                     saving,
                 )
@@ -670,7 +664,7 @@ def save_hdf(
                 get_pivot(
                     df_aux_ratio_to_save,
                     param_orig + "_mean",
-                    f"{flag_rename[evt_type]}_{param_orig_camel}_{aux_ch}Ratio_mean",
+                    f"{utils.FLAGS_RENAME[evt_type]}_{param_orig_camel}_{aux_ch}Ratio_mean",
                     file_path,
                     saving,
                 )
@@ -678,7 +672,7 @@ def save_hdf(
                 get_pivot(
                     df_aux_ratio_to_save,
                     param_orig + "_var",
-                    f"{flag_rename[evt_type]}_{param_orig_camel}_{aux_ch}Ratio_var",
+                    f"{utils.FLAGS_RENAME[evt_type]}_{param_orig_camel}_{aux_ch}Ratio_var",
                     file_path,
                     saving,
                 )
@@ -691,7 +685,7 @@ def save_hdf(
                 get_pivot(
                     df_aux_diff_to_save,
                     param_orig,
-                    f"{flag_rename[evt_type]}_{param_orig_camel}_{aux_ch}Diff",
+                    f"{utils.FLAGS_RENAME[evt_type]}_{param_orig_camel}_{aux_ch}Diff",
                     file_path,
                     saving,
                 )
@@ -699,7 +693,7 @@ def save_hdf(
                 get_pivot(
                     df_aux_diff_to_save,
                     param_orig + "_mean",
-                    f"{flag_rename[evt_type]}_{param_orig_camel}_{aux_ch}Diff_mean",
+                    f"{utils.FLAGS_RENAME[evt_type]}_{param_orig_camel}_{aux_ch}Diff_mean",
                     file_path,
                     saving,
                 )
@@ -707,7 +701,7 @@ def save_hdf(
                 get_pivot(
                     df_aux_diff_to_save,
                     param_orig + "_var",
-                    f"{flag_rename[evt_type]}_{param_orig_camel}_{aux_ch}Diff_var",
+                    f"{utils.FLAGS_RENAME[evt_type]}_{param_orig_camel}_{aux_ch}Diff_var",
                     file_path,
                     saving,
                 )
@@ -749,12 +743,12 @@ def get_pivot(
             df_pivot.to_hdf(file_path, key=key_name, mode="a")
             return
 
-        # for the mean entry, we overwrite the already existing content with the new mean value
-        if "_mean" in parameter and parameter.count("mean") > 1:
+        mean_pars = ["bl_mean", "pz_mean"]
+        if ("_mean" in parameter and parameter.count("mean") == 1 and parameter not in mean_pars) or (parameter in mean_pars and parameter.count("mean") == 2):
+            # for the mean entry, we overwrite the already existing content with the new mean value
             df_pivot.to_hdf(file_path, key=key_name, mode="a")
-        if "_mean" not in parameter or (
-            "_mean" in parameter and parameter.count("mean") == 1
-        ):
+        
+        if "_mean" not in parameter or ("_mean" in parameter and parameter in mean_pars and parameter.count("mean") == 1):
             # if % variations, we have to re-calculate all of them for the new mean values
             if "_var" in parameter:
                 key_name_orig = key_name.replace("_var", "")
