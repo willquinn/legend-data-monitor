@@ -19,12 +19,14 @@ def retrieve_exposure(
     ac_exposure = 0
     on_validPSD_NONvalidPSD_exposure = 0
     on_validPSD_exposure = 0
+    mass = 0
 
     for run in runs:
         if "phy" not in runinfo[period][run].keys():
             utils.logger.debug(f"No 'phy' key present in {runinfo_path}. Exit here")
             return
-        tot_liv += runinfo[period][run]["phy"]["livetime_in_s"] / (60 * 60 * 24)
+        livetime_in_d = runinfo[period][run]["phy"]["livetime_in_s"] / (60 * 60 * 24)
+        tot_liv += livetime_in_d
 
         first_timestamp = runinfo[period][run]["phy"]["start_key"]
         full_status_map = utils.get_status_map(path, version, first_timestamp, "geds")
@@ -45,9 +47,11 @@ def retrieve_exposure(
             usability = full_status_map[hpge]["usability"]
             psd = full_status_map[hpge]["psd"]
 
+            mass += diode["production"]["mass_in_g"]/1000
+
             expo = (
-                runinfo[period][run]["phy"]["livetime_in_s"]
-                / (60 * 60 * 24 * 365.25)
+                livetime_in_d
+                / 365.25
                 * diode["production"]["mass_in_g"]
                 / 1000
             )
@@ -66,6 +70,7 @@ def retrieve_exposure(
                     ):
                         on_validPSD_exposure += expo
 
+    utils.logger.info("mass: %s", mass)
     utils.logger.info("period: %s", period)
     utils.logger.info("runs: %s", runs)
     utils.logger.info("Total livetime: %.4f d", tot_liv)
@@ -385,8 +390,3 @@ def make_plots(config: dict, plt_path: str, saving: str):
         with open(plt_path + "-" + system + ".log", "w") as f:
             f.write(clean_text)
 
-    # default extraction of summary run information
-    utils.logger.debug("Building runinfo summary file")
-    utils.build_runinfo(
-        config["dataset"]["path"], config["dataset"]["version"], config["output"]
-    )
