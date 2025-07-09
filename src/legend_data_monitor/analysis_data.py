@@ -714,7 +714,7 @@ def get_saved_df_hdf(
     channel_mean = channel_mean.drop_duplicates(subset=["channel"]).set_index("channel")
     
     # reshape back to wide format if needed
-    result_wide = channel_mean.reset_index().pivot_table(index=None, columns='channel', values=param)
+    #result_wide = channel_mean.reset_index().pivot_table(index=None, columns='channel', values=param)
 
     return channel_mean
 

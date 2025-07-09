@@ -1,5 +1,4 @@
 import io
-import shelve
 from typing import Union
 
 import matplotlib.patches as mpatches
@@ -41,10 +40,6 @@ def make_subsystem_plots(
 ):
     pdf = PdfPages(plt_path + "-" + subsystem.type + ".pdf")
     is_pdf_saved = False
-    out_dict = {}
-    aux_out_dict = {}
-    aux_ratio_out_dict = {}
-    aux_diff_out_dict = {}
 
     for plot_title in plots:
         if "plot_structure" not in plots[plot_title].keys():

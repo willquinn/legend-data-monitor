@@ -195,7 +195,7 @@ class Subsystem:
             + " and (timestamp != '20230126T015308Z')"
             + " and (timestamp != '20230222T231553Z')"
         )
-        utils.logger.info("...... querying DataLoader")
+        utils.logger.info("...... querying DataLoader - removing %s", query)
 
         # --- query data loader
         if dsp_params != []:
