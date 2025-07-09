@@ -241,7 +241,9 @@ def add_get_runinfo(subparsers):
         description="""Build runinfo.yaml summary file.""",
     )
     parser_auto_prod.add_argument("--path", help="Path to the processed data.")
-    parser_auto_prod.add_argument("--output", help="Path to the output folder with loaded data.")
+    parser_auto_prod.add_argument(
+        "--output", help="Path to the output folder with loaded data."
+    )
     parser_auto_prod.add_argument("--data_version", help="Version of processed data.")
     parser_auto_prod.set_defaults(func=get_runinfo_cli)
 
@@ -252,6 +254,4 @@ def get_runinfo_cli(args):
     output = args.output
     data_version = args.data_version
 
-    legend_data_monitor.utils.build_runinfo(
-        path, data_version, output
-    )
+    legend_data_monitor.utils.build_runinfo(path, data_version, output)

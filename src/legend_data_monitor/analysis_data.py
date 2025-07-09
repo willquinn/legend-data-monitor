@@ -84,7 +84,10 @@ class AnalysisData:
             )
             sys.exit()
 
-        if event_type not in ["all", "phy", "K_lines"] and event_type in event_type_flags:
+        if (
+            event_type not in ["all", "phy", "K_lines"]
+            and event_type in event_type_flags
+        ):
             flag, subsystem_name = event_type_flags[event_type]
             if flag not in sub_data:
                 utils.logger.error(
@@ -534,7 +537,7 @@ class AnalysisData:
                 else:
                     # open already existing shelve file
                     with shelve.open(self.plt_path + "-" + subsys, "r") as shelf:
-                        old_dict = dict(shelf)                    
+                        old_dict = dict(shelf)
 
                     if len(self.parameters) == 1:
                         param = self.parameters[0]
