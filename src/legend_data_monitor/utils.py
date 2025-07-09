@@ -50,6 +50,10 @@ with open(pkg / "settings" / "parameter-tiers.json") as f:
 # which lh5 parameters are needed to be loaded from lh5 to calculate them
 with open(pkg / "settings" / "special-parameters.json") as f:
     SPECIAL_PARAMETERS = json.load(f)
+    
+# flag renames for evt type
+with open(pkg / "settings" / "flags.json") as f:
+    FLAGS_RENAME = json.load(f)
 
 # convert all to lists for convenience
 for param in SPECIAL_PARAMETERS:
