@@ -699,17 +699,17 @@ def get_saved_df_hdf(
     wide_df_reset = old_df.reset_index()
 
     # melt the dataframe into long format: columns -> 'channel', values -> param
-    # -> now long_df has columns: datetime | channel | baseline
+    # -> now long_df has columns: datetime | channel | param
     long_df = wide_df_reset.melt(
         id_vars="datetime", var_name="channel", value_name=param
     )
 
     # merge self.data with old_df
     old_absolute_values = long_df.copy().filter(
-        items=["channel", "datetime", "baseline"]
+        items=["channel", "datetime", param]
     )
     new_absolute_values = self.data.copy().filter(
-        items=["channel", "datetime", "baseline"]
+        items=["channel", "datetime", param]
     )
 
     # concatenate and cut over first 10%
@@ -719,9 +719,9 @@ def get_saved_df_hdf(
     concatenated_df_time_cut = cut_dataframe(concatenated_df)
     concatenated_df_time_cut = concatenated_df_time_cut.drop(columns=["datetime"])
 
-    # calculate mean baseline per channel
+    # calculate mean param per channel
     channel_mean = (
-        concatenated_df_time_cut.groupby("channel")["baseline"].mean().reset_index()
+        concatenated_df_time_cut.groupby("channel")[param].mean().reset_index()
     )
     channel_mean = channel_mean.drop_duplicates(subset=["channel"]).set_index("channel")
 
