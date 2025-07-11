@@ -2,6 +2,7 @@ import argparse
 import json
 import logging
 import os
+import glob
 import re
 import subprocess
 from pathlib import Path
@@ -36,7 +37,7 @@ def main():
     )
     parser.add_argument(
         "--ref_version",
-        help="Version of processed data to inspect.",
+        help="Version of processed data to inspect (eg. tmp-auto or ref-v2.1.0).",
         default="ref-v1.0.0",
     )
     parser.add_argument(
@@ -63,15 +64,34 @@ def main():
         default=None,
         help="Password to access the legend.data.monitoring@gmail.com account for sending alert messages.",
     )
+    parser.add_argument(
+        "--chunk_size",
+        default=20,
+        type=int,
+        help="Maximum integer number of files to read at each loop in order to avoid the kernel to be killed.",
+    )
+    parser.add_argument(
+        "--p",
+        default=None,
+        help="Period to inspect.",
+    )
+    parser.add_argument(
+        "--r",
+        default=None,
+        help="Run to inspect.",
+    )
 
     args = parser.parse_args()
     cluster = args.cluster
     ref_version = args.ref_version
     rsync_path = args.rsync_path
     output_folder = args.output_folder
-    partition = False if args.partition == "False" else True
+    partition = False if args.partition == False else True
     pswd = args.pswd
     pswd_email = args.pswd_email
+    chunk_size = args.chunk_size
+    input_period = args.p
+    input_run = args.r
 
     if not os.path.exists(rsync_path):
         os.makedirs(rsync_path)
@@ -83,7 +103,6 @@ def main():
         else "/data2/public/prodenv/prod-blind/"
     )
     auto_dir_path = os.path.join(auto_dir, ref_version)
-
     search_directory = os.path.join(auto_dir_path, "generated/tier/dsp/phy")
 
     def search_latest_folder(my_dir):
@@ -94,13 +113,13 @@ def main():
         return directories[-1]
 
     # Period to monitor
-    period = search_latest_folder(search_directory)
+    period = search_latest_folder(search_directory) if input_period is None else input_period
     # Run to monitor
     search_directory = os.path.join(search_directory, period)
-    run = search_latest_folder(search_directory)
+    run = search_latest_folder(search_directory) if input_run is None else input_run
 
     found = False
-    for tier in ["hit", "pht"]:
+    for tier in ["hit", "pht", "dsp", "psp", "evt", "pet", "skm"]:
         source_dir = os.path.join(
             auto_dir_path, "generated/tier", tier, "phy", period, run
         )
@@ -109,7 +128,7 @@ def main():
             break
 
     if found is False:
-        logger.debug("No valid folder found. Exiting.")
+        logger.debug(f"No valid folder {source_dir} found. Exiting.")
         exit()
 
     # commands to run the container
@@ -167,27 +186,11 @@ def main():
             "type": "phy",
             "runs": int(run.split("r")[-1]),
         },
-        "saving": "append",
+        "saving": "append", # we want to append new data whenever this is found
         "subsystems": {
             "geds": {
-                "Event rate in pulser events": {
-                    "parameters": "event_rate",
-                    "event_type": "pulser",
-                    "plot_structure": "per string",
-                    "resampled": "only",
-                    "plot_style": "vs time",
-                    "time_window": "20S",
-                },
-                "Event rate in FCbsln events": {
-                    "parameters": "event_rate",
-                    "event_type": "FCbsln",
-                    "plot_structure": "per string",
-                    "resampled": "only",
-                    "plot_style": "vs time",
-                    "time_window": "20S",
-                },
-                "Baselines (dsp/baseline) in pulser events": {
-                    "parameters": "baseline",
+                "trapEmax (dsp/trapEmax) in pulser events": {
+                    "parameters": "trapEmax",
                     "event_type": "pulser",
                     "plot_structure": "per string",
                     "resampled": "only",
@@ -195,111 +198,7 @@ def main():
                     "AUX_ratio": True,
                     "variation": True,
                     "time_window": "10T",
-                },
-                "Baselines (dsp/baseline) in FCbsln events": {
-                    "parameters": "baseline",
-                    "event_type": "FCbsln",
-                    "plot_structure": "per string",
-                    "resampled": "only",
-                    "plot_style": "vs time",
-                    "variation": True,
-                    "time_window": "10T",
-                },
-                "Mean baselines (dsp/bl_mean) in pulser events": {
-                    "parameters": "bl_mean",
-                    "event_type": "pulser",
-                    "plot_structure": "per string",
-                    "resampled": "only",
-                    "plot_style": "vs time",
-                    "AUX_ratio": True,
-                    "variation": True,
-                    "time_window": "10T",
-                },
-                "Mean baselines (dsp/bl_mean) in FCbsln events": {
-                    "parameters": "bl_mean",
-                    "event_type": "FCbsln",
-                    "plot_structure": "per string",
-                    "resampled": "only",
-                    "plot_style": "vs time",
-                    "variation": True,
-                    "time_window": "10T",
-                },
-                "Uncalibrated gain (dsp/cuspEmax) in pulser events": {
-                    "parameters": "cuspEmax",
-                    "event_type": "pulser",
-                    "plot_structure": "per string",
-                    "resampled": "only",
-                    "plot_style": "vs time",
-                    "AUX_ratio": True,
-                    "variation": True,
-                    "time_window": "10T",
-                },
-                "Uncalibrated gain (dsp/cuspEmax) in FCbsln events": {
-                    "parameters": "cuspEmax",
-                    "event_type": "FCbsln",
-                    "plot_structure": "per string",
-                    "resampled": "only",
-                    "plot_style": "vs time",
-                    "AUX_ratio": True,
-                    "variation": True,
-                    "time_window": "10T",
-                },
-                "Calibrated gain (hit/cuspEmax_ctc_cal) in pulser events": {
-                    "parameters": "cuspEmax_ctc_cal",
-                    "event_type": "pulser",
-                    "plot_structure": "per string",
-                    "resampled": "only",
-                    "plot_style": "vs time",
-                    "variation": True,
-                    "time_window": "10T",
-                },
-                "Calibrated gain (hit/cuspEmax_ctc_cal) in FCbsln events": {
-                    "parameters": "cuspEmax_ctc_cal",
-                    "event_type": "FCbsln",
-                    "plot_structure": "per string",
-                    "resampled": "only",
-                    "plot_style": "vs time",
-                    "variation": True,
-                    "time_window": "10T",
-                },
-                "Noise (dsp/bl_std) in pulser events": {
-                    "parameters": "bl_std",
-                    "event_type": "pulser",
-                    "plot_structure": "per string",
-                    "resampled": "only",
-                    "plot_style": "vs time",
-                    "AUX_ratio": True,
-                    "variation": True,
-                    "time_window": "10T",
-                },
-                "Noise (dsp/bl_std) in FCbsln events": {
-                    "parameters": "bl_std",
-                    "event_type": "FCbsln",
-                    "plot_structure": "per string",
-                    "resampled": "only",
-                    "plot_style": "vs time",
-                    "AUX_ratio": True,
-                    "variation": True,
-                    "time_window": "10T",
-                },
-                "A/E (from dsp) in pulser events": {
-                    "parameters": "AoE_Custom",
-                    "event_type": "pulser",
-                    "plot_structure": "per string",
-                    "resampled": "only",
-                    "plot_style": "vs time",
-                    "variation": True,
-                    "time_window": "10T",
-                },
-                "A/E (from dsp) in FCbsln events": {
-                    "parameters": "AoE_Custom",
-                    "event_type": "FCbsln",
-                    "plot_structure": "per string",
-                    "resampled": "only",
-                    "plot_style": "vs time",
-                    "variation": True,
-                    "time_window": "10T",
-                },
+                }
             }
         },
     }
@@ -339,9 +238,9 @@ def main():
             # get only files with correct ending (and discard the ones that are still under processing)
             if len(matches) == 6:
                 correct_files.append(new_file)
-
         new_files = correct_files
 
+    new_files = sorted(new_files)
     # If new files are found, run the shell command
     if new_files:
         # Replace this command with your desired shell command
@@ -356,16 +255,37 @@ def main():
                 f.write(new_file + "\n")
         logger.debug("...done!")
 
-        # ...run the plot production
+        # run the plot production
         logger.debug("Running the generation of plots...")
         config_file = os.path.join(rsync_path, "auto_config.json")
         keys_file = os.path.join(rsync_path, "new_keys.filekeylist")
 
-        bash_command = f"{cmd} ~/.local/bin/legend-data-monitor user_rsync_prod --config {config_file} --keys {keys_file}"
-        logger.debug(f"...running command \033[95m{bash_command}\033[0m")
-        subprocess.run(bash_command, shell=True)
-        logger.debug("...done!")
+        # read all lines from the original file
+        with open(keys_file, "r") as f:
+            lines = f.readlines()
+        num_lines = len(lines)
+        if num_lines > chunk_size:            
+            # split lines into chunks and write to multiple files
+            for idx, i in enumerate(range(0, num_lines, chunk_size), start=1):
+                chunk = lines[i:i + chunk_size]
+                output_file = os.path.join(rsync_path, f"new_keys_part_{i // chunk_size + 1}.filekeylist")
+        
+                with open(output_file, "w") as out_f:
+                    out_f.writelines(chunk)
 
+                # TODO: do I have to change from overwrite to append???
+                total_parts = (num_lines + chunk_size - 1) // chunk_size
+                logger.debug(f"[{idx}/{total_parts}] Created file: {output_file} with {len(chunk)} lines.")
+                bash_command = f"{cmd} ~/.local/bin/legend-data-monitor user_rsync_prod --config {config_file} --keys {output_file}"
+                logger.debug(f"...running command \033[95m{bash_command}\033[0m")
+                subprocess.run(bash_command, shell=True)
+        else:
+            logger.debug(f"File has {num_lines} lines. No need to split.")
+            bash_command = f"{cmd} ~/.local/bin/legend-data-monitor user_rsync_prod --config {config_file} --keys {keys_file}"
+            logger.debug(f"...running command \033[95m{bash_command}\033[0m")
+            subprocess.run(bash_command, shell=True)
+        logger.debug("...done!")
+            
         # compute resampling + info json
         logger.debug("Resampling outputs...")
         files_folder = os.path.join(output_folder, ref_version)
@@ -381,14 +301,18 @@ def main():
         # Analyze Slow Control data (for the full run - overwrite of previous info)
         # ===========================================================================================
         if cluster == "lngs":
-            # run slow control data retrieving
-            logger.debug("Retrieving Slow Control data...")
-            scdb_config_file = os.path.join(rsync_path, "auto_slow_control.json")
-
-            bash_command = f"{cmd} ~/.local/bin/legend-data-monitor user_scdb --config {scdb_config_file} --port 8282 --pswd {pswd}"
-            logger.debug(f"...running command \033[92m{bash_command}\033[0m")
-            subprocess.run(bash_command, shell=True)
-            logger.debug("...SC done!")
+            try:
+                logger.debug("Retrieving Slow Control data...")
+                scdb_config_file = os.path.join(rsync_path, "auto_slow_control.json")
+    
+                bash_command = f"{cmd} ~/.local/bin/legend-data-monitor user_scdb --config {scdb_config_file} --port 8282 --pswd {pswd}"
+                logger.debug(f"...running command \033[92m{bash_command}\033[0m")
+                subprocess.run(bash_command, shell=True)
+                logger.debug("...SC done!")
+            except subprocess.CalledProcessError as e:
+                logger.error(f"Slow Control command failed: {e}")
+            except Exception as e:
+                logger.error(f"Unexpected error while retrieving Slow Control data: {e}")
 
         # ===========================================================================================
         # Generate Gain Monitoring Summary Plots
@@ -403,6 +327,7 @@ def main():
         )
         dataset = {period: avail_runs}
         if dataset[period] != []:
+            logger.debug("Generating monitoring plots...")
             # get first timestamp of first run of the given period
             start_key = (
                 sorted(os.listdir(os.path.join(search_directory, avail_runs[0])))[0]
@@ -413,11 +338,11 @@ def main():
 
             # Note: quad_res is set to False by default in these plots
             mtg_bash_command = f"{cmd} python monitoring.py --public_data {auto_dir_path} --hdf_files {phy_mtg_data} --output {mtg_folder} --start {start_key} --p {period} --runs {avail_runs} --cluster {cluster} --pswd_email {pswd_email}"
-            if partition is True:
-                mtg_bash_command += "--partition True"
-
+            if partition is True: mtg_bash_command += "--partition True"
             subprocess.run(mtg_bash_command, shell=True)
             logger.info("...monitoring plots generated!")
+    else:
+        logger.debug("No new files were detected.")
 
     # Update the last checked timestamp
     with open(timestamp_file, "w") as file:
@@ -431,7 +356,6 @@ def main():
                 )
             )
         )
-
 
 if __name__ == "__main__":
     main()

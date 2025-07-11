@@ -1,14 +1,14 @@
 # Automatic generation of plots
 
-This basic example file can be used to automatically generate monitoring plots, based on new .lh5 dsp/hit files appearing in the production folders. Slow Control data are automatically retrieved from the database (you need to provide the port you are using to connect to the database together with the password you can find on Confluence).
+This basic example file can be used to automatically generate monitoring plots, based on new .lh5 dsp/hit files appearing in the production folders. Slow Control data are automatically retrieved from the database (you need to provide the port you are using to connect to the database together with the password you can find on Confluence; note that this will only work if you run the script at the LNGS cluster).
 
-You need to specify the period and run you want to analyze in the script. You can then run the code through
+To run the script, you have to parse different inputs - you can check them via ```$ python main_sync_code.py --help```. For automatic generation of plots on lngs, use
 
 ```console
-$ python main_sync_code.py
+$ python main_sync_code.py --cluster nersc --ref_version <path1> --rsync_path <path2> --output_folder <path3> --chunk_size 30 --pswd_email <insert_pswd>
 ```
 
-The output text is saved in an output file called "output.log".
+Notice you can provide the passowrd to access the legend-monitoring@gmail.com account for automatic emails to send to a list of designed people for any parameter out of range.
 
 ## Automatic running
 
@@ -23,11 +23,10 @@ $ crontab -e
 and add a new line in this file of the following type:
 
 ```console
-0 */6 * * * rm output.log && python main_syc_code.py >> output.log 2>&1
+0 */6 * * * rm output.log && python main_syc_code.py <parse_inputs> >> output.log 2>&1
 ```
 
 This will automatically look for new processed .lh5 files every 6 hours for instance.
-You need to specify all input and output paths within the script itself.
 
 
 ### How to set up a bash script
@@ -36,7 +35,7 @@ If the crontab command is not available on your cluster, you can use the provide
 ```bash
 #!/bin/bash
 while true; do
-  python <path>/main_sync_code.py --cluster nersc --ref_version tmp-auto --pswd_email <insert_pswd>
+  python <path>/main_sync_code.py <parse_inputs>
   echo "Running job at $(date)"
   sleep 3600  # every hour
 done
