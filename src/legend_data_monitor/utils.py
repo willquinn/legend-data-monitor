@@ -1026,20 +1026,14 @@ def get_livetime(tot_livetime: float):
     return tot_livetime, unit
 
 
-def is_empty(df: DataFrame):
-    """Check if a dataframe is empty."""
-    if df.empty:
-        return True
-
-
 def check_empty_df(df) -> bool:
     """Check if df (DataFrame | analysis_data.AnalysisData) exists and is not empty."""
     # the dataframe is of type DataFrame
     if isinstance(df, DataFrame):
-        return is_empty(df)
+        return df.empty
     # the dataframe is of type analysis_data.AnalysisData
     else:
-        return is_empty(df.data)
+        return df.data.empty
 
 
 def convert_to_camel_case(string: str, char: str) -> str:
@@ -1457,7 +1451,7 @@ def retrieve_json_or_yaml(base_path: str, filename: str):
         path = json_path
     else:
         logger.error(
-            "\033[91mNo diode file found for %s in YAML or JSON format\033[0m", filename
+            "\033[91mNo file found for %s in YAML or JSON format\033[0m", filename
         )
         exit()
 
