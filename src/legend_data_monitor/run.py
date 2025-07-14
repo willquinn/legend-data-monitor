@@ -210,7 +210,7 @@ def add_get_exposure(subparsers):
         "get_exposure",
         description="""Retrieve exposure for active detectors, with or without valid PSD flag.""",
     )
-    parser_auto_prod.add_argument("--period", help="List of periods.")
+    parser_auto_prod.add_argument("--period", help="Period to inspect.")
     parser_auto_prod.add_argument("--run", nargs="+", help="List of runs.")
     parser_auto_prod.add_argument(
         "--runinfo_path",

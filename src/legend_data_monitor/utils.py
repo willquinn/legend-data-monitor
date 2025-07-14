@@ -1264,11 +1264,22 @@ def update_runinfo(run_info, period, run, data_type, my_global_path):
     return run_info
 
 
+def pulser_from_evt_or_mtg(my_dir, period, run, output, run_info):
+    """Try to load EVT tier; if not found, attempt to update run info from monitoring path."""
+    evt_files = os.path.join(my_dir, f"l200-{period}-{run}-phy-tier_pet.lh5")
+    # load from monitoring files if the pet files were not processed
+    if not os.path.isfile(evt_files):
+        mtg_path = os.path.join(output, f"generated/plt/phy/{period}/{run}/")
+        if not os.path.isdir(mtg_path):
+            return run_info
+        run_info = update_runinfo(run_info, period, run, "phy", mtg_path)
+        return run_info
+
+
 def build_runinfo(path: str, version: str, output: str):
     """Build dictionary with main run information (start key, phy livetime in seconds) for multiple data types (phy, cal, fft, bkg, pzc, pul)."""
     periods = []
     runs = []
-    file_runinfo = os.path.join(path, version, "inputs/dataprod/runinfo.yaml")
 
     possible_dirs = ["inputs/dataprod", "inputs/datasets"]
     file_patterns = ["runinfo.yaml", "*runinfo.json"]
@@ -1379,20 +1390,9 @@ def build_runinfo(path: str, version: str, output: str):
                 my_dir = os.path.join(my_dir, "phy")
 
                 if v != "tmp-auto":
-                    evt_files = os.path.join(
-                        my_dir, f"l200-{period}-{run}-phy-tier_pet.lh5"
+                    run_info = pulser_from_evt_or_mtg(
+                        my_dir, period, run, output, run_info
                     )
-                    # load from monitoring files if the pet files were not processed
-                    if not os.path.isfile(evt_files):
-                        mtg_path = os.path.join(
-                            output, f"generated/plt/phy/{period}/{run}/"
-                        )
-                        if not os.path.isdir(mtg_path):
-                            continue
-                        run_info = update_runinfo(
-                            run_info, period, run, "phy", mtg_path
-                        )
-                        continue
 
                 if v == "tmp-auto":
                     evt_path = os.path.join(my_dir, period, run)
@@ -1407,18 +1407,24 @@ def build_runinfo(path: str, version: str, output: str):
                 df_coincident = pd.DataFrame(data, columns=["puls"])
                 df = pd.concat([df_coincident], axis=1)
                 is_pulser = df["puls"] is True
-                df = df[is_pulser]
-                no_pulser = len(df)
-                tot_livetime = no_pulser * 20
 
-                if period in run_info.keys():
-                    if run in run_info[period].keys():
-                        if data_type in run_info[period][run].keys():
-                            run_info[period][run][data_type].update(
-                                {"livetime_in_s": tot_livetime}
-                            )
+                if is_pulser is False:
+                    run_info = pulser_from_evt_or_mtg(
+                        my_dir, period, run, output, run_info
+                    )
+                else:
+                    df = df[is_pulser]
+                    no_pulser = len(df)
+                    tot_livetime = no_pulser * 20
 
-    with open(file_runinfo, "w") as fp:
+                    if period in run_info.keys():
+                        if run in run_info[period].keys():
+                            if data_type in run_info[period][run].keys():
+                                run_info[period][run][data_type].update(
+                                    {"livetime_in_s": tot_livetime}
+                                )
+
+    with open(os.path.join(output, "runinfo.yaml"), "w") as fp:
         yaml.dump(run_info, fp, default_flow_style=False, sort_keys=False)
 
 
