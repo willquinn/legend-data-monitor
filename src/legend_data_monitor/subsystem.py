@@ -216,7 +216,6 @@ class Subsystem:
             hit_data = dl_hit.load()
 
         if dsp_data is None and hit_data is None:
-            exit()
             utils.logger.error(
                 "\033[91mdsp_data and hit_data are equal to None. Exit here.\033[0m"
             )
@@ -272,11 +271,11 @@ class Subsystem:
         # append the channel map columns to the data
         self.data = pd.concat([self.data, ch_map_reindexed], axis=1)
         self.data = self.data.reset_index()
-        # stupid dataframe, why float
         for col in ["location", "position"]:
             # ignore string values for fibers ('I/OB-XXX-XXX') and positions ('top/bottom') for SiPMs
             if isinstance(self.data[col].iloc[0], float):
                 self.data[col] = self.data[col].astype(int)
+        utils.logger.info("... appended channel map to the data dataframe")
 
         # -------------------------------------------------------------------------
         # if this subsystem is pulser, flag pulser timestamps
@@ -288,6 +287,7 @@ class Subsystem:
             self.flag_fcbsln_events()
         if self.type == "muon":
             self.flag_muon_events()
+        utils.logger.info("... flagge pulser | FC bsl | muon events")
 
     def include_aux(
         self, params: Union[str, list], dataset: dict, plot: dict, aux_ch: str

@@ -7,6 +7,7 @@ import os
 import pickle
 import re
 import shelve
+import sys
 
 import h5py
 import matplotlib
@@ -19,8 +20,7 @@ from lgdo import lh5
 from tqdm.notebook import tqdm
 
 import legend_data_monitor
-from line_profiler import LineProfiler
-profiler = LineProfiler()
+
 # -------------------------------------------------------------------------
 
 logger = logging.getLogger(__name__)
@@ -64,7 +64,7 @@ cap_thick = 0.5
 
 plt.rc("axes", facecolor="white", edgecolor="black", axisbelow=True, grid=True)
 
-ignore_keys = json.load(open("ignore_keys.json"))
+ignore_keys = legend_data_monitor.utils.IGNORE_KEYS
 
 
 def transform_string(input_string):
@@ -92,6 +92,11 @@ def build_new_files(my_path, period, run):
     data_file = os.path.join(
         my_path, "generated/plt/phy", period, run, f"l200-{period}-{run}-phy-geds.hdf"
     )
+
+    if not os.path.exists(data_file):
+        logger.debug(f"File not found: {data_file}. Exit here.")
+        sys.exit()
+
     with h5py.File(data_file, "r") as f:
         my_keys = list(f.keys())
 
@@ -166,17 +171,21 @@ def build_new_files(my_path, period, run):
             with open(json_output, "w") as file:
                 json.dump(info_dict, file, indent=4)
 
-def get_energy_key(ecal_results: dict, ):
+
+def get_energy_key(
+    ecal_results: dict,
+):
     cut_dict = {}
     for key in ["cuspEmax_ctc_runcal", "cuspEmax_ctc_cal"]:
         if key in ecal_results:
             cut_dict = ecal_results[key]
             break
     else:
-        logger.debug(f"No cuspEmax key for {channel_name}")
+        logger.debug("No cuspEmax key")
         return cut_dict
 
     return cut_dict
+
 
 # run specific block of retrieving the run information
 def get_calib_data_dict(
@@ -212,11 +221,12 @@ def get_calib_data_dict(
             pars_dict = yaml.load(f, Loader=yaml.CLoader)
     else:
         raise FileNotFoundError("No .json or .yaml/.yml file found in the folder.")
-        exit()
+        sys.exit()
 
     ch_keys = all(k.startswith("ch") for k in pars_dict.keys())
-    if not ch_keys: channel = channel_name
-    
+    if not ch_keys:
+        channel = channel_name
+
     # for FEP peak, we want to look at the behaviour over time --> take 'ecal' results (not partition ones!)
     if channel not in pars_dict.keys():
         fep_peak_pos = np.nan
@@ -293,12 +303,8 @@ def get_calib_data_dict(
     else:
         ecal_results = pars_dict[channel]["pars"]["operations"]
         ecal_results = get_energy_key(ecal_results)
-        expr = ecal_results[
-            "expression"
-        ]
-        params = ecal_results[
-            "parameters"
-        ]
+        expr = ecal_results["expression"]
+        params = ecal_results["parameters"]
         eval_context = {**params, "cuspEmax_ctc": fep_peak_pos}
         fep_cal = eval(expr, {}, eval_context)
         eval_context = {**params, "cuspEmax_ctc": fep_peak_pos_err}
@@ -348,9 +354,6 @@ def get_calib_data_dict(
 def get_calib_pars(
     cluster, path, period, run_list, channel_info, partition, escale=2039, fit="linear"
 ):
-    channel = channel_info[0]
-    channel_name = channel_info[1]
-    
     # add special calib runs at the end of a period
     if isinstance(period, list) and isinstance(run_list, dict):
         my_runs = run_list["p09"]
@@ -444,35 +447,49 @@ def get_dfs(phy_mtg_data, period, run_list):
         if r not in run_list:
             continue
         files = os.listdir(os.path.join(phy_mtg_data, r))
-        # get only geds files
-        hdf_geds = [f for f in files if "hdf" in f and "geds" in f and "res" not in f and "min" not in f]
+        hdf_geds = [
+            f
+            for f in files
+            if "hdf" in f and "geds" in f and "res" not in f and "min" not in f
+        ]
         if len(hdf_geds) == 0:
+            logger.debug("hdf_geds is empty")
             return None, None, None, None
-        hdf_geds = os.path.join(phy_mtg_data, r, hdf_geds[0])  # should be 1
-        # get only puls files
-        hdf_puls = [f for f in files if "hdf" in f and "pulser01ana" in f and "res" not in f and "min" not in f]
-        if len(hdf_puls) == 0:
-            return None, None, None, None
-        hdf_puls = os.path.join(phy_mtg_data, r, hdf_puls[0])  # should be 1
+        else:
+            hdf_geds = os.path.join(phy_mtg_data, r, hdf_geds[0])
+            geds_abs = pd.read_hdf(hdf_geds, key="IsPulser_TrapemaxCtcCal")
+            geds_df_cuspEmax_abs = pd.concat(
+                [geds_df_cuspEmax_abs, geds_abs], ignore_index=False, axis=0
+            )
+            # geds_ctc_cal_abs = pd.read_hdf(hdf_geds, key=f'IsPulser_TrapemaxCtcCal')
+            # geds_df_cuspEmaxCtcCal_abs = pd.concat([geds_df_cuspEmaxCtcCal_abs, geds_ctc_cal_abs], ignore_index=False, axis=0)
+            with pd.HDFStore(hdf_geds, mode="r") as store:
+                available_keys = store.keys()
+            if "IsPulser_TrapemaxCtcCal_pulser01anaDiff" in available_keys:
+                geds_puls_abs = pd.read_hdf(
+                    hdf_geds, key="IsPulser_TrapemaxCtcCal_pulser01anaDiff"
+                )
+                geds_df_cuspEmax_abs_corr = pd.concat(
+                    [geds_df_cuspEmax_abs_corr, geds_puls_abs],
+                    ignore_index=False,
+                    axis=0,
+                )
 
-        # GEDS DATA ========================================================================================================
-        geds_abs = pd.read_hdf(hdf_geds, key="IsPulser_Trapemax")
-        geds_df_cuspEmax_abs = pd.concat(
-            [geds_df_cuspEmax_abs, geds_abs], ignore_index=False, axis=0
-        )
-        # geds_ctc_cal_abs = pd.read_hdf(hdf_geds, key=f'IsPulser_TrapemaxCtcCal')
-        # geds_df_cuspEmaxCtcCal_abs = pd.concat([geds_df_cuspEmaxCtcCal_abs, geds_ctc_cal_abs], ignore_index=False, axis=0)
-        # GEDS PULS-CORRECTED DATA =========================================================================================
-        geds_puls_abs = pd.read_hdf(hdf_geds, key="IsPulser_Trapemax_pulser01anaDiff")
-        geds_df_cuspEmax_abs_corr = pd.concat(
-            [geds_df_cuspEmax_abs_corr, geds_puls_abs], ignore_index=False, axis=0
-        )
-        # PULS DATA ========================================================================================================
-        puls_abs = pd.read_hdf(hdf_puls, key="IsPulser_Trapemax")
-        puls_df_cuspEmax_abs = pd.concat(
-            [puls_df_cuspEmax_abs, puls_abs], ignore_index=False, axis=0
-        )
-        
+        hdf_puls = [
+            f
+            for f in files
+            if "hdf" in f and "pulser01ana" in f and "res" not in f and "min" not in f
+        ]
+        if len(hdf_puls) == 0:
+            logger.debug("hdf_puls is empty")
+            # return None, None, None, None
+        else:
+            hdf_puls = os.path.join(phy_mtg_data, r, hdf_puls[0])
+            puls_abs = pd.read_hdf(hdf_puls, key="IsPulser_TrapemaxCtcCal")
+            puls_df_cuspEmax_abs = pd.concat(
+                [puls_df_cuspEmax_abs, puls_abs], ignore_index=False, axis=0
+            )
+
     return (
         geds_df_cuspEmax_abs,
         geds_df_cuspEmax_abs_corr,
@@ -534,10 +551,10 @@ def get_traptmax_tp0est(phy_mtg_data, period, run_list):
     return geds_df_trapTmax, geds_df_tp0est, puls_df_trapTmax, puls_df_tp0est
 
 
-def filter_series_by_ignore_keys(ser_ged_cusp, ser_pul_cusp, ignore_keys, key):
+def filter_series_by_ignore_keys(series_to_filter, ignore_keys, key):
     """Remove keys listed in a dictionary of keys to ignore for each specific period."""
     if key not in ignore_keys:
-        return ser_ged_cusp, ser_pul_cusp
+        return series_to_filter
 
     start_keys = ignore_keys[key]["start_keys"]
     stop_keys = ignore_keys[key]["stop_keys"]
@@ -545,72 +562,46 @@ def filter_series_by_ignore_keys(ser_ged_cusp, ser_pul_cusp, ignore_keys, key):
     for ki, kf in zip(start_keys, stop_keys):
         isolated_ki = pd.to_datetime(ki, format="%Y%m%dT%H%M%S%z")
         isolated_kf = pd.to_datetime(kf, format="%Y%m%dT%H%M%S%z")
-        ser_ged_cusp = ser_ged_cusp[
-            (ser_ged_cusp.index < isolated_ki) | (ser_ged_cusp.index > isolated_kf)
-        ]
-        ser_pul_cusp = ser_pul_cusp[
-            (ser_pul_cusp.index < isolated_ki) | (ser_pul_cusp.index > isolated_kf)
+        series_to_filter = series_to_filter[
+            (series_to_filter.index < isolated_ki)
+            | (series_to_filter.index > isolated_kf)
         ]
 
-    return ser_ged_cusp, ser_pul_cusp
+    return series_to_filter
 
 
 def get_pulser_data(resampling_time, period, dfs, channel, runs_no, escale):
-    # sort cronologically
-    ser_pul_cusp = dfs[2][1027203].sort_index()  # selection of pulser channel
-    ser_ged_cusp = dfs[0][channel].sort_index()  # selection of ged channel
-
-    # check if these dfs are empty or not - if not, then remove spikes
-    if not ser_pul_cusp.all().all() and isinstance(dfs[6], pd.DataFrame):
-        ser_pul_tp0est = dfs[6][1027203]
-
-        # remove retriggered events
-        condition = (ser_pul_tp0est < 5e4) & (ser_pul_tp0est > 4.8e4)
-        len_before = len(ser_pul_tp0est)
-        logger.debug(
-            "Removed retriggered events:\n",
-            ser_pul_tp0est[~condition],
-        )
-        ser_pul_tp0est_new = ser_pul_tp0est[condition]
-        len_after = len(ser_pul_tp0est_new)
-
-        # if not empty, then remove spikes
-        if len(ser_pul_tp0est_new) != 0:
-            logger.debug(
-                f"!!! Removing {len_before-len_after} global pulser events !!!"
-            )
-            ser_ged_cusp = ser_ged_cusp.loc[ser_pul_tp0est_new.index]
-            ser_pul_cusp = ser_pul_cusp.loc[ser_pul_tp0est_new.index]
-    else:
-        logger.debug("...tp0est pulser dataframe is empty.")
-
-    ser_ged_cusp = ser_ged_cusp.dropna()
-    if ser_ged_cusp.index.isin(ser_pul_cusp.index).all():
-        ser_pul_cusp = ser_pul_cusp.loc[ser_ged_cusp.index]
-    else:
-        ser_pul_cusp = None
+    # geds
+    ser_ged_cusp = dfs[0][channel].sort_index()
+    # if no pulser, set these to None
+    pul_cusp_hr_av_ = None
+    pul_cusp_hr_std = None
+    ser_pul_cusp = None
+    ser_pul_cuspdiff = None
+    ser_pul_cuspdiff_kev = None
+    ged_cusp_cor_hr_av_ = None
+    ged_cusp_cor_hr_std = None
+    ged_cusp_corr = None
+    ged_cusp_corr_kev = None
 
     logger.debug("...removing cycles to ignore")
-    if ser_pul_cusp is not None:
-        if isinstance(period, list):
-            for p in period:
-                ser_ged_cusp, ser_pul_cusp = filter_series_by_ignore_keys(
-                    ser_ged_cusp, ser_pul_cusp, ignore_keys, p
-                )
-        else:
-            ser_ged_cusp, ser_pul_cusp = filter_series_by_ignore_keys(
-                ser_ged_cusp, ser_pul_cusp, ignore_keys, period
-            )
+    if isinstance(period, list):
+        for p in period:
+            ser_ged_cusp = filter_series_by_ignore_keys(ser_ged_cusp, ignore_keys, p)
+    else:
+        ser_ged_cusp = filter_series_by_ignore_keys(ser_ged_cusp, ignore_keys, period)
+    ser_ged_cusp = ser_ged_cusp.dropna()
 
     logger.debug("...getting hour counts")
-    hour_counts = ser_ged_cusp.resample(resampling_time).count()  # >= 100 # before, we were using ser_pul_cusp - is there any difference?
+    hour_counts = ser_ged_cusp.resample(
+        resampling_time
+    ).count()  # >= 100; before, we were using ser_pul_cusp
     mask = hour_counts > 0
 
     logger.debug("...getting average")
     # compute how many elements correspond to 10%
     n_elements = int(len(ser_ged_cusp) * 0.10)
     ged_cusp_av = np.average(ser_ged_cusp.values[:n_elements])
-    pul_cusp_av = np.average(ser_pul_cusp.values[:n_elements]) if ser_pul_cusp is not None else None
 
     # if first entries of dataframe are NaN
     if np.isnan(ged_cusp_av):
@@ -628,54 +619,111 @@ def get_pulser_data(resampling_time, period, dfs, channel, runs_no, escale):
         ser_ged_cuspdiff * escale, index=ser_ged_cuspdiff.index.values
     )
 
+    # check if we have any info on the pulser channel
+    if not dfs[2].empty:
+        ser_pul_cusp = dfs[2][1027203].sort_index()
+        # check if these dfs are empty or not - if not, then remove spikes
+        if not ser_pul_cusp.all().all() and isinstance(dfs[6], pd.DataFrame):
+            ser_pul_tp0est = dfs[6][1027203]
+
+            # remove retriggered events
+            condition = (ser_pul_tp0est < 5e4) & (ser_pul_tp0est > 4.8e4)
+            len_before = len(ser_pul_tp0est)
+            logger.debug(
+                "Removed retriggered events:\n",
+                ser_pul_tp0est[~condition],
+            )
+            ser_pul_tp0est_new = ser_pul_tp0est[condition]
+            len_after = len(ser_pul_tp0est_new)
+
+            # if not empty, then remove spikes
+            if len(ser_pul_tp0est_new) != 0:
+                logger.debug(
+                    f"!!! Removing {len_before-len_after} global pulser events !!!"
+                )
+                ser_ged_cusp = ser_ged_cusp.loc[ser_pul_tp0est_new.index]
+                ser_pul_cusp = ser_pul_cusp.loc[ser_pul_tp0est_new.index]
+        else:
+            logger.debug("...tp0est pulser dataframe is empty.")
+
+        logger.debug("...removing cycles to ignore")
+        if ser_pul_cusp is not None:
+            if isinstance(period, list):
+                for p in period:
+                    ser_pul_cusp = filter_series_by_ignore_keys(
+                        ser_pul_cusp, ignore_keys, p
+                    )
+            else:
+                ser_pul_cusp = filter_series_by_ignore_keys(
+                    ser_pul_cusp, ignore_keys, period
+                )
+        pul_cusp_av = (
+            np.average(ser_pul_cusp.values[:n_elements])
+            if ser_pul_cusp is not None
+            else None
+        )
+
+        # Pulser part (only if available or we have an equal number of entries as for geds)
+        length_puls = len(ser_pul_cusp[ser_pul_cusp != 0])
+        length_geds = len(ser_ged_cusp[ser_ged_cusp != 0])
+        if (
+            ser_pul_cusp is not None
+            and pul_cusp_av is not None
+            and length_puls == length_geds
+        ):
+            logger.debug("...getting pulser and geds-rescaled data")
+            ser_pul_cuspdiff = pd.Series(
+                (ser_pul_cusp.values - pul_cusp_av) / pul_cusp_av,
+                index=ser_pul_cusp.index.values,
+            ).dropna()
+
+            ser_pul_cuspdiff_kev = pd.Series(
+                ser_pul_cuspdiff * escale, index=ser_pul_cuspdiff.index.values
+            )
+
+            pul_cusp_hr_av_ = ser_pul_cuspdiff_kev.resample(resampling_time).mean()
+            pul_cusp_hr_av_ = pul_cusp_hr_av_.tz_localize("UTC")  # add UTC timezone
+            pul_cusp_hr_av_[~mask] = np.nan
+
+            pul_cusp_hr_std = ser_pul_cuspdiff_kev.resample(resampling_time).std()
+            pul_cusp_hr_std = pul_cusp_hr_std.tz_localize("UTC")  # add UTC timezone
+            pul_cusp_hr_std[~mask] = np.nan
+
+            # GED - Pulser correction
+            common_index = ser_ged_cuspdiff.index.intersection(ser_pul_cuspdiff.index)
+            ged_cusp_corr = (
+                ser_ged_cuspdiff[common_index] - ser_pul_cuspdiff[common_index]
+            )
+
+            ged_cusp_corr_kev = ged_cusp_corr * escale
+
+            ged_cusp_cor_hr_av_ = ged_cusp_corr_kev.resample(resampling_time).mean()
+            ged_cusp_cor_hr_av_ = ged_cusp_cor_hr_av_.tz_localize(
+                "UTC"
+            )  # add UTC timezone
+            ged_cusp_cor_hr_av_[~mask] = np.nan
+
+            ged_cusp_cor_hr_std = ged_cusp_corr_kev.resample(resampling_time).std()
+            ged_cusp_cor_hr_std = ged_cusp_cor_hr_std.tz_localize(
+                "UTC"
+            )  # add UTC timezone
+            ged_cusp_cor_hr_std[~mask] = np.nan
+
+        else:
+            # If no pulser, set these to None or empty series
+            pul_cusp_hr_av_ = pul_cusp_hr_std = ser_pul_cuspdiff = (
+                ser_pul_cuspdiff_kev
+            ) = None
+            ged_cusp_cor_hr_av_ = ged_cusp_cor_hr_std = ged_cusp_corr = (
+                ged_cusp_corr_kev
+            ) = None
+
     ged_cusp_hr_av_ = ser_ged_cuspdiff_kev.resample(resampling_time).mean()
-    ged_cusp_hr_av_ = ged_cusp_hr_av_.tz_localize('UTC') # add UTC timezone
+    ged_cusp_hr_av_ = ged_cusp_hr_av_.tz_localize("UTC")  # add UTC timezone
     ged_cusp_hr_av_[~mask] = np.nan
     ged_cusp_hr_std = ser_ged_cuspdiff_kev.resample(resampling_time).std()
-    ged_cusp_hr_std = ged_cusp_hr_std.tz_localize('UTC') # add UTC timezone
+    ged_cusp_hr_std = ged_cusp_hr_std.tz_localize("UTC")  # add UTC timezone
     ged_cusp_hr_std[~mask] = np.nan
-    
-    # Pulser part (only if available or we have an equal number of entries as for geds)
-    length_puls = len(ser_pul_cusp[ser_pul_cusp!=0])
-    length_geds = len(ser_ged_cusp[ser_ged_cusp!=0])
-    if ser_pul_cusp is not None and pul_cusp_av is not None and length_puls==length_geds:
-        logger.debug("...getting pulser and geds-rescaled data")
-        ser_pul_cuspdiff = pd.Series(
-            (ser_pul_cusp.values - pul_cusp_av) / pul_cusp_av,
-            index=ser_pul_cusp.index.values,
-        ).dropna()
-    
-        ser_pul_cuspdiff_kev = pd.Series(
-            ser_pul_cuspdiff * escale, index=ser_pul_cuspdiff.index.values
-        )
-    
-        pul_cusp_hr_av_ = ser_pul_cuspdiff_kev.resample(resampling_time).mean()
-        pul_cusp_hr_av_ = pul_cusp_hr_av_.tz_localize('UTC') # add UTC timezone
-        pul_cusp_hr_av_[~mask] = np.nan
-    
-        pul_cusp_hr_std = ser_pul_cuspdiff_kev.resample(resampling_time).std()
-        pul_cusp_hr_std = pul_cusp_hr_std.tz_localize('UTC') # add UTC timezone
-        pul_cusp_hr_std[~mask] = np.nan
-    
-        # GED - Pulser correction
-        common_index = ser_ged_cuspdiff.index.intersection(ser_pul_cuspdiff.index)
-        ged_cusp_corr = ser_ged_cuspdiff[common_index] - ser_pul_cuspdiff[common_index]
-    
-        ged_cusp_corr_kev = ged_cusp_corr * escale
-    
-        ged_cusp_cor_hr_av_ = ged_cusp_corr_kev.resample(resampling_time).mean()
-        ged_cusp_cor_hr_av_ = ged_cusp_cor_hr_av_.tz_localize('UTC') # add UTC timezone
-        ged_cusp_cor_hr_av_[~mask] = np.nan
-    
-        ged_cusp_cor_hr_std = ged_cusp_corr_kev.resample(resampling_time).std()
-        ged_cusp_cor_hr_std = ged_cusp_cor_hr_std.tz_localize('UTC') # add UTC timezone
-        ged_cusp_cor_hr_std[~mask] = np.nan
-    
-    else:
-        # If no pulser, set these to None or empty series
-        pul_cusp_hr_av_ = pul_cusp_hr_std = ser_pul_cuspdiff = ser_pul_cuspdiff_kev = None
-        ged_cusp_cor_hr_av_ = ged_cusp_cor_hr_std = ged_cusp_corr = ged_cusp_corr_kev = None
-
 
     return {
         "ged": {
@@ -701,7 +749,7 @@ def get_pulser_data(resampling_time, period, dfs, channel, runs_no, escale):
         },
     }
 
-@profiler
+
 def main():
     parser = argparse.ArgumentParser(description="Main code for gain monitoring plots.")
     parser.add_argument(
@@ -784,8 +832,11 @@ def main():
         channels = [
             f"ch{chmap[ged].daq.rawid}"
             for ged, dic in chmap.items()
-            if dic["system"] == "geds" and dic["location"]["string"] == string
-        ]  # and dic["analysis"]["processable"]==True
+            if dic["system"] == "geds"
+            and dic["location"]["string"] == string
+            and dic["analysis"]["processable"]
+            is True  # prevent to load non-processable detectors
+        ]
         if len(channels) > 0:
             str_chns[string] = channels
 
@@ -798,6 +849,7 @@ def main():
         for channel, periods in no_puls_dets.items()
     )
 
+    # gain over period
     period_list = list(dataset.keys())
     for index_i in tqdm(range(len(period_list))):
         period = period_list[index_i]
@@ -820,10 +872,12 @@ def main():
         ):
             logger.debug("Dataframes are None for %s!", period)
             continue
+        # check if geds df is empty; if pulser is, means we do not apply any correction
+        # (and thus geds_corr is also empty - the code will handle the case)
         if (
             geds_df_cuspEmax_abs.empty
-            or geds_df_cuspEmax_abs_corr.empty
-            or puls_df_cuspEmax_abs.empty
+            # or geds_df_cuspEmax_abs_corr.empty
+            # or puls_df_cuspEmax_abs.empty
         ):
             logger.debug("Dataframes are empty for %s!", period)
             continue
@@ -862,7 +916,7 @@ def main():
                 )
 
                 fig, ax = plt.subplots(figsize=(12, 4))
-                logger.debug(f"...getting calibration data")
+                logger.debug("...getting calibration data")
                 pars_data = get_calib_pars(
                     cluster,
                     auto_dir_path,
@@ -873,13 +927,21 @@ def main():
                     escale=2039,
                     fit=fit_flag,
                 )
-                
+
                 t0 = pars_data["run_start"]
                 if not eval(flag_expr):
-                    kevdiff = pulser_data["ged"]["kevdiff_av"] if pulser_data["diff"]["kevdiff_av"] is None else pulser_data["diff"]["kevdiff_av"]
+                    kevdiff = (
+                        pulser_data["ged"]["kevdiff_av"]
+                        if pulser_data["diff"]["kevdiff_av"] is None
+                        else pulser_data["diff"]["kevdiff_av"]
+                    )
 
                     # check if gain is over threshold
-                    if kevdiff is not None and len(email_message) > 1 and pswd_email is not None:
+                    if (
+                        kevdiff is not None
+                        and len(email_message) > 1
+                        and pswd_email is not None
+                    ):
                         timestamps = kevdiff.index
                         for i in range(len(t0)):
                             time_range_start = t0[i]
@@ -887,7 +949,7 @@ def main():
                             # convert naive timestamp to UTC-aware
                             time_range_start = pd.Timestamp(time_range_start)
                             time_range_end = pd.Timestamp(time_range_end)
-                            
+
                             if time_range_start.tzinfo is None:
                                 time_range_start = time_range_start.tz_localize("UTC")
                             else:
@@ -896,20 +958,20 @@ def main():
                                 time_range_end = time_range_end.tz_localize("UTC")
                             else:
                                 time_range_end = time_range_end.tz_convert("UTC")
-    
+
                             # filter timestamps/gain within the time range
                             mask_time_range = (timestamps >= time_range_start) & (
                                 timestamps < time_range_end
                             )
                             filtered_timestamps = timestamps[mask_time_range]
                             kevdiff_in_range = kevdiff[mask_time_range]
-    
+
                             threshold = pars_data["res"][i] / 2
                             mask = (kevdiff_in_range > threshold) | (
                                 kevdiff_in_range < -threshold
                             )
                             over_threshold_timestamps = filtered_timestamps[mask]
-    
+
                             if not over_threshold_timestamps.empty:
                                 for t in over_threshold_timestamps:
                                     email_message.append(
@@ -950,7 +1012,11 @@ def main():
                         )
                     # else, no correction is applied
                     else:
-                        plt.plot(pulser_data["ged"]["kevdiff_av"].sort_index(), "dodgerblue", label="GED")
+                        plt.plot(
+                            pulser_data["ged"]["kevdiff_av"].sort_index(),
+                            "dodgerblue",
+                            label="GED uncorrected",
+                        )
                         plt.fill_between(
                             pulser_data["ged"]["kevdiff_av"].index.values,
                             y1=[
@@ -977,7 +1043,7 @@ def main():
                     pars_data["fep_diff"],
                     "kx",
                     label="FEP gain",
-                )  
+                )
                 plt.plot(
                     pars_data["run_start"] - pd.Timedelta(hours=5),
                     pars_data["cal_const_diff"],
@@ -986,7 +1052,7 @@ def main():
                 )
 
                 for ti in pars_data["run_start"]:
-                    plt.axvline(ti, color="k", ls='--')
+                    plt.axvline(ti, color="dimgrey", ls="--")
 
                 for i in range(len(t0)):
                     if i == len(pars_data["run_start"]) - 1:
@@ -1049,7 +1115,7 @@ def main():
                                 color="dodgerblue",
                                 linestyle="-",
                             )
-                            
+
                     if str(pars_data["res"][i] / 2 * 1.1) != "nan" and i < len(
                         pars_data["res"]
                     ) - (xlim_idx - 1):
@@ -1107,7 +1173,7 @@ def main():
                 )
                 plt.savefig(pdf_name)
 
-                # pickle and save calibration inputs retrieved ots in a shelve file 
+                # pickle and save calibration inputs retrieved ots in a shelve file
                 # serialize the plot
                 serialized_plot = pickle.dumps(plt.gcf())
                 plt.close(fig)
@@ -1129,7 +1195,6 @@ def main():
                 #  - p08_string2_pos1_B00035C
                 #  - p08_string2_pos2_C000RG1
                 #  - ...
-    
 
     if len(email_message) > 1 and pswd_email is not None:
         with open("message.txt", "w") as f:
@@ -1142,4 +1207,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    profiler.print_stats()

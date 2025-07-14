@@ -705,12 +705,8 @@ def get_saved_df_hdf(
     )
 
     # merge self.data with old_df
-    old_absolute_values = long_df.copy().filter(
-        items=["channel", "datetime", param]
-    )
-    new_absolute_values = self.data.copy().filter(
-        items=["channel", "datetime", param]
-    )
+    old_absolute_values = long_df.copy().filter(items=["channel", "datetime", param])
+    new_absolute_values = self.data.copy().filter(items=["channel", "datetime", param])
 
     # concatenate and cut over first 10%
     concatenated_df = pd.concat(
