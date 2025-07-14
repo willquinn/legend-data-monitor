@@ -1,10 +1,11 @@
 import argparse
-import json
 import logging
 import os
 import re
 import subprocess
 from pathlib import Path
+
+import yaml
 
 # -------------------------------------------------------------------------
 
@@ -191,8 +192,8 @@ def main():
             ]
         },
     }
-    with open(os.path.join(rsync_path, "auto_slow_control.json"), "w") as f:
-        json.dump(scdb, f)
+    with open(os.path.join(rsync_path, "auto_slow_control.yaml"), "w") as f:
+        yaml.dump(scdb, f, sort_keys=False)
 
     # define geds dict
     my_config = {
@@ -341,8 +342,8 @@ def main():
             }
         },
     }
-    with open(os.path.join(rsync_path, "auto_config.json"), "w") as f:
-        json.dump(my_config, f)
+    with open(os.path.join(rsync_path, "auto_config.yaml"), "w") as f:
+        yaml.dump(scdb, f, sort_keys=False)
 
     # ===========================================================================================
     # Get not-analyzed files
@@ -380,9 +381,9 @@ def main():
         new_files = correct_files
     new_files = sorted(new_files)
 
-    # remove keys stored in ignore-keys.json (eg bad/heavy keys)
-    ignore_keys = json.load(
-        open("../../src/legend_data_monitor/settings/ignore-keys.json")
+    # remove keys stored in ignore-keys.yaml (eg bad/heavy keys)
+    ignore_keys = yaml.load(
+        "../../src/legend_data_monitor/settings/ignore-keys.yamln", Loader=yaml.CLoader
     )  # TODO: more general
 
     def remove_key(timestamp, ignore_keys, period):
@@ -415,7 +416,7 @@ def main():
 
         # run the plot production
         logger.debug("Running the generation of plots...")
-        config_file = os.path.join(rsync_path, "auto_config.json")
+        config_file = os.path.join(rsync_path, "auto_config.yaml")
         keys_file = os.path.join(rsync_path, "new_keys.filekeylist")
 
         # read all lines from the original file
@@ -448,7 +449,7 @@ def main():
             subprocess.run(bash_command, shell=True)
         logger.debug("...done!")
 
-        # compute resampling + info json
+        # compute resampling + info yaml
         logger.debug("Resampling outputs...")
         files_folder = os.path.join(output_folder, ref_version)
         bash_command = (
@@ -465,7 +466,7 @@ def main():
         if cluster == "lngs" and get_sc is True:
             try:
                 logger.debug("Retrieving Slow Control data...")
-                scdb_config_file = os.path.join(rsync_path, "auto_slow_control.json")
+                scdb_config_file = os.path.join(rsync_path, "auto_slow_control.yaml")
 
                 bash_command = f"{cmd} ~/.local/bin/legend-data-monitor user_scdb --config {scdb_config_file} --port 8282 --pswd {pswd}"
                 logger.debug(f"...running command \033[92m{bash_command}\033[0m")

@@ -89,10 +89,10 @@ kill 12345
 
 # Keys to ignore
 
-An external file `inore-keys.json` with information about time ranges to remove from inspected data is retrieved from `../src/legend_data_monitor/settings/`.
+An external file `inore-keys.yaml` with information about time ranges to remove from inspected data is retrieved from `../src/legend_data_monitor/settings/`.
 The structure of this file is of the following type:
 
-```json
+```yaml
 {
     "p03": {
         "start_keys": ["20230327T145702Z", "20230406T135529Z"],

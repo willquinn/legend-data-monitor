@@ -166,7 +166,7 @@ def build_new_files(my_path, period, run):
                 "generated/plt/phy",
                 period,
                 run,
-                f"l200-{period}-{run}-phy-geds-info.json",
+                f"l200-{period}-{run}-phy-geds-info.yaml",
             )
             with open(json_output, "w") as file:
                 json.dump(info_dict, file, indent=4)
