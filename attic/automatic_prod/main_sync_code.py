@@ -339,11 +339,17 @@ def main():
                     "variation": True,
                     "time_window": "10T",
                 },
+                "Quality cuts in physics events": {
+                    "parameters": "quality_cuts",
+                    "event_type": "phy",
+                    "qc_flags": True,
+                    "qc_classifiers": False,
+                },
             }
         },
     }
     with open(os.path.join(rsync_path, "auto_config.yaml"), "w") as f:
-        yaml.dump(scdb, f, sort_keys=False)
+        yaml.dump(my_config, f, sort_keys=False)
 
     # ===========================================================================================
     # Get not-analyzed files
