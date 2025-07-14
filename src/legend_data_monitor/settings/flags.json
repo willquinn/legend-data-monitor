@@ -1,7 +1,0 @@
-{
-  "pulser": "IsPulser",
-  "FCbsln": "IsBsln",
-  "muon": "IsMuon",
-  "phy": "IsPhysics",
-  "all": "All"
-}

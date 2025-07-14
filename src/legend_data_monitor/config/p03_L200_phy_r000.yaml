@@ -1,0 +1,85 @@
+output: /data1/users/calgaro/auto_prova
+dataset:
+  experiment: L200
+  period: p03
+  version: ''
+  path: /data2/public/prodenv/prod-blind/tmp/auto
+  type: phy
+  runs: 0
+saving: append
+subsystems:
+  geds:
+    FWHM in pulser events:
+      parameters: FWHM
+      event_type: pulser
+      plot_structure: array
+      plot_style: vs ch
+    Baselines (dsp/baseline) in pulser events:
+      parameters: baseline
+      event_type: pulser
+      plot_structure: per channel
+      resampled: also
+      plot_style: vs time
+      variation: true
+      time_window: 1H
+      status: true
+    Uncalibrated gain (dsp/cuspEmax) in pulser events:
+      parameters: cuspEmax
+      event_type: pulser
+      plot_structure: per channel
+      resampled: also
+      plot_style: vs time
+      variation: true
+      time_window: 1H
+      status: true
+    Calibrated gain (hit/cuspEmax_ctc_cal) in pulser events:
+      parameters: cuspEmax_ctc_cal
+      event_type: pulser
+      plot_structure: per channel
+      resampled: also
+      plot_style: vs time
+      variation: true
+      time_window: 1H
+      status: true
+    Uncalibrated gain (dsp/trapEmax) in pulser events:
+      parameters: trapEmax
+      event_type: pulser
+      plot_structure: per channel
+      resampled: also
+      plot_style: vs time
+      variation: true
+      time_window: 1H
+      status: true
+    Calibrated gain (hit/trapEmax_ctc_cal) in pulser events:
+      parameters: trapEmax_ctc_cal
+      event_type: pulser
+      plot_structure: per channel
+      resampled: also
+      plot_style: vs time
+      variation: true
+      time_window: 1H
+      status: true
+    Noise (dsp/bl_std) in pulser events:
+      parameters: bl_std
+      event_type: pulser
+      plot_structure: per channel
+      resampled: only
+      plot_style: vs time
+      variation: true
+      time_window: 1H
+    A/E corrected (hit/AoE_Corrected) in pulser events:
+      parameters: AoE_Corrected
+      event_type: pulser
+      plot_structure: per channel
+      resampled: only
+      plot_style: vs time
+      variation: true
+      time_window: 1H
+    A/E classifier (hit/AoE_Classifier) in pulser events:
+      parameters: AoE_Classifier
+      event_type: pulser
+      plot_structure: per channel
+      resampled: only
+      plot_style: vs time
+      variation: true
+      time_window: 1H
