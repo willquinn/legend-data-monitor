@@ -352,7 +352,7 @@ def get_calib_data_dict(
 
 
 def get_calib_pars(
-    cluster, path, period, run_list, channel_info, partition, escale=2039, fit="linear"
+    cluster, path, period, run_list, channel_info, partition, escale, fit="linear"
 ):
     # add special calib runs at the end of a period
     if isinstance(period, list) and isinstance(run_list, dict):
@@ -781,6 +781,11 @@ def main():
         help="True if you want to plot the quadratic resolution too; default: False",
     )
     parser.add_argument(
+        "--pdf",
+        default="False",
+        help="True if you want to save pdf files too; default: False",
+    )
+    parser.add_argument(
         "--cluster",
         default="lngs",
         help="Name of the cluster where you are operating; pick among 'lngs' or 'nersc'.",
@@ -789,6 +794,11 @@ def main():
         "--pswd_email",
         default=None,
         help="Password to access the legend.data.monitoring@gmail.com account for sending alert messages.",
+    )
+    parser.add_argument(
+        "--escale",
+        default=2039,
+        help="Energy sccale at which evaluating the gain differences; default: 2039 keV (76Ge Qbb).",
     )
 
     args = parser.parse_args()
@@ -801,6 +811,8 @@ def main():
     runs = args.runs
     cluster = args.cluster
     pswd_email = args.pswd_email
+    save_pdf = args.save_pdf
+    escale_val = args.escale_val
 
     avail_runs = []
     for entry in runs:
@@ -912,7 +924,7 @@ def main():
                     dfs,
                     int(channel.split("ch")[-1]),
                     len(runs),
-                    escale=2039,
+                    escale=escale_val,
                 )
 
                 fig, ax = plt.subplots(figsize=(12, 4))
@@ -924,7 +936,7 @@ def main():
                     run_list,
                     [channel, channel_name],
                     partition,
-                    escale=2039,
+                    escale=escale_val,
                     fit=fit_flag,
                 )
 
@@ -1146,10 +1158,10 @@ def main():
                     plt.plot([1, 2], [1, 2], "dodgerblue", label="Qbb FWHM keV quadr.")
 
                 if zoom:
-                    bound = np.average(pulser_data["ged"]["cusp_av"].dropna())
                     if flag_expr:
                         plt.ylim(-3, 3)
                     else:
+                        bound = np.average(pulser_data["ged"]["cusp_av"].dropna())
                         plt.ylim(-2.5 * bound, 2.5 * bound)
                 max_date = pulser_data["ged"]["kevdiff_av"].index.max()
                 time_difference = max_date.tz_localize(None) - t0[
@@ -1171,7 +1183,8 @@ def main():
                     mgt_folder,
                     f"{period}_string{string}_pos{chmap.map('daq.rawid')[int(channel[2:])]['location']['position']}_{channel_name}_gain_shift.pdf",
                 )
-                plt.savefig(pdf_name)
+                if save_pdf:
+                    plt.savefig(pdf_name)
 
                 # pickle and save calibration inputs retrieved ots in a shelve file
                 # serialize the plot
