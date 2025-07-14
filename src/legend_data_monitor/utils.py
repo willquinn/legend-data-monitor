@@ -55,6 +55,14 @@ with open(pkg / "settings" / "special-parameters.json") as f:
 with open(pkg / "settings" / "flags.json") as f:
     FLAGS_RENAME = json.load(f)
 
+# list of detectors that have no pulser signal in a given period
+with open(pkg / "settings" / "no-pulser-dets.json") as f:
+    NO_PULS_DETS = json.load(f)
+
+# dictionary of keys to ignore
+with open(pkg / "settings" / "ignore-keys.json") as f:
+    IGNORE_KEYS = json.load(f)
+
 # convert all to lists for convenience
 for param in SPECIAL_PARAMETERS:
     if isinstance(SPECIAL_PARAMETERS[param], str):
