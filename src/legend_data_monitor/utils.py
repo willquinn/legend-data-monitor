@@ -1221,9 +1221,8 @@ def update_runinfo(run_info, period, run, data_type, my_global_path):
         os.path.join(my_global_path, f) for f in files if f"{data_type}-geds.hdf" in f
     ]
 
-    timestamps_file = yaml.load(
-        "settings/timestamps-to-filter.yaml", Loader=yaml.CLoader
-    )
+    with open("settings/timestamps-to-filter.yaml") as f:
+        timestamps_file = yaml.load(f, Loader=yaml.CLoader)
     start_timestamps = timestamps_file["start"]
     end_timestamps = timestamps_file["end"]
 
@@ -1430,7 +1429,7 @@ def read_json_or_yaml(file_path: str):
         if file_path.endswith((".yaml", ".yml")):
             data_dict = yaml.safe_load(f)
         elif file_path.endswith(".json"):
-            data_dict = yaml.load(f, Loader=yaml.CLoader)
+            data_dict = json.load(open(f))
         else:
             logger.error(
                 "\033[91mUnsupported file format: expected .json or .yaml/.yml\033[0m"

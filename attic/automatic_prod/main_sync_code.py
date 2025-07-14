@@ -108,8 +108,8 @@ def main():
     input_period = args.p
     input_run = args.r
     get_sc = False if args.sc is False else True
-    save_pdf = args.save_pdf
-    escale_val = args.escale_val
+    save_pdf = args.pdf
+    escale_val = args.escale
 
     if not os.path.exists(rsync_path):
         os.makedirs(rsync_path)
@@ -388,10 +388,9 @@ def main():
     new_files = sorted(new_files)
 
     # remove keys stored in ignore-keys.yaml (eg bad/heavy keys)
-    ignore_keys = yaml.load(
-        "../../src/legend_data_monitor/settings/ignore-keys.yamln", Loader=yaml.CLoader
-    )  # TODO: more general
-
+    with open("../../src/legend_data_monitor/settings/ignore-keys.yaml", "r") as f: # TODO: more general
+        ignore_keys = yaml.load(f, Loader=yaml.CLoader)  
+    
     def remove_key(timestamp, ignore_keys, period):
         for idx in range(0, len(ignore_keys[period]["start_keys"])):
             start = ignore_keys[period]["start_keys"][idx]

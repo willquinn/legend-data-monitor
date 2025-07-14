@@ -811,8 +811,8 @@ def main():
     runs = args.runs
     cluster = args.cluster
     pswd_email = args.pswd_email
-    save_pdf = args.save_pdf
-    escale_val = args.escale_val
+    save_pdf = args.pdf
+    escale_val = args.escale
 
     avail_runs = []
     for entry in runs:
