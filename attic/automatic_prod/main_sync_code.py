@@ -388,9 +388,11 @@ def main():
     new_files = sorted(new_files)
 
     # remove keys stored in ignore-keys.yaml (eg bad/heavy keys)
-    with open("../../src/legend_data_monitor/settings/ignore-keys.yaml", "r") as f: # TODO: more general
-        ignore_keys = yaml.load(f, Loader=yaml.CLoader)  
-    
+    with open(
+        "../../src/legend_data_monitor/settings/ignore-keys.yaml"
+    ) as f:  # TODO: more general
+        ignore_keys = yaml.load(f, Loader=yaml.CLoader)
+
     def remove_key(timestamp, ignore_keys, period):
         for idx in range(0, len(ignore_keys[period]["start_keys"])):
             start = ignore_keys[period]["start_keys"][idx]
