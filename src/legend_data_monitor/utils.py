@@ -869,6 +869,16 @@ def bunch_dataset(config: dict, n_files=None):
     return filtered_files
 
 
+def check_key_existence(hdf_path: str, key_to_load: str) -> bool:
+    """Check if a specific key exists in the specified hdf file path."""
+    with pd.HDFStore(hdf_path, mode="r") as store:
+        if key_to_load in store.keys():
+            return True
+        else:
+            logger.debug(f"Key '{key_to_load}' not found in {hdf_path}")
+            return False
+
+
 # -------------------------------------------------------------------------
 # Config file related functions (for building files)
 # -------------------------------------------------------------------------

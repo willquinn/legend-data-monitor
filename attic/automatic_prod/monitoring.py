@@ -447,6 +447,7 @@ def get_dfs(phy_mtg_data, period, run_list):
         if r not in run_list:
             continue
         files = os.listdir(os.path.join(phy_mtg_data, r))
+        logger.debug(f"Retrieved files: {files}")
         hdf_geds = [
             f
             for f in files
@@ -456,6 +457,7 @@ def get_dfs(phy_mtg_data, period, run_list):
             logger.debug("hdf_geds is empty")
             return None, None, None, None
         else:
+            logger.debug(f"Found {hdf_geds} file")
             hdf_geds = os.path.join(phy_mtg_data, r, hdf_geds[0])
             geds_abs = pd.read_hdf(hdf_geds, key="IsPulser_TrapemaxCtcCal")
             geds_df_cuspEmax_abs = pd.concat(
@@ -482,13 +484,16 @@ def get_dfs(phy_mtg_data, period, run_list):
         ]
         if len(hdf_puls) == 0:
             logger.debug("hdf_puls is empty")
-            # return None, None, None, None
         else:
+            logger.debug(f"Found {hdf_puls} file")
             hdf_puls = os.path.join(phy_mtg_data, r, hdf_puls[0])
-            puls_abs = pd.read_hdf(hdf_puls, key="IsPulser_TrapemaxCtcCal")
-            puls_df_cuspEmax_abs = pd.concat(
-                [puls_df_cuspEmax_abs, puls_abs], ignore_index=False, axis=0
-            )
+            with pd.HDFStore(hdf_puls, mode="r") as store:
+                available_keys = store.keys()
+            if "IsPulser_TrapemaxCtcCal" in available_keys:
+                puls_abs = pd.read_hdf(hdf_puls, key="IsPulser_TrapemaxCtcCal")
+                puls_df_cuspEmax_abs = pd.concat(
+                    [puls_df_cuspEmax_abs, puls_abs], ignore_index=False, axis=0
+                )
 
     return (
         geds_df_cuspEmax_abs,
@@ -793,6 +798,7 @@ def main():
     parser.add_argument(
         "--escale",
         default=2039,
+        type=float,
         help="Energy sccale at which evaluating the gain differences; default: 2039 keV (76Ge Qbb).",
     )
     parser.add_argument(
@@ -812,7 +818,7 @@ def main():
     cluster = args.cluster
     pswd_email = args.pswd_email
     save_pdf = args.pdf
-    escale_val = args.escale
+    escale_val = float(args.escale)
 
     avail_runs = []
     for entry in runs:
