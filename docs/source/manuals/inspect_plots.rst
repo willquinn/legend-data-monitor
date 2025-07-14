@@ -7,12 +7,6 @@ Output files
 After you run the code, hdf files containing retrieved data generated for the inspected parameters/subsystems are produced, together with a pdf file containing all the generated plots and a log file.
 In particular, the last two items are created for each inspected subsystem (pulser, geds, spms).
 
-.. warning::
-
-  Shelve files are produced as an output as well as that was the first format chosen for the output.
-  The code still has to be fixed to remove these files from routines.
-  At the moment, they are important when using the ``"saving": "append"`` option, so do not remove them if you are going to use it!
-
 Files are usually collected in the output folder specified in the ``output`` config entry.
 Then, depending on the chosen dataset (``experiment``, ``period``, ``version``, ``type``, time selection),
 different output folders can be created. In general, the output folder is structured as it follows:
@@ -28,7 +22,6 @@ different output folders can be created. In general, the output folder is struct
                 └── <time_selection>
                   ├── <experiment>-<period>-<time_selection>-<type>-<subsystem>.pdf
                   ├── <experiment>-<period>-<time_selection>-<type>-<subsystem>.log
-                  ├── <experiment>-<period>-<time_selection>-<type>.{dat,bak,dir}
                   └── <experiment>-<period>-<time_selection>-<type>.hdf
 
 

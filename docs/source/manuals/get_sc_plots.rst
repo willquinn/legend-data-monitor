@@ -24,36 +24,35 @@ Available parameters at the moment include:
 * ``DaqLeft-Temp1``, ``DaqLeft-Temp2``, ``DaqRight-Temp1``, ``DaqRight-Temp2`` (rack present temperatures)
 * if you want more, contact us!
 
-These can be easily access for any time range of interest by giving a config.json file as input to the command line in the following way:
+These can be easily access for any time range of interest by giving a config.yaml file as input to the command line in the following way:
 
 .. code-block::
 
-  legend-data-monitor user_scdb --config config.json --port N --pswd ThePassword
+  legend-data-monitor user_scdb --config config.yaml --port N --pswd ThePassword
 
 .. note::
 
   - ``N`` is whatever number in the range 1024-65535. Setting a personal port different from the default one (5432) is a safer option, otherwise if a port is already in use by another user, you'll receive an error indicating that the port is already taken and you will not be able to access the SC database;
   - ``ThePassword`` can be found on Confluence at `this page <https://legend-exp.atlassian.net/wiki/spaces/LEGEND/pages/494764033/Python+Software+Stack#Metadata-access>`_.
 
-An example of a config.json file is the following:
+An example of a config.yaml file is the following:
 
-.. code-block:: json
+.. code-block:: yaml
 
-  {
-  "output": "output_folder",
-  "dataset": {
-    "experiment": "L200",
-    "period": "p09",
-    "version": "tmp-auto",
-    "path": "/data2/public/prodenv/prod-blind/",
-    "type": "phy",
-    "time_selection": ...
-    },
-  "saving": "overwrite",
-  "slow_control": {
-    "parameters": ["DaqLeft-Temp1", "ZUL_T_RR"]
-    }
-  }
+output: output_folder
+dataset:
+  experiment: L200
+  period: p09
+  version: tmp-auto
+  path: /data2/public/prodenv/prod-blind/
+  type: phy
+  time_selection: ...   # Replace '...' with actual time selection details
+saving: overwrite
+slow_control:
+  parameters:
+    - DaqLeft-Temp1
+    - ZUL_T_RR
+
 
 The meaning of each entry is explained below:
 
