@@ -20,6 +20,7 @@ Monitoring shelve (and pdf) files will be stored under `<path2>/<ref>/generated/
 
 You can also enable the saving of pdf files for monitoring plots via `--pdf True`.
 You can also enable a fixed y-zoom in $\pm$3 keV by using `--zoom True`.
+You can change the value at which evaluating the gain differences by giving the new value `--escale <value>` as input; the default value is 2039 keV ($^{76}$Ge Q$_{\beta\beta}$).
 
 ## Slow Control data
 Slow Control data are automatically retrieved from the database (you need to provide the port you are using to connect to the database together with the password you can find on Confluence).

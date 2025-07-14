@@ -781,11 +781,6 @@ def main():
         help="True if you want to plot the quadratic resolution too; default: False",
     )
     parser.add_argument(
-        "--pdf",
-        default="False",
-        help="True if you want to save pdf files too; default: False",
-    )
-    parser.add_argument(
         "--cluster",
         default="lngs",
         help="Name of the cluster where you are operating; pick among 'lngs' or 'nersc'.",
@@ -799,6 +794,11 @@ def main():
         "--escale",
         default=2039,
         help="Energy sccale at which evaluating the gain differences; default: 2039 keV (76Ge Qbb).",
+    )
+    parser.add_argument(
+        "--pdf",
+        default="False",
+        help="True if you want to save pdf files too; default: False",
     )
 
     args = parser.parse_args()

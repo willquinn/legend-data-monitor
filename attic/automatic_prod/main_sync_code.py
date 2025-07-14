@@ -84,6 +84,16 @@ def main():
         default=False,
         help="Boolean for retrieving Slow Control data (default: False).",
     )
+    parser.add_argument(
+        "--escale",
+        default=2039,
+        help="Energy sccale at which evaluating the gain differences; default: 2039 keV (76Ge Qbb).",
+    )
+    parser.add_argument(
+        "--pdf",
+        default="False",
+        help="True if you want to save pdf files too; default: False",
+    )
 
     args = parser.parse_args()
     cluster = args.cluster
@@ -97,6 +107,8 @@ def main():
     input_period = args.p
     input_run = args.r
     get_sc = False if args.sc is False else True
+    save_pdf = args.save_pdf
+    escale_val = args.escale_val
 
     if not os.path.exists(rsync_path):
         os.makedirs(rsync_path)
@@ -489,9 +501,12 @@ def main():
             phy_mtg_data = mtg_folder.replace("mtg", "plt")
 
             # Note: quad_res is set to False by default in these plots
-            mtg_bash_command = f"{cmd} python monitoring.py --public_data {auto_dir_path} --hdf_files {phy_mtg_data} --output {mtg_folder} --start {start_key} --p {period} --runs {avail_runs} --cluster {cluster} --pswd_email {pswd_email}"
+            mtg_bash_command = f"{cmd} python monitoring.py --public_data {auto_dir_path} --hdf_files {phy_mtg_data} --output {mtg_folder} --start {start_key} --p {period} --runs {avail_runs} --cluster {cluster} --pswd_email {pswd_email} --escale {escale_val}"
             if partition is True:
                 mtg_bash_command += "--partition True"
+            if save_pdf is True:
+                mtg_bash_command += "--pdf True"
+
             subprocess.run(mtg_bash_command, shell=True)
             logger.info("...monitoring plots generated!")
     else:
