@@ -1429,10 +1429,10 @@ def read_json_or_yaml(file_path: str):
         if file_path.endswith((".yaml", ".yml")):
             data_dict = yaml.safe_load(f)
         elif file_path.endswith(".json"):
-            data_dict = json.load(open(f))
+            data_dict = json.load(f)
         else:
             logger.error(
-                "\033[91mUnsupported file format: expected .json or .yaml/.yml\033[0m"
+                "\033[91mUnsupported file format: expected .json or .yaml/.yml. Exit here\033[0m"
             )
             exit()
 
