@@ -1,5 +1,6 @@
-import legend_data_monitor  # noqa: F401
+import legend_data_monitor
 
 
 def test_import():
-    pass
+    # Test that the module imports correctly
+    assert legend_data_monitor is not None

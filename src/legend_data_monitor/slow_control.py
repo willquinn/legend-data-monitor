@@ -54,17 +54,17 @@ class SlowControl:
         self.path = data_info["path"]
         self.version = data_info["version"]
 
-        # load info from settings/SC-params.json
+        # load info from settings/SC-params.yaml
         self.parameter = parameter
         self.sc_parameters = utils.SC_PARAMETERS
         self.data = pd.DataFrame()
         self.scdb = LegendSlowControlDB()
         self.scdb.connect(port=port, password=pswd)
 
-        # check if parameter is within the one listed in settings/SC-params.json
+        # check if parameter is within the one listed in settings/SC-params.yaml
         if parameter not in self.sc_parameters["SC_DB_params"].keys():
             utils.logger.error(
-                f"\033[91mThe parameter '{self.parameter}' is not present in 'settings/SC-params.json'. Try again with another parameter or update the json file!\033[0m"
+                f"\033[91mThe parameter '{self.parameter}' is not present in 'settings/SC-params.yaml'. Try again with another parameter or update the YAML file!\033[0m"
             )
             return
 
@@ -84,7 +84,7 @@ class SlowControl:
 
     def get_sc_param(self):
         """Load the corresponding table from SC database for the process of interest and apply already the flags for the parameter under study."""
-        # getting the process and flags of interest from 'settings/SC-params.json' for the provided parameter
+        # getting the process and flags of interest from 'settings/SC-params.yaml' for the provided parameter
         table_param = self.sc_parameters["SC_DB_params"][self.parameter]["table"]
         flags_param = self.sc_parameters["SC_DB_params"][self.parameter]["flags"]
 
@@ -244,14 +244,14 @@ def get_plotting_info(
 
 
 def apply_flags(df: DataFrame, sc_parameters: dict, flags_param: list) -> DataFrame:
-    """Apply the flags read from 'settings/SC-params.json' to the input dataframe."""
+    """Apply the flags read from 'settings/SC-params.yaml' to the input dataframe."""
     for flag in flags_param:
         column = sc_parameters["expressions"][flag]["column"]
         entry = sc_parameters["expressions"][flag]["entry"]
         df = df[df[column] == entry]
 
     # check if the dataframe is empty, if so, skip this plot
-    if utils.is_empty(df):
+    if df.empty:
         return  # or exit - depending on how we will include these data in plotting
 
     return df

@@ -40,28 +40,28 @@ logger.addHandler(stream_handler)
 pkg = importlib.resources.files("legend_data_monitor")
 
 # load dictionary with plot info (= units, thresholds, label, ...)
-with open(pkg / "settings" / "par-settings.json") as f:
-    PLOT_INFO = json.load(f)
+with open(pkg / "settings" / "par-settings.yaml") as f:
+    PLOT_INFO = yaml.load(f, Loader=yaml.CLoader)
 
 # which parameter belongs to which tier
-with open(pkg / "settings" / "parameter-tiers.json") as f:
-    PARAMETER_TIERS = json.load(f)
+with open(pkg / "settings" / "parameter-tiers.yaml") as f:
+    PARAMETER_TIERS = yaml.load(f, Loader=yaml.CLoader)
 
 # which lh5 parameters are needed to be loaded from lh5 to calculate them
-with open(pkg / "settings" / "special-parameters.json") as f:
-    SPECIAL_PARAMETERS = json.load(f)
+with open(pkg / "settings" / "special-parameters.yaml") as f:
+    SPECIAL_PARAMETERS = yaml.load(f, Loader=yaml.CLoader)
 
 # flag renames for evt type
-with open(pkg / "settings" / "flags.json") as f:
-    FLAGS_RENAME = json.load(f)
+with open(pkg / "settings" / "flags.yaml") as f:
+    FLAGS_RENAME = yaml.load(f, Loader=yaml.CLoader)
 
 # list of detectors that have no pulser signal in a given period
-with open(pkg / "settings" / "no-pulser-dets.json") as f:
-    NO_PULS_DETS = json.load(f)
+with open(pkg / "settings" / "no-pulser-dets.yaml") as f:
+    NO_PULS_DETS = yaml.load(f, Loader=yaml.CLoader)
 
 # dictionary of keys to ignore
-with open(pkg / "settings" / "ignore-keys.json") as f:
-    IGNORE_KEYS = json.load(f)
+with open(pkg / "settings" / "ignore-keys.yaml") as f:
+    IGNORE_KEYS = yaml.load(f, Loader=yaml.CLoader)
 
 # convert all to lists for convenience
 for param in SPECIAL_PARAMETERS:
@@ -69,8 +69,8 @@ for param in SPECIAL_PARAMETERS:
         SPECIAL_PARAMETERS[param] = [SPECIAL_PARAMETERS[param]]
 
 # load SC params and corresponding flags to get specific parameters from big dfs that are stored in the database
-with open(pkg / "settings" / "SC-params.json") as f:
-    SC_PARAMETERS = json.load(f)
+with open(pkg / "settings" / "SC-params.yaml") as f:
+    SC_PARAMETERS = yaml.load(f, Loader=yaml.CLoader)
 
 # load list of columns to load for a dataframe
 COLUMNS_TO_LOAD = [
@@ -91,12 +91,12 @@ COLUMNS_TO_LOAD = [
 SPECIAL_SYSTEMS = {"pulser": 0, "pulser01ana": -1, "FCbsln": -2, "muon": -3}
 
 # dictionary with timestamps to remove for specific channels
-with open(pkg / "settings" / "remove-keys.json") as f:
-    REMOVE_KEYS = json.load(f)
+with open(pkg / "settings" / "remove-keys.yaml") as f:
+    REMOVE_KEYS = yaml.load(f, Loader=yaml.CLoader)
 
 # dictionary with detectors to remove
-with open(pkg / "settings" / "remove-dets.json") as f:
-    REMOVE_DETS = json.load(f)
+with open(pkg / "settings" / "remove-dets.yaml") as f:
+    REMOVE_DETS = yaml.load(f, Loader=yaml.CLoader)
 
 # -------------------------------------------------------------------------
 # Subsystem related functions (for getting channel map & status)
@@ -869,6 +869,16 @@ def bunch_dataset(config: dict, n_files=None):
     return filtered_files
 
 
+def check_key_existence(hdf_path: str, key_to_load: str) -> bool:
+    """Check if a specific key exists in the specified hdf file path."""
+    with pd.HDFStore(hdf_path, mode="r") as store:
+        if key_to_load in store.keys():
+            return True
+        else:
+            logger.debug(f"Key '{key_to_load}' not found in {hdf_path}")
+            return False
+
+
 # -------------------------------------------------------------------------
 # Config file related functions (for building files)
 # -------------------------------------------------------------------------
@@ -1026,20 +1036,14 @@ def get_livetime(tot_livetime: float):
     return tot_livetime, unit
 
 
-def is_empty(df: DataFrame):
-    """Check if a dataframe is empty."""
-    if df.empty:
-        return True
-
-
 def check_empty_df(df) -> bool:
     """Check if df (DataFrame | analysis_data.AnalysisData) exists and is not empty."""
     # the dataframe is of type DataFrame
     if isinstance(df, DataFrame):
-        return is_empty(df)
+        return df.empty
     # the dataframe is of type analysis_data.AnalysisData
     else:
-        return is_empty(df.data)
+        return df.data.empty
 
 
 def convert_to_camel_case(string: str, char: str) -> str:
@@ -1169,7 +1173,7 @@ def get_tiers_pars_folders(path: str):
     # config with info on all tier folder
     try:
         with open(os.path.join(path, "config.json")) as f:
-            config_proc = json.load(f)
+            config_proc = yaml.load(f, Loader=yaml.CLoader)
     except FileNotFoundError:
         with open(os.path.join(path, "dataflow-config.yaml")) as f:
             config_proc = yaml.safe_load(f)
@@ -1227,7 +1231,8 @@ def update_runinfo(run_info, period, run, data_type, my_global_path):
         os.path.join(my_global_path, f) for f in files if f"{data_type}-geds.hdf" in f
     ]
 
-    timestamps_file = json.load(open("settings/timestamps-to-filter.json"))
+    with open("settings/timestamps-to-filter.yaml") as f:
+        timestamps_file = yaml.load(f, Loader=yaml.CLoader)
     start_timestamps = timestamps_file["start"]
     end_timestamps = timestamps_file["end"]
 
@@ -1437,7 +1442,7 @@ def read_json_or_yaml(file_path: str):
             data_dict = json.load(f)
         else:
             logger.error(
-                "\033[91mUnsupported file format: expected .json or .yaml/.yml\033[0m"
+                "\033[91mUnsupported file format: expected .json or .yaml/.yml. Exit here\033[0m"
             )
             exit()
 
@@ -1455,7 +1460,7 @@ def retrieve_json_or_yaml(base_path: str, filename: str):
         path = json_path
     else:
         logger.error(
-            "\033[91mNo diode file found for %s in YAML or JSON format\033[0m", filename
+            "\033[91mNo file found for %s in YAML or JSON format\033[0m", filename
         )
         exit()
 

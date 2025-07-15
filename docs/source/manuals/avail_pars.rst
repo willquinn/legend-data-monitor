@@ -46,4 +46,4 @@ Available parameters
 
 .. important::
 
-  Special parameters are typically saved under ``src/legend-data-monitor/settings/special-parameters.json`` and carefully handled when loading data.
+  Special parameters are typically saved under ``src/legend-data-monitor/settings/special-parameters.yaml`` and carefully handled when loading data.

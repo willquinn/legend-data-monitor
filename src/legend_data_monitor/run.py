@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import argparse
-import json
 import sys
+
+import yaml
 
 import legend_data_monitor
 
@@ -10,7 +11,7 @@ import legend_data_monitor
 def main():
     """legend-data-monitor's starting point.
 
-    Here you define the path to the JSON configuration file you want to use when generating the plots.
+    Here you define the path to the YAML configuration file you want to use when generating the plots.
     To learn more, have a look at the help section:
 
     .. code-block:: console
@@ -62,7 +63,7 @@ def add_user_scdb(subparsers):
     )
     parser_auto_prod.add_argument(
         "--config",
-        help="""Path to config file (e.g. \"some_path/config_L200_r001_phy.json\").""",
+        help="""Path to config file (e.g. \"some_path/config_L200_r001_phy.yaml\").""",
     )
     parser_auto_prod.add_argument(
         "--port",
@@ -92,7 +93,7 @@ def add_user_config_parser(subparsers):
     )
     parser_auto_prod.add_argument(
         "--config",
-        help="""Path to config file (e.g. \"some_path/config_L200_r001_phy.json\").""",
+        help="""Path to config file (e.g. \"some_path/config_L200_r001_phy.yaml\").""",
     )
     parser_auto_prod.set_defaults(func=user_config_cli)
 
@@ -112,7 +113,7 @@ def add_user_bunch_parser(subparsers):
     )
     parser_auto_prod.add_argument(
         "--config",
-        help="""Path to config file (e.g. \"some_path/config_L200_r001_phy.json\").""",
+        help="""Path to config file (e.g. \"some_path/config_L200_r001_phy.yaml\").""",
     )
     parser_auto_prod.add_argument(
         "--n_files",
@@ -137,7 +138,7 @@ def add_user_rsync_parser(subparsers):
     )
     parser_auto_prod.add_argument(
         "--config",
-        help="""Path to config file (e.g. \"some_path/config_L200_r001_phy.json\").""",
+        help="""Path to config file (e.g. \"some_path/config_L200_r001_phy.yaml\").""",
     )
     parser_auto_prod.add_argument(
         "--keys",
@@ -162,7 +163,7 @@ def add_auto_prod_parser(subparsers):
     )
     parser_auto_prod.add_argument(
         "--plot_config",
-        help="""Path to config file with parameters/subsystems info to plot (e.g. \"some_path/plot_config.json\").""",
+        help="""Path to config file with parameters/subsystems info to plot (e.g. \"some_path/plot_config.yaml\").""",
     )
     parser_auto_prod.add_argument(
         "--filekeylist",
@@ -170,7 +171,7 @@ def add_auto_prod_parser(subparsers):
     )
     parser_auto_prod.add_argument(
         "--prod_path",
-        help="""Path to production environment (e.g. \"/data1/shared/l200/l200-prodenv/prod-ref/vXX.YY/\").\nHere, you should find \"config.json\" containing input/output folders info.""",
+        help="""Path to production environment (e.g. \"/data1/shared/l200/l200-prodenv/prod-ref/vXX.YY/\").\nHere, you should find \"config.yaml\" containing input/output folders info.""",
     )  # what if the file is not there?
     parser_auto_prod.set_defaults(func=auto_prod_cli)
 
@@ -183,12 +184,12 @@ def auto_prod_cli(args):
 
     # get the production config file
     prod_config_file = (
-        f"{prod_path}config.json"
+        f"{prod_path}config.yaml"
         if prod_path.endswith("/")
-        else f"{prod_path}/config.json"
+        else f"{prod_path}/config.yaml"
     )
     with open(prod_config_file) as f:
-        prod_config = json.load(f)
+        prod_config = yaml.load(f, Loader=yaml.CLoader)
 
     # get the filelist file path
     folder_filelists = prod_config["setups"]["l200"]["paths"]["tmp_filelists"][3:]

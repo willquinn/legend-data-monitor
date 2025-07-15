@@ -485,6 +485,31 @@ class AnalysisData:
             elif param == "AoE_Custom":
                 self.data["AoE_Custom"] = self.data["A_max"] / self.data["cuspEmax"]
 
+    def add_channel_mean_column(self):
+        """
+        Add a column to `self.data` with the per-channel mean of a time-cut DataFrame.
+
+        Parameters
+        ----------
+        self : AnalysisData object
+            An AnalysisData object that has `data` as a column.
+
+        Returns
+        -------
+        self.data : DataFrame
+            The original data with an additional column for the per-channel mean.
+        """
+        # apply time cut to the data
+        data_cut = cut_dataframe(self.data)
+        # compute channel-wise mean
+        channel_mean = data_cut.groupby("channel").mean(numeric_only=True)[
+            self.parameters
+        ]
+        # add the mean column back into the original data
+        self.data = concat_channel_mean(self, channel_mean)
+
+        return self.data
+
     def channel_mean(self):
         """
         Get mean value of each parameter of interest in each channel in the first 10% of the dataset.
@@ -526,13 +551,7 @@ class AnalysisData:
                 subsys = self.get_subsys() if self.aux_info is None else self.aux_info
                 # the file does not exist, so we get the mean as usual
                 if not os.path.exists(self.plt_path + "-" + subsys + ".hdf"):
-                    self_data_time_cut = cut_dataframe(self.data)
-                    # create a column with the mean of the cut dataframe (cut in the time window of interest)
-                    channel_mean = self_data_time_cut.groupby("channel").mean(
-                        numeric_only=True
-                    )[self.parameters]
-                    # concatenate column with mean values
-                    self.data = concat_channel_mean(self, channel_mean)
+                    self.data = self.add_channel_mean_column()
 
                 # the file exist: we have to combine previous data with new data, and re-compute the mean over the first 10% of data (that now, are more than before)
                 else:
@@ -541,12 +560,19 @@ class AnalysisData:
                         saved_type = utils.FLAGS_RENAME[self.evt_type]
                         param_camel = utils.convert_to_camel_case(param, "_")
                         key_to_load = f"{saved_type}_{param_camel}"
-                        old_data = pd.read_hdf(
-                            self.plt_path + "-" + subsys + ".hdf", key=key_to_load
+                        is_key = utils.check_key_existence(
+                            self.plt_path + "-" + subsys + ".hdf", key_to_load
                         )
-                        channel_mean = get_saved_df_hdf(self, subsys, param, old_data)
-                        # concatenate column with mean values
-                        self.data = concat_channel_mean(self, channel_mean)
+                        if is_key:
+                            old_data = pd.read_hdf(
+                                self.plt_path + "-" + subsys + ".hdf", key=key_to_load
+                            )
+                            channel_mean = get_saved_df_hdf(
+                                self, subsys, param, old_data
+                            )
+                            self.data = concat_channel_mean(self, channel_mean)
+                        else:
+                            self.data = self.add_channel_mean_column()
 
                     if len(self.parameters) > 1:
                         for param in self.parameters:
@@ -556,14 +582,21 @@ class AnalysisData:
                             saved_type = utils.FLAGS_RENAME[self.evt_type]
                             param_camel = utils.convert_to_camel_case(parameter, "_")
                             key_to_load = f"{saved_type}_{param_camel}"
-                            old_data = pd.read_hdf(
-                                self.plt_path + "-" + subsys + ".hdf", key=key_to_load
+                            is_key = utils.check_key_existence(
+                                self.plt_path + "-" + subsys + ".hdf", key_to_load
                             )
-                            channel_mean = get_saved_df_hdf(
-                                self, subsys, parameter, old_data
-                            )
-                            # we need to repeat this operation for each param, otherwise only the mean of the last one survives
-                            self.data = concat_channel_mean(self, channel_mean)
+                            if is_key:
+                                old_data = pd.read_hdf(
+                                    self.plt_path + "-" + subsys + ".hdf",
+                                    key=key_to_load,
+                                )
+                                channel_mean = get_saved_df_hdf(
+                                    self, subsys, parameter, old_data
+                                )
+                                # we need to repeat this operation for each param, otherwise only the mean of the last one survives
+                                self.data = concat_channel_mean(self, channel_mean)
+                            else:
+                                self.data = self.add_channel_mean_column()
 
         if self.data.empty:
             utils.logger.error(

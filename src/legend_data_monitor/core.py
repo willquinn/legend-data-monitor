@@ -1,9 +1,9 @@
-import json
 import os
 import re
 import subprocess
 import sys
 
+import yaml
 from legendmeta import JsonDB
 
 from . import analysis_data, plotting, slow_control, subsystem, utils
@@ -100,7 +100,7 @@ def retrieve_scdb(user_config_path: str, port: int, pswd: str):
     # Read user settings
     # -------------------------------------------------------------------------
     with open(user_config_path) as f:
-        config = json.load(f)
+        config = yaml.load(f, Loader=yaml.CLoader)
 
     # check validity of scdb settings
     utils.check_scdb_settings(config)
@@ -162,7 +162,7 @@ def control_plots(user_config_path: str, n_files=None):
     # Read user settings
     # -------------------------------------------------------------------------
     with open(user_config_path) as f:
-        config = json.load(f)
+        config = yaml.load(f, Loader=yaml.CLoader)
 
     # check validity of plot settings
     utils.check_plot_settings(config)
@@ -188,7 +188,7 @@ def auto_control_plots(
     # Read user settings
     # -------------------------------------------------------------------------
     with open(plot_config) as f:
-        config = json.load(f)
+        config = yaml.load(f, Loader=yaml.CLoader)
 
     # check validity of plot settings
     utils.check_plot_settings(config)

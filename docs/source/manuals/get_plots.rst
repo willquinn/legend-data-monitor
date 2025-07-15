@@ -14,21 +14,21 @@ You can either run the code by importing the ``legend-data-monitor`` module:
 .. code-block:: python
 
   import legend-data-monitor as ldm
-  user_config = "path_to_config.json"
+  user_config = "path_to_config.yaml"
   ldm.control_plots(user_config)
 
 Or run it by parsing to the executable the path to the config file:
 
 .. code-block:: bash
 
-  $ legend-data-monitor user_prod --config path_to_config.json
+  $ legend-data-monitor user_prod --config path_to_config.yaml
 
 If you want to inspect bunches of data (e.g. useful to avoid the process to get killed
 when loading lots of files), you can use
 
 .. code-block:: bash
 
-  $ legend-data-monitor user_bunch --config path_to_config.json --n_files N
+  $ legend-data-monitor user_bunch --config path_to_config.yaml --n_files N
 
 where ``N`` specifies how many files you want to inspect together at each iteration e.g. ``N=40``.
 
@@ -46,35 +46,30 @@ In the following, we describe the structure of the configuration file in detail.
 
 Example config
 ~~~~~~~~~~~~~~
-.. code-block:: json
+.. code-block:: yaml
 
- {
-  "output": "<output_path>", // output folder
-  "dataset": {
-    "experiment": "L200",
-    "period": "p09",
-    "version": "tmp-auto",
-    "path": "/data2/public/prodenv/prod-blind/",
-    "type": "phy",// data type (either cal, phy, or ["cal", "phy"])
-    "start": "2023-02-07 02:00:00",  // time cut (here based on start+end)
-    "end": "2023-02-07 03:30:00"
-  },
-  "saving": "overwrite",
-  "subsystems": {
-    "geds": { // type of subsystem to plot (geds, spms, pulser)
-      "Baselines in pulser events": {
-        "parameters": "baseline",
-        "event_type": "pulser",
-        "plot_structure": "per channel",
-        "plot_style": "vs time",
-        "variation": true,
-        "resampled": "also",
-        "time_window": "1H",
-        "status": true
-        }
-      }
-    }
-  }
+output: "<output_path>"  # output folder
+dataset:
+  experiment: "L200"
+  period: "p09"
+  version: "tmp-auto"
+  path: "/data2/public/prodenv/prod-blind/"
+  type: "phy"  # data type (either cal, phy, or ["cal", "phy"])
+  start: "2023-02-07 02:00:00"  # time cut (here based on start+end)
+  end: "2023-02-07 03:30:00"
+saving: "overwrite"
+subsystems:
+  geds:  # type of subsystem to plot (geds, spms, pulser)
+    "Baselines in pulser events":
+      parameters: "baseline"
+      event_type: "pulser"
+      plot_structure: "per channel"
+      plot_style: "vs time"
+      variation: true
+      resampled: "also"
+      time_window: "1H"
+      status: true
+
 
 The argument ``output`` is the path where plots and inspected data will be saved.
 In particular, ``dataset`` settings are:
@@ -128,7 +123,7 @@ For each subsystem to be plotted, specify
     - ``"only"``: plot only resampled values, i.e. averaged parameter values after computing an average in a time window equal to ``"time_window"``
     - ``"also"``: plot both resampled and not resampled values
 - ``"time_window"``: resampling time (``T``=minutes, ``H``=hours, ``D``=days) used to print resampled values (useful to spot trends over time)
-- ``"status"``: set it to ``True`` if you want to generate a GEDs status map for the subsystem and parameter under study. Before using this option, you first need to specify the limits you want to set as a low/high threshold for the parameter under study by adding the % or absolute threshold for the subsystem of interest in ``src/legend-data-monitor/settings/par-setting.json``.
+- ``"status"``: set it to ``True`` if you want to generate a GEDs status map for the subsystem and parameter under study. Before using this option, you first need to specify the limits you want to set as a low/high threshold for the parameter under study by adding the % or absolute threshold for the subsystem of interest in ``src/legend-data-monitor/settings/par-setting.yaml``.
 
 .. warning::
 
@@ -139,36 +134,33 @@ For each subsystem to be plotted, specify
 
 More than one subsystem can be entered at once, for instance:
 
-.. code-block:: json
+.. code-block:: yaml
 
-  "subsystems": {
-    "pulser": {
-      "Pulser event rate": {
-        "parameters": "event_rate",
-        "event_type": "pulser",
-        "plot_structure": "per channel",
-        "plot_style": "vs time",
-        "variation": false,
-        "time_window": "1H"
-      },
-      "AUX channel waveform maximum": {
-        "parameters": "wf_max",
-        "event_type": "all",
-        "plot_structure": "per channel",
-        "plot_style": "histogram",
-        "variation": false
-      }
-    },
-    "geds": {
-      "Baselines in pulser events": {
-        "parameters": "baseline",
-        "event_type": "pulser",
-        "plot_structure": "per channel",
-        "plot_style": "vs time",
-        "variation": true,
-        "time_window": "1H"
-      }
-    }
+    subsystems:
+      pulser:
+        "Pulser event rate":
+          parameters: "event_rate"
+          event_type: "pulser"
+          plot_structure: "per channel"
+          plot_style: "vs time"
+          variation: false
+          time_window: "1H"
+
+        "AUX channel waveform maximum":
+          parameters: "wf_max"
+          event_type: "all"
+          plot_structure: "per channel"
+          plot_style: "histogram"
+          variation: false
+
+      geds:
+        "Baselines in pulser events":
+          parameters: "baseline"
+          event_type: "pulser"
+          plot_structure: "per channel"
+          plot_style: "vs time"
+          variation: true
+          time_window: "1H"
 
 ..
 
@@ -181,7 +173,7 @@ Apply QC
 ~~~~~~~~
 If you are loading a parameter for GEDs channels and you want to apply one or multiple QC flags, you just specify it in the subsystem plot entry:
 
-.. code-block:: json
+.. code-block:: yaml
 
   "subsystems": {
     "geds": {
@@ -206,17 +198,20 @@ QC are not parameters like the baseline, energy, etc. so there is no purpose in 
 However, QC rates are of fundamental importance as well as distribution of QC classifiers.
 Below, we show a way to retrieve all available QC flags and/or classifiers by selecting ``"parameters": "quality_cuts"``:
 
-.. code-block:: json
+.. code-block:: yaml
 
-  "subsystems": {
-    "geds": {
-        "Quality cuts in phy events": {
-            "parameters": "quality_cuts",
-            "event_type": "phy",
-            "qc_flags": true,
-            "qc_classifiers": true
-        }
-    }
+    subsystems:
+      geds:
+        "Baselines in pulser events":
+          parameters: "baseline"
+          event_type: "pulser"
+          plot_structure: "per channel"
+          plot_style: "vs time"
+          variation: true
+          time_window: "1H"
+          cuts:
+            - "is_valid_bl_slope"
+
 ..
 
 This will create a unique table with QC flags/classifiers as columns, with an entry for each hit in each GEDs detector.
@@ -225,7 +220,7 @@ Any bitmask entry is automatically converted into a boolean entry based on the i
 .. warning::
 
   At the moment, there is no differentiation based on the detector type for the available QC flags/classifiers.
-  In other words, to load all QC info we read at the flags/classifiers listed under a path of type ``<path_to_prod_blind>/ref-v2.1.5/inputs/dataprod/config/tier_hit/l200-p01-r%-T%-ICPC-hit_config.json``.
+  In other words, to load all QC info we read at the flags/classifiers listed under a path of type ``<path_to_prod_blind>/ref-v2.1.5/inputs/dataprod/config/tier_hit/l200-p01-r%-T%-ICPC-hit_config.yaml``.
   If any of these listed flags/classifiers is not present for a given detector type (eg COAX), then all entries of the flag/classifier are set to ``False`` by default.
   Any difference will be better handled in the future.
 
@@ -248,21 +243,21 @@ To do this, you can configure the config file to adjust a parameter by subtracti
 
 In the config file, you just need to set either the key ``AUX_ratio`` or ``AUX_diff" to true (note: it's not possible to select both options at the same time):
 
-.. code-block:: json
+.. code-block:: yaml
 
-  "subsystems": {
-    "geds": {
-      "Baselines in pulser events": {
-        "parameters": "baseline",
-        "event_type": "pulser",
-        "plot_structure": "per channel",
-        "plot_style": "vs time",
-        "variation": true,
-        "AUX_ratio": true,
-        "time_window": "1H",
-        "cuts": ["is_valid_bl_slope"]
-      }
-    }
+    subsystems:
+      geds:
+        "Baselines in pulser events":
+          parameters: "baseline"
+          event_type: "pulser"
+          plot_structure: "per channel"
+          plot_style: "vs time"
+          variation: true
+          AUX_ratio: true
+          time_window: "1H"
+          cuts:
+            - "is_valid_bl_slope"
+
 ..
 
 
@@ -280,18 +275,16 @@ K lines
 ~~~~~~~
 To plot events having energies within 1430 and 1575 keV (ie, around the 40K and 42K regions), grouping channels by string and selecting physical (=not-pulser) events, use
 
-.. code-block:: json
+.. code-block:: yaml
 
-    "subsystems": {
-      "geds": {
-          "K events":{
-              "parameters": "K_events",
-              "event_type": "K_lines",
-              "plot_structure": "per string",
-              "plot_style" : "scatter"
-        }
-      }
-    }
+    subsystems:
+      geds:
+        "K events":
+          parameters: "K_events"
+          event_type: "K_lines"
+          plot_structure: "per string"
+          plot_style: "scatter"
+
 ..
 
 
@@ -299,18 +292,16 @@ FWHM
 ~~~~
 To plot FWHM values for each channel, grouping them by strings, selecting only pulser events, use
 
-.. code-block:: json
+.. code-block:: yaml
 
-    "subsystems": {
-        "geds": {
-          "FWHM in pulser events":{
-              "parameters": "FWHM",
-              "event_type": "pulser",
-              "plot_structure": "array",
-              "plot_style" : "vs ch"
-          }
-        }
-    }
+    subsystems:
+      geds:
+        "FWHM in pulser events":
+          parameters: "FWHM"
+          event_type: "pulser"
+          plot_structure: "array"
+          plot_style: "vs ch"
+
 ..
 
 
@@ -318,39 +309,35 @@ Relative maximum of the waveform
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 To plot the relative difference between ``wf_max`` and ``baseline``, use
 
-.. code-block:: json
+.. code-block:: yaml
 
-    "subsystems": {
-        "pulser": {
-            "Relative wf_max": {
-                "parameters": "wf_max_rel",
-                "event_type": "pulser", // or phy, all, ...
-                "plot_structure": "per channel",
-                "plot_style": "vs time",
-                "variation": true, // optional
-                "time_window": "5T"
-            }
-        }
-    }
+    subsystems:
+      pulser:
+        "Relative wf_max":
+          parameters: "wf_max_rel"
+          event_type: "pulser"  # or phy, all, ...
+          plot_structure: "per channel"
+          plot_style: "vs time"
+          variation: true  # optional
+          time_window: "5T"
+
 ..
 
 Event rate
 ~~~~~~~~~~
 To plot the event rate, by sampling over a period of time equal to ``<time_window>`` (``T``=minutes, ``H``=hours, ``D``=days), use:
 
-.. code-block:: json
+.. code-block:: yaml
 
-    "subsystems": {
-        "geds": {
-            "Event rate": {
-                "parameters": "event_rate",
-                "event_type": "pulser",
-                "plot_structure": "per channel",
-                "plot_style": "vs time",
-                "resampled": "no",
-                "variation": false,
-                "time_window": "5T"
-            }
-        }
-    }
+    subsystems:
+      geds:
+        "Event rate":
+          parameters: "event_rate"
+          event_type: "pulser"
+          plot_structure: "per channel"
+          plot_style: "vs time"
+          resampled: "no"
+          variation: false
+          time_window: "5T"
+
 ..

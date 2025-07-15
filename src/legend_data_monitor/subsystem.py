@@ -131,20 +131,20 @@ class Subsystem:
         # separate dsp and hit parameters as they might have different paths
         param_tiers = pd.DataFrame.from_dict(utils.PARAMETER_TIERS.items())
         param_tiers.columns = ["param", "tier"]
-        # keep only parameters that have an associated entry in the parameter-tiers.json file
+        # keep only parameters that have an associated entry in the parameter-tiers.yaml file
         my_params = param_tiers[param_tiers["param"].isin(params_for_dataloader)]
         dsp_params = my_params[my_params["tier"] == "dsp"]["param"].tolist()
         hit_params = my_params[my_params["tier"] == "hit"]["param"].tolist()
         utils.logger.debug("dsp/psp parameters: %s", dsp_params)
         utils.logger.debug("hit/pht parameters: %s", hit_params)
 
-        # find parameters that are not in the JSON
+        # find parameters that are not in the YAML
         missing_params = [
             p for p in params_for_dataloader if p not in param_tiers["param"].values
         ]
         if missing_params:
             utils.logger.warning(
-                "\033[93mThe following parameters are not in settings/parameter-tiers.json and will be skipped:\033[0m %s",
+                "\033[93mThe following parameters are not in settings/parameter-tiers.yaml and will be skipped:\033[0m %s",
                 ", ".join(missing_params),
             )
 
@@ -623,7 +623,7 @@ class Subsystem:
         # loop over entries and find out subsystem
         # -------------------------------------------------------------------------
 
-        # config.channel_map is already a dict read from the channel map json
+        # config.channel_map is already a dict read from the channel map
         for entry in full_channel_map:
             # skip dummy channels
             if "BF" in entry or "DUMMY" in entry:
@@ -890,7 +890,7 @@ class Subsystem:
     def remove_timestamps(self, remove_keys: dict):
         """Remove timestamps from the dataframes for a given channel.
 
-        The time interval in which to remove the channel is provided through an external json file.
+        The time interval in which to remove the channel is provided through an external YAML file.
         """
         # all timestamps we are considering are expressed in UTC0
         utils.logger.debug("... removing timestamps from the following detectors:")
