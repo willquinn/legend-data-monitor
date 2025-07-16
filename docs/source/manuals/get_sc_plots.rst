@@ -87,3 +87,8 @@ We store SC data in the following way:
                 └── <time_selection>
                   ├── SC-<time_selection>.hdf
                   └── SC-<time_selection>.{dat,bak,dir}
+
+
+.. note::
+
+  The accessible Slow Control database is ``scdb``. For databases with previous deployment data, you should use ``scdbL140`` or ``scdbL60`` (not implemented).

@@ -1169,8 +1169,15 @@ def get_map_dict(data_analysis: DataFrame):
 
 
 def get_tiers_pars_folders(path: str):
-    """Get the absolute path to different tier and par folders."""
-    # config with info on all tier folder
+    """
+    Get the absolute path to different tier and par folders.
+
+    Parameters
+    ----------
+    path
+        Absolute path to the processed data for a specific version, eg path='/global/cfs/cdirs/m2676/data/lngs/l200/public/prodenv/prod-blind/ref-v2.1.5/'.
+    """
+    # config file with info on all tier folder
     try:
         with open(os.path.join(path, "config.json")) as f:
             config_proc = yaml.load(f, Loader=yaml.CLoader)
