@@ -760,39 +760,6 @@ def get_saved_df_hdf(
     return channel_mean
 
 
-def get_saved_df(
-    self, subsys: str, param: str, old_dict: dict, evt_type: str
-) -> pd.DataFrame:
-    """Get the already saved dataframe from the already saved output shelve file, for a given parameter ```param```. In particular, it evaluates again the mean over the new 10% of data in the new larger time window."""
-    # get old dataframe (we are interested only in the column with mean values)
-    old_df = old_dict["monitoring"][evt_type][param]["df_" + subsys]
-
-    # we need to re-calculate the mean value over the new bigger time window!
-    # we retrieve absolute values of already saved df, we use
-    old_absolute_values = old_df.copy().filter(items=["channel", "datetime", param])
-    new_absolute_values = self.data.copy().filter(items=["channel", "datetime", param])
-
-    concatenated_df = pd.concat(
-        [old_absolute_values, new_absolute_values], ignore_index=True
-    )
-    # get the dataframe for timestamps below 10% of data present in the selected time window
-    concatenated_df_time_cut = cut_dataframe(concatenated_df)
-    # remove 'datetime' column (it was necessary just to evaluate again the first 10% of data that are necessary to evaluate the mean on the new dataset)
-    concatenated_df_time_cut = concatenated_df_time_cut.drop(columns=["datetime"])
-
-    # create a column with the mean of the cut dataframe (cut in the time window of interest)
-    channel_mean = (
-        concatenated_df_time_cut.groupby("channel")[param].mean().reset_index()
-    )
-
-    # drop potential duplicate rows
-    channel_mean = channel_mean.drop_duplicates(subset=["channel"])
-    # set channel to index because that's how it comes out in previous cases from df.mean()
-    channel_mean = channel_mean.set_index("channel")
-
-    return channel_mean
-
-
 def get_aux_df(
     df: pd.DataFrame, parameter: list, plot_settings: dict, aux_ch: str
 ) -> pd.DataFrame:

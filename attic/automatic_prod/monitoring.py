@@ -5,7 +5,6 @@ import json
 import logging
 import os
 import pickle
-import re
 import shelve
 import sys
 
@@ -41,10 +40,6 @@ logger.addHandler(stream_handler)
 
 IPython_default = plt.rcParams.copy()
 SMALL_SIZE = 8
-MEDIUM_SIZE = 10
-BIGGER_SIZE = 12
-
-figsize = (4.5, 3)
 
 plt.rc("font", size=SMALL_SIZE)  # controls default text sizes
 plt.rc("axes", titlesize=SMALL_SIZE)  # fontsize of the axes title
@@ -57,35 +52,9 @@ plt.rcParams["font.family"] = "serif"
 
 matplotlib.rcParams["mathtext.fontset"] = "stix"
 
-marker_size = 2
-line_width = 0.5
-cap_size = 0.5
-cap_thick = 0.5
-
 plt.rc("axes", facecolor="white", edgecolor="black", axisbelow=True, grid=True)
 
 ignore_keys = legend_data_monitor.utils.IGNORE_KEYS
-
-
-def transform_string(input_string):
-    """From st1 to String:01."""
-    # extract numeric part from the input string using regular expression
-    match = re.match(r"\D*(\d+)", input_string)
-    numeric_part = match.group(1)
-    # Format the numeric part with leading zeros and combine with 'String:'
-    result_string = f"String:{int(numeric_part):02}"
-    return result_string
-
-
-def parse_json_or_dict(value):
-    """Either load data stored in a JSON file or return the input dictionary."""
-    try:
-        # Attempt to load value as JSON
-        with open(value) as json_file:
-            return json.load(json_file)
-    except (FileNotFoundError, json.JSONDecodeError):
-        # Treat value as dictionary
-        return eval(value)
 
 
 def build_new_files(my_path, period, run):
@@ -427,13 +396,6 @@ def get_calib_pars(
     return calib_data
 
 
-def custom_resampler(group, min_required_data_points=100):
-    if len(group) >= min_required_data_points:
-        return group
-    else:
-        return None
-
-
 def get_dfs(phy_mtg_data, period, run_list):
     geds_df_cuspEmax_abs = pd.DataFrame()
     geds_df_cuspEmax_abs_corr = pd.DataFrame()
@@ -575,7 +537,7 @@ def filter_series_by_ignore_keys(series_to_filter, ignore_keys, key):
     return series_to_filter
 
 
-def get_pulser_data(resampling_time, period, dfs, channel, runs_no, escale):
+def get_pulser_data(resampling_time, period, dfs, channel, escale):
     # geds
     ser_ged_cusp = dfs[0][channel].sort_index()
     # if no pulser, set these to None
@@ -929,7 +891,6 @@ def main():
                     period,
                     dfs,
                     int(channel.split("ch")[-1]),
-                    len(runs),
                     escale=escale_val,
                 )
 
