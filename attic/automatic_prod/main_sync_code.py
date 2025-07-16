@@ -121,7 +121,15 @@ def main():
         else "/data2/public/prodenv/prod-blind/"
     )
     auto_dir_path = os.path.join(auto_dir, ref_version)
-    search_directory = os.path.join(auto_dir_path, "generated/tier/dsp/phy")
+    found = False
+    for tier in ["hit", "pht", "dsp", "psp", "evt", "pet"]:
+        search_directory = os.path.join(auto_dir_path, "generated/tier", tier, "phy")
+        if os.path.isdir(search_directory):
+            found = True
+            break
+    if found is False:
+        logger.debug(f"No valid folder {search_directory} found. Exiting.")
+        exit()
 
     def search_latest_folder(my_dir):
         directories = [
@@ -135,21 +143,8 @@ def main():
         search_latest_folder(search_directory) if input_period is None else input_period
     )
     # Run to monitor
-    search_directory = os.path.join(search_directory, period)
     run = search_latest_folder(search_directory) if input_run is None else input_run
-
-    found = False
-    for tier in ["hit", "pht", "dsp", "psp", "evt", "pet", "skm"]:
-        source_dir = os.path.join(
-            auto_dir_path, "generated/tier", tier, "phy", period, run
-        )
-        if os.path.isdir(source_dir):
-            found = True
-            break
-
-    if found is False:
-        logger.debug(f"No valid folder {source_dir} found. Exiting.")
-        exit()
+    source_dir = os.path.join(search_directory, period, run)
 
     # commands to run the container
     cmd = (
@@ -502,7 +497,9 @@ def main():
             logger.debug("Generating monitoring plots...")
             # get first timestamp of first run of the given period
             start_key = (
-                sorted(os.listdir(os.path.join(search_directory, avail_runs[0])))[0]
+                sorted(
+                    os.listdir(os.path.join(search_directory, period, avail_runs[0]))
+                )[0]
             ).split("-")[4]
 
             # get pulser monitoring plot for a full period
