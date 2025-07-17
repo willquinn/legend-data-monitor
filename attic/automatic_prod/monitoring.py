@@ -419,7 +419,6 @@ def get_dfs(phy_mtg_data, period, run_list):
             logger.debug("hdf_geds is empty")
             return None, None, None, None
         else:
-            logger.debug(f"Found {hdf_geds} file")
             hdf_geds = os.path.join(phy_mtg_data, r, hdf_geds[0])
             geds_abs = pd.read_hdf(hdf_geds, key="IsPulser_TrapemaxCtcCal")
             geds_df_cuspEmax_abs = pd.concat(
@@ -447,7 +446,6 @@ def get_dfs(phy_mtg_data, period, run_list):
         if len(hdf_puls) == 0:
             logger.debug("hdf_puls is empty")
         else:
-            logger.debug(f"Found {hdf_puls} file")
             hdf_puls = os.path.join(phy_mtg_data, r, hdf_puls[0])
             with pd.HDFStore(hdf_puls, mode="r") as store:
                 available_keys = store.keys()
@@ -733,7 +731,13 @@ def main():
     )
     parser.add_argument("--start", help="First timestamp of the inspected range.")
     parser.add_argument("--p", help="Period to inspect.")
-    parser.add_argument("--runs", nargs="+", type=str, help="Runs to inspect.")
+    parser.add_argument(
+        "--avail_runs",
+        nargs="+",
+        type=str,
+        help="Available runs to inspect for a given period.",
+    )
+    parser.add_argument("--current_run", type=str, help="Run under inspection.")
     parser.add_argument(
         "--partition",
         default="False",
@@ -766,7 +770,11 @@ def main():
     parser.add_argument(
         "--pdf",
         default="False",
-        help="True if you want to save pdf files too; default: False",
+        help="True if you want to save pdf files too; default: False.",
+    )
+    parser.add_argument(
+        "--last_checked",
+        help="Timestamp of the last check. ",
     )
 
     args = parser.parse_args()
@@ -776,11 +784,13 @@ def main():
     output_folder = args.output
     start_key = args.start
     period = args.p
-    runs = args.runs
+    runs = args.avail_runs
+    current_run = args.current_run
     cluster = args.cluster
     pswd_email = args.pswd_email
     save_pdf = args.pdf
     escale_val = float(args.escale)
+    last_checked = args.last_checked
 
     avail_runs = []
     for entry in runs:
@@ -820,7 +830,7 @@ def main():
         if len(channels) > 0:
             str_chns[string] = channels
 
-    email_message = ["ALERT: Data monitoring threshold exceeded."]
+    email_message = []
 
     # skip detectors with no pulser entries
     no_puls_dets = legend_data_monitor.utils.NO_PULS_DETS
@@ -828,9 +838,9 @@ def main():
         f'(channel == "{channel}" and period in {periods})'
         for channel, periods in no_puls_dets.items()
     )
+    period_list = list(dataset.keys())
 
     # gain over period
-    period_list = list(dataset.keys())
     for index_i in tqdm(range(len(period_list))):
         period = period_list[index_i]
         run_list = dataset[period]
@@ -914,48 +924,6 @@ def main():
                         if pulser_data["diff"]["kevdiff_av"] is None
                         else pulser_data["diff"]["kevdiff_av"]
                     )
-
-                    # check if gain is over threshold
-                    if (
-                        kevdiff is not None
-                        and len(email_message) > 1
-                        and pswd_email is not None
-                    ):
-                        timestamps = kevdiff.index
-                        for i in range(len(t0)):
-                            time_range_start = t0[i]
-                            time_range_end = time_range_start + pd.Timedelta(days=7)
-                            # convert naive timestamp to UTC-aware
-                            time_range_start = pd.Timestamp(time_range_start)
-                            time_range_end = pd.Timestamp(time_range_end)
-
-                            if time_range_start.tzinfo is None:
-                                time_range_start = time_range_start.tz_localize("UTC")
-                            else:
-                                time_range_start = time_range_start.tz_convert("UTC")
-                            if time_range_end.tzinfo is None:
-                                time_range_end = time_range_end.tz_localize("UTC")
-                            else:
-                                time_range_end = time_range_end.tz_convert("UTC")
-
-                            # filter timestamps/gain within the time range
-                            mask_time_range = (timestamps >= time_range_start) & (
-                                timestamps < time_range_end
-                            )
-                            filtered_timestamps = timestamps[mask_time_range]
-                            kevdiff_in_range = kevdiff[mask_time_range]
-
-                            threshold = pars_data["res"][i] / 2
-                            mask = (kevdiff_in_range > threshold) | (
-                                kevdiff_in_range < -threshold
-                            )
-                            over_threshold_timestamps = filtered_timestamps[mask]
-
-                            if not over_threshold_timestamps.empty:
-                                for t in over_threshold_timestamps:
-                                    email_message.append(
-                                        f"- Gain over threshold at {t} ({period}) for {channel_name} ({channel}) string {string}"
-                                    )
 
                     # PULS01ANA has a signal - we can correct GEDS energies for it!
                     if pulser_data["pul_cusp"]["kevdiff_av"] is not None:
@@ -1175,6 +1143,304 @@ def main():
                 #  - p08_string2_pos1_B00035C
                 #  - p08_string2_pos2_C000RG1
                 #  - ...
+
+    # parameters (bsln, gain, ...) over run
+    for index_i in tqdm(range(len(period_list))):
+        period = period_list[index_i]
+
+        (
+            geds_df_cuspEmax_abs,
+            geds_df_cuspEmax_abs_corr,
+            puls_df_cuspEmax_abs,
+            geds_df_cuspEmaxCtcCal_abs,
+        ) = get_dfs(phy_mtg_data, period, [current_run])
+        geds_df_trapTmax, geds_df_tp0est, puls_df_trapTmax, puls_df_tp0est = (
+            get_traptmax_tp0est(phy_mtg_data, period, [current_run])
+        )
+
+        if (
+            geds_df_cuspEmax_abs is None
+            or geds_df_cuspEmax_abs_corr is None
+            or puls_df_cuspEmax_abs is None
+        ):
+            logger.debug("Dataframes are None for %s!", period)
+            continue
+        # check if geds df is empty; if pulser is, means we do not apply any correction
+        # (and thus geds_corr is also empty - the code will handle the case)
+        if (
+            geds_df_cuspEmax_abs.empty
+            # or geds_df_cuspEmax_abs_corr.empty
+            # or puls_df_cuspEmax_abs.empty
+        ):
+            logger.debug("Dataframes are empty for %s!", period)
+            continue
+        dfs = [
+            geds_df_cuspEmax_abs,
+            geds_df_cuspEmax_abs_corr,
+            puls_df_cuspEmax_abs,
+            geds_df_trapTmax,
+            geds_df_tp0est,
+            puls_df_trapTmax,
+            puls_df_tp0est,
+            geds_df_cuspEmaxCtcCal_abs,
+        ]
+
+        string_list = list(str_chns.keys())
+        for index_j in tqdm(range(len(string_list))):
+            string = string_list[index_j]
+
+            channel_list = str_chns[string]
+            for index_k in range(len(channel_list)):
+                channel = channel_list[index_k]
+                channel_name = chmap.map("daq.rawid")[int(channel[2:])]["name"]
+                resampling_time = "1h"  # if len(runs)>1 else "10T"
+                if int(channel.split("ch")[-1]) not in list(dfs[0].columns):
+                    logger.debug(f"{channel} is not present in the dataframe!")
+                    continue
+
+                logger.debug(f"Inspecting {channel_name}")
+                pulser_data = get_pulser_data(
+                    resampling_time,
+                    period,
+                    dfs,
+                    int(channel.split("ch")[-1]),
+                    escale=escale_val,
+                )
+
+                fig, ax = plt.subplots(figsize=(12, 4))
+                logger.debug("...getting calibration data")
+                pars_data = get_calib_pars(
+                    cluster,
+                    auto_dir_path,
+                    period,
+                    [current_run],
+                    [channel, channel_name],
+                    partition,
+                    escale=escale_val,
+                    fit=fit_flag,
+                )
+
+                t0 = pars_data["run_start"]
+                if not eval(flag_expr):
+                    kevdiff = (
+                        pulser_data["ged"]["kevdiff_av"]
+                        if pulser_data["diff"]["kevdiff_av"] is None
+                        else pulser_data["diff"]["kevdiff_av"]
+                    )
+
+                    # check if gain is over threshold
+                    if kevdiff is not None and pswd_email is not None:
+                        timestamps = kevdiff.index
+
+                        # remove data that were already inspected at the previous iteration
+                        # (not to receive again the same warning messages as before)
+                        cutoff = pd.to_datetime(float(last_checked), unit="s", utc=True)
+                        filtered_series = kevdiff[kevdiff.index > cutoff]
+
+                        if not filtered_series.empty:
+                            time_range_start = t0[0]
+                            time_range_end = time_range_start + pd.Timedelta(days=7)
+                            # convert naive timestamp to UTC-aware
+                            time_range_start = pd.Timestamp(time_range_start)
+                            time_range_end = pd.Timestamp(time_range_end)
+
+                            if time_range_start.tzinfo is None:
+                                time_range_start = time_range_start.tz_localize("UTC")
+                            else:
+                                time_range_start = time_range_start.tz_convert("UTC")
+                            if time_range_end.tzinfo is None:
+                                time_range_end = time_range_end.tz_localize("UTC")
+                            else:
+                                time_range_end = time_range_end.tz_convert("UTC")
+
+                            # filter timestamps/gain within the time range
+                            mask_time_range = (timestamps >= time_range_start) & (
+                                timestamps < time_range_end
+                            )
+                            filtered_timestamps = timestamps[mask_time_range]
+                            kevdiff_in_range = kevdiff[mask_time_range]
+
+                            threshold = pars_data["res"][i]
+                            mask = (kevdiff_in_range > threshold) | (
+                                kevdiff_in_range < -threshold
+                            )
+                            over_threshold_timestamps = filtered_timestamps[mask]
+
+                            if not over_threshold_timestamps.empty:
+                                if email_message == []:
+                                    email_message = [
+                                        f"ALERT: Data monitoring threshold exceeded in {period}-{current_run}.\n"
+                                    ]
+                                email_message.append(
+                                    f"- Gain over threshold for {channel_name} (string {string}) for {len(over_threshold_timestamps)} times"
+                                )
+
+                    # PULS01ANA has a signal - we can correct GEDS energies for it!
+                    if pulser_data["pul_cusp"]["kevdiff_av"] is not None:
+                        plt.plot(
+                            pulser_data["pul_cusp"]["kevdiff_av"],
+                            "C2",
+                            label="PULS01ANA",
+                        )
+                        plt.plot(
+                            pulser_data["diff"]["kevdiff_av"],
+                            "C4",
+                            label="GED corrected",
+                        )
+                        plt.fill_between(
+                            pulser_data["diff"]["kevdiff_av"].index.values,
+                            y1=[
+                                float(i) - float(j)
+                                for i, j in zip(
+                                    pulser_data["diff"]["kevdiff_av"].values,
+                                    pulser_data["diff"]["kevdiff_std"].values,
+                                )
+                            ],
+                            y2=[
+                                float(i) + float(j)
+                                for i, j in zip(
+                                    pulser_data["diff"]["kevdiff_av"].values,
+                                    pulser_data["diff"]["kevdiff_std"].values,
+                                )
+                            ],
+                            color="k",
+                            alpha=0.2,
+                            label=r"±1$\sigma$",
+                        )
+                    # else, no correction is applied
+                    else:
+                        plt.plot(
+                            pulser_data["ged"]["kevdiff_av"].sort_index(),
+                            "dodgerblue",
+                            label="GED uncorrected",
+                        )
+                        plt.fill_between(
+                            pulser_data["ged"]["kevdiff_av"].index.values,
+                            y1=[
+                                float(i) - float(j)
+                                for i, j in zip(
+                                    pulser_data["ged"]["kevdiff_av"].values,
+                                    pulser_data["ged"]["kevdiff_std"].values,
+                                )
+                            ],
+                            y2=[
+                                float(i) + float(j)
+                                for i, j in zip(
+                                    pulser_data["ged"]["kevdiff_av"].values,
+                                    pulser_data["ged"]["kevdiff_std"].values,
+                                )
+                            ],
+                            color="k",
+                            alpha=0.2,
+                            label=r"±1$\sigma$",
+                        )
+
+                plt.plot(
+                    [t0[0], t0[0] + pd.Timedelta(days=7)],
+                    [pars_data["res"][i] / 2, pars_data["res"][i] / 2],
+                    "b-",
+                )
+                plt.plot(
+                    [t0[0], t0[0] + pd.Timedelta(days=7)],
+                    [-pars_data["res"][i] / 2, -pars_data["res"][i] / 2],
+                    "b-",
+                )
+                if quadratic:
+                    plt.plot(
+                        [t0[0], t0[0] + pd.Timedelta(days=7)],
+                        [
+                            pars_data["res_quad"][i] / 2,
+                            pars_data["res_quad"][i] / 2,
+                        ],
+                        color="dodgerblue",
+                        linestyle="-",
+                    )
+                    plt.plot(
+                        [t0[0], t0[0] + pd.Timedelta(days=7)],
+                        [
+                            -pars_data["res_quad"][i] / 2,
+                            -pars_data["res_quad"][i] / 2,
+                        ],
+                        color="dodgerblue",
+                        linestyle="-",
+                    )
+
+                if str(pars_data["res"][i] / 2 * 1.1) != "nan" and i < len(
+                    pars_data["res"]
+                ) - (xlim_idx - 1):
+                    plt.text(
+                        t0[0],
+                        pars_data["res"][i] / 2 * 1.1,
+                        "{:.2f}".format(pars_data["res"][i]),
+                        color="b",
+                    )
+
+                if quadratic:
+                    if str(pars_data["res_quad"][i] / 2 * 1.5) != "nan" and i < len(
+                        pars_data["res"]
+                    ) - (xlim_idx - 1):
+                        plt.text(
+                            t0[0],
+                            pars_data["res_quad"][i] / 2 * 1.5,
+                            "{:.2f}".format(pars_data["res_quad"][i]),
+                            color="dodgerblue",
+                        )
+
+                fig.suptitle(
+                    f'period: {period} - string: {string} - position: {chmap.map("daq.rawid")[int(channel[2:])]["location"]["position"]} - ged: {channel_name}'
+                )
+                plt.ylabel(r"Energy diff / keV")
+                plt.plot([0, 1], [0, 1], "b", label="Qbb FWHM keV lin.")
+                if quadratic:
+                    plt.plot([1, 2], [1, 2], "dodgerblue", label="Qbb FWHM keV quadr.")
+
+                if zoom:
+                    if flag_expr:
+                        plt.ylim(-3, 3)
+                    else:
+                        bound = np.average(pulser_data["ged"]["cusp_av"].dropna())
+                        plt.ylim(-2.5 * bound, 2.5 * bound)
+                max_date = pulser_data["ged"]["kevdiff_av"].index.max()
+                time_difference = max_date.tz_localize(None) - t0[
+                    -xlim_idx
+                ].tz_localize(None)
+                plt.xlim(
+                    t0[0] - pd.Timedelta(hours=0.5),
+                    t0[-xlim_idx] + time_difference * 1.5,
+                )  # pd.Timedelta(days=7))# --> change me to resize the width of the last run
+                plt.legend(loc="lower left")
+                plt.tight_layout()
+
+                end_folder = os.path.join(
+                    output_folder, period, "by_run", current_run, "gain"
+                )
+                mgt_folder = os.path.join(end_folder, f"st{string}")
+                if not os.path.exists(mgt_folder):
+                    os.makedirs(mgt_folder)
+                    logger.debug("...created %s", mgt_folder)
+
+                # ~~~~~~~~~~~~~~~~ save pdfs with plots for an easy/quick access ~~~~~~~~~~~~~~~~
+                pdf_name = os.path.join(
+                    mgt_folder,
+                    f"{period}_string{string}_pos{chmap.map('daq.rawid')[int(channel[2:])]['location']['position']}_{channel_name}_gain_shift.pdf",
+                )
+                if save_pdf:
+                    plt.savefig(pdf_name)
+
+                # pickle and save calibration inputs retrieved ots in a shelve file
+                # serialize the plot
+                serialized_plot = pickle.dumps(plt.gcf())
+                plt.close(fig)
+                # store the serialized plot in a shelve object under key
+                with shelve.open(
+                    os.path.join(end_folder, f"{period}_gain_shift"),
+                    "c",
+                    protocol=pickle.HIGHEST_PROTOCOL,
+                ) as shelf:
+                    shelf[
+                        f'{period}_string{string}_pos{chmap.map("daq.rawid")[int(channel[2:])]["location"]["position"]}_{channel_name}'
+                    ] = serialized_plot
+                plt.close(fig)
 
     if len(email_message) > 1 and pswd_email is not None:
         with open("message.txt", "w") as f:

@@ -187,8 +187,6 @@ def main():
             ]
         },
     }
-    with open(os.path.join(rsync_path, "auto_slow_control.yaml"), "w") as f:
-        yaml.dump(scdb, f, sort_keys=False)
 
     # define geds dict
     my_config = {
@@ -343,6 +341,8 @@ def main():
             }
         },
     }
+    with open(os.path.join(rsync_path, "auto_slow_control.yaml"), "w") as f:
+        yaml.dump(scdb, f, sort_keys=False)
     with open(os.path.join(rsync_path, "auto_config.yaml"), "w") as f:
         yaml.dump(my_config, f, sort_keys=False)
 
@@ -366,7 +366,8 @@ def main():
     # Compare the timestamps of files and find new files
     for file in current_files:
         file_path = os.path.join(source_dir, file)
-        if last_checked is None or os.path.getmtime(file_path) > float(last_checked):
+        current_timestamp = os.path.getmtime(file_path)
+        if last_checked is None or current_timestamp > float(last_checked):
             new_files.append(file)
 
     # If new files are found, check if they are ok or not
@@ -506,7 +507,7 @@ def main():
             phy_mtg_data = mtg_folder.replace("mtg", "plt")
 
             # Note: quad_res is set to False by default in these plots
-            mtg_bash_command = f"{cmd} python monitoring.py --public_data {auto_dir_path} --hdf_files {phy_mtg_data} --output {mtg_folder} --start {start_key} --p {period} --runs {avail_runs} --cluster {cluster} --pswd_email {pswd_email} --escale {escale_val}"
+            mtg_bash_command = f"{cmd} python monitoring.py --public_data {auto_dir_path} --hdf_files {phy_mtg_data} --output {mtg_folder} --start {start_key} --p {period} --avail_runs {avail_runs} --cluster {cluster} --pswd_email {pswd_email} --escale {escale_val} --current_run {run} --last_checked {last_checked}"
             if partition is True:
                 mtg_bash_command += "--partition True"
             if save_pdf is True:
