@@ -1,5 +1,7 @@
 import pytest
+
 from legend_data_monitor.utils import get_key
+
 
 def test_get_key():
     # valid
