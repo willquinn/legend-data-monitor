@@ -1186,9 +1186,7 @@ def main():
             ):
                 logger.debug("Dataframes are None for %s!", period)
                 continue
-            if (
-                geds_df_cuspEmax_abs.empty
-            ):
+            if geds_df_cuspEmax_abs.empty:
                 logger.debug("Dataframes are empty for %s!", period)
                 continue
             dfs = [
@@ -1342,7 +1340,6 @@ def main():
                                 label=r"±1$\sigma$",
                             )
 
-
                     # plot resolution only for the energy parameters
                     if inspected_parameter == "TrapemaxCtcCal":
                         plt.plot(
@@ -1382,11 +1379,13 @@ def main():
                         )
                         plt.plot(
                             [t0[0], t0[0] + pd.Timedelta(days=7)],
-                            [-limits[inspected_parameter], -limits[inspected_parameter]],
+                            [
+                                -limits[inspected_parameter],
+                                -limits[inspected_parameter],
+                            ],
                             color=colors[inspected_parameter][1],
                             ls="-",
                         )
-
 
                     plt.ylabel(ylabels[inspected_parameter])
                     fig.suptitle(
@@ -1413,7 +1412,6 @@ def main():
                     end_folder = os.path.join(
                         output_folder,
                         period,
-                        "by_run",
                         current_run,
                         inspected_parameter,
                     )
