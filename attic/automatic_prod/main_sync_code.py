@@ -32,23 +32,19 @@ def main():
     )
     parser.add_argument(
         "--cluster",
-        help="Name of the cluster where you are operating; pick among 'lngs' or 'nersc'.",
-        default="lngs",
+        help="Name of the cluster where you are working; pick among 'lngs' or 'nersc'.",
     )
     parser.add_argument(
         "--ref_version",
         help="Version of processed data to inspect (eg. tmp-auto or ref-v2.1.0).",
-        default="ref-v1.0.0",
     )
     parser.add_argument(
         "--rsync_path",
         help="Path where to store results of the automatic running (eg loaded keys, input config files, etc).",
-        default="output",
     )
     parser.add_argument(
         "--output_folder",
         help="Path where to store the automatic results (plots and summary files).",
-        default="tmp",
     )
     parser.add_argument(
         "--partition",
@@ -60,6 +56,16 @@ def main():
         help="Password to access the Slow Control database (NOT available on NERSC).",
     )
     parser.add_argument(
+        "--sc",
+        default=False,
+        help="Boolean for retrieving Slow Control data (default: False).",
+    )
+    parser.add_argument(
+        "--port",
+        default=8282,
+        help="Port necessary to retrieve the Slow Control database (default: 8282).",
+    )
+    parser.add_argument(
         "--pswd_email",
         default=None,
         help="Password to access the legend.data.monitoring@gmail.com account for sending alert messages.",
@@ -68,7 +74,7 @@ def main():
         "--chunk_size",
         default=20,
         type=int,
-        help="Maximum integer number of files to read at each loop in order to avoid the kernel to be killed.",
+        help="Maximum integer number of files to read at each loop in order to avoid the process to be killed.",
     )
     parser.add_argument(
         "--p",
@@ -79,11 +85,6 @@ def main():
         "--r",
         default=None,
         help="Run to inspect.",
-    )
-    parser.add_argument(
-        "--sc",
-        default=False,
-        help="Boolean for retrieving Slow Control data (default: False).",
     )
     parser.add_argument(
         "--escale",
@@ -103,18 +104,18 @@ def main():
     output_folder = args.output_folder
     partition = False if args.partition is False else True
     pswd = args.pswd
+    get_sc = False if args.sc is False else True
+    port = args.port
     pswd_email = args.pswd_email
     chunk_size = args.chunk_size
     input_period = args.p
     input_run = args.r
-    get_sc = False if args.sc is False else True
     save_pdf = args.pdf
     escale_val = args.escale
 
     if not os.path.exists(rsync_path):
         os.makedirs(rsync_path)
 
-    # paths
     auto_dir = (
         "/global/cfs/cdirs/m2676/data/lngs/l200/public/prodenv/prod-blind/"
         if cluster == "nersc"
@@ -160,7 +161,6 @@ def main():
     # ===========================================================================================
     # BEGINNING OF THE ANALYSIS
     # ===========================================================================================
-    # Configs definition
 
     # define slow control dict
     scdb = {
@@ -187,8 +187,6 @@ def main():
             ]
         },
     }
-    with open(os.path.join(rsync_path, "auto_slow_control.yaml"), "w") as f:
-        yaml.dump(scdb, f, sort_keys=False)
 
     # define geds dict
     my_config = {
@@ -255,6 +253,16 @@ def main():
                     "plot_structure": "per string",
                     "resampled": "only",
                     "plot_style": "vs time",
+                    "variation": True,
+                    "time_window": "10T",
+                },
+                "tp_0_est gain (dsp/tp_0_est) in pulser events": {
+                    "parameters": "tp_0_est",
+                    "event_type": "pulser",
+                    "plot_structure": "per string",
+                    "resampled": "only",
+                    "plot_style": "vs time",
+                    "AUX_ratio": True,
                     "variation": True,
                     "time_window": "10T",
                 },
@@ -343,6 +351,8 @@ def main():
             }
         },
     }
+    with open(os.path.join(rsync_path, "auto_slow_control.yaml"), "w") as f:
+        yaml.dump(scdb, f, sort_keys=False)
     with open(os.path.join(rsync_path, "auto_config.yaml"), "w") as f:
         yaml.dump(my_config, f, sort_keys=False)
 
@@ -366,7 +376,8 @@ def main():
     # Compare the timestamps of files and find new files
     for file in current_files:
         file_path = os.path.join(source_dir, file)
-        if last_checked is None or os.path.getmtime(file_path) > float(last_checked):
+        current_timestamp = os.path.getmtime(file_path)
+        if last_checked is None or current_timestamp > float(last_checked):
             new_files.append(file)
 
     # If new files are found, check if they are ok or not
@@ -470,7 +481,7 @@ def main():
                 logger.debug("Retrieving Slow Control data...")
                 scdb_config_file = os.path.join(rsync_path, "auto_slow_control.yaml")
 
-                bash_command = f"{cmd} ~/.local/bin/legend-data-monitor user_scdb --config {scdb_config_file} --port 8282 --pswd {pswd}"
+                bash_command = f"{cmd} ~/.local/bin/legend-data-monitor user_scdb --config {scdb_config_file} --port {port} --pswd {pswd}"
                 logger.debug(f"...running command \033[92m{bash_command}\033[0m")
                 subprocess.run(bash_command, shell=True)
                 logger.debug("...SC done!")
@@ -484,14 +495,13 @@ def main():
         # ===========================================================================================
         # Generate Gain Monitoring Summary Plots
         # ===========================================================================================
-        mtg_folder = os.path.join(output_folder, ref_version, "generated/mtg/phy")
+        mtg_folder = os.path.join(output_folder, ref_version, "generated/plt/phy")
         os.makedirs(mtg_folder, exist_ok=True)
         logger.info(f"Folder {mtg_folder} ensured")
 
         # define dataset depending on the (latest) monitored period/run
-        avail_runs = sorted(
-            os.listdir(os.path.join(mtg_folder.replace("mtg", "plt"), period))
-        )
+        avail_runs = sorted(os.listdir(os.path.join(mtg_folder, period)))
+        avail_runs = [ar for ar in avail_runs if "mtg" not in ar]
         dataset = {period: avail_runs}
         if dataset[period] != []:
             logger.debug("Generating monitoring plots...")
@@ -503,10 +513,8 @@ def main():
             ).split("-")[4]
 
             # get pulser monitoring plot for a full period
-            phy_mtg_data = mtg_folder.replace("mtg", "plt")
-
             # Note: quad_res is set to False by default in these plots
-            mtg_bash_command = f"{cmd} python monitoring.py --public_data {auto_dir_path} --hdf_files {phy_mtg_data} --output {mtg_folder} --start {start_key} --p {period} --runs {avail_runs} --cluster {cluster} --pswd_email {pswd_email} --escale {escale_val}"
+            mtg_bash_command = f"{cmd} python monitoring.py --public_data {auto_dir_path} --hdf_files {mtg_folder} --output {mtg_folder} --start {start_key} --p {period} --avail_runs {avail_runs} --pswd_email {pswd_email} --escale {escale_val} --current_run {run} --last_checked {last_checked}"
             if partition is True:
                 mtg_bash_command += "--partition True"
             if save_pdf is True:

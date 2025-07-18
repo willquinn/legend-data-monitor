@@ -799,8 +799,8 @@ def plot_array(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
     # set the grid behind the points
     axes.set_axisbelow(True)
     # beautification
-    axes.ylabel = None
-    axes.xlabel = None
+    axes.set_ylabel("")
+    axes.set_xlabel("")
     # add x labels
     axes.set_xticks(channels)
     axes.set_xticklabels(labels, fontsize=5)

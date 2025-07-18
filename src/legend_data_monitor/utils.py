@@ -1146,6 +1146,89 @@ def send_email_alert(app_password, recipients, text_file_path):
         logger.info("Error: unable to send email: %s", e)
 
 
+def check_threshold(
+    kevdiff,
+    pswd_email,
+    last_checked,
+    t0,
+    pars_data,
+    threshold,
+    period,
+    current_run,
+    channel_name,
+    string,
+    email_message,
+    title,
+):
+    """Check if a given parameter is over threshold and update the email message list.
+
+    Parameters
+    ----------
+    kevdiff : pd.Series
+        Series of gain differences indexed by timestamp.
+    pswd_email : str or None
+        Email password to trigger alert (used as a flag).
+    last_checked : float
+        Timestamp (in seconds since epoch) of last check.
+    t0 : list of pd.Timestamp
+        List of start times for time windows.
+    pars_data : dict
+        Dictionary containing parameters including 'res' for thresholds.
+    threshold:
+        Threshold (int or float).
+    period : str
+        Period string (e.g., "P03").
+    current_run : str or int
+        Identifier of the current run.
+    channel_name : str
+        Name of the channel.
+    string : str or int
+        String identifier for the channel.
+    email_message : list
+        List of messages to be sent via email.
+    """
+    if kevdiff is None or pswd_email is None or last_checked == "None":
+        return email_message
+
+    timestamps = kevdiff.index
+    cutoff = pd.to_datetime(float(last_checked), unit="s", utc=True)
+    filtered_series = kevdiff[kevdiff.index > cutoff]
+
+    if filtered_series.empty:
+        return email_message
+
+    time_range_start = pd.Timestamp(t0[0])
+    time_range_end = time_range_start + pd.Timedelta(days=7)
+
+    # eensure UTC awareness
+    for var in ["time_range_start", "time_range_end"]:
+        val = locals()[var]
+        if val.tzinfo is None:
+            locals()[var] = val.tz_localize("UTC")
+        else:
+            locals()[var] = val.tz_convert("UTC")
+
+    # filter by time range
+    mask_time_range = (timestamps >= time_range_start) & (timestamps < time_range_end)
+    filtered_timestamps = timestamps[mask_time_range]
+    kevdiff_in_range = kevdiff[mask_time_range]
+
+    mask = (kevdiff_in_range > threshold) | (kevdiff_in_range < -threshold)
+    over_threshold_timestamps = filtered_timestamps[mask]
+
+    if not over_threshold_timestamps.empty:
+        if len(email_message) == 0:
+            email_message = [
+                f"ALERT: Data monitoring threshold exceeded in {period}-{current_run}.\n"
+            ]
+        email_message.append(
+            f"- {title} over threshold for {channel_name} (string {string}) "
+            f"for {len(over_threshold_timestamps)} times"
+        )
+
+    return email_message
+
+
 def get_map_dict(data_analysis: DataFrame):
     """
     Map string location and geds position for plotting values vs chs.
