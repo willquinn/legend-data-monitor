@@ -1161,6 +1161,10 @@ def main():
         "TrapemaxCtcCal": "Gain",
         "Baseline": "FPGA baseline",
     }
+    limits = {
+        "TrapemaxCtcCal": None,
+        "Baseline": 10,
+    }
     for inspected_parameter in ["Baseline", "TrapemaxCtcCal"]:
         for index_i in tqdm(range(len(period_list))):
             period = period_list[index_i]
@@ -1182,12 +1186,8 @@ def main():
             ):
                 logger.debug("Dataframes are None for %s!", period)
                 continue
-            # check if geds df is empty; if pulser is, means we do not apply any correction
-            # (and thus geds_corr is also empty - the code will handle the case)
             if (
                 geds_df_cuspEmax_abs.empty
-                # or geds_df_cuspEmax_abs_corr.empty
-                # or puls_df_cuspEmax_abs.empty
             ):
                 logger.debug("Dataframes are empty for %s!", period)
                 continue
@@ -1210,7 +1210,7 @@ def main():
                 for index_k in range(len(channel_list)):
                     channel = channel_list[index_k]
                     channel_name = chmap.map("daq.rawid")[int(channel[2:])]["name"]
-                    resampling_time = "1h"  # if len(runs)>1 else "10T"
+                    resampling_time = "1h"
                     if int(channel.split("ch")[-1]) not in list(dfs[0].columns):
                         logger.debug(f"{channel} is not present in the dataframe!")
                         continue
@@ -1342,21 +1342,8 @@ def main():
                                 label=r"±1$\sigma$",
                             )
 
-                    # plot resolution only for the energy parameters
-                    if inspected_parameter == "Baseline":
-                        plt.plot(
-                            [t0[0], t0[0] + pd.Timedelta(days=7)],
-                            [5, 5],
-                            color=colors[inspected_parameter][1],
-                            ls="-",
-                        )
-                        plt.plot(
-                            [t0[0], t0[0] + pd.Timedelta(days=7)],
-                            [-5, -5],
-                            color=colors[inspected_parameter][1],
-                            ls="-",
-                        )
 
+                    # plot resolution only for the energy parameters
                     if inspected_parameter == "TrapemaxCtcCal":
                         plt.plot(
                             [t0[0], t0[0] + pd.Timedelta(days=7)],
@@ -1370,25 +1357,6 @@ def main():
                             color=colors[inspected_parameter][1],
                             ls="-",
                         )
-                        if quadratic:
-                            plt.plot(
-                                [t0[0], t0[0] + pd.Timedelta(days=7)],
-                                [
-                                    pars_data["res_quad"][0] / 2,
-                                    pars_data["res_quad"][0] / 2,
-                                ],
-                                color=colors[inspected_parameter][0],
-                                linestyle="-",
-                            )
-                            plt.plot(
-                                [t0[0], t0[0] + pd.Timedelta(days=7)],
-                                [
-                                    -pars_data["res_quad"][0] / 2,
-                                    -pars_data["res_quad"][0] / 2,
-                                ],
-                                color=colors[inspected_parameter][0],
-                                linestyle="-",
-                            )
 
                         if str(pars_data["res"][0] / 2 * 1.1) != "nan" and 0 < len(
                             pars_data["res"]
@@ -1399,34 +1367,28 @@ def main():
                                 "{:.2f}".format(pars_data["res"][0]),
                                 color=colors[inspected_parameter][1],
                             )
-
-                        if quadratic:
-                            if str(
-                                pars_data["res_quad"][0] / 2 * 1.5
-                            ) != "nan" and 0 < len(pars_data["res"]) - (xlim_idx - 1):
-                                plt.text(
-                                    t0[0],
-                                    pars_data["res_quad"][0] / 2 * 1.5,
-                                    "{:.2f}".format(pars_data["res_quad"][0]),
-                                    color=colors[inspected_parameter][0],
-                                )
-
                         plt.plot(
                             [0, 1],
                             [0, 1],
                             color=colors[inspected_parameter][1],
                             label="Qbb FWHM keV lin.",
                         )
-                        if quadratic:
-                            plt.plot(
-                                [1, 2],
-                                [1, 2],
-                                color=colors[inspected_parameter][0],
-                                label="Qbb FWHM keV quadr.",
-                            )
+                    else:
+                        plt.plot(
+                            [t0[0], t0[0] + pd.Timedelta(days=7)],
+                            [limits[inspected_parameter], limits[inspected_parameter]],
+                            color=colors[inspected_parameter][1],
+                            ls="-",
+                        )
+                        plt.plot(
+                            [t0[0], t0[0] + pd.Timedelta(days=7)],
+                            [-limits[inspected_parameter], -limits[inspected_parameter]],
+                            color=colors[inspected_parameter][1],
+                            ls="-",
+                        )
+
 
                     plt.ylabel(ylabels[inspected_parameter])
-
                     fig.suptitle(
                         f'period: {period} - string: {string} - position: {chmap.map("daq.rawid")[int(channel[2:])]["location"]["position"]} - ged: {channel_name}'
                     )
@@ -1444,7 +1406,7 @@ def main():
                     plt.xlim(
                         t0[0] - pd.Timedelta(hours=0.5),
                         t0[-xlim_idx] + time_difference * 1.5,
-                    )  # pd.Timedelta(days=7))# --> change me to resize the width of the last run
+                    )
                     plt.legend(loc="lower left")
                     plt.tight_layout()
 
