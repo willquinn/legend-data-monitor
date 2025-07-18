@@ -1,7 +1,6 @@
 import glob
 import os
 import re
-import shelve
 import sys
 
 import numpy as np
@@ -904,13 +903,9 @@ def load_subsystem_data(
     plt_path: str,
     saving=None,
 ):
-    out_dict = {}
-    results_to_save = False
-
     for plot_title in plots:
         if "plot_structure" in plots[plot_title].keys():
             continue
-        results_to_save = True
 
         banner = "\33[95m" + "~" * 50 + "\33[0m"
         utils.logger.info(banner)
@@ -998,8 +993,6 @@ def load_subsystem_data(
             # needed for grey lines for K lines, in case we are looking at energy itself (not event rate for example)
             plot_info["event_type"] = plot_settings["event_type"]
 
-        # --- save shelf
-        par_dict_content = save_data.save_df_and_info(data_analysis.data, plot_info)
         # --- save hdf
         save_data.save_hdf(
             saving,
@@ -1011,15 +1004,3 @@ def load_subsystem_data(
             pd.DataFrame(),
             plot_info,
         )
-
-        # building a dictionary with dataframe/plot_info to be later stored in a shelve object
-        if saving is not None:
-            out_dict = save_data.build_out_dict(
-                plot_settings, par_dict_content, out_dict
-            )
-
-    # save in shelve object, overwriting the already existing file with new content (either completely new or new bunches)
-    if saving is not None and results_to_save:
-        out_file = shelve.open(plt_path + f"-{subsystem.type}")
-        out_file["monitoring"] = out_dict
-        out_file.close()
