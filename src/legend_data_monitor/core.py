@@ -1,13 +1,85 @@
-import json
 import os
 import re
 import subprocess
 import sys
 
-from . import plotting, slow_control, subsystem, utils
+import yaml
+from legendmeta import JsonDB
+
+from . import analysis_data, plotting, slow_control, subsystem, utils
 
 
-def retrieve_scdb(user_config_path: str, port: int, pswd: str):
+def retrieve_exposure(
+    period: str, runs: str | list[str], runinfo_path: str, path: str, version: str
+):
+
+    runinfo = utils.read_json_or_yaml(runinfo_path)
+
+    tot_liv = 0
+    ac_exposure = 0
+    on_validPSD_NONvalidPSD_exposure = 0
+    on_validPSD_exposure = 0
+    mass = 0
+
+    for run in runs:
+        if "phy" not in runinfo[period][run].keys():
+            utils.logger.debug(f"No 'phy' key present in {runinfo_path}. Exit here")
+            return
+        livetime_in_d = runinfo[period][run]["phy"]["livetime_in_s"] / (60 * 60 * 24)
+        tot_liv += livetime_in_d
+
+        first_timestamp = runinfo[period][run]["phy"]["start_key"]
+        full_status_map = utils.get_status_map(path, version, first_timestamp, "geds")
+
+        map_file = os.path.join(
+            path, version, "inputs/hardware/configuration/channelmaps"
+        )
+        full_channel_map = JsonDB(map_file).on(timestamp=first_timestamp)
+
+        for hpge in full_channel_map.group("system").geds.map("name").keys():
+            diode_path = utils.retrieve_json_or_yaml(
+                os.path.join(
+                    path, version, "inputs/hardware/detectors/germanium/diodes"
+                ),
+                hpge,
+            )
+            diode = utils.read_json_or_yaml(diode_path)
+            usability = full_status_map[hpge]["usability"]
+            psd = full_status_map[hpge]["psd"]
+
+            mass += diode["production"]["mass_in_g"] / 1000
+
+            expo = livetime_in_d / 365.25 * diode["production"]["mass_in_g"] / 1000
+
+            if usability == "ac":
+                ac_exposure += expo
+            if usability == "on":
+                on_validPSD_NONvalidPSD_exposure += expo
+
+                if "is_bb_like" in psd and psd["is_bb_like"] != "missing":
+                    if all(
+                        [
+                            psd["status"][p.strip()] == "valid"
+                            for p in psd["is_bb_like"].split("&")
+                        ]
+                    ):
+                        on_validPSD_exposure += expo
+
+    utils.logger.info("mass: %s", mass)
+    utils.logger.info("period: %s", period)
+    utils.logger.info("runs: %s", runs)
+    utils.logger.info("Total livetime: %.4f d", tot_liv)
+    utils.logger.info("AC exposure: %.4f kg-yr", round(ac_exposure, 4))
+    utils.logger.info(
+        "ON (valid PSD + non-valid PSD) exposure: %.4f kg-yr",
+        round(on_validPSD_NONvalidPSD_exposure, 4),
+    )
+    utils.logger.info(
+        "ON (valid PSD) exposure: %.4f kg-yr", round(on_validPSD_exposure, 4)
+    )
+
+
+def retrieve_scdb(config: str, port: int, pswd: str):
     """Set the configuration file and the output paths when a user config file is provided. The function to retrieve Slow Control data from database is then automatically called."""
     # -------------------------------------------------------------------------
     # SSH tunnel to the Slow Control database
@@ -27,13 +99,10 @@ def retrieve_scdb(user_config_path: str, port: int, pswd: str):
     # -------------------------------------------------------------------------
     # Read user settings
     # -------------------------------------------------------------------------
-    with open(user_config_path) as f:
-        config = json.load(f)
+    config = utils.load_config(config)
 
     # check validity of scdb settings
-    valid = utils.check_scdb_settings(config)
-    if not valid:
-        return
+    utils.check_scdb_settings(config)
 
     # -------------------------------------------------------------------------
     # Define PDF file basename
@@ -92,12 +161,10 @@ def control_plots(user_config_path: str, n_files=None):
     # Read user settings
     # -------------------------------------------------------------------------
     with open(user_config_path) as f:
-        config = json.load(f)
+        config = yaml.load(f, Loader=yaml.CLoader)
 
     # check validity of plot settings
-    valid = utils.check_plot_settings(config)
-    if not valid:
-        return
+    utils.check_plot_settings(config)
 
     # -------------------------------------------------------------------------
     # Define PDF file basename
@@ -113,19 +180,16 @@ def control_plots(user_config_path: str, n_files=None):
 
 
 def auto_control_plots(
-    plot_config: str, file_keys: str, prod_path: str, prod_config: str, n_files=None
+    config: str, file_keys: str, prod_path: str, prod_config: str, n_files=None
 ):
     """Set the configuration file and the output paths when a config file is provided during automathic plot production."""
     # -------------------------------------------------------------------------
     # Read user settings
     # -------------------------------------------------------------------------
-    with open(plot_config) as f:
-        config = json.load(f)
+    config = utils.load_config(config)
 
     # check validity of plot settings
-    valid = utils.check_plot_settings(config)
-    if not valid:
-        return
+    utils.check_plot_settings(config)
 
     # -------------------------------------------------------------------------
     # Add missing information (output, dataset) to the config
@@ -172,6 +236,9 @@ def generate_plots(config: dict, plt_path: str, n_files=None):
     else:
         # list of datasets to loop over later on
         bunches = utils.bunch_dataset(config.copy(), n_files)
+        if bunches == []:
+            utils.logger.info("No bunches of files were found. Exit here.")
+            return
 
         # remove unnecessary keys for precaution - we will replace the time selections with individual timestamps/file keys
         config["dataset"].pop("start", None)
@@ -284,7 +351,22 @@ def make_plots(config: dict, plt_path: str, saving: str):
         utils.logger.addHandler(file_handler)
 
         plotting.make_subsystem_plots(
-            subsystems[system], config["subsystems"][system], plt_path, saving
+            subsystems[system],
+            config["subsystems"][system],
+            config["dataset"],
+            plt_path,
+            saving,
+        )
+
+        # -------------------------------------------------------------------------
+        # save loaded data avoiding to plot it (eg quality cuts)
+        # -------------------------------------------------------------------------
+        analysis_data.load_subsystem_data(
+            subsystems[system],
+            config["dataset"],
+            config["subsystems"][system],
+            plt_path,
+            saving,
         )
 
         # -------------------------------------------------------------------------

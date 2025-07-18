@@ -50,9 +50,11 @@ class Subsystem:
     """
 
     def __init__(self, sub_type: str, **kwargs):
-        utils.logger.info("\33[35m---------------------------------------------\33[0m")
-        utils.logger.info(f"\33[35m--- S E T T I N G  UP : {sub_type}\33[0m")
-        utils.logger.info("\33[35m---------------------------------------------\33[0m")
+
+        banner = "\33[95m" + "-" * 50 + "\33[0m"
+        utils.logger.info(banner)
+        utils.logger.info(f"\33[95m S E T T I N G  UP : {sub_type}\33[0m")
+        utils.logger.info(banner)
 
         self.type = sub_type
 
@@ -66,10 +68,6 @@ class Subsystem:
 
         # validity check of kwarg
         utils.dataset_validity_check(data_info)
-
-        # validity of time selection will be checked in utils
-
-        # ? create a checking function taking dict in
 
         # -------------------------------------------------------------------------
         # get channel info for this subsystem
@@ -86,7 +84,7 @@ class Subsystem:
         self.version = data_info["version"]
 
         # data stored under these folders have been partitioned!
-        if "tmp-auto" not in self.path:
+        if "tmp-auto" != self.path:
             self.partition = True
         else:
             self.partition = False
@@ -102,7 +100,7 @@ class Subsystem:
             utils.logger.error("\033[91m%s\033[0m", self.get_data.__doc__)
             return
 
-        self.channel_map = self.get_channel_map()  # pd.DataFrame
+        self.channel_map = self.get_channel_map()
 
         # add column status to channel map stating on/off
         self.get_channel_status()
@@ -130,11 +128,38 @@ class Subsystem:
         params_for_dataloader = self.get_parameters_for_dataloader(parameters)
 
         # --- set up DataLoader config
-        # needs to know path and version from data_info
-        dlconfig, dbconfig = self.construct_dataloader_configs(params_for_dataloader)
+        # separate dsp and hit parameters as they might have different paths
+        param_tiers = pd.DataFrame.from_dict(utils.PARAMETER_TIERS.items())
+        param_tiers.columns = ["param", "tier"]
+        # keep only parameters that have an associated entry in the parameter-tiers.yaml file
+        my_params = param_tiers[param_tiers["param"].isin(params_for_dataloader)]
+        dsp_params = my_params[my_params["tier"] == "dsp"]["param"].tolist()
+        hit_params = my_params[my_params["tier"] == "hit"]["param"].tolist()
+        utils.logger.debug("dsp/psp parameters: %s", dsp_params)
+        utils.logger.debug("hit/pht parameters: %s", hit_params)
 
-        # --- set up DataLoader
-        dl = DataLoader(dlconfig, dbconfig)
+        # find parameters that are not in the YAML
+        missing_params = [
+            p for p in params_for_dataloader if p not in param_tiers["param"].values
+        ]
+        if missing_params:
+            utils.logger.warning(
+                "\033[93mThe following parameters are not in settings/parameter-tiers.yaml and will be skipped:\033[0m %s",
+                ", ".join(missing_params),
+            )
+
+        dl_dsp = None
+        dl_hit = None
+        if dsp_params != []:
+            dlconfig_dsp, dbconfig_dsp = self.construct_dataloader_configs(
+                param_tiers, dsp_params, "dsp"
+            )
+            dl_dsp = DataLoader(dlconfig_dsp, dbconfig_dsp)  # set up DataLoader
+        if hit_params != []:
+            dlconfig_hit, dbconfig_hit = self.construct_dataloader_configs(
+                param_tiers, hit_params, "hit"
+            )
+            dl_hit = DataLoader(dlconfig_hit, dbconfig_hit)
 
         # -------------------------------------------------------------------------
         # Set up query
@@ -164,43 +189,64 @@ class Subsystem:
         # )
         query += f" and (type == '{self.datatype}')"
 
-        # !!!! QUICKFIX
         # p02 keys (missing ch068)
-        query += " and (timestamp != '20230125T222013Z')"
-        query += " and (timestamp != '20230126T015308Z')"
-        query += " and (timestamp != '20230222T231553Z')"
-
-        utils.logger.info(
-            "...... querying DataLoader (includes quickfix-removed faulty files)"
+        query += (
+            " and (timestamp != '20230125T222013Z')"
+            + " and (timestamp != '20230126T015308Z')"
+            + " and (timestamp != '20230222T231553Z')"
         )
-        utils.logger.info(query)
-
-        # -------------------------------------------------------------------------
-        # Query DataLoader & load data
-        # -------------------------------------------------------------------------
+        utils.logger.info("...... querying DataLoader - removing %s", query)
 
         # --- query data loader
-        dl.set_files(query)
-        dl.set_output(fmt="pd.DataFrame", columns=params_for_dataloader)
+        if dsp_params != []:
+            dl_dsp.set_files(query)
+            dl_dsp.set_output(fmt="pd.DataFrame", columns=dsp_params)
+        if hit_params != []:
+            dl_hit.set_files(query)
+            dl_hit.set_output(fmt="pd.DataFrame", columns=hit_params)
 
         now = datetime.now()
-        self.data = dl.load()
+
+        # --- create self.data object
+        dsp_data = None
+        hit_data = None
+        if dsp_params != []:
+            dsp_data = dl_dsp.load()
+        if hit_params != []:
+            hit_data = dl_hit.load()
+
+        if dsp_data is None and hit_data is None:
+            utils.logger.error(
+                "\033[91mdsp_data and hit_data are equal to None. Exit here.\033[0m"
+            )
+            sys.exit()
+        elif dsp_data is None:
+            self.data = hit_data
+        elif hit_data is None:
+            self.data = dsp_data
+        else:
+            self.data = pd.concat([dsp_data, hit_data], axis=1)
+
         utils.logger.info(f"Total time to load data: {(datetime.now() - now)}")
 
         # -------------------------------------------------------------------------
         # polish things up
         # -------------------------------------------------------------------------
-
-        tier = "dsp"
-        if "hit" in dbconfig["columns"]:
-            tier = "hit"
-        if self.partition and "pht" in dbconfig["columns"]:
-            tier = "pht"
-        # remove columns we don't need
-        if "{tier}_idx" in list(self.data.columns):
-            self.data = self.data.drop([f"{tier}_idx", "file"], axis=1)
-        # rename channel to channel
-        self.data = self.data.rename(columns={f"{tier}_table": "channel"})
+        # drop useless columns
+        self.data = self.data.drop(
+            columns=[
+                col
+                for col in self.data.columns
+                if col.endswith("_idx") or col == "file"
+            ]
+        )
+        # rename "table" column to "channel" and drop duplicates
+        table_cols = [col for col in self.data.columns if col.endswith("_table")]
+        if table_cols:
+            keep_col = table_cols[0]
+            drop_cols = [col for col in table_cols if col != keep_col]
+            self.data = self.data.drop(columns=drop_cols)
+            self.data = self.data.rename(columns={keep_col: "channel"})
 
         # -------------------------------------------------------------------------
         # create datetime column based on initial key and timestamp
@@ -225,11 +271,11 @@ class Subsystem:
         # append the channel map columns to the data
         self.data = pd.concat([self.data, ch_map_reindexed], axis=1)
         self.data = self.data.reset_index()
-        # stupid dataframe, why float
         for col in ["location", "position"]:
             # ignore string values for fibers ('I/OB-XXX-XXX') and positions ('top/bottom') for SiPMs
             if isinstance(self.data[col].iloc[0], float):
                 self.data[col] = self.data[col].astype(int)
+        utils.logger.info("... appended channel map to the data dataframe")
 
         # -------------------------------------------------------------------------
         # if this subsystem is pulser, flag pulser timestamps
@@ -241,6 +287,7 @@ class Subsystem:
             self.flag_fcbsln_events()
         if self.type == "muon":
             self.flag_muon_events()
+        utils.logger.info("... flagge pulser | FC bsl | muon events")
 
     def include_aux(
         self, params: Union[str, list], dataset: dict, plot: dict, aux_ch: str
@@ -267,9 +314,9 @@ class Subsystem:
                     "... you are going to plot the parameter accounting for the difference wrt PULS01ANA data"
                 )
 
-        utils.logger.debug(
-            "... but now we are going to perform diff/ratio with PULS01ANA entries"
-        )
+            utils.logger.debug(
+                "... but now we are going to perform diff/ratio with PULS01ANA entries"
+            )
 
         def add_aux(param):
             aux_subsys = Subsystem(aux_channel, dataset=dataset)
@@ -306,6 +353,12 @@ class Subsystem:
                 utils.logger.warning(
                     "\033[93m'%s' is a special parameter. "
                     + "For the moment, we skip the ratio/diff wrt the AUX channel and plot the parameter as it is.\033[0m",
+                    params,
+                )
+                return
+            if param == "quality_cuts":
+                utils.logger.warning(
+                    "\033[93m'%s' does not require the ratio/diff wrt the AUX channel. Skip this step.\033[0m",
                     params,
                 )
                 return
@@ -570,7 +623,7 @@ class Subsystem:
         # loop over entries and find out subsystem
         # -------------------------------------------------------------------------
 
-        # config.channel_map is already a dict read from the channel map json
+        # config.channel_map is already a dict read from the channel map
         for entry in full_channel_map:
             # skip dummy channels
             if "BF" in entry or "DUMMY" in entry:
@@ -661,11 +714,9 @@ class Subsystem:
         # -------------------------------------------------------------------------
         # load full status map of this time selection (and version)
         # -------------------------------------------------------------------------
-
-        map_file = os.path.join(self.path, self.version, "inputs/dataprod/config")
-        full_status_map = JsonDB(map_file).on(
-            timestamp=self.first_timestamp, system=self.datatype
-        )["analysis"]
+        full_status_map = utils.get_status_map(
+            self.path, self.version, self.first_timestamp, self.datatype
+        )
 
         # AUX channels are not in status map, so at least for pulser/pulser01ana/FCbsln/muon need default on
         self.channel_map["status"] = "on"
@@ -708,7 +759,6 @@ class Subsystem:
         if isinstance(parameters, str):
             parameters = [parameters]
 
-        global USER_TO_PYGAMA
         for param in parameters:
             if param in utils.SPECIAL_PARAMETERS:
                 # for special parameters, look up which parameters are needed to be loaded for their calculation
@@ -725,25 +775,34 @@ class Subsystem:
         # some parameters might be repeated twice - remove
         return list(np.unique(params))
 
-    def construct_dataloader_configs(self, params: list_of_str):
+    def construct_dataloader_configs(
+        self, param_tiers, params: list_of_str, tier_key: str
+    ):
         """
         Construct DL and DB configs for DataLoader based on parameters and which tiers they belong to.
 
         params: list of parameters to load
         """
-        # -------------------------------------------------------------------------
-        # which parameters belong to which tiers
-        # -------------------------------------------------------------------------
+        tiers, _ = utils.get_tiers_pars_folders(os.path.join(self.path, self.version))
+        data_dir = os.path.join(self.path, self.version, "generated", "tier")
+        tier_folder_part = tiers[1] if tier_key == "dsp" else tiers[3]
+        tier_folder = tiers[0] if tier_key == "dsp" else tiers[2]
+        tier_key_new = tier_key
 
-        # --- convert info in json to DataFrame for convenience
-        # parameter tier
-        # baseline  dsp
-        # ...
-        param_tiers = pd.DataFrame.from_dict(utils.PARAMETER_TIERS.items())
-        param_tiers.columns = ["param", "tier"]
-        # change from 'hit' to 'pht' when loading data for partitioned files
         if self.partition:
-            param_tiers["tier"] = param_tiers["tier"].replace("hit", "pht")
+            # check if the psp/pht folder exists (ie is not empty)
+            if os.path.isdir(tier_folder_part) and os.listdir(tier_folder_part):
+                tier_key_new = "psp" if tier_key == "dsp" else "pht"
+                param_tiers["tier"] = param_tiers["tier"].replace(
+                    tier_key, tier_key_new
+                )
+                data_dir = os.path.join(
+                    tier_folder_part.split("generated")[0], "generated", "tier"
+                )
+            else:
+                data_dir = os.path.join(
+                    tier_folder.split("generated")[0], "generated", "tier"
+                )
 
         # which of these are requested by user
         param_tiers = param_tiers[param_tiers["param"].isin(params)]
@@ -753,15 +812,15 @@ class Subsystem:
         # -------------------------------------------------------------------------
         # set up config templates
         # -------------------------------------------------------------------------
-
         dict_dbconfig = {
-            "data_dir": os.path.join(self.path, self.version, "generated", "tier"),
+            "data_dir": data_dir,
             "tier_dirs": {},
             "file_format": {},
             "table_format": {},
             "tables": {},
             "columns": {},
         }
+
         dict_dlconfig = {"channel_map": {}, "levels": {}}
 
         # -------------------------------------------------------------------------
@@ -802,20 +861,20 @@ class Subsystem:
                 + ".lh5"
             )
             dict_dbconfig["table_format"][tier] = "ch{" + ch_format + "}/"
-            dict_dbconfig["table_format"][tier] += "hit" if tier == "pht" else tier
+            if tier == "pht":
+                dict_dbconfig["table_format"][tier] += "hit"
+            elif tier == "psp":
+                dict_dbconfig["table_format"][tier] += "dsp"
+            else:
+                dict_dbconfig["table_format"][tier] += tier
 
             dict_dbconfig["tables"][tier] = chlist
 
             dict_dbconfig["columns"][tier] = list(tier_params["param"])
 
-            # dict_dlconfig['levels'][tier] = {'tiers': [tier]}
-
         # --- settings based on tier hierarchy
-        order = (
-            {"pht": 3, "dsp": 2, "raw": 1}
-            if self.partition
-            else {"hit": 3, "dsp": 2, "raw": 1}
-        )
+        order = {tier_key_new: 2, "raw": 1}
+        param_tiers = param_tiers.copy()
         param_tiers["order"] = param_tiers["tier"].apply(lambda x: order[x])
         # find highest tier
         max_tier = param_tiers[param_tiers["order"] == param_tiers["order"].max()][
@@ -831,7 +890,7 @@ class Subsystem:
     def remove_timestamps(self, remove_keys: dict):
         """Remove timestamps from the dataframes for a given channel.
 
-        The time interval in which to remove the channel is provided through an external json file.
+        The time interval in which to remove the channel is provided through an external YAML file.
         """
         # all timestamps we are considering are expressed in UTC0
         utils.logger.debug("... removing timestamps from the following detectors:")

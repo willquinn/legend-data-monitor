@@ -2,9 +2,9 @@
 # different plot style functions called from the main one depending on parameter
 # -------------------------------------------------------------------------------
 
+import warnings
+
 # See mapping user plot structure keywords to corresponding functions in the end of this file
-
-
 from datetime import datetime
 
 import numpy as np
@@ -16,13 +16,20 @@ from pandas import DataFrame, Timedelta, concat
 
 from . import utils
 
+warnings.filterwarnings("ignore", category=FutureWarning)
+
 # -------------------------------------------------------------------------------
 # single parameter plotting functions
 # -------------------------------------------------------------------------------
 
 
 def plot_vs_time(
-    data_channel: DataFrame, fig: Figure, ax: Axes, plot_info: dict, color=None
+    data_channel: DataFrame,
+    fig: Figure,
+    ax: Axes,
+    plot_info: dict,
+    color=None,
+    map_dict=None,
 ):
     # -------------------------------------------------------------------------
     # plot this data vs time
@@ -45,9 +52,10 @@ def plot_vs_time(
     )
 
     if plot_info["resampled"] != "only":
+        parameter_array = np.array(data_channel[plot_info["parameter"]])
         ax.plot(
-            data_channel["datetime"].dt.to_pydatetime(),
-            data_channel[plot_info["parameter"]],
+            np.array(data_channel["datetime"].dt.to_pydatetime()),
+            parameter_array[:, None],
             zorder=0,
             color=all_col,
             linewidth=1,
@@ -75,9 +83,10 @@ def plot_vs_time(
                 resampled["datetime"] + Timedelta(plot_info["time_window"]) / 2
             )
 
+            parameter_array = np.array(resampled[plot_info["parameter"]])
             ax.plot(
                 resampled["datetime"].dt.to_pydatetime(),
-                resampled[plot_info["parameter"]],
+                parameter_array[:, None],
                 color=res_col,
                 zorder=1,
                 # marker="o",
@@ -162,7 +171,12 @@ def plot_vs_time(
 
 
 def par_vs_ch(
-    data_channel: DataFrame, fig: Figure, ax: Axes, plot_info: dict, color=None
+    data_channel: DataFrame,
+    fig: Figure,
+    ax: Axes,
+    plot_info: dict,
+    color=None,
+    map_dict=None,
 ):
     if len(data_channel[plot_info["parameter"]].unique()) > 1:
         utils.logger.error(
@@ -173,9 +187,6 @@ def par_vs_ch(
     # -------------------------------------------------------------------------
     # plot data vs channel ID
     # -------------------------------------------------------------------------
-    # trick to get a correct position of channels, independently from the 'channel' entry
-    # (everything was ok when using 'fcid'; but using 'rawid' as 'channel', we loose the possibility to order channels over x-axis in a decent way)
-    map_dict = utils.MAP_DICT
     location = data_channel["location"].unique()[0]
     position = data_channel["position"].unique()[0]
     ax.scatter(
@@ -201,7 +212,12 @@ def par_vs_ch(
 
 
 def plot_histo(
-    data_channel: DataFrame, fig: Figure, ax: Axes, plot_info: dict, color=None
+    data_channel: DataFrame,
+    fig: Figure,
+    ax: Axes,
+    plot_info: dict,
+    color=None,
+    map_dict=None,
 ):
     # --- histo range
     # take full range if not specified
@@ -262,11 +278,16 @@ def plot_histo(
 
 
 def plot_scatter(
-    data_channel: DataFrame, fig: Figure, ax: Axes, plot_info: dict, color=None
+    data_channel: DataFrame,
+    fig: Figure,
+    ax: Axes,
+    plot_info: dict,
+    color=None,
+    map_dict=None,
 ):
     # plot data
     ax.scatter(
-        data_channel["datetime"].dt.to_pydatetime(),
+        np.array(data_channel["datetime"].dt.to_pydatetime()),
         data_channel[plot_info["parameter"]],
         color=color,
         # useful if there are overlapping points (but more difficult to see light colour points...)
@@ -296,7 +317,12 @@ def plot_scatter(
 
 
 def plot_par_vs_par(
-    data_channel: DataFrame, fig: Figure, ax: Axes, plot_info: dict, color=None
+    data_channel: DataFrame,
+    fig: Figure,
+    ax: Axes,
+    plot_info: dict,
+    color=None,
+    map_dict=None,
 ):
     par_x = plot_info["parameters"][0]
     par_y = plot_info["parameters"][1]
@@ -381,7 +407,12 @@ def plot_par_vs_par(
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # UNDER CONSTRUCTION!!!
 def plot_heatmap(
-    data_channel: DataFrame, fig: Figure, ax: Axes, plot_info: dict, color=None
+    data_channel: DataFrame,
+    fig: Figure,
+    ax: Axes,
+    plot_info: dict,
+    color=None,
+    map_dict=None,
 ):
     # some plotting settings
     xbin = int(
@@ -418,11 +449,14 @@ def plot_heatmap(
             )
             new_df = pd.concat([new_df, new_row], ignore_index=True, axis=0)
 
-    x_values = pd.to_numeric(new_df["datetime"].dt.to_pydatetime()).values
+    # make sure the datetime column is in UTC
+    new_df["datetime"] = pd.to_datetime(new_df["datetime"]).dt.tz_localize("UTC")
+    # convert to numeric values for plotting
+    x_values = pd.to_numeric(
+        new_df["datetime"].dt.tz_convert("UTC").dt.to_pydatetime()
+    ).values
     y_values = new_df[plot_info["parameter"]]
-
     # plot data
-
     h, xedges, yedges = np.histogram2d(
         x_values,
         y_values,

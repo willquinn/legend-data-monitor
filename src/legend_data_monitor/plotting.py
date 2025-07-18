@@ -1,5 +1,4 @@
 import io
-import shelve
 from typing import Union
 
 import matplotlib.patches as mpatches
@@ -33,22 +32,24 @@ COLORS = []
 
 
 def make_subsystem_plots(
-    subsystem: subsystem.Subsystem, plots: dict, plt_path: str, saving=None
+    subsystem: subsystem.Subsystem,
+    plots: dict,
+    dataset_info: dict,
+    plt_path: str,
+    saving=None,
 ):
     pdf = PdfPages(plt_path + "-" + subsystem.type + ".pdf")
-    out_dict = {}
-    aux_out_dict = {}
-    aux_ratio_out_dict = {}
-    aux_diff_out_dict = {}
+    is_pdf_saved = False
 
     for plot_title in plots:
-        utils.logger.info(
-            "\33[95m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\33[0m"
-        )
-        utils.logger.info(f"\33[95m~~~ P L O T T I N G : {plot_title}\33[0m")
-        utils.logger.info(
-            "\33[95m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\33[0m"
-        )
+        if "plot_structure" not in plots[plot_title].keys():
+            utils.logger.info(f"'{plot_title}' can't be plotted. Skip it.")
+            continue
+
+        banner = "\33[95m" + "~" * 50 + "\33[0m"
+        utils.logger.info(banner)
+        utils.logger.info(f"\33[95m P L O T T I N G : {plot_title}\33[0m")
+        utils.logger.info(banner)
 
         # -------------------------------------------------------------------------
         # settings checks
@@ -117,7 +118,7 @@ def make_subsystem_plots(
         # - calculate variation from mean, if asked
         # note: subsystem.data contains: absolute value of a param, the respective value for aux channel (with ratio and diff already computed)
         data_analysis = analysis_data.AnalysisData(
-            subsystem.data, selection=plot_settings
+            subsystem.data, selection=plot_settings | dataset_info
         )
         # check if the dataframe is empty; if so, skip this parameter
         if utils.check_empty_df(data_analysis):
@@ -129,10 +130,10 @@ def make_subsystem_plots(
         if isinstance(params, str):
             params = [params]
 
-        # this is ok for geds, but for spms? maybe another function will be necessary for this????
+        # this is ok for geds, but for spms? maybe another function will be necessary for this?
         # note: this will not do anything in case the parameter is from hit tier
         aux_analysis, aux_ratio_analysis, aux_diff_analysis = analysis_data.get_aux_df(
-            subsystem.data.copy(), params, plot_settings, "pulser01ana"
+            subsystem.data.copy(), params, plot_settings | dataset_info, "pulser01ana"
         )
 
         # -------------------------------------------------------------------------
@@ -156,7 +157,6 @@ def make_subsystem_plots(
                 or (plot_settings.get("AUX_diff") is False)
             ):
                 data_to_plot = data_analysis
-        # if empty, ...
         else:
             data_to_plot = data_analysis
 
@@ -316,49 +316,8 @@ def make_subsystem_plots(
             plot_structure(data_to_plot.data, plot_info, pdf)
 
         # For some reason, after some plotting functions the index is set to "channel".
-        # We need to set it back otherwise string_visualization.py gets crazy and everything crashes.
+        # We need to set it back otherwise string_visualization.py gets crazy.
         data_to_plot.data = data_to_plot.data.reset_index()
-
-        # -------------------------------------------------------------------------
-        # saving dataframe + plot info
-        # -------------------------------------------------------------------------
-        # here we are not checking if we are plotting one or more than one parameter
-        # the output dataframe and plot_info objects are merged for more than one parameters
-        # this will be split at a later stage, when building the output dictionary through utils.build_out_dict(...)
-
-        # --- save shelf
-        # normal geds values (??? do we want the rescaled ones to be saved as shelf?)
-        par_dict_content = save_data.save_df_and_info(data_analysis.data, plot_info)
-        # aux values as shelf (necessary to get the right mean) - if not empty
-        if not utils.check_empty_df(aux_analysis):
-            aux_plot_info = plot_info.copy()
-            aux_plot_info["subsystem"] = "pulser01ana"
-            aux_par_dict_content = save_data.save_df_and_info(
-                aux_analysis.data, aux_plot_info
-            )
-        if not utils.check_empty_df(aux_ratio_analysis):
-            aux_ratio_plot_info = plot_info.copy()
-            aux_ratio_plot_info["subsystem"] = "pulser01anaRatio"
-            aux_ratio_par_dict_content = save_data.save_df_and_info(
-                aux_ratio_analysis.data, aux_ratio_plot_info
-            )
-        if not utils.check_empty_df(aux_diff_analysis):
-            aux_diff_plot_info = plot_info.copy()
-            aux_diff_plot_info["subsystem"] = "pulser01anaDiff"
-            aux_diff_par_dict_content = save_data.save_df_and_info(
-                aux_diff_analysis.data, aux_diff_plot_info
-            )
-        # --- save hdf
-        save_data.save_hdf(
-            saving,
-            plt_path + f"-{subsystem.type}.hdf",
-            data_analysis,
-            "pulser01ana",
-            aux_analysis,
-            aux_ratio_analysis,
-            aux_diff_analysis,
-            plot_info,
-        )
 
         # -------------------------------------------------------------------------
         # call status plot
@@ -384,58 +343,27 @@ def make_subsystem_plots(
                         )
 
         # -------------------------------------------------------------------------
-        # save results
+        # save results (hdf format)
         # -------------------------------------------------------------------------
 
-        # building a dictionary with dataframe/plot_info to be later stored in a shelve object
-        if saving is not None:
-            out_dict = save_data.build_out_dict(
-                plot_settings, par_dict_content, out_dict
-            )
+        save_data.save_hdf(
+            saving,
+            plt_path + f"-{subsystem.type}.hdf",
+            data_analysis,
+            "pulser01ana",
+            aux_analysis,
+            aux_ratio_analysis,
+            aux_diff_analysis,
+            plot_info,
+        )
 
-            # check if the parameter is a hit or special parameter (still need to include MORE PARAMS case)
-            params = params[0]
-            if (
-                params in utils.PARAMETER_TIERS.keys()
-                and utils.PARAMETER_TIERS[params] != "hit"
-            ) and params not in utils.SPECIAL_PARAMETERS:
-                # aux data
-                aux_out_dict = save_data.build_out_dict(
-                    plot_settings, aux_par_dict_content, aux_out_dict
-                )
-                # subsystem data / aux data
-                aux_ratio_out_dict = save_data.build_out_dict(
-                    plot_settings, aux_ratio_par_dict_content, aux_ratio_out_dict
-                )
-                # subsystem data - aux data
-                aux_diff_out_dict = save_data.build_out_dict(
-                    plot_settings, aux_diff_par_dict_content, aux_diff_out_dict
-                )
+        is_pdf_saved = True
 
-    # save in shelve object, overwriting the already existing file with new content (either completely new or new bunches)
-    if saving is not None:
-        out_file = shelve.open(plt_path + f"-{subsystem.type}")
-        out_file["monitoring"] = out_dict
-        out_file.close()
-
-        aux_out_file = shelve.open(plt_path + "-pulser01ana")
-        aux_out_file["monitoring"] = aux_out_dict
-        aux_out_file.close()
-
-        aux_ratio_out_file = shelve.open(plt_path + "-pulser01anaRatio")
-        aux_ratio_out_file["monitoring"] = aux_ratio_out_dict
-        aux_ratio_out_file.close()
-
-        aux_diff_out_file = shelve.open(plt_path + "-pulser01anaDiff")
-        aux_diff_out_file["monitoring"] = aux_diff_out_dict
-        aux_diff_out_file.close()
-
-    # save in pdf object
     pdf.close()
-
-    utils.logger.info(
-        f"All plots saved in: \33[4m{plt_path}-{subsystem.type}.pdf\33[0m"
-    )
+    if is_pdf_saved:
+        utils.logger.info(
+            f"All plots saved in: \33[4m{plt_path}-{subsystem.type}.pdf\33[0m"
+        )
 
 
 # -------------------------------------------------------------------------------
@@ -518,7 +446,7 @@ def plot_per_ch(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
                     text += f"\nFWHM {fwhm_ch}" if fwhm_ch != 0 else ""
 
                 text += "\n" + (
-                    f"mean {round(par_mean,3)} [{plot_info['unit']}]"
+                    f"mean {round(par_mean, 3)} [{plot_info['unit']}]"
                     if par_mean is not None
                     else ""
                 )  # handle with care mean='None' situations
@@ -688,6 +616,8 @@ def plot_per_string(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
     # -------------------------------------------------------------------------------
 
     data_analysis = data_analysis.sort_values(["location", "label"])
+    map_dict = utils.get_map_dict(data_analysis)
+
     # new subplot for each string
     ax_idx = 0
     for location, data_location in data_analysis.groupby("location"):
@@ -706,7 +636,14 @@ def plot_per_string(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
         col_idx = 0
         labels = []
         for label, data_channel in data_location.groupby("label"):
-            plot_style(data_channel, fig, axes[ax_idx], plot_info, COLORS[col_idx])
+            plot_style(
+                data_channel,
+                fig,
+                axes[ax_idx],
+                plot_info,
+                COLORS[col_idx],
+                map_dict=map_dict,
+            )
             labels.append(label)
             if len(plot_info["parameters"]) == 1:
                 if plot_info["parameter"] != "event_rate":
@@ -781,6 +718,9 @@ def plot_array(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
     data_analysis["label"] = labels["label"]
     data_analysis = data_analysis.sort_values("label")
 
+    data_analysis = data_analysis.sort_values(["location", "label"])
+    map_dict = utils.get_map_dict(data_analysis)
+
     # -------------------------------------------------------------------------------
     # plot
     # -------------------------------------------------------------------------------
@@ -809,7 +749,6 @@ def plot_array(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
         for label, data_channel in data_location.groupby("label"):
             plot_style(data_channel, fig, axes, plot_info, COLORS[col_idx])
 
-            map_dict = utils.MAP_DICT
             location = data_channel["location"].unique()[0]
             position = data_channel["position"].unique()[0]
 
@@ -860,8 +799,8 @@ def plot_array(data_analysis: DataFrame, plot_info: dict, pdf: PdfPages):
     # set the grid behind the points
     axes.set_axisbelow(True)
     # beautification
-    axes.ylabel = None
-    axes.xlabel = None
+    axes.set_ylabel("")
+    axes.set_xlabel("")
     # add x labels
     axes.set_xticks(channels)
     axes.set_xticklabels(labels, fontsize=5)

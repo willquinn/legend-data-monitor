@@ -1,0 +1,19 @@
+output: /data1/users/calgaro/auto_prova
+dataset:
+  experiment: L200
+  period: p03
+  version: ''
+  path: /data2/public/prodenv/prod-blind/tmp/auto
+  type: phy
+  runs: 0
+saving: overwrite
+slow_control:
+  parameters:
+  - DaqLeft-Temp1
+  - DaqLeft-Temp2
+  - DaqRight-Temp1
+  - DaqRight-Temp2
+  - RREiT
+  - RRNTe
+  - RRSTe
+  - ZUL_T_RR

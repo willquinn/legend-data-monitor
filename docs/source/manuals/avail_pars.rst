@@ -36,14 +36,6 @@ Available parameters
     - x
     - ✓
 
-.. note::
-
-  In general, all saved timestamps will be plotted.
-  But you can also pick some given entries (see the config file), eg.
-
-  - you can pick only ``phy`` or ``all`` entries
-  - you can flag special events, like ``pulser``, ``pulser01ana``, ``FCbsln`` or ``muon`` events
-
 .. warning::
 
   It has been found out that no muon signals were being recorded in the auxiliary channel MUON01 for periods p08 and p09 (up to r003 included).
@@ -54,4 +46,4 @@ Available parameters
 
 .. important::
 
-  Special parameters are typically saved under ``settings/special-parameters.json`` and carefully handled when loading data.
+  Special parameters are typically saved under ``src/legend-data-monitor/settings/special-parameters.yaml`` and carefully handled when loading data.
