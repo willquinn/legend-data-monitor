@@ -85,8 +85,7 @@ We store SC data in the following way:
           └── <type>
             └── <period>
                 └── <time_selection>
-                  ├── SC-<time_selection>.hdf
-                  └── SC-<time_selection>.{dat,bak,dir}
+                  └── SC-<time_selection>.hdf
 
 
 .. note::
