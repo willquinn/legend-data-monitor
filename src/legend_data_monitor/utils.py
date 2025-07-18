@@ -1006,6 +1006,42 @@ def add_config_entries(
 # -------------------------------------------------------------------------
 
 
+def load_config(config_file):
+    """
+    Load a configuration from a dictionary, JSON string, or YAML file.
+
+    This function supports three input types:
+    - A dictionary, which is returned as-is.
+    - A JSON string, which is parsed into a dictionary.
+    - A path to a YAML (.yaml/.yml) file, which is read and parsed.
+
+    Parameters
+    ----------
+    config_file : dict or str
+        The configuration input
+    """
+    if isinstance(config_file, dict):
+        return config_file
+
+    if isinstance(config_file, str):
+        # Case 1: Looks like a file path and exists
+        if os.path.isfile(config_file) and config_file.endswith((".yaml", ".yml")):
+            with open(config_file) as f:
+                return yaml.safe_load(f)
+        else:
+            # Case 2: Try to parse as a JSON string
+            try:
+                return json.loads(config_file)
+            except json.JSONDecodeError:
+                raise ValueError(
+                    "Provided string is not a valid JSON or YAML file path."
+                )
+
+    raise TypeError(
+        "config_file must be a dict, a JSON string, or a path to a .yaml file."
+    )
+
+
 def get_livetime(tot_livetime: float):
     """Get the livetime in a human readable format, starting from livetime in seconds.
 

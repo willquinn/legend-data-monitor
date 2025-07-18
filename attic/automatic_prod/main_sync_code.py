@@ -1,7 +1,9 @@
 import argparse
+import json
 import logging
 import os
 import re
+import shlex
 import subprocess
 from pathlib import Path
 
@@ -351,10 +353,6 @@ def main():
             }
         },
     }
-    with open(os.path.join(rsync_path, "auto_slow_control.yaml"), "w") as f:
-        yaml.dump(scdb, f, sort_keys=False)
-    with open(os.path.join(rsync_path, "auto_config.yaml"), "w") as f:
-        yaml.dump(my_config, f, sort_keys=False)
 
     # ===========================================================================================
     # Get not-analyzed files
@@ -429,13 +427,15 @@ def main():
 
         # run the plot production
         logger.debug("Running the generation of plots...")
-        config_file = os.path.join(rsync_path, "auto_config.yaml")
         keys_file = os.path.join(rsync_path, "new_keys.filekeylist")
 
         # read all lines from the original file
         with open(keys_file) as f:
             lines = f.readlines()
         num_lines = len(lines)
+
+        safe_json_string = shlex.quote(json.dumps(my_config))
+
         if num_lines > chunk_size:
             # split lines into chunks and write to multiple files
             for idx, i in enumerate(range(0, num_lines, chunk_size), start=1):
@@ -447,18 +447,23 @@ def main():
                 with open(output_file, "w") as out_f:
                     out_f.writelines(chunk)
 
-                # TODO: do I have to change from overwrite to append???
                 total_parts = (num_lines + chunk_size - 1) // chunk_size
                 logger.debug(
                     f"[{idx}/{total_parts}] Created file: {output_file} with {len(chunk)} lines."
                 )
-                bash_command = f"{cmd} ~/.local/bin/legend-data-monitor user_rsync_prod --config {config_file} --keys {output_file}"
-                logger.debug(f"...running command \033[95m{bash_command}\033[0m")
+                bash_command = (
+                    f"{cmd} ~/.local/bin/legend-data-monitor user_rsync_prod "
+                    f"--config {safe_json_string} --keys {output_file}"
+                )
+                logger.debug("...running command for generating hdf monitoring files")
                 subprocess.run(bash_command, shell=True)
         else:
             logger.debug(f"File has {num_lines} lines. No need to split.")
-            bash_command = f"{cmd} ~/.local/bin/legend-data-monitor user_rsync_prod --config {config_file} --keys {keys_file}"
-            logger.debug(f"...running command \033[95m{bash_command}\033[0m")
+            bash_command = (
+                f"{cmd} ~/.local/bin/legend-data-monitor user_rsync_prod "
+                f"--config {safe_json_string} --keys {keys_file}"
+            )
+            logger.debug("...running command for generating hdf monitoring files")
             subprocess.run(bash_command, shell=True)
         logger.debug("...done!")
 
@@ -469,7 +474,7 @@ def main():
             f'{cmd} python -c "from monitoring import build_new_files; '
             f"build_new_files('{files_folder}', '{period}', '{run}')\""
         )
-        logger.debug(f"...running command \033[95m{bash_command}\033[0m")
+        logger.debug(f"...running command {bash_command}")
         subprocess.run(bash_command, shell=True)
         logger.debug("...done!")
 
@@ -479,10 +484,12 @@ def main():
         if cluster == "lngs" and get_sc is True:
             try:
                 logger.debug("Retrieving Slow Control data...")
-                scdb_config_file = os.path.join(rsync_path, "auto_slow_control.yaml")
-
-                bash_command = f"{cmd} ~/.local/bin/legend-data-monitor user_scdb --config {scdb_config_file} --port {port} --pswd {pswd}"
-                logger.debug(f"...running command \033[92m{bash_command}\033[0m")
+                safe_json_string = shlex.quote(json.dumps(scdb))
+                bash_command = (
+                    f"{cmd} ~/.local/bin/legend-data-monitor user_scdb "
+                    f"--config {safe_json_string} --port {port} --pswd {pswd}"
+                )
+                logger.debug(f"...running command {bash_command}")
                 subprocess.run(bash_command, shell=True)
                 logger.debug("...SC done!")
             except subprocess.CalledProcessError as e:
