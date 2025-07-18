@@ -1006,6 +1006,42 @@ def add_config_entries(
 # -------------------------------------------------------------------------
 
 
+def load_config(config_file):
+    """
+    Load a configuration from a dictionary, JSON string, or YAML file.
+
+    This function supports three input types:
+    - A dictionary, which is returned as-is.
+    - A JSON string, which is parsed into a dictionary.
+    - A path to a YAML (.yaml/.yml) file, which is read and parsed.
+
+    Parameters
+    ----------
+    config_file : dict or str
+        The configuration input
+    """
+    if isinstance(config_file, dict):
+        return config_file
+
+    if isinstance(config_file, str):
+        # Case 1: Looks like a file path and exists
+        if os.path.isfile(config_file) and config_file.endswith((".yaml", ".yml")):
+            with open(config_file) as f:
+                return yaml.safe_load(f)
+        else:
+            # Case 2: Try to parse as a JSON string
+            try:
+                return json.loads(config_file)
+            except json.JSONDecodeError:
+                raise ValueError(
+                    "Provided string is not a valid JSON or YAML file path."
+                )
+
+    raise TypeError(
+        "config_file must be a dict, a JSON string, or a path to a .yaml file."
+    )
+
+
 def get_livetime(tot_livetime: float):
     """Get the livetime in a human readable format, starting from livetime in seconds.
 
@@ -1147,7 +1183,7 @@ def send_email_alert(app_password, recipients, text_file_path):
 
 
 def check_threshold(
-    kevdiff,
+    data_series,
     pswd_email,
     last_checked,
     t0,
@@ -1164,7 +1200,7 @@ def check_threshold(
 
     Parameters
     ----------
-    kevdiff : pd.Series
+    data_series : pd.Series
         Series of gain differences indexed by timestamp.
     pswd_email : str or None
         Email password to trigger alert (used as a flag).
@@ -1187,12 +1223,12 @@ def check_threshold(
     email_message : list
         List of messages to be sent via email.
     """
-    if kevdiff is None or pswd_email is None or last_checked == "None":
+    if data_series is None or pswd_email is None or last_checked == "None":
         return email_message
 
-    timestamps = kevdiff.index
+    timestamps = data_series.index
     cutoff = pd.to_datetime(float(last_checked), unit="s", utc=True)
-    filtered_series = kevdiff[kevdiff.index > cutoff]
+    filtered_series = data_series[data_series.index > cutoff]
 
     if filtered_series.empty:
         return email_message
@@ -1211,9 +1247,9 @@ def check_threshold(
     # filter by time range
     mask_time_range = (timestamps >= time_range_start) & (timestamps < time_range_end)
     filtered_timestamps = timestamps[mask_time_range]
-    kevdiff_in_range = kevdiff[mask_time_range]
+    data_series_in_range = data_series[mask_time_range]
 
-    mask = (kevdiff_in_range > threshold) | (kevdiff_in_range < -threshold)
+    mask = (data_series_in_range > threshold) | (data_series_in_range < -threshold)
     over_threshold_timestamps = filtered_timestamps[mask]
 
     if not over_threshold_timestamps.empty:

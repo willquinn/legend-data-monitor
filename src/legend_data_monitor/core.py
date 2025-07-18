@@ -79,7 +79,7 @@ def retrieve_exposure(
     )
 
 
-def retrieve_scdb(user_config_path: str, port: int, pswd: str):
+def retrieve_scdb(config: str, port: int, pswd: str):
     """Set the configuration file and the output paths when a user config file is provided. The function to retrieve Slow Control data from database is then automatically called."""
     # -------------------------------------------------------------------------
     # SSH tunnel to the Slow Control database
@@ -99,8 +99,7 @@ def retrieve_scdb(user_config_path: str, port: int, pswd: str):
     # -------------------------------------------------------------------------
     # Read user settings
     # -------------------------------------------------------------------------
-    with open(user_config_path) as f:
-        config = yaml.load(f, Loader=yaml.CLoader)
+    config = utils.load_config(config)
 
     # check validity of scdb settings
     utils.check_scdb_settings(config)
@@ -181,14 +180,13 @@ def control_plots(user_config_path: str, n_files=None):
 
 
 def auto_control_plots(
-    plot_config: str, file_keys: str, prod_path: str, prod_config: str, n_files=None
+    config: str, file_keys: str, prod_path: str, prod_config: str, n_files=None
 ):
     """Set the configuration file and the output paths when a config file is provided during automathic plot production."""
     # -------------------------------------------------------------------------
     # Read user settings
     # -------------------------------------------------------------------------
-    with open(plot_config) as f:
-        config = yaml.load(f, Loader=yaml.CLoader)
+    config = utils.load_config(config)
 
     # check validity of plot settings
     utils.check_plot_settings(config)

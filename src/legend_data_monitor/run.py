@@ -63,7 +63,7 @@ def add_user_scdb(subparsers):
     )
     parser_auto_prod.add_argument(
         "--config",
-        help="""Path to config file (e.g. \"some_path/config_L200_r001_phy.yaml\").""",
+        help="""Path to config file (e.g. \"some_path/config_L200_r001_phy.yaml\") or dictionary.""",
     )
     parser_auto_prod.add_argument(
         "--port",
@@ -138,7 +138,7 @@ def add_user_rsync_parser(subparsers):
     )
     parser_auto_prod.add_argument(
         "--config",
-        help="""Path to config file (e.g. \"some_path/config_L200_r001_phy.yaml\").""",
+        help="""Path to the configuration info or dictionary with config info.""",
     )
     parser_auto_prod.add_argument(
         "--keys",
