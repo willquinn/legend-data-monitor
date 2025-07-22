@@ -41,10 +41,6 @@ def main():
         help="Version of processed data to inspect (eg. tmp-auto or ref-v2.1.0).",
     )
     parser.add_argument(
-        "--rsync_path",
-        help="Path where to store results of the automatic running (eg loaded keys, input config files, etc).",
-    )
-    parser.add_argument(
         "--output_folder",
         help="Path where to store the automatic results (plots and summary files).",
     )
@@ -95,14 +91,13 @@ def main():
     )
     parser.add_argument(
         "--pdf",
-        default="False",
+        default=False,
         help="True if you want to save pdf files too; default: False",
     )
 
     args = parser.parse_args()
     cluster = args.cluster
     ref_version = args.ref_version
-    rsync_path = args.rsync_path
     output_folder = args.output_folder
     partition = False if args.partition is False else True
     pswd = args.pswd
@@ -112,11 +107,8 @@ def main():
     chunk_size = args.chunk_size
     input_period = args.p
     input_run = args.r
-    save_pdf = args.pdf
+    save_pdf = False if args.pdf is False else True
     escale_val = args.escale
-
-    if not os.path.exists(rsync_path):
-        os.makedirs(rsync_path)
 
     auto_dir = (
         "/global/cfs/cdirs/m2676/data/lngs/l200/public/prodenv/prod-blind/"
@@ -359,7 +351,12 @@ def main():
     # ===========================================================================================
 
     # File to store the timestamp of the last check
-    timestamp_file = os.path.join(rsync_path, f"last_checked_{period}_{run}.txt")
+
+    rsync_path = os.path.join(
+        output_folder, ref_version, "generated", "tmp", "mtg", period, run
+    )
+    os.makedirs(rsync_path, exist_ok=True)
+    timestamp_file = os.path.join(rsync_path, "last_checked_timestamp.txt")
 
     # Read the last checked timestamp
     last_checked = None
@@ -368,6 +365,9 @@ def main():
             last_checked = file.read().strip()
 
     # Get the current timestamp
+    if not os.path.isdir(source_dir):
+        logger.debug(f"Error: folder '{source_dir}' does not exist.")
+        exit()
     current_files = os.listdir(source_dir)
     new_files = []
 
@@ -502,7 +502,7 @@ def main():
         # ===========================================================================================
         # Generate Gain Monitoring Summary Plots
         # ===========================================================================================
-        mtg_folder = os.path.join(output_folder, ref_version, "generated/plt/phy")
+        mtg_folder = os.path.join(output_folder, ref_version, "generated/plt/hit/phy")
         os.makedirs(mtg_folder, exist_ok=True)
         logger.info(f"Folder {mtg_folder} ensured")
 

@@ -20,6 +20,9 @@ def retrieve_exposure(
     on_validPSD_NONvalidPSD_exposure = 0
     on_validPSD_exposure = 0
     mass = 0
+    on_validPSD_dets_exposure = {"BEGe": 0, "ICPC": 0, "COAX": 0, "PPC": 0}
+    on_dets_exposure = {"BEGe": 0, "ICPC": 0, "COAX": 0, "PPC": 0}
+    ac_dets_exposure = {"BEGe": 0, "ICPC": 0, "COAX": 0, "PPC": 0}
 
     for run in runs:
         if "phy" not in runinfo[period][run].keys():
@@ -53,8 +56,25 @@ def retrieve_exposure(
 
             if usability == "ac":
                 ac_exposure += expo
+                if hpge[0] == "B":
+                    ac_dets_exposure["BEGe"] += expo
+                if hpge[0] == "V":
+                    ac_dets_exposure["ICPC"] += expo
+                if hpge[0] == "C":
+                    ac_dets_exposure["COAX"] += expo
+                if hpge[0] == "P":
+                    ac_dets_exposure["PPC"] += expo
+
             if usability == "on":
                 on_validPSD_NONvalidPSD_exposure += expo
+                if hpge[0] == "B":
+                    on_dets_exposure["BEGe"] += expo
+                if hpge[0] == "V":
+                    on_dets_exposure["ICPC"] += expo
+                if hpge[0] == "C":
+                    on_dets_exposure["COAX"] += expo
+                if hpge[0] == "P":
+                    on_dets_exposure["PPC"] += expo
 
                 if "is_bb_like" in psd and psd["is_bb_like"] != "missing":
                     if all(
@@ -64,19 +84,33 @@ def retrieve_exposure(
                         ]
                     ):
                         on_validPSD_exposure += expo
+                        if hpge[0] == "B":
+                            on_validPSD_dets_exposure["BEGe"] += expo
+                        if hpge[0] == "V":
+                            on_validPSD_dets_exposure["ICPC"] += expo
+                        if hpge[0] == "C":
+                            on_validPSD_dets_exposure["COAX"] += expo
+                        if hpge[0] == "P":
+                            on_validPSD_dets_exposure["PPC"] += expo
 
-    utils.logger.info("mass: %s", mass)
+    utils.logger.info("mass: %s", round(mass, 3))
     utils.logger.info("period: %s", period)
     utils.logger.info("runs: %s", runs)
     utils.logger.info("Total livetime: %.4f d", tot_liv)
     utils.logger.info("AC exposure: %.4f kg-yr", round(ac_exposure, 4))
+    formatted = {k: f"{v:.4f}" for k, v in ac_dets_exposure.items()}
+    utils.logger.info("--- per detector: %s", formatted)
     utils.logger.info(
         "ON (valid PSD + non-valid PSD) exposure: %.4f kg-yr",
         round(on_validPSD_NONvalidPSD_exposure, 4),
     )
+    formatted = {k: f"{v:.4f}" for k, v in on_dets_exposure.items()}
+    utils.logger.info("--- per detector: %s", formatted)
     utils.logger.info(
         "ON (valid PSD) exposure: %.4f kg-yr", round(on_validPSD_exposure, 4)
     )
+    formatted = {k: f"{v:.4f}" for k, v in on_validPSD_dets_exposure.items()}
+    utils.logger.info("--- per detector: %s", formatted)
 
 
 def retrieve_scdb(config: str, port: int, pswd: str):
@@ -263,6 +297,15 @@ def generate_plots(config: dict, plt_path: str, n_files=None):
 
 
 def make_plots(config: dict, plt_path: str, saving: str):
+
+    # -------------------------------------------------------------------------
+    # set up log file for each system
+    # -------------------------------------------------------------------------
+    log_file = utils.get_output_plot_path(plt_path, "log")
+    file_handler = utils.logging.FileHandler(log_file)
+    file_handler.setLevel(utils.logging.DEBUG)
+    utils.logger.addHandler(file_handler)
+
     # -------------------------------------------------------------------------
     # flag events - PULSER
     # -------------------------------------------------------------------------
@@ -300,6 +343,7 @@ def make_plots(config: dict, plt_path: str, saving: str):
     subsystems_to_plot = list(config["subsystems"].keys())
 
     for system in subsystems_to_plot:
+
         # -------------------------------------------------------------------------
         # set up subsystem
         # -------------------------------------------------------------------------
@@ -342,14 +386,6 @@ def make_plots(config: dict, plt_path: str, saving: str):
         # -------------------------------------------------------------------------
         # make subsystem plots
         # -------------------------------------------------------------------------
-
-        # - set up log file for each system
-        # file handler
-        file_handler = utils.logging.FileHandler(plt_path + "-" + system + ".log")
-        file_handler.setLevel(utils.logging.DEBUG)
-        # add to logger
-        utils.logger.addHandler(file_handler)
-
         plotting.make_subsystem_plots(
             subsystems[system],
             config["subsystems"][system],
@@ -369,16 +405,15 @@ def make_plots(config: dict, plt_path: str, saving: str):
             saving,
         )
 
-        # -------------------------------------------------------------------------
-        # beautification of the log file
-        # -------------------------------------------------------------------------
-        # Read the log file into a string
-        with open(plt_path + "-" + system + ".log") as f:
-            log_text = f.read()
-        # Define a regular expression pattern to match escape sequences for color codes
-        pattern = re.compile(r"\033\[[0-9;]+m")
-        # Remove the color codes from the log text using the pattern
-        clean_text = pattern.sub("", log_text)
-        # Write the cleaned text to a new file
-        with open(plt_path + "-" + system + ".log", "w") as f:
-            f.write(clean_text)
+    # flush and remove the handler before cleaning
+    file_handler.flush()
+    utils.logger.removeHandler(file_handler)
+    file_handler.close()
+    # safely clean the log file
+    with open(log_file) as f:
+        log_text = f.read()
+
+    pattern = re.compile(r"\033\[[0-9;]+m")
+    clean_text = pattern.sub("", log_text)
+    with open(log_file, "a") as f:
+        f.write(clean_text)

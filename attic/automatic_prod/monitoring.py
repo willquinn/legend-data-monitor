@@ -79,7 +79,7 @@ def build_new_files(generated_path: str, period: str, run: str):
     """
     data_file = os.path.join(
         generated_path,
-        "generated/plt/phy",
+        "generated/plt/hit/phy",
         period,
         run,
         f"l200-{period}-{run}-phy-geds.hdf",
@@ -99,7 +99,7 @@ def build_new_files(generated_path: str, period: str, run: str):
     for idx, resample_unit in enumerate(resampling_times):
         new_file = os.path.join(
             generated_path,
-            "generated/plt/phy",
+            "generated/plt/hit/phy",
             period,
             run,
             f"l200-{period}-{run}-phy-geds-res_{resample_unit}.hdf",
@@ -155,7 +155,7 @@ def build_new_files(generated_path: str, period: str, run: str):
         if idx == 0:
             json_output = os.path.join(
                 generated_path,
-                "generated/plt/phy",
+                "generated/plt/hit/phy",
                 period,
                 run,
                 f"l200-{period}-{run}-phy-geds-info.yaml",
@@ -890,7 +890,7 @@ def main():
     )
     parser.add_argument(
         "--hdf_files",
-        help="Path to hdf files (eg see files in /data1/users/calgaro/prod-ref-v2/generated/plt/phy).",
+        help="Path to generated monitoring hdf files.",
     )
     parser.add_argument(
         "--output", default="removal_new_keys", help="Path to output folder."
@@ -930,7 +930,7 @@ def main():
     )
     parser.add_argument(
         "--pdf",
-        default="False",
+        default=False,
         help="True if you want to save pdf files too; default: False.",
     )
     parser.add_argument(
@@ -948,7 +948,7 @@ def main():
     runs = args.avail_runs
     current_run = args.current_run
     pswd_email = args.pswd_email
-    save_pdf = args.pdf
+    save_pdf = False if args.pdf is False else True
     escale_val = float(args.escale)
     last_checked = args.last_checked
 
@@ -1266,20 +1266,21 @@ def main():
                 )  # pd.Timedelta(days=7))# --> change me to resize the width of the last run
                 plt.legend(loc="lower left")
                 plt.tight_layout()
-
-                mgt_folder = os.path.join(
-                    output_folder, period, "mtg", "pdf", f"st{string}"
+                end_folder = os.path.join(
+                    output_folder,
+                    period,
+                    "mtg",
                 )
-                if not os.path.exists(mgt_folder):
-                    os.makedirs(mgt_folder)
-                    logger.debug("...created %s", mgt_folder)
+                os.makedirs(end_folder, exist_ok=True)
 
-                # ~~~~~~~~~~~~~~~~ save pdfs with plots for an easy/quick access ~~~~~~~~~~~~~~~~
-                pdf_name = os.path.join(
-                    mgt_folder,
-                    f"{period}_string{string}_pos{chmap.map('daq.rawid')[int(channel[2:])]['location']['position']}_{channel_name}_gain_shift.pdf",
-                )
                 if save_pdf:
+                    mgt_folder = os.path.join(end_folder, "pdf", f"st{string}")
+                    os.makedirs(mgt_folder, exist_ok=True)
+
+                    pdf_name = os.path.join(
+                        mgt_folder,
+                        f"{period}_string{string}_pos{chmap.map('daq.rawid')[int(channel[2:])]['location']['position']}_{channel_name}_gain_shift.pdf",
+                    )
                     plt.savefig(pdf_name)
 
                 # pickle and save calibration inputs retrieved ots in a shelve file
@@ -1288,9 +1289,7 @@ def main():
                 plt.close(fig)
                 # store the serialized plot in a shelve object under key
                 with shelve.open(
-                    os.path.join(
-                        output_folder, period, "mtg", f"l200-{period}-phy-monitoring"
-                    ),
+                    os.path.join(end_folder, f"l200-{period}-phy-monitoring"),
                     "c",
                     protocol=pickle.HIGHEST_PROTOCOL,
                 ) as shelf:
@@ -1576,20 +1575,18 @@ def main():
                         period,
                         current_run,
                         "mtg",
+                        inspected_parameter,
                     )
-                    mgt_folder = os.path.join(
-                        end_folder, inspected_parameter, "pdf", f"st{string}"
-                    )
-                    if not os.path.exists(mgt_folder):
-                        os.makedirs(mgt_folder)
-                        logger.debug("...created %s", mgt_folder)
+                    os.makedirs(end_folder, exist_ok=True)
 
-                    # ~~~~~~~~~~~~~~~~ save pdfs with plots for an easy/quick access ~~~~~~~~~~~~~~~~
-                    pdf_name = os.path.join(
-                        mgt_folder,
-                        f"{period}_string{string}_pos{chmap.map('daq.rawid')[int(channel[2:])]['location']['position']}_{channel_name}_{inspected_parameter}.pdf",
-                    )
                     if save_pdf:
+                        mgt_folder = os.path.join(end_folder, "pdf", f"st{string}")
+                        os.makedirs(mgt_folder, exist_ok=True)
+
+                        pdf_name = os.path.join(
+                            mgt_folder,
+                            f"{period}_string{string}_pos{chmap.map('daq.rawid')[int(channel[2:])]['location']['position']}_{channel_name}_{inspected_parameter}.pdf",
+                        )
                         plt.savefig(pdf_name)
 
                     # pickle and save calibration inputs retrieved ots in a shelve file
@@ -1600,7 +1597,6 @@ def main():
                     with shelve.open(
                         os.path.join(
                             end_folder,
-                            inspected_parameter,
                             f"l200-{period}-phy-{inspected_parameter}",
                         ),
                         "c",

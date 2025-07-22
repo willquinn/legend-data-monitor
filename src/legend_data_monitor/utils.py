@@ -508,9 +508,10 @@ def make_output_paths(config: dict, user_time_range: dict) -> str:
     """
     Get a dict and return a dict. The function defines output paths and create directories accordingly.
 
-    To use when you want a specific output structure of the following type: [...]/prod-ref/{version}/generated/plt/phy/{period}/{run}
+    To use when you want a specific output structure of the following type: [...]/prod-ref/{version}/generated/plt/hit/phy/{period}/{run}
     This does not work if you select more types (eg. both cal and phy) or timestamp intervals (but just runs).
     It can be used for run summary plots, eg during stable data taking.
+    Note that monitoring plots are stored under the 'hit' subfolder to maintain the number of subfolders to the minimum and replicate the structure of the main prodenv.
     """
     logger.info("Setting up plotting...")
 
@@ -532,11 +533,12 @@ def make_output_paths(config: dict, user_time_range: dict) -> str:
     version_dir = os.path.join(config["output"], config["dataset"]["version"])
     generated_dir = os.path.join(version_dir, "generated")
     plt_dir = os.path.join(generated_dir, "plt")
+    hit_dir = os.path.join(plt_dir, "hit")
     # 'phy' or 'cal' if one of the two is specified; if both are specified, store data in 'cal_phy/'
     if isinstance(config["dataset"]["type"], list):
-        type_dir = os.path.join(plt_dir, "cal_phy")
+        type_dir = os.path.join(hit_dir, "cal_phy")
     else:
-        type_dir = os.path.join(plt_dir, config["dataset"]["type"])
+        type_dir = os.path.join(hit_dir, config["dataset"]["type"])
     # period info
     period_dir = os.path.join(type_dir, config["dataset"]["period"]) + "/"
 
@@ -544,6 +546,7 @@ def make_output_paths(config: dict, user_time_range: dict) -> str:
     make_dir(version_dir)
     make_dir(generated_dir)
     make_dir(plt_dir)
+    make_dir(hit_dir)
     make_dir(type_dir)
     make_dir(period_dir)
 
@@ -999,6 +1002,23 @@ def add_config_entries(
         sys.exit()
 
     return config
+
+
+def get_output_plot_path(plt_path: str, extension: str) -> str:
+    """
+    Given a path to the plt directory, generate a corresponding output path in the tmp/mtg/ directory.
+
+    Parameters
+    ----------
+        plt_path (str): Original plot path (e.g. from 'plt/hit/phy/')
+        extension (str): Extension of the file to save (e.g. 'pdf' or 'log')
+    """
+    filename = os.path.basename(plt_path)
+    save_path = plt_path.replace("plt/hit/phy/", "tmp/mtg/").rsplit("/", 1)[0] + "/"
+    os.makedirs(save_path, exist_ok=True)
+    plt_file = os.path.join(save_path, f"{filename}.{extension}")
+
+    return plt_file
 
 
 # -------------------------------------------------------------------------

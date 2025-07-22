@@ -38,7 +38,9 @@ def make_subsystem_plots(
     plt_path: str,
     saving=None,
 ):
-    pdf = PdfPages(plt_path + "-" + subsystem.type + ".pdf")
+
+    plt_file = utils.get_output_plot_path(plt_path, "pdf")
+    pdf = PdfPages(plt_file)
     is_pdf_saved = False
 
     for plot_title in plots:
