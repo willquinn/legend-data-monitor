@@ -20,6 +20,9 @@ def retrieve_exposure(
     on_validPSD_NONvalidPSD_exposure = 0
     on_validPSD_exposure = 0
     mass = 0
+    on_validPSD_dets_exposure = {"BEGe": 0, "ICPC": 0, "COAX": 0, "PPC": 0}
+    on_dets_exposure = {"BEGe": 0, "ICPC": 0, "COAX": 0, "PPC": 0}
+    ac_dets_exposure = {"BEGe": 0, "ICPC": 0, "COAX": 0, "PPC": 0}
 
     for run in runs:
         if "phy" not in runinfo[period][run].keys():
@@ -53,8 +56,25 @@ def retrieve_exposure(
 
             if usability == "ac":
                 ac_exposure += expo
+                if hpge[0] == "B":
+                    ac_dets_exposure["BEGe"] += expo
+                if hpge[0] == "V":
+                    ac_dets_exposure["ICPC"] += expo
+                if hpge[0] == "C":
+                    ac_dets_exposure["COAX"] += expo
+                if hpge[0] == "P":
+                    ac_dets_exposure["PPC"] += expo
+
             if usability == "on":
                 on_validPSD_NONvalidPSD_exposure += expo
+                if hpge[0] == "B":
+                    on_dets_exposure["BEGe"] += expo
+                if hpge[0] == "V":
+                    on_dets_exposure["ICPC"] += expo
+                if hpge[0] == "C":
+                    on_dets_exposure["COAX"] += expo
+                if hpge[0] == "P":
+                    on_dets_exposure["PPC"] += expo
 
                 if "is_bb_like" in psd and psd["is_bb_like"] != "missing":
                     if all(
@@ -64,19 +84,33 @@ def retrieve_exposure(
                         ]
                     ):
                         on_validPSD_exposure += expo
+                        if hpge[0] == "B":
+                            on_validPSD_dets_exposure["BEGe"] += expo
+                        if hpge[0] == "V":
+                            on_validPSD_dets_exposure["ICPC"] += expo
+                        if hpge[0] == "C":
+                            on_validPSD_dets_exposure["COAX"] += expo
+                        if hpge[0] == "P":
+                            on_validPSD_dets_exposure["PPC"] += expo
 
-    utils.logger.info("mass: %s", mass)
+    utils.logger.info("mass: %s", round(mass, 3))
     utils.logger.info("period: %s", period)
     utils.logger.info("runs: %s", runs)
     utils.logger.info("Total livetime: %.4f d", tot_liv)
     utils.logger.info("AC exposure: %.4f kg-yr", round(ac_exposure, 4))
+    formatted = {k: f"{v:.4f}" for k, v in ac_dets_exposure.items()}
+    utils.logger.info("--- per detector: %s", formatted)
     utils.logger.info(
         "ON (valid PSD + non-valid PSD) exposure: %.4f kg-yr",
         round(on_validPSD_NONvalidPSD_exposure, 4),
     )
+    formatted = {k: f"{v:.4f}" for k, v in on_dets_exposure.items()}
+    utils.logger.info("--- per detector: %s", formatted)
     utils.logger.info(
         "ON (valid PSD) exposure: %.4f kg-yr", round(on_validPSD_exposure, 4)
     )
+    formatted = {k: f"{v:.4f}" for k, v in on_validPSD_dets_exposure.items()}
+    utils.logger.info("--- per detector: %s", formatted)
 
 
 def retrieve_scdb(config: str, port: int, pswd: str):
