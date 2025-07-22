@@ -415,5 +415,5 @@ def make_plots(config: dict, plt_path: str, saving: str):
 
     pattern = re.compile(r"\033\[[0-9;]+m")
     clean_text = pattern.sub("", log_text)
-    with open(log_file) as f:
+    with open(log_file, "a") as f:
         f.write(clean_text)
