@@ -297,6 +297,18 @@ def generate_plots(config: dict, plt_path: str, n_files=None):
 
 
 def make_plots(config: dict, plt_path: str, saving: str):
+
+    # -------------------------------------------------------------------------
+    # set up log file for each system
+    # -------------------------------------------------------------------------
+    filename = plt_path.split("/")[-1]
+    save_path = plt_path.replace("plt/hit/phy/", "tmp/mtg/").rsplit("/", 1)[0] + "/"
+    os.makedirs(save_path, exist_ok=True)
+    log_file = os.path.join(save_path, f"{filename}.log")
+    file_handler = utils.logging.FileHandler(log_file)
+    file_handler.setLevel(utils.logging.DEBUG)
+    utils.logger.addHandler(file_handler)
+
     # -------------------------------------------------------------------------
     # flag events - PULSER
     # -------------------------------------------------------------------------
@@ -334,6 +346,7 @@ def make_plots(config: dict, plt_path: str, saving: str):
     subsystems_to_plot = list(config["subsystems"].keys())
 
     for system in subsystems_to_plot:
+
         # -------------------------------------------------------------------------
         # set up subsystem
         # -------------------------------------------------------------------------
@@ -376,14 +389,6 @@ def make_plots(config: dict, plt_path: str, saving: str):
         # -------------------------------------------------------------------------
         # make subsystem plots
         # -------------------------------------------------------------------------
-
-        # - set up log file for each system
-        # file handler
-        file_handler = utils.logging.FileHandler(plt_path + "-" + system + ".log")
-        file_handler.setLevel(utils.logging.DEBUG)
-        # add to logger
-        utils.logger.addHandler(file_handler)
-
         plotting.make_subsystem_plots(
             subsystems[system],
             config["subsystems"][system],
@@ -403,16 +408,15 @@ def make_plots(config: dict, plt_path: str, saving: str):
             saving,
         )
 
-        # -------------------------------------------------------------------------
-        # beautification of the log file
-        # -------------------------------------------------------------------------
-        # Read the log file into a string
-        with open(plt_path + "-" + system + ".log") as f:
-            log_text = f.read()
-        # Define a regular expression pattern to match escape sequences for color codes
-        pattern = re.compile(r"\033\[[0-9;]+m")
-        # Remove the color codes from the log text using the pattern
-        clean_text = pattern.sub("", log_text)
-        # Write the cleaned text to a new file
-        with open(plt_path + "-" + system + ".log", "w") as f:
-            f.write(clean_text)
+    # flush and remove the handler before cleaning
+    file_handler.flush()
+    utils.logger.removeHandler(file_handler)
+    file_handler.close()
+    # safely clean the log file
+    with open(log_file) as f:
+        log_text = f.read()
+
+    pattern = re.compile(r"\033\[[0-9;]+m")
+    clean_text = pattern.sub("", log_text)
+    with open(log_file) as f:
+        f.write(clean_text)
