@@ -301,10 +301,7 @@ def make_plots(config: dict, plt_path: str, saving: str):
     # -------------------------------------------------------------------------
     # set up log file for each system
     # -------------------------------------------------------------------------
-    filename = plt_path.split("/")[-1]
-    save_path = plt_path.replace("plt/hit/phy/", "tmp/mtg/").rsplit("/", 1)[0] + "/"
-    os.makedirs(save_path, exist_ok=True)
-    log_file = os.path.join(save_path, f"{filename}.log")
+    log_file = utils.get_output_plot_path(plt_path, "log")
     file_handler = utils.logging.FileHandler(log_file)
     file_handler.setLevel(utils.logging.DEBUG)
     utils.logger.addHandler(file_handler)

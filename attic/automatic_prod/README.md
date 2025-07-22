@@ -51,18 +51,17 @@ The structure will look like:
             │        └── phy/
             │            └── <period>/
             │                ├── <run>/
-            │                │   ├── l200-<period>-<run>-phy-geds.pdf // keep or remove? TBD
             │                │   ├── l200-<period>-<run>-phy-geds.hdf
-            │                │   └── mtg/ // run-based plots
+            │                │   └── mtg/
             │                │       └── <parameter>/
-            │                │           ├── l200-<period>-phy-<parameter>.{bak,dat,dir} // contains plots for the Dashboard
+            │                │           ├── l200-<period>-phy-<parameter>.{bak,dat,dir}
             │                │           └── <pdf>/
             │                │               ├── st1/
             │                │               ├── st2/
             │                │               ├── st3/
             │                │               └── ...
-            │                └── mtg/ // period-based plots
-            │                    ├── l200-<period>-phy-monitoring.{bak,dat,dir} // contains plots for the Dashboard
+            │                └── mtg/
+            │                    ├── l200-<period>-phy-monitoring.{bak,dat,dir}
             │                    └── <pdf>/
             │                        ├── st1/
             │                        ├── st2/
@@ -74,7 +73,8 @@ The structure will look like:
                         └── <run>/
                             ├── last_checked_timestamp.txt
                             ├── new_keys.filekeylist
-                            └── l200-<period>-<run>-phy-geds.log
+                            ├── l200-<period>-<run>-phy.pdf
+                            └── l200-<period>-<run>-phy.log
 ```
 
 where `<parameter>` can be `Baseline`, `TrapemaxCtcCal`, etc.

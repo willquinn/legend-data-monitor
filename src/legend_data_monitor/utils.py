@@ -1004,6 +1004,23 @@ def add_config_entries(
     return config
 
 
+def get_output_plot_path(plt_path: str, extension: str) -> str:
+    """
+    Given a path to the plt directory, generate a corresponding output path in the tmp/mtg/ directory.
+
+    Parameters
+    ----------
+        plt_path (str): Original plot path (e.g. from 'plt/hit/phy/')
+        extension (str): Extension of the file to save (e.g. 'pdf' or 'log')
+    """
+    filename = os.path.basename(plt_path)
+    save_path = plt_path.replace("plt/hit/phy/", "tmp/mtg/").rsplit("/", 1)[0] + "/"
+    os.makedirs(save_path, exist_ok=True)
+    plt_file = os.path.join(save_path, f"{filename}.{extension}")
+
+    return plt_file
+
+
 # -------------------------------------------------------------------------
 # Other functions
 # -------------------------------------------------------------------------
