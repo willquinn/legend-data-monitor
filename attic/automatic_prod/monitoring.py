@@ -683,7 +683,12 @@ def filter_series_by_ignore_keys(series_to_filter, ignore_keys: dict, key: str):
 
 
 def get_pulser_data(
-    resampling_time: str, period: str | list, dfs: list, channel: str, escale: float, variations = False,
+    resampling_time: str,
+    period: str | list,
+    dfs: list,
+    channel: str,
+    escale: float,
+    variations=False,
 ):
     """
     Return a dictionary of geds and pulser filtered dataframes for which a time resampling is performed.
@@ -741,7 +746,7 @@ def get_pulser_data(
         return None
 
     logger.debug("...getting geds data")
-    # GED part (always computed) 
+    # GED part (always computed)
     if variations:
         ser_ged_cuspdiff = pd.Series(
             (ser_ged_cusp.values - ged_cusp_av) / ged_cusp_av,
@@ -1318,7 +1323,7 @@ def main():
                 #  - p08_string2_pos1_B00035C
                 #  - p08_string2_pos2_C000RG1
                 #  - ...
-    
+
     # parameters (bsln, gain, ...) variations over run
     ylabels = {
         "TrapemaxCtcCal": "Energy diff / keV",
@@ -1341,11 +1346,11 @@ def main():
         "BlStd": "Baseline std",
     }
     limits = {
-        "TrapemaxCtcCal": [None,None],
-        "Baseline": [-10,10],
-        "BlStd": [None,100],
+        "TrapemaxCtcCal": [None, None],
+        "Baseline": [-10, 10],
+        "BlStd": [None, 100],
     }
-    for inspected_parameter in ["Baseline","TrapemaxCtcCal","BlStd"]:
+    for inspected_parameter in ["Baseline", "TrapemaxCtcCal", "BlStd"]:
         for index_i in tqdm(range(len(period_list))):
             period = period_list[index_i]
 
@@ -1419,7 +1424,7 @@ def main():
                         fit=fit_flag,
                     )
                     threshold = (
-                        [pars_data["res"][0],pars_data["res"][0]]
+                        [pars_data["res"][0], pars_data["res"][0]]
                         if inspected_parameter == "TrapemaxCtcCal"
                         else limits[inspected_parameter]
                     )
@@ -1552,7 +1557,10 @@ def main():
                         if limits[inspected_parameter][1] is not None:
                             plt.plot(
                                 [t0[0], t0[0] + pd.Timedelta(days=7)],
-                                [limits[inspected_parameter][1], limits[inspected_parameter][1]],
+                                [
+                                    limits[inspected_parameter][1],
+                                    limits[inspected_parameter][1],
+                                ],
                                 color=colors[inspected_parameter][1],
                                 ls="-",
                             )

@@ -1263,7 +1263,7 @@ def check_threshold(
         time_range_start = time_range_start.tz_localize("UTC")
     else:
         time_range_start = time_range_start.tz_convert("UTC")
-    
+
     if time_range_end.tzinfo is None:
         time_range_end = time_range_end.tz_localize("UTC")
     else:
@@ -1281,7 +1281,7 @@ def check_threshold(
         mask &= data_series_in_range < low
     if high is not None:
         mask &= data_series_in_range > high
-    
+
     over_threshold_timestamps = filtered_timestamps[mask]
 
     if not over_threshold_timestamps.empty:

@@ -400,7 +400,7 @@ def main():
     def remove_key(timestamp, ignore_keys, period):
         if period not in ignore_keys.keys():
             return False
-            
+
         for idx in range(0, len(ignore_keys[period]["start_keys"])):
             start = ignore_keys[period]["start_keys"][idx]
             end = ignore_keys[period]["stop_keys"][idx]
@@ -511,7 +511,9 @@ def main():
 
         # define dataset depending on the (latest) monitored period/run
         avail_runs = sorted(os.listdir(os.path.join(mtg_folder, period)))
-        avail_runs = [ar for ar in avail_runs if "mtg" not in ar and ar != ".ipynb_checkpoints"]
+        avail_runs = [
+            ar for ar in avail_runs if "mtg" not in ar and ar != ".ipynb_checkpoints"
+        ]
         dataset = {period: avail_runs}
         if dataset[period] != []:
             logger.debug("Generating monitoring plots...")
