@@ -398,6 +398,9 @@ def main():
         ignore_keys = yaml.load(f, Loader=yaml.CLoader)
 
     def remove_key(timestamp, ignore_keys, period):
+        if period not in ignore_keys.keys():
+            return False
+
         for idx in range(0, len(ignore_keys[period]["start_keys"])):
             start = ignore_keys[period]["start_keys"][idx]
             end = ignore_keys[period]["stop_keys"][idx]
@@ -508,7 +511,9 @@ def main():
 
         # define dataset depending on the (latest) monitored period/run
         avail_runs = sorted(os.listdir(os.path.join(mtg_folder, period)))
-        avail_runs = [ar for ar in avail_runs if "mtg" not in ar]
+        avail_runs = [
+            ar for ar in avail_runs if "mtg" not in ar and ar != ".ipynb_checkpoints"
+        ]
         dataset = {period: avail_runs}
         if dataset[period] != []:
             logger.debug("Generating monitoring plots...")
@@ -523,9 +528,9 @@ def main():
             # Note: quad_res is set to False by default in these plots
             mtg_bash_command = f"{cmd} python monitoring.py --public_data {auto_dir_path} --hdf_files {mtg_folder} --output {mtg_folder} --start {start_key} --p {period} --avail_runs {avail_runs} --pswd_email {pswd_email} --escale {escale_val} --current_run {run} --last_checked {last_checked}"
             if partition is True:
-                mtg_bash_command += "--partition True"
+                mtg_bash_command += " --partition True"
             if save_pdf is True:
-                mtg_bash_command += "--pdf True"
+                mtg_bash_command += " --pdf True"
 
             subprocess.run(mtg_bash_command, shell=True)
             logger.info("...monitoring plots generated!")

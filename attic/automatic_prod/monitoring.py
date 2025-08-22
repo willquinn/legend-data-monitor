@@ -524,7 +524,6 @@ def get_dfs(phy_mtg_data: str, period: str, run_list: str | list, parameter: str
         if r not in run_list:
             continue
         files = os.listdir(os.path.join(phy_mtg_data, r))
-        logger.debug(f"Retrieved files: {files}")
         hdf_geds = [
             f
             for f in files
@@ -684,7 +683,12 @@ def filter_series_by_ignore_keys(series_to_filter, ignore_keys: dict, key: str):
 
 
 def get_pulser_data(
-    resampling_time: str, period: str | list, dfs: list, channel: str, escale: float
+    resampling_time: str,
+    period: str | list,
+    dfs: list,
+    channel: str,
+    escale: float,
+    variations=False,
 ):
     """
     Return a dictionary of geds and pulser filtered dataframes for which a time resampling is performed.
@@ -701,6 +705,8 @@ def get_pulser_data(
         Channel to inspect.
     escale: float
         Scaling factor used to compute relative differences in gain and calibration constant.
+    variations: bool
+        True if you want to retrieve % variations (default: False).
     """
     # geds
     ser_ged_cusp = dfs[0][channel].sort_index()
@@ -740,12 +746,18 @@ def get_pulser_data(
         return None
 
     logger.debug("...getting geds data")
-    # GED part (always computed) ### why 1h times?
-    ser_ged_cuspdiff = pd.Series(
-        (ser_ged_cusp.values - ged_cusp_av) / ged_cusp_av,
-        index=ser_ged_cusp.index.values,
-    ).dropna()
-    # - same, but at escale ### why 1h times?
+    # GED part (always computed)
+    if variations:
+        ser_ged_cuspdiff = pd.Series(
+            (ser_ged_cusp.values - ged_cusp_av) / ged_cusp_av,
+            index=ser_ged_cusp.index.values,
+        ).dropna()
+    else:
+        ser_ged_cuspdiff = pd.Series(
+            ser_ged_cusp.values,
+            index=ser_ged_cusp.index.values,
+        ).dropna()
+    # - same, but at escale
     ser_ged_cuspdiff_kev = pd.Series(
         ser_ged_cuspdiff * escale, index=ser_ged_cuspdiff.index.values
     )
@@ -803,10 +815,16 @@ def get_pulser_data(
             and length_puls == length_geds
         ):
             logger.debug("...getting pulser and geds-rescaled data")
-            ser_pul_cuspdiff = pd.Series(
-                (ser_pul_cusp.values - pul_cusp_av) / pul_cusp_av,
-                index=ser_pul_cusp.index.values,
-            ).dropna()
+            if variations:
+                ser_pul_cuspdiff = pd.Series(
+                    (ser_pul_cusp.values - pul_cusp_av) / pul_cusp_av,
+                    index=ser_pul_cusp.index.values,
+                ).dropna()
+            else:
+                ser_pul_cuspdiff = pd.Series(
+                    ser_pul_cusp.values,
+                    index=ser_pul_cusp.index.values,
+                ).dropna()
 
             ser_pul_cuspdiff_kev = pd.Series(
                 ser_pul_cuspdiff * escale, index=ser_pul_cuspdiff.index.values
@@ -906,15 +924,15 @@ def main():
     parser.add_argument("--current_run", type=str, help="Run under inspection.")
     parser.add_argument(
         "--partition",
-        default="False",
+        default=False,
         help="False if not partition data; default: False",
     )
     parser.add_argument(
-        "--zoom", default="False", help="True to zoom over y axis; default: False"
+        "--zoom", default=False, help="True to zoom over y axis; default: False"
     )
     parser.add_argument(
         "--quad_res",
-        default="False",
+        default=False,
         help="True if you want to plot the quadratic resolution too; default: False",
     )
     parser.add_argument(
@@ -961,9 +979,9 @@ def main():
     logger.debug(f"Available phy data: {dataset}")
 
     xlim_idx = 1
-    partition = False if args.partition == "False" else True
-    quadratic = False if args.quad_res == "False" else True
-    zoom = False if args.zoom == "False" else True
+    partition = False if args.partition is False else True
+    quadratic = False if args.quad_res is False else True
+    zoom = False if args.zoom is False else True
 
     fit_flag = "quadratic" if quadratic is True else "linear"
 
@@ -1310,24 +1328,29 @@ def main():
     ylabels = {
         "TrapemaxCtcCal": "Energy diff / keV",
         "Baseline": "Baseline % variations",
+        "BlStd": "Baseline std [ADC]",
     }
     colors = {
         "TrapemaxCtcCal": ["dodgerblue", "b"],
         "Baseline": ["r", "firebrick"],
+        "BlStd": ["peru", "saddlebrown"],
     }
     percentage = {
         "TrapemaxCtcCal": False,
         "Baseline": True,
+        "BlStd": False,
     }
     titles = {
         "TrapemaxCtcCal": "Gain",
         "Baseline": "FPGA baseline",
+        "BlStd": "Baseline std",
     }
     limits = {
-        "TrapemaxCtcCal": None,
-        "Baseline": 10,
+        "TrapemaxCtcCal": [None, None],
+        "Baseline": [-10, 10],
+        "BlStd": [None, 100],
     }
-    for inspected_parameter in ["Baseline", "TrapemaxCtcCal"]:
+    for inspected_parameter in ["Baseline", "TrapemaxCtcCal", "BlStd"]:
         for index_i in tqdm(range(len(period_list))):
             period = period_list[index_i]
 
@@ -1384,6 +1407,7 @@ def main():
                         escale=(
                             escale_val if inspected_parameter == "TrapemaxCtcCal" else 1
                         ),
+                        variations=percentage[inspected_parameter],
                     )
 
                     fig, ax = plt.subplots(figsize=(12, 4))
@@ -1400,9 +1424,9 @@ def main():
                         fit=fit_flag,
                     )
                     threshold = (
-                        pars_data["res"][0]
+                        [pars_data["res"][0], pars_data["res"][0]]
                         if inspected_parameter == "TrapemaxCtcCal"
-                        else 5
+                        else limits[inspected_parameter]
                     )
 
                     t0 = pars_data["run_start"]
@@ -1412,6 +1436,8 @@ def main():
                             if pulser_data["diff"]["kevdiff_av"] is None
                             else pulser_data["diff"]["kevdiff_av"]
                         )
+                        if percentage[inspected_parameter] is True:
+                            kevdiff *= 100
 
                         # check threshold and send automatic mail
                         email_message = legend_data_monitor.utils.check_threshold(
@@ -1468,12 +1494,8 @@ def main():
                         # else, no correction is applied
                         else:
                             if percentage[inspected_parameter] is True:
-                                pulser_data["ged"]["kevdiff_av"] = (
-                                    pulser_data["ged"]["kevdiff_av"] * 100
-                                )
-                                pulser_data["ged"]["kevdiff_std"] = (
-                                    pulser_data["ged"]["kevdiff_std"] * 100
-                                )
+                                pulser_data["ged"]["kevdiff_av"] *= 100
+                                pulser_data["ged"]["kevdiff_std"] *= 100
 
                             plt.plot(
                                 pulser_data["ged"]["kevdiff_av"].sort_index(),
@@ -1532,30 +1554,33 @@ def main():
                             label="Qbb FWHM keV lin.",
                         )
                     else:
-                        plt.plot(
-                            [t0[0], t0[0] + pd.Timedelta(days=7)],
-                            [limits[inspected_parameter], limits[inspected_parameter]],
-                            color=colors[inspected_parameter][1],
-                            ls="-",
-                        )
-                        plt.plot(
-                            [t0[0], t0[0] + pd.Timedelta(days=7)],
-                            [
-                                -limits[inspected_parameter],
-                                -limits[inspected_parameter],
-                            ],
-                            color=colors[inspected_parameter][1],
-                            ls="-",
-                        )
+                        if limits[inspected_parameter][1] is not None:
+                            plt.plot(
+                                [t0[0], t0[0] + pd.Timedelta(days=7)],
+                                [
+                                    limits[inspected_parameter][1],
+                                    limits[inspected_parameter][1],
+                                ],
+                                color=colors[inspected_parameter][1],
+                                ls="-",
+                            )
+                        if limits[inspected_parameter][0] is not None:
+                            plt.plot(
+                                [t0[0], t0[0] + pd.Timedelta(days=7)],
+                                [
+                                    limits[inspected_parameter][0],
+                                    limits[inspected_parameter][0],
+                                ],
+                                color=colors[inspected_parameter][1],
+                                ls="-",
+                            )
 
                     plt.ylabel(ylabels[inspected_parameter])
                     fig.suptitle(
                         f'period: {period} - string: {string} - position: {chmap.map("daq.rawid")[int(channel[2:])]["location"]["position"]} - ged: {channel_name}'
                     )
 
-                    if eval(flag_expr) and zoom is False:
-                        plt.ylim(-10, 10)
-                    else:
+                    if zoom is True:
                         bound = np.average(pulser_data["ged"]["kevdiff_std"].dropna())
                         plt.ylim(-3.5 * bound, 3.5 * bound)
 
@@ -1565,7 +1590,7 @@ def main():
                     ].tz_localize(None)
                     plt.xlim(
                         t0[0] - pd.Timedelta(hours=0.5),
-                        t0[-xlim_idx] + time_difference * 1.5,
+                        t0[-xlim_idx] + time_difference * 1.1,
                     )
                     plt.legend(loc="lower left")
                     plt.tight_layout()

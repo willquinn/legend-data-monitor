@@ -1162,16 +1162,16 @@ def get_output_path(config: dict):
     return out_path
 
 
-def send_email_alert(app_password, recipients, text_file_path):
+def send_email_alert(app_password: str, recipients: list, text_file_path: str):
     """Send automatic emails with alert messages.
 
     Parameters
     ----------
-    app_password
+    app_password: str
         String password to send mails from legend.data.monitoring@gmail.com
-    recipients
+    recipients: list
         List of email addresses to send the alert emails
-    text_file_path
+    text_file_path: str
         String path to the .txt file containing the message to send via email
     """
     sender = "legend.data.monitoring@gmail.com"
@@ -1203,18 +1203,18 @@ def send_email_alert(app_password, recipients, text_file_path):
 
 
 def check_threshold(
-    data_series,
-    pswd_email,
-    last_checked,
-    t0,
-    pars_data,
-    threshold,
-    period,
-    current_run,
-    channel_name,
-    string,
-    email_message,
-    title,
+    data_series: pd.Series,
+    pswd_email: str | None,
+    last_checked: float | None | str,
+    t0: list,
+    pars_data: dict,
+    threshold: list,
+    period: str,
+    current_run: str | int,
+    channel_name: str,
+    string: str | int,
+    email_message: list,
+    parameter: str,
 ):
     """Check if a given parameter is over threshold and update the email message list.
 
@@ -1230,7 +1230,7 @@ def check_threshold(
         List of start times for time windows.
     pars_data : dict
         Dictionary containing parameters including 'res' for thresholds.
-    threshold:
+    threshold: list
         Threshold (int or float).
     period : str
         Period string (e.g., "P03").
@@ -1242,6 +1242,8 @@ def check_threshold(
         String identifier for the channel.
     email_message : list
         List of messages to be sent via email.
+    parameter : str
+        Parameter name under inspection.
     """
     if data_series is None or pswd_email is None or last_checked == "None":
         return email_message
@@ -1257,19 +1259,29 @@ def check_threshold(
     time_range_end = time_range_start + pd.Timedelta(days=7)
 
     # eensure UTC awareness
-    for var in ["time_range_start", "time_range_end"]:
-        val = locals()[var]
-        if val.tzinfo is None:
-            locals()[var] = val.tz_localize("UTC")
-        else:
-            locals()[var] = val.tz_convert("UTC")
+    if time_range_start.tzinfo is None:
+        time_range_start = time_range_start.tz_localize("UTC")
+    else:
+        time_range_start = time_range_start.tz_convert("UTC")
+
+    if time_range_end.tzinfo is None:
+        time_range_end = time_range_end.tz_localize("UTC")
+    else:
+        time_range_end = time_range_end.tz_convert("UTC")
 
     # filter by time range
     mask_time_range = (timestamps >= time_range_start) & (timestamps < time_range_end)
     filtered_timestamps = timestamps[mask_time_range]
     data_series_in_range = data_series[mask_time_range]
 
-    mask = (data_series_in_range > threshold) | (data_series_in_range < -threshold)
+    low, high = threshold  # threshold = [low, high]
+    mask = pd.Series(True, index=data_series_in_range.index)  # start with all True
+
+    if low is not None:
+        mask &= data_series_in_range < low
+    if high is not None:
+        mask &= data_series_in_range > high
+
     over_threshold_timestamps = filtered_timestamps[mask]
 
     if not over_threshold_timestamps.empty:
@@ -1278,7 +1290,7 @@ def check_threshold(
                 f"ALERT: Data monitoring threshold exceeded in {period}-{current_run}.\n"
             ]
         email_message.append(
-            f"- {title} over threshold for {channel_name} (string {string}) "
+            f"- {parameter} over threshold for {channel_name} (string {string}) "
             f"for {len(over_threshold_timestamps)} times"
         )
 
@@ -1557,9 +1569,9 @@ def build_runinfo(path: str, version: str, output: str):
                 data = lh5.read("evt/coincident/puls", evt_files)
                 df_coincident = pd.DataFrame(data, columns=["puls"])
                 df = pd.concat([df_coincident], axis=1)
-                is_pulser = df["puls"] is True
+                is_pulser = df["puls"]
 
-                if is_pulser is False:
+                if not is_pulser.any():
                     run_info = pulser_from_evt_or_mtg(
                         my_dir, period, run, output, run_info
                     )
