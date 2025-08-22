@@ -62,7 +62,7 @@ repos:
       flake8-docstrings,
       pep8-naming
     ]
-    args: ["--docstring-convention", "numpy"]  # or google, change me
+    args: ["--docstring-convention", "numpy","--extend-ignore", "E203,E501,D10,N806"]
 
 - repo: https://github.com/kynan/nbstripout
   rev: "0.8.1"
@@ -81,6 +81,8 @@ repos:
   rev: "v2.4.1"
   hooks:
   - id: codespell
+    additional_dependencies:
+      - tomli
 
 - repo: https://github.com/shellcheck-py/shellcheck-py
   rev: "v0.10.0.1"
