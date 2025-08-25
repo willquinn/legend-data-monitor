@@ -1,24 +1,38 @@
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
+
 from legend_data_monitor.save_data import build_out_dict
+
 
 @pytest.fixture
 def plot_settings_overwrite():
     return {"parameters": "param1", "saving": "overwrite", "plt_path": "/fake/path"}
 
+
 @pytest.fixture
 def plot_settings_append():
-    return {"parameters": ["param1", "param2"], "saving": "append", "plt_path": "/fake/path"}
+    return {
+        "parameters": ["param1", "param2"],
+        "saving": "append",
+        "plt_path": "/fake/path",
+    }
+
 
 @pytest.fixture
 def par_dict_content():
-    return {"plot_info": {"subsystem": "subsys1", "title": "Title"}, "data": "fake_data"}
+    return {
+        "plot_info": {"subsystem": "subsys1", "title": "Title"},
+        "data": "fake_data",
+    }
 
 
 def test_build_out_dict_overwrite(plot_settings_overwrite, par_dict_content):
     out_dict = {}
 
-    with patch("legend_data_monitor.save_data.build_dict", return_value={"key": "value"}) as mock_build:
+    with patch(
+        "legend_data_monitor.save_data.build_dict", return_value={"key": "value"}
+    ) as mock_build:
         result = build_out_dict(plot_settings_overwrite, par_dict_content, out_dict)
 
     mock_build.assert_called_once()
@@ -28,8 +42,12 @@ def test_build_out_dict_overwrite(plot_settings_overwrite, par_dict_content):
 def test_build_out_dict_append_file_not_exists(plot_settings_append, par_dict_content):
     out_dict = {}
 
-    with patch("os.path.exists", return_value=False), \
-         patch("legend_data_monitor.save_data.build_dict", return_value={"key": "value"}) as mock_build:
+    with (
+        patch("os.path.exists", return_value=False),
+        patch(
+            "legend_data_monitor.save_data.build_dict", return_value={"key": "value"}
+        ) as mock_build,
+    ):
 
         result = build_out_dict(plot_settings_append, par_dict_content, out_dict)
 
@@ -43,9 +61,14 @@ def test_build_out_dict_append_file_exists(plot_settings_append, par_dict_conten
     mock_shelf = MagicMock()
     mock_shelf.__enter__.return_value = fake_old_dict
 
-    with patch("os.path.exists", return_value=True), \
-         patch("shelve.open", return_value=mock_shelf), \
-         patch("legend_data_monitor.save_data.append_new_data", side_effect=lambda *a, **kw: {"updated": True}) as mock_append:
+    with (
+        patch("os.path.exists", return_value=True),
+        patch("shelve.open", return_value=mock_shelf),
+        patch(
+            "legend_data_monitor.save_data.append_new_data",
+            side_effect=lambda *a, **kw: {"updated": True},
+        ) as mock_append,
+    ):
 
         result = build_out_dict(plot_settings_append, par_dict_content, out_dict)
 

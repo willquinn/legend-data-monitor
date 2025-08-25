@@ -1,8 +1,10 @@
-import pandas as pd
-import pytest
 from datetime import datetime, timedelta
 
+import pandas as pd
+import pytest
+
 from legend_data_monitor.utils import check_threshold
+
 
 def test_check_threshold_early_exit():
     # should return the original email_message due to None entries
@@ -19,7 +21,7 @@ def test_check_threshold_early_exit():
         channel_name="ch1",
         string="s01",
         email_message=email_msg,
-        parameter="gain"
+        parameter="gain",
     )
     assert result == email_msg
 
@@ -36,7 +38,7 @@ def test_check_threshold_early_exit():
         channel_name="ch1",
         string="s01",
         email_message=email_msg,
-        parameter="gain"
+        parameter="gain",
     )
     assert result == email_msg
 
@@ -53,7 +55,7 @@ def test_check_threshold_early_exit():
         channel_name="ch1",
         string="s01",
         email_message=email_msg,
-        parameter="gain"
+        parameter="gain",
     )
     assert result == email_msg
 
@@ -70,9 +72,10 @@ def test_check_threshold_early_exit():
         channel_name="ch1",
         string="s01",
         email_message=email_msg,
-        parameter="gain"
+        parameter="gain",
     )
     assert result == email_msg
+
 
 def test_check_threshold_no_points_over_threshold():
     now = pd.Timestamp.utcnow()
@@ -94,7 +97,7 @@ def test_check_threshold_no_points_over_threshold():
         channel_name="ch1",
         string="s01",
         email_message=email_msg,
-        parameter="gain"
+        parameter="gain",
     )
     assert result == email_msg
 
@@ -113,9 +116,10 @@ def test_check_threshold_no_points_over_threshold():
         channel_name="ch1",
         string="s01",
         email_message=email_msg,
-        parameter="gain"
+        parameter="gain",
     )
     assert result == email_msg
+
 
 def test_check_threshold_points_over_threshold():
     now = pd.Timestamp.utcnow()
@@ -131,13 +135,13 @@ def test_check_threshold_points_over_threshold():
         last_checked=(now - pd.Timedelta(days=2)).timestamp(),
         t0=t0,
         pars_data={},
-        threshold=[None, 1],  # points >1 
+        threshold=[None, 1],  # points >1
         period="P03",
         current_run="r001",
         channel_name="ch1",
         string="s01",
         email_message=email_msg,
-        parameter="gain"
+        parameter="gain",
     )
     # email_message should be updated
     assert len(result) > 0

@@ -359,9 +359,7 @@ def dataset_validity_check(data_info: dict):
         )
         return
 
-    if not os.path.exists(
-        os.path.join(data_info["path"], data_info["version"])
-    ):
+    if not os.path.exists(os.path.join(data_info["path"], data_info["version"])):
         logger.error("\033[91mProvide valid processing version!\033[0m")
         return
 
@@ -620,12 +618,12 @@ def get_run_name(config, user_time_range: dict) -> str:
         start_timestamp = min(user_time_range["timestamp"])
         end_timestamp = max(user_time_range["timestamp"])
 
-    run_list = []  
+    run_list = []
 
     # start to look for timestamps inside subfolders
     def search_for_timestamp(folder):
         run_id = ""
-        for idx,subfolder in enumerate(os.listdir(folder)):
+        for idx, subfolder in enumerate(os.listdir(folder)):
             subfolder_path = os.path.join(folder, subfolder)
             if os.path.isdir(subfolder_path):
                 files = sorted(glob.glob(os.path.join(subfolder_path, "*")))
@@ -641,12 +639,12 @@ def get_run_name(config, user_time_range: dict) -> str:
                     ):
                         run_id = file.split("/")[-2]
                         # avoid duplicates
-                        if run_id not in run_list:   
+                        if run_id not in run_list:
                             run_list.append(run_id)
 
                 if len(run_list) == 0:
                     search_for_timestamp(subfolder_path)
-                if len(run_list) > 0 and idx==len(os.listdir(folder))-1:
+                if len(run_list) > 0 and idx == len(os.listdir(folder)) - 1:
                     break
         return
 
@@ -1227,7 +1225,12 @@ def check_threshold(
     parameter : str
         Parameter name under inspection.
     """
-    if data_series is None or pswd_email is None or last_checked == "None" or (threshold[0] is None and threshold[1] is None):
+    if (
+        data_series is None
+        or pswd_email is None
+        or last_checked == "None"
+        or (threshold[0] is None and threshold[1] is None)
+    ):
         return email_message
 
     timestamps = data_series.index

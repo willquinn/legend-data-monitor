@@ -1,8 +1,10 @@
-import pytest
-from unittest.mock import patch
 import sys
+from unittest.mock import patch
+
+import pytest
 
 from legend_data_monitor.utils import check_scdb_settings
+
 
 # Test missing 'slow_control' key
 def test_missing_slow_control_key():
@@ -14,6 +16,7 @@ def test_missing_slow_control_key():
             "\033[93mThere is no 'slow_control' key in the config file. Try again if you want to retrieve slow control data.\033[0m"
         )
 
+
 # Test missing 'parameters' key
 def test_missing_parameters_key():
     conf = {"slow_control": {}}
@@ -24,6 +27,7 @@ def test_missing_parameters_key():
             "\033[93mThere is no 'parameters' key in config 'slow_control' entry. Try again if you want to retrieve slow control data.\033[0m"
         )
 
+
 # Test invalid type for 'parameters'
 def test_invalid_parameters_type():
     conf = {"slow_control": {"parameters": 123}}  # not str or list
@@ -33,6 +37,7 @@ def test_invalid_parameters_type():
         mock_logger.error.assert_called_with(
             "\033[91mSlow control parameters must be a string or a list of strings. Try again if you want to retrieve slow control data.\033[0m"
         )
+
 
 # Test valid 'parameters'
 def test_valid_parameters():

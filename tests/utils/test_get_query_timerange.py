@@ -1,6 +1,6 @@
 import pytest
-
 from freezegun import freeze_time
+
 from legend_data_monitor.utils import get_query_timerange
 
 
@@ -63,6 +63,6 @@ def test_window_timerange():
     assert result == {
         "timestamp": {
             "end": "20250825T123456Z",
-            "start": "20250824T100456Z", 
+            "start": "20250824T100456Z",
         }
     }

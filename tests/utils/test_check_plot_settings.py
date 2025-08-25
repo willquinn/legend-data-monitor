@@ -1,6 +1,7 @@
 import pytest
-from legend_data_monitor.utils import check_plot_settings
+
 from legend_data_monitor import plot_styles, plotting
+from legend_data_monitor.utils import check_plot_settings
 
 
 def test_check_plot_settings_valid_config():
@@ -15,7 +16,7 @@ def test_check_plot_settings_valid_config():
                     "parameters": "some_param",
                     "plot_structure": plot_structure_key,
                     "plot_style": plot_style_key,
-                    "time_window": "1d",  
+                    "time_window": "1d",
                 }
             }
         }
@@ -32,7 +33,7 @@ def test_check_plot_settings_missing_subsystems(caplog):
 
 
 def test_check_plot_settings_invalid_option(caplog):
-    # Config with an invalid plot_style 
+    # Config with an invalid plot_style
     plot_structure_key = next(iter(plotting.PLOT_STRUCTURE.keys()))
 
     conf = {
@@ -62,7 +63,7 @@ def test_check_plot_settings_exposure_invalid_event_type():
                 "plot1": {
                     "parameters": "exposure",
                     "plot_structure": plot_structure_key,
-                    "plot_style": "whatever",  
+                    "plot_style": "whatever",
                     "event_type": "bad_event",
                 }
             }
