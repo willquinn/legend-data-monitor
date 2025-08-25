@@ -51,7 +51,7 @@ remove-keys.yaml
 SC-params.yaml
 --------------
 
-**Purpose:** Contains configuration for retrieving Slow Control parameters. Includes: 
+**Purpose:** Contains configuration for retrieving Slow Control parameters. Includes:
 - Database table name
 - Column name
 - Entry name
