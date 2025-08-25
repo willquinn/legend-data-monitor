@@ -1389,10 +1389,10 @@ def update_runinfo(run_info, period, run, data_type, my_global_path):
         os.path.join(my_global_path, f) for f in files if f"{data_type}-geds.hdf" in f
     ]
 
-    with open("settings/timestamps-to-filter.yaml") as f:
-        timestamps_file = yaml.load(f, Loader=yaml.CLoader)
-    start_timestamps = timestamps_file["start"]
-    end_timestamps = timestamps_file["end"]
+    with open("settings/ignore-keys.yaml") as f:
+        timestamps_file = yaml.load(f, Loader=yaml.CLoader)[period]
+    start_timestamps = timestamps_file["start_keys"]
+    end_timestamps = timestamps_file["stop_keys"]
 
     if files == []:
         return run_info
@@ -1413,7 +1413,7 @@ def update_runinfo(run_info, period, run, data_type, my_global_path):
             isolated_ki = pd.to_datetime(ki, format="%Y%m%dT%H%M%S%z")
             isolated_kf = pd.to_datetime(kf, format="%Y%m%dT%H%M%S%z")
             my_hdf_file = my_hdf_file[
-                (my_hdf_file.index < isolated_ki) | (my_hdf_file.index > isolated_kf)
+                (my_hdf_file.index < isolated_ki) | (my_hdf_file.index >= isolated_kf)
             ]
 
         no_pulser = my_hdf_file.shape[0]
