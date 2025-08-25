@@ -331,36 +331,23 @@ def dataset_validity_check(data_info: dict):
     """Check the validity of the input dictionary to see if it contains all necessary info. Used in Subsystem and SlowControl classes."""
     if "experiment" not in data_info:
         logger.error("\033[91mProvide experiment name!\033[0m")
-        logger.error("\033[91m%s\033[0m", subsystem.Subsystem.__doc__)
         return
 
     if "type" not in data_info:
         logger.error("\033[91mProvide data type!\033[0m")
-        logger.error("\033[91m%s\033[0m", subsystem.Subsystem.__doc__)
         return
 
     if "period" not in data_info:
         logger.error("\033[91mProvide period!\033[0m")
-        logger.error("\033[91m%s\033[0m", subsystem.Subsystem.__doc__)
         return
 
-    # convert to list for convenience
-    # ! currently not possible with channel status
-    # if isinstance(data_info["type"], str):
-    #     data_info["type"] = [data_info["type"]]
-
     data_types = ["phy", "cal"]
-    # ! currently not possible with channel status
-    # for datatype in data_info["type"]:
-    # if datatype not in data_types:
     if not data_info["type"] in data_types:
         logger.error("\033[91mInvalid data type provided!\033[0m")
-        logger.error("\033[91m%s\033[0m", subsystem.Subsystem.__doc__)
         return
 
     if "path" not in data_info:
         logger.error("\033[91mProvide path to data!\033[0m")
-        logger.error("\033[91m%s\033[0m", subsystem.Subsystem.__doc__)
         return
     if not os.path.exists(data_info["path"]):
         logger.error("\033[91mThe data path you provided does not exist!\033[0m")
@@ -370,16 +357,12 @@ def dataset_validity_check(data_info: dict):
         logger.error(
             '\033[91mProvide processing version! If not needed, just put an empty string, "".\033[0m'
         )
-        logger.error("\033[91m%s\033[0m", subsystem.Subsystem.__doc__)
         return
 
-    # in p03 things change again!!!!
-    # There is no version in '/data2/public/prodenv/prod-blind/tmp/auto/generated/tier/dsp/phy/p03', so for the moment we skip this check...
-    if data_info["period"] != "p03" and not os.path.exists(
+    if not os.path.exists(
         os.path.join(data_info["path"], data_info["version"])
     ):
         logger.error("\033[91mProvide valid processing version!\033[0m")
-        logger.error("\033[91m%s\033[0m", subsystem.Subsystem.__doc__)
         return
 
 
@@ -1128,11 +1111,9 @@ def get_output_path(config: dict):
             config["dataset"]["period"],
         )
     except (KeyError, TypeError):
-        # means something about dataset is wrong -> print Subsystem doc
         logger.error(
-            "\033[91mSomething is missing or wrong in your 'dataset' field of the config. You can see the format here under 'dataset=':\033[0m"
+            "\033[91mSomething is missing or wrong in your 'dataset' field of the config.\033[0m"
         )
-        logger.info("\033[91m%s\033[0m", subsystem.Subsystem.__doc__)
         exit()
 
     user_time_range = get_query_timerange(dataset=config["dataset"])
@@ -1245,7 +1226,7 @@ def check_threshold(
     parameter : str
         Parameter name under inspection.
     """
-    if data_series is None or pswd_email is None or last_checked == "None":
+    if data_series is None or pswd_email is None or last_checked == "None" or (threshold[0] is None and threshold[1] is None):
         return email_message
 
     timestamps = data_series.index
@@ -1258,7 +1239,7 @@ def check_threshold(
     time_range_start = pd.Timestamp(t0[0])
     time_range_end = time_range_start + pd.Timedelta(days=7)
 
-    # eensure UTC awareness
+    # ensure UTC awareness
     if time_range_start.tzinfo is None:
         time_range_start = time_range_start.tz_localize("UTC")
     else:

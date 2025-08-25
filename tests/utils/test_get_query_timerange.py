@@ -1,5 +1,6 @@
 import pytest
 
+from freezegun import freeze_time
 from legend_data_monitor.utils import get_query_timerange
 
 
@@ -54,3 +55,14 @@ def test_get_query_timerange_invalid_mode(caplog):
     result = get_query_timerange(foo="bar")
     assert result is None
     assert any("Invalid time selection" in m for m in caplog.text.splitlines())
+
+
+@freeze_time("2025-08-25 12:34:56")  # freezes datetime.now()
+def test_window_timerange():
+    result = get_query_timerange(window="1d2h30m")
+    assert result == {
+        "timestamp": {
+            "end": "20250825T123456Z",
+            "start": "20250824T100456Z", 
+        }
+    }
