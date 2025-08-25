@@ -604,7 +604,7 @@ def get_timestamp(filename):
 
 
 def get_run_name(config, user_time_range: dict) -> str:
-    """Get the run ID given start/end timestamps."""
+    """Get the run ID given start/end timestamps. If the timestamps run over multiple run IDs, a list of runs is retrieved, out of which only the first element is returned."""
     # this is the root directory to search in the timestamps
     main_folder = os.path.join(
         config["dataset"]["path"], config["dataset"]["version"], "generated/tier"
@@ -620,12 +620,12 @@ def get_run_name(config, user_time_range: dict) -> str:
         start_timestamp = min(user_time_range["timestamp"])
         end_timestamp = max(user_time_range["timestamp"])
 
-    run_list = []  # this will be updated with the run ID
+    run_list = []  
 
     # start to look for timestamps inside subfolders
     def search_for_timestamp(folder):
         run_id = ""
-        for subfolder in os.listdir(folder):
+        for idx,subfolder in enumerate(os.listdir(folder)):
             subfolder_path = os.path.join(folder, subfolder)
             if os.path.isdir(subfolder_path):
                 files = sorted(glob.glob(os.path.join(subfolder_path, "*")))
@@ -640,12 +640,13 @@ def get_run_name(config, user_time_range: dict) -> str:
                         <= get_timestamp(file)
                     ):
                         run_id = file.split("/")[-2]
-                        run_list.append(run_id)
-                        break
+                        # avoid duplicates
+                        if run_id not in run_list:   
+                            run_list.append(run_id)
 
                 if len(run_list) == 0:
                     search_for_timestamp(subfolder_path)
-                else:
+                if len(run_list) > 0 and idx==len(os.listdir(folder))-1:
                     break
         return
 
