@@ -117,7 +117,7 @@ def get_valid_path(base_path):
     logger.warning(
         "\033[93mThe path of dsp/hit/evt/psp/pht/pet/skm files is not valid, check config['dataset'] and try again.\033[0m",
     )
-    exit()
+    sys.exit()
 
 
 def get_query_times(**kwargs):
@@ -411,7 +411,7 @@ def check_plot_settings(conf: dict) -> bool:
         logger.error(
             "\033[91mThere is no 'subsystems' key in the config file. Try again if you want to plot data.\033[0m"
         )
-        exit()
+        sys.exit()
 
     for subsys in conf["subsystems"]:
         for plot in conf["subsystems"][subsys]:
@@ -1115,7 +1115,7 @@ def get_output_path(config: dict):
         logger.error(
             "\033[91mSomething is missing or wrong in your 'dataset' field of the config.\033[0m"
         )
-        exit()
+        sys.exit()
 
     user_time_range = get_query_timerange(dataset=config["dataset"])
     # will be returned as None if something is wrong, and print an error message
@@ -1584,7 +1584,7 @@ def read_json_or_yaml(file_path: str):
             logger.error(
                 "\033[91mUnsupported file format: expected .json or .yaml/.yml. Exit here\033[0m"
             )
-            exit()
+            sys.exit()
 
     return data_dict
 
@@ -1602,6 +1602,6 @@ def retrieve_json_or_yaml(base_path: str, filename: str):
         logger.error(
             "\033[91mNo file found for %s in YAML or JSON format\033[0m", filename
         )
-        exit()
+        sys.exit()
 
     return path
