@@ -1,7 +1,4 @@
-import os
 from unittest.mock import patch
-
-import pytest
 
 from legend_data_monitor.utils import dataset_validity_check
 

@@ -17,8 +17,6 @@ from legendmeta import JsonDB
 from lgdo import lh5
 from pandas import DataFrame
 
-from . import subsystem
-
 # -------------------------------------------------------------------------
 
 logger = logging.getLogger(__name__)

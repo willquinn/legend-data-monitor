@@ -1,8 +1,4 @@
-import sys
-from datetime import datetime
 from unittest.mock import patch
-
-import pytest
 
 from legend_data_monitor.utils import get_time_name
 
