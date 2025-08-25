@@ -37,7 +37,7 @@ jobs:
         run: rm -rf src/legend_data_monitor/settings/.ipynb_checkpoints
 
       - uses: hynek/build-and-inspect-python-package@v2
-      
+
       - name: List YAML files in wheel
         run: unzip -l /tmp/baipp/dist/*.whl | grep settings
 
