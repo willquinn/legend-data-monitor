@@ -55,7 +55,7 @@ include-package-data = true
 zip-safe = false
 
 [tool.setuptools.package-data]
-legend_data_monitor = ["settings/*.json"]
+legend_data_monitor = ["settings/*.json", "settings/*.yaml", "settings/*.yml"]
 
 [project.scripts]
 legend-data-monitor = "legend_data_monitor.run:main"
