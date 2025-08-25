@@ -51,7 +51,6 @@ test = ["pre-commit", "pytest>=6.0", "pytest-cov"]
 [tool.setuptools]
 packages = {find = {where = ["src"]}}
 package-dir = {"" = "src"}
-include-package-data = true
 zip-safe = false
 
 [tool.setuptools.package-data]
