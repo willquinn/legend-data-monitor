@@ -46,7 +46,7 @@ dynamic = ["version"]
 [project.optional-dependencies]
 all = ["legend-data-monitor[docs,test]"]
 docs = ["furo", "myst-parser", "sphinx", "sphinx-copybutton"]
-test = ["pre-commit", "pytest>=6.0", "pytest-cov"]
+test = ["pre-commit", "pytest>=6.0", "pytest-cov", "freezegun==1.5.5"]
 
 [tool.setuptools]
 packages = {find = {where = ["src"]}}

@@ -17,8 +17,6 @@ from legendmeta import JsonDB
 from lgdo import lh5
 from pandas import DataFrame
 
-from . import subsystem
-
 # -------------------------------------------------------------------------
 
 logger = logging.getLogger(__name__)
@@ -117,7 +115,7 @@ def get_valid_path(base_path):
     logger.warning(
         "\033[93mThe path of dsp/hit/evt/psp/pht/pet/skm files is not valid, check config['dataset'] and try again.\033[0m",
     )
-    exit()
+    sys.exit()
 
 
 def get_query_times(**kwargs):
@@ -331,36 +329,23 @@ def dataset_validity_check(data_info: dict):
     """Check the validity of the input dictionary to see if it contains all necessary info. Used in Subsystem and SlowControl classes."""
     if "experiment" not in data_info:
         logger.error("\033[91mProvide experiment name!\033[0m")
-        logger.error("\033[91m%s\033[0m", subsystem.Subsystem.__doc__)
         return
 
     if "type" not in data_info:
         logger.error("\033[91mProvide data type!\033[0m")
-        logger.error("\033[91m%s\033[0m", subsystem.Subsystem.__doc__)
         return
 
     if "period" not in data_info:
         logger.error("\033[91mProvide period!\033[0m")
-        logger.error("\033[91m%s\033[0m", subsystem.Subsystem.__doc__)
         return
 
-    # convert to list for convenience
-    # ! currently not possible with channel status
-    # if isinstance(data_info["type"], str):
-    #     data_info["type"] = [data_info["type"]]
-
     data_types = ["phy", "cal"]
-    # ! currently not possible with channel status
-    # for datatype in data_info["type"]:
-    # if datatype not in data_types:
     if not data_info["type"] in data_types:
         logger.error("\033[91mInvalid data type provided!\033[0m")
-        logger.error("\033[91m%s\033[0m", subsystem.Subsystem.__doc__)
         return
 
     if "path" not in data_info:
         logger.error("\033[91mProvide path to data!\033[0m")
-        logger.error("\033[91m%s\033[0m", subsystem.Subsystem.__doc__)
         return
     if not os.path.exists(data_info["path"]):
         logger.error("\033[91mThe data path you provided does not exist!\033[0m")
@@ -370,16 +355,10 @@ def dataset_validity_check(data_info: dict):
         logger.error(
             '\033[91mProvide processing version! If not needed, just put an empty string, "".\033[0m'
         )
-        logger.error("\033[91m%s\033[0m", subsystem.Subsystem.__doc__)
         return
 
-    # in p03 things change again!!!!
-    # There is no version in '/data2/public/prodenv/prod-blind/tmp/auto/generated/tier/dsp/phy/p03', so for the moment we skip this check...
-    if data_info["period"] != "p03" and not os.path.exists(
-        os.path.join(data_info["path"], data_info["version"])
-    ):
+    if not os.path.exists(os.path.join(data_info["path"], data_info["version"])):
         logger.error("\033[91mProvide valid processing version!\033[0m")
-        logger.error("\033[91m%s\033[0m", subsystem.Subsystem.__doc__)
         return
 
 
@@ -428,7 +407,7 @@ def check_plot_settings(conf: dict) -> bool:
         logger.error(
             "\033[91mThere is no 'subsystems' key in the config file. Try again if you want to plot data.\033[0m"
         )
-        exit()
+        sys.exit()
 
     for subsys in conf["subsystems"]:
         for plot in conf["subsystems"][subsys]:
@@ -621,7 +600,7 @@ def get_timestamp(filename):
 
 
 def get_run_name(config, user_time_range: dict) -> str:
-    """Get the run ID given start/end timestamps."""
+    """Get the run ID given start/end timestamps. If the timestamps run over multiple run IDs, a list of runs is retrieved, out of which only the first element is returned."""
     # this is the root directory to search in the timestamps
     main_folder = os.path.join(
         config["dataset"]["path"], config["dataset"]["version"], "generated/tier"
@@ -637,12 +616,12 @@ def get_run_name(config, user_time_range: dict) -> str:
         start_timestamp = min(user_time_range["timestamp"])
         end_timestamp = max(user_time_range["timestamp"])
 
-    run_list = []  # this will be updated with the run ID
+    run_list = []
 
     # start to look for timestamps inside subfolders
     def search_for_timestamp(folder):
         run_id = ""
-        for subfolder in os.listdir(folder):
+        for idx, subfolder in enumerate(os.listdir(folder)):
             subfolder_path = os.path.join(folder, subfolder)
             if os.path.isdir(subfolder_path):
                 files = sorted(glob.glob(os.path.join(subfolder_path, "*")))
@@ -657,12 +636,13 @@ def get_run_name(config, user_time_range: dict) -> str:
                         <= get_timestamp(file)
                     ):
                         run_id = file.split("/")[-2]
-                        run_list.append(run_id)
-                        break
+                        # avoid duplicates
+                        if run_id not in run_list:
+                            run_list.append(run_id)
 
                 if len(run_list) == 0:
                     search_for_timestamp(subfolder_path)
-                else:
+                if len(run_list) > 0 and idx == len(os.listdir(folder)) - 1:
                     break
         return
 
@@ -1128,12 +1108,10 @@ def get_output_path(config: dict):
             config["dataset"]["period"],
         )
     except (KeyError, TypeError):
-        # means something about dataset is wrong -> print Subsystem doc
         logger.error(
-            "\033[91mSomething is missing or wrong in your 'dataset' field of the config. You can see the format here under 'dataset=':\033[0m"
+            "\033[91mSomething is missing or wrong in your 'dataset' field of the config.\033[0m"
         )
-        logger.info("\033[91m%s\033[0m", subsystem.Subsystem.__doc__)
-        exit()
+        sys.exit()
 
     user_time_range = get_query_timerange(dataset=config["dataset"])
     # will be returned as None if something is wrong, and print an error message
@@ -1245,7 +1223,12 @@ def check_threshold(
     parameter : str
         Parameter name under inspection.
     """
-    if data_series is None or pswd_email is None or last_checked == "None":
+    if (
+        data_series is None
+        or pswd_email is None
+        or last_checked == "None"
+        or (threshold[0] is None and threshold[1] is None)
+    ):
         return email_message
 
     timestamps = data_series.index
@@ -1258,7 +1241,7 @@ def check_threshold(
     time_range_start = pd.Timestamp(t0[0])
     time_range_end = time_range_start + pd.Timedelta(days=7)
 
-    # eensure UTC awareness
+    # ensure UTC awareness
     if time_range_start.tzinfo is None:
         time_range_start = time_range_start.tz_localize("UTC")
     else:
@@ -1602,7 +1585,7 @@ def read_json_or_yaml(file_path: str):
             logger.error(
                 "\033[91mUnsupported file format: expected .json or .yaml/.yml. Exit here\033[0m"
             )
-            exit()
+            sys.exit()
 
     return data_dict
 
@@ -1620,6 +1603,6 @@ def retrieve_json_or_yaml(base_path: str, filename: str):
         logger.error(
             "\033[91mNo file found for %s in YAML or JSON format\033[0m", filename
         )
-        exit()
+        sys.exit()
 
     return path
