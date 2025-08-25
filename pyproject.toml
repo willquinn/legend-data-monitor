@@ -58,7 +58,8 @@ zip-safe = false
 legend_data_monitor = [
     "settings/*.json",
     "settings/*.yaml",
-    "settings/*.yml"
+    "settings/*.yml",
+    "!settings/.ipynb_checkpoints/*"
 ]
 
 [project.scripts]

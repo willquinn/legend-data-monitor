@@ -30,6 +30,9 @@ jobs:
       - name: Clean old builds
         run: rm -rf dist *.egg-info build
 
+      - name: Remove Jupyter checkpoints
+        run: rm -rf src/legend_data_monitor/settings/.ipynb_checkpoints
+
       - uses: hynek/build-and-inspect-python-package@v2
 
   publish:
