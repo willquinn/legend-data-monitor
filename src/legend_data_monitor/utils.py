@@ -92,11 +92,11 @@ SPECIAL_SYSTEMS = {"pulser": 0, "pulser01ana": -1, "FCbsln": -2, "muon": -3}
 
 # dictionary with timestamps to remove for specific channels
 with open(pkg / "settings" / "remove-keys.yaml") as f:
-    REMOVE_KEYS = yaml.load(f, Loader=yaml.CLoader)
+    REMOVE_KEYS = yaml.load(f, Loader=yaml.CLoader)["remove-keys"]
 
 # dictionary with detectors to remove
 with open(pkg / "settings" / "remove-dets.yaml") as f:
-    REMOVE_DETS = yaml.load(f, Loader=yaml.CLoader)
+    REMOVE_DETS = yaml.load(f, Loader=yaml.CLoader)["remove-dets"]
 
 # -------------------------------------------------------------------------
 # Subsystem related functions (for getting channel map & status)
