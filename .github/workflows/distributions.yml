@@ -28,7 +28,10 @@ jobs:
           fetch-depth: 0
 
       - name: Clean old builds
-        run: rm -rf dist *.egg-info build
+        run: rm -rf dist *.egg-info build /tmp/baipp
+        
+      - name: Prune uv cache
+        run: uv cache prune --ci || true
 
       - name: Remove Jupyter checkpoints
         run: rm -rf src/legend_data_monitor/settings/.ipynb_checkpoints
