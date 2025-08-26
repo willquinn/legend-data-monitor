@@ -185,7 +185,7 @@ def test_check_plot_settings_missing_field_does_not_trigger_for_quality_cuts(cap
             "subsys1": {
                 "plot1": {
                     "parameters": "quality_cuts",
-                    "plot_structure": "per channnel",
+                    "plot_structure": "per channel",
                 }
             }
         }

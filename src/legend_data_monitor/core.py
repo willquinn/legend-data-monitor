@@ -142,7 +142,7 @@ def retrieve_scdb(config: str, port: int, pswd: str):
     # Define PDF file basename
     # -------------------------------------------------------------------------
 
-    # Format: l200-p02-{run}-{data_type}; One pdf/log/shelve file for each subsystem
+    # Format: l200-{period}-{run}-{data_type}; one pdf/log/shelve file for each subsystem
     out_path = utils.get_output_path(config) + "-slow_control.hdf"
 
     # -------------------------------------------------------------------------

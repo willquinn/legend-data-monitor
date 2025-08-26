@@ -52,6 +52,7 @@ The structure will look like:
             │            └── <period>/
             │                ├── <run>/
             │                │   ├── l200-<period>-<run>-phy-geds.hdf
+            │                │   ├── l200-<period>-<run>-phy-slow_control.hdf
             │                │   └── mtg/
             │                │       └── <parameter>/
             │                │           ├── l200-<period>-phy-<parameter>.{bak,dat,dir}

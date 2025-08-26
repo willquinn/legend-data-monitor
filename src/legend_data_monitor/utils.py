@@ -490,7 +490,7 @@ def make_output_paths(config: dict, user_time_range: dict) -> str:
     To use when you want a specific output structure of the following type: [...]/prod-ref/{version}/generated/plt/hit/phy/{period}/{run}
     This does not work if you select more types (eg. both cal and phy) or timestamp intervals (but just runs).
     It can be used for run summary plots, eg during stable data taking.
-    Note that monitoring plots are stored under the 'hit' subfolder to maintain the number of subfolders to the minimum and replicate the structure of the main prodenv.
+    Note that monitoring plots are stored under the 'hit' subfolder to replicate the structure of the main prodenv.
     """
     logger.info("Setting up plotting...")
 

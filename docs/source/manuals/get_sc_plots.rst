@@ -78,14 +78,20 @@ We store SC data in the following way:
 
 .. code-block::
 
-  <output>
-    └── <version>
-      └── generated
-        └── plt
-          └── <type>
-            └── <period>
-                └── <time_selection>
-                  └── SC-<time_selection>.hdf
+    <output_path>/
+        └── <version>/
+            └── generated/
+                ├── plt/
+                │    └── hit/
+                │        └── <type>/
+                │            └── <period>/
+                │                └── <time_selection>/
+                │                    └── <experiment>-<period>-<time_selection>-<type>-slow_control.hdf
+                └── tmp/
+                    └── mtg/
+                        └── <period>/
+                            └── <time_selection>/
+                                └── <experiment>-<period>-<time_selection>-<type>.log
 
 
 .. note::
