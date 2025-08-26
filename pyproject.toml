@@ -36,8 +36,8 @@ classifiers = [
 requires-python = ">=3.9"
 
 dependencies = [
-    "pygama @ git+https://github.com/legend-exp/pygama@main",
-    "pylegendmeta @ git+https://github.com/legend-exp/pylegendmeta@main",
+    "pygama",
+    "pylegendmeta >=0.9",
     "seaborn"
 ]
 dynamic = ["version"]
