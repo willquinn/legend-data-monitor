@@ -79,7 +79,7 @@ def test_build_out_dict_append_file_exists(plot_settings_append, par_dict_conten
 def test_build_out_dict_append_file_exists_one_param(par_dict_content):
     # Test append mode with single parameter (string case)
     plot_settings = {
-        "parameters": "single_param",  
+        "parameters": "single_param",
         "saving": "append",
         "plt_path": "/fake/path",
     }
@@ -103,18 +103,20 @@ def test_build_out_dict_append_file_exists_one_param(par_dict_content):
     # verify append_new_data was called with the correct parameter
     mock_append.assert_called_once()
     call_args = mock_append.call_args[0]
-    assert call_args[0] == "single_param" 
-    
+    assert call_args[0] == "single_param"
+
     # verify debug message was logged for one-parameter case
-    mock_logger.debug.assert_any_call("... appending new data for the one-parameter case")
-    
+    mock_logger.debug.assert_any_call(
+        "... appending new data for the one-parameter case"
+    )
+
     assert result == {"updated": True}
 
 
 def test_build_out_dict_append_file_exists_single_item_list(par_dict_content):
     # Test append mode with single parameter (list with one item case)
     plot_settings = {
-        "parameters": ["single_param"],  
+        "parameters": ["single_param"],
         "saving": "append",
         "plt_path": "/fake/path",
     }
@@ -137,17 +139,19 @@ def test_build_out_dict_append_file_exists_single_item_list(par_dict_content):
 
     mock_append.assert_called_once()
     call_args = mock_append.call_args[0]
-    assert call_args[0] == "single_param" 
-    
-    mock_logger.debug.assert_any_call("... appending new data for the one-parameter case")
-    
+    assert call_args[0] == "single_param"
+
+    mock_logger.debug.assert_any_call(
+        "... appending new data for the one-parameter case"
+    )
+
     assert result == {"updated": True}
 
 
 def test_build_out_dict_append_file_exists_multi_param(par_dict_content):
     # Test append mode with multiple parameters
     plot_settings = {
-        "parameters": ["param1", "param2", "param3"],  
+        "parameters": ["param1", "param2", "param3"],
         "saving": "append",
         "plt_path": "/fake/path",
     }
@@ -170,12 +174,14 @@ def test_build_out_dict_append_file_exists_multi_param(par_dict_content):
 
     # verify append_new_data was called for each parameter
     assert mock_append.call_count == 3
-    
+
     # verify debug message was logged for multi-parameter case
-    mock_logger.debug.assert_any_call("... appending new data for the multi-parameters case")
-    
+    mock_logger.debug.assert_any_call(
+        "... appending new data for the multi-parameters case"
+    )
+
     # check that each parameter was passed correctly
-    call_args = [call[0][0] for call in mock_append.call_args_list] 
+    call_args = [call[0][0] for call in mock_append.call_args_list]
     assert call_args == ["param1", "param2", "param3"]
-    
+
     assert result == {"updated": True}

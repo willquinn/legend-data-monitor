@@ -1,6 +1,7 @@
-import pytest
 import sys
 from unittest.mock import patch
+
+import pytest
 
 from legend_data_monitor import plot_styles, plotting
 from legend_data_monitor.utils import check_plot_settings
@@ -121,7 +122,7 @@ def test_check_plot_settings_skips_validation():
     }
 
     assert check_plot_settings(conf) is True
-    
+
     conf = {
         "subsystems": {
             "subsys1": {
@@ -139,12 +140,12 @@ def test_check_plot_settings_skips_validation():
 
 def test_check_plot_settings_missing_field_for_regular_parameter(caplog):
     plot_structure_key = next(iter(plotting.PLOT_STRUCTURE.keys()))
-    
+
     conf = {
         "subsystems": {
             "subsys1": {
                 "plot1": {
-                    "parameters": "regular_param",  
+                    "parameters": "regular_param",
                     # Missing "plot_style" field
                     "plot_structure": plot_structure_key,
                 }
@@ -154,7 +155,10 @@ def test_check_plot_settings_missing_field_for_regular_parameter(caplog):
 
     result = check_plot_settings(conf)
     assert result is False
-    assert any("Provide plot_style in plot settings of 'plot1' for subsys1!" in rec.message for rec in caplog.records)
+    assert any(
+        "Provide plot_style in plot settings of 'plot1' for subsys1!" in rec.message
+        for rec in caplog.records
+    )
     assert any("Available options:" in rec.message for rec in caplog.records)
 
 
@@ -164,10 +168,10 @@ def test_check_plot_settings_missing_field_does_not_trigger_for_exposure(caplog)
         "subsystems": {
             "subsys1": {
                 "plot1": {
-                    "parameters": "exposure", 
+                    "parameters": "exposure",
                     "plot_structure": "per channel",
                     # Missing "plot_style" field
-                    "event_type": "all",  
+                    "event_type": "all",
                 }
             }
         }
@@ -183,7 +187,7 @@ def test_check_plot_settings_missing_field_does_not_trigger_for_quality_cuts(cap
         "subsystems": {
             "subsys1": {
                 "plot1": {
-                    "parameters": "quality_cuts", 
+                    "parameters": "quality_cuts",
                     "plot_structure": "per channnel",
                 }
             }
@@ -197,7 +201,7 @@ def test_check_plot_settings_missing_field_does_not_trigger_for_quality_cuts(cap
 def test_check_plot_settings_missing_field_with_valid_exposure(caplog):
     # Test exposure with valid settings but missing optional fields
     plot_structure_key = next(iter(plotting.PLOT_STRUCTURE.keys()))
-    
+
     conf = {
         "subsystems": {
             "subsys1": {
@@ -212,13 +216,15 @@ def test_check_plot_settings_missing_field_with_valid_exposure(caplog):
 
     result = check_plot_settings(conf)
     assert result is True
-    assert not any("Provide plot_style in plot settings" in rec.message for rec in caplog.records)
+    assert not any(
+        "Provide plot_style in plot settings" in rec.message for rec in caplog.records
+    )
 
 
 def test_check_plot_settings_missing_field_with_valid_quality_cuts(caplog):
     # Test quality_cuts with valid settings but missing optional fields
     plot_structure_key = next(iter(plotting.PLOT_STRUCTURE.keys()))
-    
+
     conf = {
         "subsystems": {
             "subsys1": {
@@ -233,13 +239,15 @@ def test_check_plot_settings_missing_field_with_valid_quality_cuts(caplog):
 
     result = check_plot_settings(conf)
     assert result is True
-    assert not any("Provide plot_style in plot settings" in rec.message for rec in caplog.records)
+    assert not any(
+        "Provide plot_style in plot settings" in rec.message for rec in caplog.records
+    )
 
 
 def test_check_plot_settings_missing_plot_structure_for_regular_param(caplog):
     # Test missing plot_structure for regular parameter
     plot_style_key = next(iter(plot_styles.PLOT_STYLE.keys()))
-    
+
     conf = {
         "subsystems": {
             "subsys1": {
@@ -254,7 +262,10 @@ def test_check_plot_settings_missing_plot_structure_for_regular_param(caplog):
 
     result = check_plot_settings(conf)
     assert result is False
-    assert any("Provide plot_structure in plot settings of 'plot1' for subsys1!" in rec.message for rec in caplog.records)
+    assert any(
+        "Provide plot_structure in plot settings of 'plot1' for subsys1!" in rec.message
+        for rec in caplog.records
+    )
     assert any("Available options:" in rec.message for rec in caplog.records)
 
 
@@ -265,7 +276,7 @@ def test_check_plot_settings_missing_both_fields_for_regular_param(caplog):
             "subsys1": {
                 "plot1": {
                     "parameters": "regular_param",  # NOT special parameter
-                    # Missing both "plot_structure" and "plot_style" 
+                    # Missing both "plot_structure" and "plot_style"
                 }
             }
         }
@@ -273,4 +284,8 @@ def test_check_plot_settings_missing_both_fields_for_regular_param(caplog):
 
     result = check_plot_settings(conf)
     assert result is False
-    assert any("Provide " in rec.message and " in plot settings of 'plot1' for subsys1!" in rec.message for rec in caplog.records)
+    assert any(
+        "Provide " in rec.message
+        and " in plot settings of 'plot1' for subsys1!" in rec.message
+        for rec in caplog.records
+    )

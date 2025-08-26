@@ -921,7 +921,7 @@ def add_config_entries(
                 version = ""
             # prod-ref version where the version is specified
             else:
-                clean_path = prod_path.rstrip('/')
+                clean_path = prod_path.rstrip("/")
                 version = os.path.basename(clean_path)
         if "type" in config["dataset"].keys():
             type = config["dataset"]["type"]

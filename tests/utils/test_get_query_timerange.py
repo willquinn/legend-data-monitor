@@ -1,6 +1,7 @@
+from unittest.mock import patch
+
 import pytest
 from freezegun import freeze_time
-from unittest.mock import patch
 
 from legend_data_monitor.utils import get_query_timerange
 
@@ -103,11 +104,12 @@ def test_window_timerange_zero_values():
         }
     }
 
+
 def test_window_timerange_regex_split_failure(caplog):
     # Test what happens when regex split fails unexpectedly
-    with patch('re.split') as mock_split:
+    with patch("re.split") as mock_split:
         mock_split.side_effect = ValueError("Mocked regex error")
-        
+
         result = get_query_timerange(window="1d2h")
         assert result is None
         assert any("Invalid window format!" in m for m in caplog.text.splitlines())
