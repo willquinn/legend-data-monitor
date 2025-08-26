@@ -1,6 +1,3 @@
-import sys
-from unittest.mock import patch
-
 import pytest
 
 from legend_data_monitor import plot_styles, plotting
@@ -270,7 +267,7 @@ def test_check_plot_settings_missing_plot_structure_for_regular_param(caplog):
 
 
 def test_check_plot_settings_missing_both_fields_for_regular_param(caplog):
-    """Test missing both fields for regular parameter"""
+    # Test missing both fields for regular parameter
     conf = {
         "subsystems": {
             "subsys1": {

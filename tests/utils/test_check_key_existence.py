@@ -1,10 +1,9 @@
 import os
 import re
 import tempfile
-from unittest.mock import mock_open, patch
+from unittest.mock import patch
 
 import pandas as pd
-import pytest
 
 from legend_data_monitor.utils import check_key_existence
 

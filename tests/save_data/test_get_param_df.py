@@ -1,8 +1,7 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pandas as pd
 import pytest
-from pandas import DataFrame
 
 from legend_data_monitor import utils
 from legend_data_monitor.save_data import get_param_df
