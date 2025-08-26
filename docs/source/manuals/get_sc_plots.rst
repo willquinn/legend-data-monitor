@@ -39,19 +39,19 @@ An example of a config.yaml file is the following:
 
 .. code-block:: yaml
 
-output: output_folder
-dataset:
-  experiment: L200
-  period: p09
-  version: tmp-auto
-  path: /data2/public/prodenv/prod-blind/
-  type: phy
-  time_selection: ...   # Replace '...' with actual time selection details
-saving: overwrite
-slow_control:
-  parameters:
-    - DaqLeft-Temp1
-    - ZUL_T_RR
+    output: output_folder
+    dataset:
+      experiment: L200
+      period: p09
+      version: tmp-auto
+      path: /data2/public/prodenv/prod-blind/
+      type: phy
+      time_selection: ...   # Replace '...' with actual time selection details
+    saving: overwrite
+    slow_control:
+      parameters:
+        - DaqLeft-Temp1
+        - ZUL_T_RR
 
 
 The meaning of each entry is explained below:
