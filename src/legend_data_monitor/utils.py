@@ -490,7 +490,7 @@ def make_output_paths(config: dict, user_time_range: dict) -> str:
     To use when you want a specific output structure of the following type: [...]/prod-ref/{version}/generated/plt/hit/phy/{period}/{run}
     This does not work if you select more types (eg. both cal and phy) or timestamp intervals (but just runs).
     It can be used for run summary plots, eg during stable data taking.
-    Note that monitoring plots are stored under the 'hit' subfolder to maintain the number of subfolders to the minimum and replicate the structure of the main prodenv.
+    Note that monitoring plots are stored under the 'hit' subfolder to replicate the structure of the main prodenv.
     """
     logger.info("Setting up plotting...")
 
@@ -854,12 +854,19 @@ def bunch_dataset(config: dict, n_files=None):
 
 def check_key_existence(hdf_path: str, key_to_load: str) -> bool:
     """Check if a specific key exists in the specified hdf file path."""
-    with pd.HDFStore(hdf_path, mode="r") as store:
-        if key_to_load in store.keys():
-            return True
-        else:
-            logger.debug(f"Key '{key_to_load}' not found in {hdf_path}")
-            return False
+    try:
+        with pd.HDFStore(hdf_path, mode="r") as store:
+            if key_to_load in store.keys():
+                return True
+            else:
+                logger.debug(f"Key '{key_to_load}' not found in {hdf_path}")
+                return False
+    except FileNotFoundError:
+        logger.debug(f"HDF file '{hdf_path}' does not exist")
+        return False
+    except Exception as e:
+        logger.debug(f"Error accessing HDF file '{hdf_path}': {e}")
+        return False
 
 
 # -------------------------------------------------------------------------
@@ -914,11 +921,8 @@ def add_config_entries(
                 version = ""
             # prod-ref version where the version is specified
             else:
-                version = (
-                    (prod_path.split("/"))[-2]
-                    if prod_path.endswith("/")
-                    else (prod_path.split("/"))[-1]
-                )
+                clean_path = prod_path.rstrip("/")
+                version = os.path.basename(clean_path)
         if "type" in config["dataset"].keys():
             type = config["dataset"]["type"]
         else:
@@ -950,12 +954,9 @@ def add_config_entries(
                 "\033[91mBoth cal and phy are still under development! Try again.\033[0m"
             )
             sys.exit()
-        # Get the production path
-        path = (
-            prod_path.split("prod-ref")[0] + "prod-ref"
-            if prod_path.split("prod-ref")[0].endswith("/")
-            else prod_path.split("prod-ref")[0] + "/prod-ref"
-        )
+        # get the production path
+        base_path = prod_path.split("prod-ref")[0]
+        path = os.path.join(base_path, "prod-ref")
 
     # create the dataset dictionary
     dataset_dict = {
