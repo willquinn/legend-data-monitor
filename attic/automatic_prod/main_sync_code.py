@@ -142,15 +142,10 @@ def main():
     source_dir = os.path.join(search_directory, period, run)
 
     # commands to run the container
-    cmd = (
-        "shifter --image=legendexp/legend-base:latest"
-        if cluster == "nersc"
-        else "apptainer run"
-    )
     if cluster == "nersc":
-        cmd = "shifter --image=legendexp/legend-base:latest"
+        cmd = "shifter --image=legendexp/legend-base:latest --env PATH=$HOME/.local/bin:$PATH"
     else:
-        cmd = "apptainer run --cleanenv /data2/public/prodenv/containers/legendexp_legend-base_latest.sif"
+        cmd = "apptainer run --env PATH=$HOME/.local/bin:$PATH --cleanenv /data2/public/prodenv/containers/legendexp_legend-base_latest.sif"
 
     # ===========================================================================================
     # BEGINNING OF THE ANALYSIS
@@ -341,9 +336,9 @@ def main():
                     "event_type": "phy",
                     "qc_flags": True,
                     "qc_classifiers": False,
-                },
+                }
             }
-        },
+        }
     }
 
     # ===========================================================================================
@@ -455,15 +450,15 @@ def main():
                     f"[{idx}/{total_parts}] Created file: {output_file} with {len(chunk)} lines."
                 )
                 bash_command = (
-                    f"{cmd} ~/.local/bin/legend-data-monitor user_rsync_prod "
+                    f"{cmd} legend-data-monitor user_rsync_prod "
                     f"--config {safe_json_string} --keys {output_file}"
                 )
                 logger.debug("...running command for generating hdf monitoring files")
                 subprocess.run(bash_command, shell=True)
         else:
-            logger.debug(f"File has {num_lines} lines. No need to split.")
+            logger.debug(f"... file has {num_lines} lines. No need to split.")
             bash_command = (
-                f"{cmd} ~/.local/bin/legend-data-monitor user_rsync_prod "
+                f"{cmd} legend-data-monitor user_rsync_prod "
                 f"--config {safe_json_string} --keys {keys_file}"
             )
             logger.debug("...running command for generating hdf monitoring files")
@@ -474,8 +469,7 @@ def main():
         logger.debug("Resampling outputs...")
         files_folder = os.path.join(output_folder, ref_version)
         bash_command = (
-            f'{cmd} python -c "from monitoring import build_new_files; '
-            f"build_new_files('{files_folder}', '{period}', '{run}')\""
+            f"{cmd} python monitoring.py summary_files --path {files_folder} --period {period} --run {run}"
         )
         logger.debug(f"...running command {bash_command}")
         subprocess.run(bash_command, shell=True)
@@ -489,7 +483,7 @@ def main():
                 logger.debug("Retrieving Slow Control data...")
                 safe_json_string = shlex.quote(json.dumps(scdb))
                 bash_command = (
-                    f"{cmd} ~/.local/bin/legend-data-monitor user_scdb "
+                    f"{cmd} legend-data-monitor user_scdb "
                     f"--config {safe_json_string} --port {port} --pswd {pswd}"
                 )
                 logger.debug(f"...running command {bash_command}")
@@ -526,12 +520,13 @@ def main():
 
             # get pulser monitoring plot for a full period
             # Note: quad_res is set to False by default in these plots
-            mtg_bash_command = f"{cmd} python monitoring.py --public_data {auto_dir_path} --hdf_files {mtg_folder} --output {mtg_folder} --start {start_key} --p {period} --avail_runs {avail_runs} --pswd_email {pswd_email} --escale {escale_val} --current_run {run} --last_checked {last_checked}"
+            mtg_bash_command = f"{cmd} python monitoring.py plot --public_data {auto_dir_path} --hdf_files {mtg_folder} --output {mtg_folder} --start {start_key} --p {period} --avail_runs {avail_runs} --pswd_email {pswd_email} --escale {escale_val} --current_run {run} --last_checked {last_checked}"
             if partition is True:
                 mtg_bash_command += " --partition True"
             if save_pdf is True:
                 mtg_bash_command += " --pdf True"
 
+            logger.debug(f"...running command {mtg_bash_command}")
             subprocess.run(mtg_bash_command, shell=True)
             logger.info("...monitoring plots generated!")
     else:
