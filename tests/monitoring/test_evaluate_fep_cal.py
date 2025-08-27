@@ -1,5 +1,4 @@
 import numpy as np
-from legend_data_monitor.monitoring import evaluate_fep_cal
 
 import legend_data_monitor
 from legend_data_monitor.monitoring import evaluate_fep_cal

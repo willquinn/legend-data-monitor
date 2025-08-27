@@ -1,10 +1,12 @@
 import numpy as np
-from legend_data_monitor.monitoring import extract_fep_peak
+
 import legend_data_monitor
+from legend_data_monitor.monitoring import extract_fep_peak
 
 
 def fake_get_energy_key(ecal_results):
     return ecal_results
+
 
 legend_data_monitor.get_energy_key = fake_get_energy_key
 
@@ -23,6 +25,7 @@ def test_no_pk_fits():
     pars = {"ch1": {"results": {"ecal": {}}}}
     result = extract_fep_peak(pars, "ch1")
     assert result == (np.nan, np.nan, np.nan, np.nan)
+
 
 def test_with_parameters_in_adc():
     pars = {
