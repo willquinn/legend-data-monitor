@@ -67,6 +67,7 @@ def get_energy_key(
     return cut_dict
 
 
+
 def get_calib_data_dict(
     calib_data: dict,
     channel_info: list,
@@ -272,28 +273,66 @@ def add_calibration_runs(period: str | list, run_list: list) -> list:
     """
     Add special calibration runs to the run list for a given period.
     
-    
     Parameters
     ----------
-        period: Either a string (single period) or list of periods
+        period: Either a string or list of periods
         run_list: Either a list of runs or a dictionary with period keys
     """
     if isinstance(period, list) and isinstance(run_list, dict):
-        # Handle dictionary case (multiple periods)
+        # multiple periods
         for p in period:
             if p in CALIB_RUNS and p in run_list:
                 run_list[p] = run_list[p] + CALIB_RUNS[p]
     else:
-        # Handle single period case
+        # single period case
         if period in CALIB_RUNS:
             if isinstance(run_list, list):
                 run_list.extend(CALIB_RUNS[period])
             else:
-                # Handle case where run_list might be a dict but period is a string
+                # run_list might be a dict but period is a string
                 if period in run_list:
                     run_list[period] = run_list[period] + CALIB_RUNS[period]
     
     return run_list
+
+
+def get_tier_keyresult(tiers: list):
+    """
+    Retrieve proper tier name (pht or hit) and key_result (partition_ecal or ecal) depending if partitioning data exists or not.
+
+    Parameters
+    ----------
+    tiers: list
+        Base directory containing the tier and parameter folders.
+    """
+    tier = "hit"
+    key_result = "ecal"
+    if os.path.isdir(tiers[1]):
+        if os.listdir(tiers[1]) != []:
+            tier = "pht"
+            key_result = "partition_ecal"
+
+    return tier, key_result
+
+
+def compute_diff(values: np.ndarray, initial_value: float | int, scale: float | int) -> np.ndarray:
+    """
+    Compute relative differences with respect to an initial value.
+    If the initial value is zero, returns an array of nan valus.
+
+    Parameters
+    ----------
+    values: np.ndarray
+        Array of values to compute the differences for.
+    initial_value: float
+        Reference value for computing relative differences.
+    scale: float
+        Scaling factor.
+    """
+    if initial_value == 0:
+        return np.full_like(values, np.nan, dtype=float)
+        
+    return (values - initial_value) / initial_value * scale
     
 
 def get_calib_pars(
@@ -344,12 +383,7 @@ def get_calib_pars(
 
     tiers, pars = utils.get_tiers_pars_folders(path)
 
-    tier = "hit"
-    key_result = "ecal"
-    if os.path.isdir(tiers[1]):
-        if os.listdir(tiers[1]) != []:
-            tier = "pht"
-            key_result = "partition_ecal"
+    tier, key_result = get_tier_keyresult(tiers)
 
     for run in run_list:
         calib_data = get_calib_data_dict(
@@ -366,21 +400,8 @@ def get_calib_pars(
         if init_cal_const == 0 and cal_ != 0:
             init_cal_const = cal_
 
-    if init_cal_const == 0:
-        calib_data["cal_const_diff"] = np.array(
-            [np.nan for i in range(len(calib_data["cal_const"]))]
-        )
-    else:
-        calib_data["cal_const_diff"] = (
-            (calib_data["cal_const"] - init_cal_const) / init_cal_const * escale
-        )
-
-    if init_fep == 0:
-        calib_data["fep_diff"] = np.array(
-            [np.nan for i in range(len(calib_data["fep"]))]
-        )
-    else:
-        calib_data["fep_diff"] = (calib_data["fep"] - init_fep) / init_fep * escale
+    calib_data["cal_const_diff"] = compute_diff(calib_data["cal_const"], init_cal_const, escale)
+    calib_data["fep_diff"] = compute_diff(calib_data["fep"], init_fep, escale)
 
     return calib_data
 
@@ -539,24 +560,24 @@ def get_traptmax_tp0est(phy_mtg_data: str, period: str, run_list: list):
     return geds_df_trapTmax, geds_df_tp0est, puls_df_trapTmax, puls_df_tp0est
 
 
-def filter_series_by_ignore_keys(series_to_filter, IGNORE_KEYS: dict, key: str):
+def filter_series_by_ignore_keys(series_to_filter, ignore_keys: dict, period: str):
     """
-    Remove data from a time-indexed pandas Series that falls within time ranges specified by start and stop timestamps for a given key.
+    Remove data from a time-indexed pandas Series that falls within time ranges specified by start and stop timestamps for a given period.
 
     Parameters
     ----------
     series_to_filter: pd.Series
         The time-indexed pandas Series to be filtered.
-    IGNORE_KEYS: dict
+    ignore_keys: dict
         Dictionary mapping periods to sub-dictionaries containing 'start_keys' and 'stop_keys' lists with timestamp strings in the format '%Y%m%dT%H%M%S%z'.
-    key: str
+    period: str
         The period to check for keys to ignore. If not present, the series is returned unmodified.
     """
-    if key not in IGNORE_KEYS:
+    if period not in ignore_keys:
         return series_to_filter
 
-    start_keys = IGNORE_KEYS[key]["start_keys"]
-    stop_keys = IGNORE_KEYS[key]["stop_keys"]
+    start_keys = ignore_keys[period]["start_keys"]
+    stop_keys = ignore_keys[period]["stop_keys"]
 
     for ki, kf in zip(start_keys, stop_keys):
         isolated_ki = pd.to_datetime(ki, format="%Y%m%dT%H%M%S%z")
@@ -567,8 +588,6 @@ def filter_series_by_ignore_keys(series_to_filter, IGNORE_KEYS: dict, key: str):
         ]
 
     return series_to_filter
-
-
 
 
 def get_pulser_data(
