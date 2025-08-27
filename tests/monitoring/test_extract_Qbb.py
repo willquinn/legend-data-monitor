@@ -1,18 +1,20 @@
 import numpy as np
 import pytest
+
 from legend_data_monitor.monitoring import extract_resolution_at_q_bb
+
 
 def test_channel_not_in_dict():
     pars = {}
     result = extract_resolution_at_q_bb(pars, "ch1", "ecal")
     assert result == (np.nan, np.nan)
 
+
 def test_no_cuspEmax_ctc_cal():
-    pars = {
-        "ch1": {"results": {"ecal": {}}}
-    }
+    pars = {"ch1": {"results": {"ecal": {}}}}
     result = extract_resolution_at_q_bb(pars, "ch1", "ecal")
     assert result == (np.nan, np.nan)
+
 
 def test_no_Qbb_key():
     pars = {
@@ -21,7 +23,7 @@ def test_no_Qbb_key():
                 "ecal": {
                     "cuspEmax_ctc_cal": {
                         "eres_linear": {"fake_key": 1.23},
-                        "eres_quadratic": {"fake_key": 2.34}
+                        "eres_quadratic": {"fake_key": 2.34},
                     }
                 }
             }
@@ -30,6 +32,7 @@ def test_no_Qbb_key():
     result = extract_resolution_at_q_bb(pars, "ch1", "ecal")
     assert result == (np.nan, np.nan)
 
+
 def test_linear_fit():
     pars = {
         "ch1": {
@@ -37,7 +40,7 @@ def test_linear_fit():
                 "ecal": {
                     "cuspEmax_ctc_cal": {
                         "eres_linear": {"Qbb_fwhm_in_keV": 5.67},
-                        "eres_quadratic": {"Qbb_fwhm_in_keV": 8.9}
+                        "eres_quadratic": {"Qbb_fwhm_in_keV": 8.9},
                     }
                 }
             }
@@ -46,6 +49,7 @@ def test_linear_fit():
     result = extract_resolution_at_q_bb(pars, "ch1", "ecal", fit="linear")
     assert result == (5.67, np.nan)
 
+
 def test_quadratic_fit():
     pars = {
         "ch1": {
@@ -53,7 +57,7 @@ def test_quadratic_fit():
                 "ecal": {
                     "cuspEmax_ctc_cal": {
                         "eres_linear": {"Qbb_fwhm_in_keV": 5.67},
-                        "eres_quadratic": {"Qbb_fwhm_in_keV": 8.9}
+                        "eres_quadratic": {"Qbb_fwhm_in_keV": 8.9},
                     }
                 }
             }

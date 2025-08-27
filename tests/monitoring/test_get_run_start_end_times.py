@@ -1,9 +1,12 @@
 import os
-import pandas as pd
+from unittest.mock import MagicMock, patch
+
 import numpy as np
+import pandas as pd
 import pytest
-from unittest.mock import patch, MagicMock
+
 from legend_data_monitor.monitoring import get_run_start_end_times
+
 
 @pytest.fixture
 def fake_sto():
@@ -11,6 +14,7 @@ def fake_sto():
     # simulate sto.read returning a numpy array of timestamps
     sto.read.side_effect = lambda path, fname: np.array([1000, 2000, 3000])
     return sto
+
 
 def test_special_case(monkeypatch, fake_sto, tmp_path):
     # fake directory structure
@@ -22,7 +26,11 @@ def test_special_case(monkeypatch, fake_sto, tmp_path):
     dir_path = tmp_path / "tier_phy" / "phy" / "p01"
     dir_path.mkdir(parents=True)
     # os.listdir(dir_path) does NOT contain run
-    monkeypatch.setattr(os, "listdir", lambda path: [] if str(path).endswith("p01") else ["file1.lh5","file2.lh5"])
+    monkeypatch.setattr(
+        os,
+        "listdir",
+        lambda path: [] if str(path).endswith("p01") else ["file1.lh5", "file2.lh5"],
+    )
     monkeypatch.setattr(os.path, "isdir", lambda path: True)
 
     start, end = get_run_start_end_times(
@@ -33,10 +41,11 @@ def test_special_case(monkeypatch, fake_sto, tmp_path):
         tier="hit",
     )
 
-    # both should equal last timestamp 
+    # both should equal last timestamp
     expected = pd.to_datetime(3000, unit="s")
     assert start == expected
     assert end == expected
+
 
 def test_normal_case(monkeypatch, fake_sto, tmp_path):
     folder_tier = tmp_path / "tier_hit" / "cal" / "p01" / "r002"
@@ -47,7 +56,13 @@ def test_normal_case(monkeypatch, fake_sto, tmp_path):
     # dir_path exists but contains run: normal case
     dir_path = tmp_path / "tier_phy" / "phy" / "p01"
     dir_path.mkdir(parents=True)
-    monkeypatch.setattr(os, "listdir", lambda path: ["r002"] if str(path).endswith("p01") else ["file1.lh5","file2.lh5"])
+    monkeypatch.setattr(
+        os,
+        "listdir",
+        lambda path: (
+            ["r002"] if str(path).endswith("p01") else ["file1.lh5", "file2.lh5"]
+        ),
+    )
     monkeypatch.setattr(os.path, "isdir", lambda path: True)
 
     start, end = get_run_start_end_times(

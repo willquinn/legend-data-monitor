@@ -1,9 +1,12 @@
-import os
 import json
-import yaml
+import os
 import tempfile
+
 import pytest
-from legend_data_monitor.monitoring import get_calibration_file  
+import yaml
+
+from legend_data_monitor.monitoring import get_calibration_file
+
 
 def test_get_calibration_file_json():
     data = {"param1": 123}
@@ -15,6 +18,7 @@ def test_get_calibration_file_json():
         returned_data = get_calibration_file(tmpdir)
         assert returned_data == data
 
+
 def test_get_calibration_file_yaml():
     data = {"param1": 456}
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -24,6 +28,7 @@ def test_get_calibration_file_yaml():
 
         returned_data = get_calibration_file(tmpdir)
         assert returned_data == data
+
 
 # shouldn't happen - worth checking
 def test_get_calibration_file_priority_json_over_yaml():
@@ -39,6 +44,7 @@ def test_get_calibration_file_priority_json_over_yaml():
 
         returned_data = get_calibration_file(tmpdir)
         assert returned_data == json_data
+
 
 def test_get_calibration_file_not_found():
     with tempfile.TemporaryDirectory() as tmpdir:
