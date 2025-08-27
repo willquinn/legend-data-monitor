@@ -2,14 +2,21 @@ import numpy as np
 from legend_data_monitor.monitoring import evaluate_fep_cal
 
 import legend_data_monitor
+from legend_data_monitor.monitoring import evaluate_fep_cal
+
+
 def fake_get_energy_key(operations):
-    return operations["cuspEmax_ctc_cal"]  
+    return operations["cuspEmax_ctc_cal"]
+
+
 legend_data_monitor.get_energy_key = fake_get_energy_key
+
 
 def test_channel_not_in_dict():
     pars = {}
     result = evaluate_fep_cal(pars, "ch1", 1000, 1.0)
     assert result == (np.nan, np.nan)
+
 
 def test_valid_linear_expression():
     pars = {
@@ -18,7 +25,7 @@ def test_valid_linear_expression():
                 "operations": {
                     "cuspEmax_ctc_cal": {
                         "expression": "a * cuspEmax_ctc + b",
-                        "parameters": {"a": 2.0, "b": 5.0}
+                        "parameters": {"a": 2.0, "b": 5.0},
                     }
                 }
             }
@@ -31,6 +38,7 @@ def test_valid_linear_expression():
     assert fep_cal == float(2 * 1000 + 5)
     assert fep_cal_err == float(2 * 1 + 5)
 
+
 def test_expression_with_offset_only():
     pars = {
         "ch1": {
@@ -38,7 +46,7 @@ def test_expression_with_offset_only():
                 "operations": {
                     "cuspEmax_ctc_cal": {
                         "expression": "cuspEmax_ctc + a",
-                        "parameters": {"a": 10.0}
+                        "parameters": {"a": 10.0},
                     }
                 }
             }
