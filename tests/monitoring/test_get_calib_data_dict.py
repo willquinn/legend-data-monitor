@@ -34,7 +34,7 @@ def test_get_calib_data_dict(calib_data_empty):
             "legend_data_monitor.monitoring.extract_fep_peak",
             return_value=(10.0, 0.1, 0.5, 0.01),
         ),
-        patch("legend_data_monitor.monitoring.extract_Qbb", return_value=(2.5, 3.5)),
+        patch("legend_data_monitor.monitoring.extract_resolution_at_q_bb", return_value=(2.5, 3.5)),
         patch(
             "legend_data_monitor.monitoring.evaluate_fep_cal", return_value=(100.0, 1.0)
         ),
@@ -80,7 +80,7 @@ def test_channel_name_used_if_not_ch_key(calib_data_empty):
             return_value=(np.nan, np.nan, np.nan, np.nan),
         ),
         patch(
-            "legend_data_monitor.monitoring.extract_Qbb", return_value=(np.nan, np.nan)
+            "legend_data_monitor.monitoring.extract_resolution_at_q_bb", return_value=(np.nan, np.nan)
         ),
         patch(
             "legend_data_monitor.monitoring.evaluate_fep_cal",
