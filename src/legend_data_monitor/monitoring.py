@@ -129,7 +129,9 @@ def extract_fep_peak(pars_dict: dict, channel: str):
     return fep_peak_pos, fep_peak_pos_err, fep_gain, fep_gain_err
 
 
-def extract_resolution_at_q_bb(pars_dict: dict, channel: str, key_result: str, fit: str = "linear"):
+def extract_resolution_at_q_bb(
+    pars_dict: dict, channel: str, key_result: str, fit: str = "linear"
+):
     """
     Return Qbb_fwhm (linear resolution) and Qbb_fwhm_quad (quadratic resolution).
 
@@ -297,7 +299,9 @@ def get_calib_data_dict(
     fep_peak_pos, fep_peak_pos_err, fep_gain, fep_gain_err = extract_fep_peak(
         pars_dict, channel
     )
-    Qbb_fwhm, Qbb_fwhm_quad = extract_resolution_at_q_bb(pars_dict, channel, key_result, fit)
+    Qbb_fwhm, Qbb_fwhm_quad = extract_resolution_at_q_bb(
+        pars_dict, channel, key_result, fit
+    )
     fep_cal, fep_cal_err = evaluate_fep_cal(
         pars_dict, channel, fep_peak_pos, fep_peak_pos_err
     )
