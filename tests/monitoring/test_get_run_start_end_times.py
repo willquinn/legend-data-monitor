@@ -2,7 +2,7 @@ import os
 import pandas as pd
 import numpy as np
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock
 from legend_data_monitor.monitoring import get_run_start_end_times
 
 @pytest.fixture

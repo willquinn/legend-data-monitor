@@ -373,7 +373,7 @@ def compute_diff(
     values: np.ndarray, initial_value: float | int, scale: float | int
 ) -> np.ndarray:
     """
-    Compute relative differences with respect to an initial value. If the initial value is zero, returns an array of nan valus.
+    Compute relative differences with respect to an initial value. If the initial value is zero, returns an array of nan values.
 
     Parameters
     ----------
