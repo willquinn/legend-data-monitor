@@ -67,6 +67,171 @@ def get_energy_key(
     return cut_dict
 
 
+def get_calibration_file(folder_par: str) -> dict:
+    """
+    Return the content of the JSON/YAML calibration file in folder_par.
+    
+    Parameters
+    ----------
+    folder_par: str
+        Path to the folder containing calibration summary files.
+    """
+    files = os.listdir(folder_par)
+    json_files = [f for f in files if f.endswith(".json")]
+    yaml_files = [f for f in files if f.endswith((".yaml", ".yml"))]
+
+    if json_files:
+        filepath = os.path.join(folder_par, json_files[0])
+        with open(filepath) as f:
+            pars_dict = json.load(f)
+    elif yaml_files:
+        filepath = os.path.join(folder_par, yaml_files[0])
+        with open(filepath) as f:
+            pars_dict = yaml.load(f, Loader=yaml.CLoader)
+    else:
+        raise FileNotFoundError(f"No JSON or YAML file found in {folder_par}")
+        
+    return pars_dict
+
+def extract_fep_peak(pars_dict: dict, channel: str):
+    """
+    Return fep_peak_pos, fep_peak_pos_err, fep_gain, fep_gain_err.
+    
+    Parameters
+    ----------
+    pars_dict: dict
+        Dictionary containing calibration outputs.
+    channel: str
+        Channel name or IDs.
+    """
+    if channel not in pars_dict:
+        return np.nan, np.nan, np.nan, np.nan
+
+    # for FEP peak, we want to look at the behaviour over time; take 'ecal' results (not partition ones!)
+    ecal_results = pars_dict[channel]["results"]["ecal"]
+    pk_fits = get_energy_key(ecal_results).get("pk_fits", {})
+
+    try:
+        fep_energy = [p for p in sorted(pk_fits) if 2613 < float(p) < 2616][0]
+        try:
+            fep_peak_pos = pk_fits[fep_energy]["parameters_in_ADC"]["mu"]
+            fep_peak_pos_err = pk_fits[fep_energy]["uncertainties_in_ADC"]["mu"]
+        except (KeyError, TypeError):
+            fep_peak_pos = pk_fits[fep_energy]["parameters"]["mu"]
+            fep_peak_pos_err = pk_fits[fep_energy]["uncertainties"]["mu"]
+            
+        fep_gain = fep_peak_pos / 2614.5
+        fep_gain_err = fep_peak_pos_err / 2614.5
+        
+    except (KeyError, TypeError, IndexError):
+        return np.nan, np.nan, np.nan, np.nan
+
+    return fep_peak_pos, fep_peak_pos_err, fep_gain, fep_gain_err
+
+def extract_Qbb(pars_dict: dict, channel: str, key_result: str, fit: str ="linear"):
+    """
+    Return Qbb_fwhm (linear resolution) and Qbb_fwhm_quad (quadratic resolution).
+    
+    Parameters
+    ----------
+    pars_dict: dict
+        Dictionary containing calibration outputs.
+    channel: str
+        Channel name or IDs.
+    key_result: str
+        Key name used to extract the resolution results from the parsed file.
+    fit: str
+        Fitting method used for energy resolution, either 'linear' or 'quadratic'.
+    """
+    if channel not in pars_dict:
+        return np.nan, np.nan
+
+    result = pars_dict[channel]["results"][key_result].get("cuspEmax_ctc_cal", {})
+    Qbb_keys = [k for k in result.get("eres_linear", {}) if "Qbb_fwhm_in_" in k]
+    if not Qbb_keys:
+        return np.nan, np.nan
+
+    Qbb_fwhm = result["eres_linear"][Qbb_keys[0]]
+    Qbb_fwhm_quad = result["eres_quadratic"][Qbb_keys[0]] if fit != "linear" else np.nan
+
+    return Qbb_fwhm, Qbb_fwhm_quad
+
+
+def evaluate_fep_cal(pars_dict: dict, channel: str, fep_peak_pos: float, fep_peak_pos_err: float):
+    """
+    Return calibrated FEP position (fep_cal) and error (fep_cal_err).
+    
+    Parameters
+    ----------
+    pars_dict: dict
+        Dictionary containing calibration outputs.
+    channel: str
+        Channel name or IDs.
+    fep_peak_pos: float
+        Uncalibrated FEP position.
+    fep_peak_pos_err: float
+        Uncalibrated FEP position error.
+    """
+    if channel not in pars_dict:
+        return np.nan, np.nan
+
+    ecal_results = get_energy_key(pars_dict[channel]["pars"]["operations"])
+    expr = ecal_results["expression"]
+    params = ecal_results["parameters"]
+
+    fep_cal = eval(expr, {}, {**params, "cuspEmax_ctc": fep_peak_pos})
+    fep_cal_err = eval(expr, {}, {**params, "cuspEmax_ctc": fep_peak_pos_err})
+
+    return fep_cal, fep_cal_err
+
+
+def get_run_start_end_times(
+    sto,
+    tiers: list,
+    period: str,
+    run: str,
+    tier: str,
+):
+    """
+    Determine the start and end timestamps for a given run, including the special case for additional final calibration runs.
+
+    Parameters
+    ----------
+    sto
+        Store object to read timestamps from LH5 files.
+    tiers: list of str
+        Paths to tier data folders based on the inspected processed version.
+    period: str
+        Period to inspect.
+    run: str
+        Run to inspect.
+    tier: str
+        Tier level for the analysis ('hit', 'phy', etc.).
+    """
+    folder_tier = os.path.join(tiers[0 if tier=="hit" else 1], "cal", period, run)
+    dir_path = os.path.join(tiers[-1], "phy", period)
+
+    # for when we have a calib run but zero phy runs for a given period
+    if os.path.isdir(dir_path) and run not in os.listdir(dir_path):
+        run_files = sorted(os.listdir(folder_tier))
+        run_end_time = pd.to_datetime(
+            sto.read("ch1027201/dsp/timestamp", os.path.join(folder_tier, run_files[-1]))[-1],
+            unit="s",
+        )
+        run_start_time = run_end_time
+    else:
+        run_files = sorted(os.listdir(folder_tier))
+        run_start_time = pd.to_datetime(
+            sto.read("ch1027201/dsp/timestamp", os.path.join(folder_tier, run_files[0]))[0],
+            unit="s",
+        )
+        run_end_time = pd.to_datetime(
+            sto.read("ch1027201/dsp/timestamp", os.path.join(folder_tier, run_files[-1]))[-1],
+            unit="s",
+        )
+
+    return run_start_time, run_end_time
+
 
 def get_calib_data_dict(
     calib_data: dict,
@@ -113,149 +278,19 @@ def get_calib_data_dict(
     channel = channel_info[0]
     channel_name = channel_info[1]
 
-    folder_tier = (
-        os.path.join(tiers[0], "cal", period, run)
-        if tier == "hit"
-        else os.path.join(tiers[1], "cal", period, run)
-    )
+    folder_par = os.path.join(pars[2 if tier=="hit" else 3], "cal", period, run)
+    pars_dict = get_calibration_file(folder_par)
 
-    folder_par = (
-        os.path.join(pars[2], "cal", period, run)
-        if tier == "hit"
-        else os.path.join(pars[3], "cal", period, run)
-    )
-    folder_files = os.listdir(folder_par)
-    json_files = [f for f in folder_files if f.endswith(".json")]
-    yaml_files = [f for f in folder_files if f.endswith((".yaml", ".yml"))]
-
-    filepath = ""
-    if json_files:
-        filepath = os.path.join(folder_par, json_files[0])
-        with open(filepath) as f:
-            pars_dict = json.load(f)
-    elif yaml_files:
-        filepath = os.path.join(folder_par, yaml_files[0])
-        with open(filepath) as f:
-            pars_dict = yaml.load(f, Loader=yaml.CLoader)
-    else:
-        raise FileNotFoundError("No .json or .yaml/.yml file found in the folder.")
-        sys.exit()
-
-    ch_keys = all(k.startswith("ch") for k in pars_dict.keys())
-    if not ch_keys:
+    if not all(k.startswith("ch") for k in pars_dict.keys()):
         channel = channel_name
 
-    # for FEP peak, we want to look at the behaviour over time --> take 'ecal' results (not partition ones!)
-    if channel not in pars_dict.keys():
-        fep_peak_pos = np.nan
-        fep_peak_pos_err = np.nan
-        fep_gain = np.nan
-        fep_gain_err = np.nan
-    else:
-        ecal_results = pars_dict[channel]["results"]["ecal"]
-        pk_fits = get_energy_key(ecal_results)["pk_fits"]
-        try:
-            fep_energy = [
-                p for p in sorted(pk_fits) if float(p) > 2613 and float(p) < 2616
-            ][0]
-            try:
-                fep_peak_pos = pk_fits[fep_energy]["parameters_in_ADC"]["mu"]
-                fep_peak_pos_err = pk_fits[fep_energy]["uncertainties_in_ADC"]["mu"]
-            except (KeyError, TypeError):
-                fep_peak_pos = pk_fits[fep_energy]["parameters"]["mu"]
-                fep_peak_pos_err = pk_fits[fep_energy]["uncertainties"]["mu"]
-            fep_gain = fep_peak_pos / 2614.5
-            fep_gain_err = fep_peak_pos_err / 2614.5
-
-        except (KeyError, TypeError):
-            fep_peak_pos = np.nan
-            fep_peak_pos_err = np.nan
-            fep_gain = np.nan
-            fep_gain_err = np.nan
-
-    # load the resolution at Qbb, both linear and quadratic if needed
-    if channel not in pars_dict.keys():
-        Qbb_fwhm = np.nan
-        Qbb_fwhm_quad = np.nan
-    else:
-        # pay attention to cap of V in keV
-        Qbb_fwhm = np.nan
-        Qbb_fwhm_quad = np.nan
-        exist = (
-            True
-            if pars_dict[channel]["results"][key_result]["cuspEmax_ctc_cal"]
-            else False
-        )
-        Qbb_key = [
-            k
-            for k in pars_dict[channel]["results"][key_result]["cuspEmax_ctc_cal"][
-                "eres_linear"
-            ].keys()
-            if "Qbb_fwhm_in_" in k
-        ][0]
-
-        if exist:
-            try:
-                Qbb_fwhm = pars_dict[channel]["results"][key_result][
-                    "cuspEmax_ctc_cal"
-                ]["eres_linear"][Qbb_key]
-            except (KeyError, TypeError):
-                Qbb_fwhm = pars_dict[channel]["results"][key_result][
-                    "cuspEmax_ctc_cal"
-                ]["eres_linear"][Qbb_key]
-
-            if fit != "linear":
-                try:
-                    Qbb_fwhm_quad = pars_dict[channel]["results"][key_result][
-                        "cuspEmax_ctc_cal"
-                    ]["eres_quadratic"][Qbb_key]
-                except (KeyError, TypeError):
-                    Qbb_fwhm_quad = pars_dict[channel]["results"][key_result][
-                        "cuspEmax_ctc_cal"
-                    ]["eres_quadratic"][Qbb_key]
-
-    # load the calibrated FEP position --> take 'ecal' results (not partition ones!)
-    if channel not in pars_dict.keys():
-        fep_cal = np.nan
-        fep_cal_err = np.nan
-    else:
-        ecal_results = pars_dict[channel]["pars"]["operations"]
-        ecal_results = get_energy_key(ecal_results)
-        expr = ecal_results["expression"]
-        params = ecal_results["parameters"]
-        eval_context = {**params, "cuspEmax_ctc": fep_peak_pos}
-        fep_cal = eval(expr, {}, eval_context)
-        eval_context = {**params, "cuspEmax_ctc": fep_peak_pos_err}
-        fep_cal_err = eval(expr, {}, eval_context)
+    # retrieve calibration parameters
+    fep_peak_pos, fep_peak_pos_err, fep_gain, fep_gain_err = extract_fep_peak(pars_dict, channel)
+    Qbb_fwhm, Qbb_fwhm_quad = extract_Qbb(pars_dict, channel, key_result, fit)
+    fep_cal, fep_cal_err = evaluate_fep_cal(pars_dict, channel, fep_peak_pos, fep_peak_pos_err)
 
     # get timestamp for additional-final cal run (only for FEP gain display)
-    dir_path = os.path.join(tiers[-1], "phy", period)
-    found = False
-    if os.path.isdir(dir_path):
-        if run not in os.listdir(dir_path):
-            run_files = sorted(os.listdir(folder_tier))
-            run_end_time = pd.to_datetime(
-                sto.read(
-                    "ch1027201/dsp/timestamp", os.path.join(folder_tier, run_files[-1])
-                )[-1],
-                unit="s",
-            )
-            run_start_time = run_end_time
-            found = True
-    if not found:
-        run_files = sorted(os.listdir(folder_tier))
-        run_start_time = pd.to_datetime(
-            sto.read(
-                "ch1027201/dsp/timestamp", os.path.join(folder_tier, run_files[0])
-            )[0],
-            unit="s",
-        )
-        run_end_time = pd.to_datetime(
-            sto.read(
-                "ch1027201/dsp/timestamp", os.path.join(folder_tier, run_files[-1])
-            )[-1],
-            unit="s",
-        )
+    run_start_time, run_end_time = get_run_start_end_times(sto, tiers, period, run, tier)
 
     calib_data["fep"].append(fep_gain)
     calib_data["fep_err"].append(fep_gain_err)
