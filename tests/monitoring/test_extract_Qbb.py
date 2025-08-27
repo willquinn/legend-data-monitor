@@ -1,4 +1,5 @@
 import numpy as np
+
 from legend_data_monitor.monitoring import extract_resolution_at_q_bb
 
 
@@ -7,12 +8,12 @@ def test_channel_not_in_dict():
     result = extract_resolution_at_q_bb(pars, "ch1", "ecal")
     assert result == (np.nan, np.nan)
 
+
 def test_no_cuspemax_ctc_cal():
-    pars = {
-        "ch1": {"results": {"ecal": {}}}
-    }
+    pars = {"ch1": {"results": {"ecal": {}}}}
     result = extract_resolution_at_q_bb(pars, "ch1", "ecal")
     assert result == (np.nan, np.nan)
+
 
 def test_no_qbb_key():
     pars = {
