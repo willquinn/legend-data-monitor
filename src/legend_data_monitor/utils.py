@@ -69,10 +69,10 @@ for param in SPECIAL_PARAMETERS:
 # load SC params and corresponding flags to get specific parameters from big dfs that are stored in the database
 with open(pkg / "settings" / "SC-params.yaml") as f:
     SC_PARAMETERS = yaml.load(f, Loader=yaml.CLoader)
-    
-# load final calibration run for each period 
+
+# load final calibration run for each period
 with open(pkg / "settings" / "final-calibrations.yaml") as f:
-    CALIB_RUNS  = yaml.load(f, Loader=yaml.CLoader)
+    CALIB_RUNS = yaml.load(f, Loader=yaml.CLoader)
 
 # load list of columns to load for a dataframe
 COLUMNS_TO_LOAD = [

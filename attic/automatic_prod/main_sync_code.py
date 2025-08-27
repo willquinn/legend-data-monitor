@@ -336,9 +336,9 @@ def main():
                     "event_type": "phy",
                     "qc_flags": True,
                     "qc_classifiers": False,
-                }
+                },
             }
-        }
+        },
     }
 
     # ===========================================================================================
@@ -445,15 +445,13 @@ def main():
         # compute resampling + info yaml
         logger.debug("Resampling outputs...")
         files_folder = os.path.join(output_folder, ref_version)
-        bash_command = (
-            f"{cmd} python monitoring.py summary_files --path {files_folder} --period {period} --run {run}"
-        )
+        bash_command = f"{cmd} python monitoring.py summary_files --path {files_folder} --period {period} --run {run}"
         logger.debug(f"...running command {bash_command}")
         subprocess.run(bash_command, shell=True)
         logger.debug("...done!")
 
         # ===========================================================================================
-        # Analyze Slow Control data 
+        # Analyze Slow Control data
         # ===========================================================================================
         if cluster == "lngs" and get_sc is True:
             try:

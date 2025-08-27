@@ -23,7 +23,7 @@ from . import utils
 IPython_default = plt.rcParams.copy()
 SMALL_SIZE = 8
 
-plt.rc("font", size=SMALL_SIZE)  
+plt.rc("font", size=SMALL_SIZE)
 plt.rc("axes", titlesize=SMALL_SIZE)
 plt.rc("axes", labelsize=SMALL_SIZE)
 plt.rc("xtick", labelsize=SMALL_SIZE)
@@ -40,6 +40,7 @@ IGNORE_KEYS = utils.IGNORE_KEYS
 CALIB_RUNS = utils.CALIB_RUNS
 
 # -------------------------------------------------------------------------
+
 
 def get_energy_key(
     ecal_results: dict,
@@ -70,7 +71,7 @@ def get_energy_key(
 def get_calibration_file(folder_par: str) -> dict:
     """
     Return the content of the JSON/YAML calibration file in folder_par.
-    
+
     Parameters
     ----------
     folder_par: str
@@ -90,13 +91,14 @@ def get_calibration_file(folder_par: str) -> dict:
             pars_dict = yaml.load(f, Loader=yaml.CLoader)
     else:
         raise FileNotFoundError(f"No JSON or YAML file found in {folder_par}")
-        
+
     return pars_dict
+
 
 def extract_fep_peak(pars_dict: dict, channel: str):
     """
     Return fep_peak_pos, fep_peak_pos_err, fep_gain, fep_gain_err.
-    
+
     Parameters
     ----------
     pars_dict: dict
@@ -119,19 +121,20 @@ def extract_fep_peak(pars_dict: dict, channel: str):
         except (KeyError, TypeError):
             fep_peak_pos = pk_fits[fep_energy]["parameters"]["mu"]
             fep_peak_pos_err = pk_fits[fep_energy]["uncertainties"]["mu"]
-            
+
         fep_gain = fep_peak_pos / 2614.5
         fep_gain_err = fep_peak_pos_err / 2614.5
-        
+
     except (KeyError, TypeError, IndexError):
         return np.nan, np.nan, np.nan, np.nan
 
     return fep_peak_pos, fep_peak_pos_err, fep_gain, fep_gain_err
 
-def extract_Qbb(pars_dict: dict, channel: str, key_result: str, fit: str ="linear"):
+
+def extract_Qbb(pars_dict: dict, channel: str, key_result: str, fit: str = "linear"):
     """
     Return Qbb_fwhm (linear resolution) and Qbb_fwhm_quad (quadratic resolution).
-    
+
     Parameters
     ----------
     pars_dict: dict
@@ -157,10 +160,12 @@ def extract_Qbb(pars_dict: dict, channel: str, key_result: str, fit: str ="linea
     return Qbb_fwhm, Qbb_fwhm_quad
 
 
-def evaluate_fep_cal(pars_dict: dict, channel: str, fep_peak_pos: float, fep_peak_pos_err: float):
+def evaluate_fep_cal(
+    pars_dict: dict, channel: str, fep_peak_pos: float, fep_peak_pos_err: float
+):
     """
     Return calibrated FEP position (fep_cal) and error (fep_cal_err).
-    
+
     Parameters
     ----------
     pars_dict: dict
@@ -208,25 +213,31 @@ def get_run_start_end_times(
     tier: str
         Tier level for the analysis ('hit', 'phy', etc.).
     """
-    folder_tier = os.path.join(tiers[0 if tier=="hit" else 1], "cal", period, run)
+    folder_tier = os.path.join(tiers[0 if tier == "hit" else 1], "cal", period, run)
     dir_path = os.path.join(tiers[-1], "phy", period)
 
     # for when we have a calib run but zero phy runs for a given period
     if os.path.isdir(dir_path) and run not in os.listdir(dir_path):
         run_files = sorted(os.listdir(folder_tier))
         run_end_time = pd.to_datetime(
-            sto.read("ch1027201/dsp/timestamp", os.path.join(folder_tier, run_files[-1]))[-1],
+            sto.read(
+                "ch1027201/dsp/timestamp", os.path.join(folder_tier, run_files[-1])
+            )[-1],
             unit="s",
         )
         run_start_time = run_end_time
     else:
         run_files = sorted(os.listdir(folder_tier))
         run_start_time = pd.to_datetime(
-            sto.read("ch1027201/dsp/timestamp", os.path.join(folder_tier, run_files[0]))[0],
+            sto.read(
+                "ch1027201/dsp/timestamp", os.path.join(folder_tier, run_files[0])
+            )[0],
             unit="s",
         )
         run_end_time = pd.to_datetime(
-            sto.read("ch1027201/dsp/timestamp", os.path.join(folder_tier, run_files[-1]))[-1],
+            sto.read(
+                "ch1027201/dsp/timestamp", os.path.join(folder_tier, run_files[-1])
+            )[-1],
             unit="s",
         )
 
@@ -278,19 +289,25 @@ def get_calib_data_dict(
     channel = channel_info[0]
     channel_name = channel_info[1]
 
-    folder_par = os.path.join(pars[2 if tier=="hit" else 3], "cal", period, run)
+    folder_par = os.path.join(pars[2 if tier == "hit" else 3], "cal", period, run)
     pars_dict = get_calibration_file(folder_par)
 
     if not all(k.startswith("ch") for k in pars_dict.keys()):
         channel = channel_name
 
     # retrieve calibration parameters
-    fep_peak_pos, fep_peak_pos_err, fep_gain, fep_gain_err = extract_fep_peak(pars_dict, channel)
+    fep_peak_pos, fep_peak_pos_err, fep_gain, fep_gain_err = extract_fep_peak(
+        pars_dict, channel
+    )
     Qbb_fwhm, Qbb_fwhm_quad = extract_Qbb(pars_dict, channel, key_result, fit)
-    fep_cal, fep_cal_err = evaluate_fep_cal(pars_dict, channel, fep_peak_pos, fep_peak_pos_err)
+    fep_cal, fep_cal_err = evaluate_fep_cal(
+        pars_dict, channel, fep_peak_pos, fep_peak_pos_err
+    )
 
     # get timestamp for additional-final cal run (only for FEP gain display)
-    run_start_time, run_end_time = get_run_start_end_times(sto, tiers, period, run, tier)
+    run_start_time, run_end_time = get_run_start_end_times(
+        sto, tiers, period, run, tier
+    )
 
     calib_data["fep"].append(fep_gain)
     calib_data["fep_err"].append(fep_gain_err)
@@ -307,7 +324,7 @@ def get_calib_data_dict(
 def add_calibration_runs(period: str | list, run_list: list) -> list:
     """
     Add special calibration runs to the run list for a given period.
-    
+
     Parameters
     ----------
         period: Either a string or list of periods
@@ -327,7 +344,7 @@ def add_calibration_runs(period: str | list, run_list: list) -> list:
                 # run_list might be a dict but period is a string
                 if period in run_list:
                     run_list[period] = run_list[period] + CALIB_RUNS[period]
-    
+
     return run_list
 
 
@@ -350,7 +367,9 @@ def get_tier_keyresult(tiers: list):
     return tier, key_result
 
 
-def compute_diff(values: np.ndarray, initial_value: float | int, scale: float | int) -> np.ndarray:
+def compute_diff(
+    values: np.ndarray, initial_value: float | int, scale: float | int
+) -> np.ndarray:
     """
     Compute relative differences with respect to an initial value.
     If the initial value is zero, returns an array of nan valus.
@@ -366,9 +385,9 @@ def compute_diff(values: np.ndarray, initial_value: float | int, scale: float | 
     """
     if initial_value == 0:
         return np.full_like(values, np.nan, dtype=float)
-        
+
     return (values - initial_value) / initial_value * scale
-    
+
 
 def get_calib_pars(
     path: str,
@@ -435,10 +454,13 @@ def get_calib_pars(
         if init_cal_const == 0 and cal_ != 0:
             init_cal_const = cal_
 
-    calib_data["cal_const_diff"] = compute_diff(calib_data["cal_const"], init_cal_const, escale)
+    calib_data["cal_const_diff"] = compute_diff(
+        calib_data["cal_const"], init_cal_const, escale
+    )
     calib_data["fep_diff"] = compute_diff(calib_data["fep"], init_fep, escale)
 
     return calib_data
+
 
 def get_dfs(phy_mtg_data: str, period: str, run_list: str | list, parameter: str):
     """
@@ -1387,10 +1409,14 @@ def plot_time_series(
                     channel_name = chmap.map("daq.rawid")[int(channel[2:])]["name"]
                     resampling_time = "1h"
                     if int(channel.split("ch")[-1]) not in list(dfs[0].columns):
-                        utils.logger.debug(f"{channel} is not present in the dataframe!")
+                        utils.logger.debug(
+                            f"{channel} is not present in the dataframe!"
+                        )
                         continue
 
-                    utils.logger.debug(f"Inspecting {channel_name} for {inspected_parameter}")
+                    utils.logger.debug(
+                        f"Inspecting {channel_name} for {inspected_parameter}"
+                    )
                     pulser_data = get_pulser_data(
                         resampling_time,
                         period,
@@ -1632,4 +1658,3 @@ def plot_time_series(
             pswd_email, ["sofia.calgaro@physik.uzh.ch"], "message.txt"
         )
         os.remove("message.txt")
-

@@ -15,15 +15,19 @@ import yaml
 
 import legend_data_monitor
 
+
 def summary_files():
-    parser = argparse.ArgumentParser(description='Create summry HDF and YAML files.')
-    parser.add_argument('--path', help='Path to the folder containing the monitoring HDF files.')
-    parser.add_argument('--period', help='Period to inspect.')
-    parser.add_argument('--run', help='Run to inspect.')
+    parser = argparse.ArgumentParser(description="Create summry HDF and YAML files.")
+    parser.add_argument(
+        "--path", help="Path to the folder containing the monitoring HDF files."
+    )
+    parser.add_argument("--period", help="Period to inspect.")
+    parser.add_argument("--run", help="Run to inspect.")
     return parser
 
+
 def plot():
-    parser = argparse.ArgumentParser(description='Create summary plots.')
+    parser = argparse.ArgumentParser(description="Create summary plots.")
     parser.add_argument(
         "--public_data",
         help="Path to tmp-auto public data files (eg /data2/public/prodenv/prod-blind/tmp-auto).",
@@ -80,16 +84,25 @@ def plot():
     )
     return parser
 
+
 def main():
     parser = argparse.ArgumentParser()
-    subparsers = parser.add_subparsers(dest='command', help='Available commands', required=True)
-    
-    func1_parser = subparsers.add_parser('summary_files', help='Run function for creating summary HDF and YAML files.')
-    func1_parser.add_argument('--path', help='Path to the folder containing the monitoring HDF files.')
-    func1_parser.add_argument('--period', help='Period to inspect.')
-    func1_parser.add_argument('--run', help='Run to inspect.')
-    
-    func2_parser = subparsers.add_parser('plot', help='Run function for creating summary plots.')
+    subparsers = parser.add_subparsers(
+        dest="command", help="Available commands", required=True
+    )
+
+    func1_parser = subparsers.add_parser(
+        "summary_files", help="Run function for creating summary HDF and YAML files."
+    )
+    func1_parser.add_argument(
+        "--path", help="Path to the folder containing the monitoring HDF files."
+    )
+    func1_parser.add_argument("--period", help="Period to inspect.")
+    func1_parser.add_argument("--run", help="Run to inspect.")
+
+    func2_parser = subparsers.add_parser(
+        "plot", help="Run function for creating summary plots."
+    )
     func2_parser.add_argument(
         "--public_data",
         help="Path to tmp-auto public data files (eg /data2/public/prodenv/prod-blind/tmp-auto).",
@@ -144,13 +157,13 @@ def main():
         "--last_checked",
         help="Timestamp of the last check. ",
     )
-    
+
     args = parser.parse_args()
-    
-    if args.command == 'summary_files':
+
+    if args.command == "summary_files":
         legend_data_monitor.monitoring.build_new_files(args.path, args.period, args.run)
-        
-    elif args.command == 'plot':
+
+    elif args.command == "plot":
         auto_dir_path = args.public_data
         phy_mtg_data = args.hdf_files
         output_folder = args.output
@@ -159,11 +172,11 @@ def main():
         runs = args.avail_runs
         current_run = args.current_run
         pswd_email = args.pswd_email
-        save_pdf = args.pdf 
+        save_pdf = args.pdf
         escale_val = args.escale
         last_checked = args.last_checked
         partition = args.partition
-        quadratic = args.quad_res 
+        quadratic = args.quad_res
         zoom = args.zoom
 
         legend_data_monitor.monitoring.plot_time_series(
@@ -183,5 +196,6 @@ def main():
             zoom,
         )
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()
