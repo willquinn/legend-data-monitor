@@ -1,6 +1,4 @@
-import argparse
 import json
-import logging
 import os
 import pickle
 import shelve
@@ -131,7 +129,7 @@ def extract_fep_peak(pars_dict: dict, channel: str):
     return fep_peak_pos, fep_peak_pos_err, fep_gain, fep_gain_err
 
 
-def extract_Qbb(pars_dict: dict, channel: str, key_result: str, fit: str = "linear"):
+def extract_resolution_at_q_bb(pars_dict: dict, channel: str, key_result: str, fit: str = "linear"):
     """
     Return Qbb_fwhm (linear resolution) and Qbb_fwhm_quad (quadratic resolution).
 
@@ -299,7 +297,7 @@ def get_calib_data_dict(
     fep_peak_pos, fep_peak_pos_err, fep_gain, fep_gain_err = extract_fep_peak(
         pars_dict, channel
     )
-    Qbb_fwhm, Qbb_fwhm_quad = extract_Qbb(pars_dict, channel, key_result, fit)
+    Qbb_fwhm, Qbb_fwhm_quad = extract_resolution_at_q_bb(pars_dict, channel, key_result, fit)
     fep_cal, fep_cal_err = evaluate_fep_cal(
         pars_dict, channel, fep_peak_pos, fep_peak_pos_err
     )
@@ -371,8 +369,7 @@ def compute_diff(
     values: np.ndarray, initial_value: float | int, scale: float | int
 ) -> np.ndarray:
     """
-    Compute relative differences with respect to an initial value.
-    If the initial value is zero, returns an array of nan valus.
+    Compute relative differences with respect to an initial value. If the initial value is zero, returns an array of nan valus.
 
     Parameters
     ----------
@@ -422,7 +419,7 @@ def get_calib_pars(
         Fit method used for energy resolution ("linear" or "quadratic"), by default "linear".
     """
     # add special calib runs at the end of a period
-    runs_with_calib = add_calibration_runs(period, run_list)
+    run_list = add_calibration_runs(period, run_list)
 
     calib_data = {
         "fep": [],

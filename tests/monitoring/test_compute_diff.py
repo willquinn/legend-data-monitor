@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 
 from legend_data_monitor.monitoring import compute_diff
 

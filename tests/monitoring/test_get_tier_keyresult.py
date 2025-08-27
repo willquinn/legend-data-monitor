@@ -1,7 +1,5 @@
 from unittest.mock import patch
 
-import pytest
-
 from legend_data_monitor.monitoring import get_tier_keyresult
 
 
