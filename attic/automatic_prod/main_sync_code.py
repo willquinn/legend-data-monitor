@@ -386,29 +386,6 @@ def main():
         new_files = correct_files
     new_files = sorted(new_files)
 
-    # remove keys stored in ignore-keys.yaml (eg bad/heavy keys)
-    with open(
-        "../../src/legend_data_monitor/settings/ignore-keys.yaml"
-    ) as f:  # TODO: more general
-        ignore_keys = yaml.load(f, Loader=yaml.CLoader)
-
-    def remove_key(timestamp, ignore_keys, period):
-        if period not in ignore_keys.keys():
-            return False
-
-        for idx in range(0, len(ignore_keys[period]["start_keys"])):
-            start = ignore_keys[period]["start_keys"][idx]
-            end = ignore_keys[period]["stop_keys"][idx]
-            if start <= timestamp < end:
-                return True
-        return False
-
-    new_files = [
-        fname
-        for fname in new_files
-        if not remove_key(fname.split("-")[4], ignore_keys, period)
-    ]
-
     # If new files are found, run the shell command
     if new_files:
         # Replace this command with your desired shell command
@@ -476,7 +453,7 @@ def main():
         logger.debug("...done!")
 
         # ===========================================================================================
-        # Analyze Slow Control data (for the full run - overwrite of previous info)
+        # Analyze Slow Control data 
         # ===========================================================================================
         if cluster == "lngs" and get_sc is True:
             try:
@@ -497,7 +474,7 @@ def main():
                 )
 
         # ===========================================================================================
-        # Generate Gain Monitoring Summary Plots
+        # Generate Monitoring Summary Plots
         # ===========================================================================================
         mtg_folder = os.path.join(output_folder, ref_version, "generated/plt/hit/phy")
         os.makedirs(mtg_folder, exist_ok=True)
@@ -518,8 +495,6 @@ def main():
                 )[0]
             ).split("-")[4]
 
-            # get pulser monitoring plot for a full period
-            # Note: quad_res is set to False by default in these plots
             mtg_bash_command = f"{cmd} python monitoring.py plot --public_data {auto_dir_path} --hdf_files {mtg_folder} --output {mtg_folder} --start {start_key} --p {period} --avail_runs {avail_runs} --pswd_email {pswd_email} --escale {escale_val} --current_run {run} --last_checked {last_checked}"
             if partition is True:
                 mtg_bash_command += " --partition True"
