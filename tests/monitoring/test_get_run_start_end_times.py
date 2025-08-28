@@ -1,9 +1,9 @@
 import os
+from unittest.mock import MagicMock
 
 import numpy as np
 import pandas as pd
 import pytest
-from unittest.mock import MagicMock
 
 from legend_data_monitor.monitoring import get_run_start_end_times
 
