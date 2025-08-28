@@ -27,6 +27,7 @@ def test_read_if_key_exists_empty_file(tmp_path):
     result = read_if_key_exists(str(hdf_path), "anything")
     assert result is None
 
+
 def test_read_if_key_exists_with_leading_slash(tmp_path):
     df = pd.DataFrame({"a": [7, 8, 9]})
     hdf_path = tmp_path / "test_slash.h5"

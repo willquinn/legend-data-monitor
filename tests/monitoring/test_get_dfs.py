@@ -5,6 +5,7 @@ def make_hdf(path, key, df):
     # write a dataframe into a HDF file for a given key
     df.to_hdf(path, key=key, mode="w")
 
+
 def test_get_dfs_with_valid_files(tmp_path):
     # create directory structure
     phy_mtg_data = tmp_path
@@ -62,11 +63,10 @@ def test_get_dfs_skip_non_listed_runs(tmp_path):
     (phy_mtg_data / period).mkdir(parents=True)
 
     # no HDF files, no lsit runs: expected None
-    result = get_dfs(
-        str(phy_mtg_data), period, [], "TrapemaxCtcCal"
-    )
+    result = get_dfs(str(phy_mtg_data), period, [], "TrapemaxCtcCal")
 
     assert result == (None, None, None)
+
 
 def test_geds_pulser_correction_and_empty_pulser(tmp_path):
     phy_mtg_data = tmp_path
@@ -75,14 +75,18 @@ def test_geds_pulser_correction_and_empty_pulser(tmp_path):
     run_dir = phy_mtg_data / period / run
     run_dir.mkdir(parents=True)
 
-    # geds HDF with pulser01anaDiff 
+    # geds HDF with pulser01anaDiff
     df_geds_abs = pd.DataFrame({"val": [1, 2, 3]})
     df_geds_corr = pd.DataFrame({"val": [10, 20, 30]})
     geds_path = run_dir / "file_geds.hdf"
     df_geds_abs.to_hdf(geds_path, key="IsPulser_TrapemaxCtcCal", mode="w")
-    df_geds_corr.to_hdf(geds_path, key="IsPulser_TrapemaxCtcCal_pulser01anaDiff", mode="a")
+    df_geds_corr.to_hdf(
+        geds_path, key="IsPulser_TrapemaxCtcCal_pulser01anaDiff", mode="a"
+    )
 
-    geds_abs, geds_corr, puls_abs = get_dfs(str(phy_mtg_data), period, [run], "TrapemaxCtcCal")
+    geds_abs, geds_corr, puls_abs = get_dfs(
+        str(phy_mtg_data), period, [run], "TrapemaxCtcCal"
+    )
 
     pd.testing.assert_frame_equal(geds_corr.reset_index(drop=True), df_geds_corr)
     assert puls_abs.empty
