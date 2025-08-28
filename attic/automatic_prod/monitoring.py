@@ -114,15 +114,15 @@ def main():
     func2_parser.add_argument(
         "--partition",
         default=False,
-        help="False if not partition data; default: False",
+        help="False if not partition data; default: False.",
     )
     func2_parser.add_argument(
-        "--zoom", default=False, help="True to zoom over y axis; default: False"
+        "--zoom", default=False, help="True to zoom over y axis; default: False."
     )
     func2_parser.add_argument(
         "--quad_res",
         default=False,
-        help="True if you want to plot the quadratic resolution too; default: False",
+        help="True if you want to plot the quadratic resolution too; default: False.",
     )
     func2_parser.add_argument(
         "--pswd_email",
@@ -142,7 +142,7 @@ def main():
     )
     func2_parser.add_argument(
         "--last_checked",
-        help="Timestamp of the last check. ",
+        help="Timestamp of the last check.",
     )
 
     args = parser.parse_args()

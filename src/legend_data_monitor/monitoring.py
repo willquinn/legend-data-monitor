@@ -51,7 +51,7 @@ def get_energy_key(
 
     Parameters
     ----------
-    ecal_results: dict
+    ecal_results : dict
         Dictionary containing energy calibration results.
     """
     cut_dict = {}
@@ -72,7 +72,7 @@ def get_calibration_file(folder_par: str) -> dict:
 
     Parameters
     ----------
-    folder_par: str
+    folder_par : str
         Path to the folder containing calibration summary files.
     """
     files = os.listdir(folder_par)
@@ -99,9 +99,9 @@ def extract_fep_peak(pars_dict: dict, channel: str):
 
     Parameters
     ----------
-    pars_dict: dict
+    pars_dict : dict
         Dictionary containing calibration outputs.
-    channel: str
+    channel : str
         Channel name or IDs.
     """
     if channel not in pars_dict:
@@ -137,13 +137,13 @@ def extract_resolution_at_q_bb(
 
     Parameters
     ----------
-    pars_dict: dict
+    pars_dict : dict
         Dictionary containing calibration outputs.
-    channel: str
+    channel : str
         Channel name or IDs.
-    key_result: str
+    key_result : str
         Key name used to extract the resolution results from the parsed file.
-    fit: str
+    fit : str
         Fitting method used for energy resolution, either 'linear' or 'quadratic'.
     """
     if channel not in pars_dict:
@@ -168,13 +168,13 @@ def evaluate_fep_cal(
 
     Parameters
     ----------
-    pars_dict: dict
+    pars_dict : dict
         Dictionary containing calibration outputs.
-    channel: str
+    channel : str
         Channel name or IDs.
-    fep_peak_pos: float
+    fep_peak_pos : float
         Uncalibrated FEP position.
-    fep_peak_pos_err: float
+    fep_peak_pos_err : float
         Uncalibrated FEP position error.
     """
     if channel not in pars_dict:
@@ -204,13 +204,13 @@ def get_run_start_end_times(
     ----------
     sto
         Store object to read timestamps from LH5 files.
-    tiers: list of str
+    tiers : list of str
         Paths to tier data folders based on the inspected processed version.
-    period: str
+    period : str
         Period to inspect.
-    run: str
+    run : str
         Run to inspect.
-    tier: str
+    tier : str
         Tier level for the analysis ('hit', 'phy', etc.).
     """
     folder_tier = os.path.join(tiers[0 if tier == "hit" else 1], "cal", period, run)
@@ -266,23 +266,23 @@ def get_calib_data_dict(
 
     Parameters
     ----------
-    calib_data: dict
+    calib_data : dict
         Dictionary that accumulates calibration results across runs.
-    channel_info: list
+    channel_info : list
         List of [channel ID, channel name].
-    tiers: list of str
+    tiers : list of str
         Paths to tier data folders based on the inspected processed version.
-    pars: list of str
+    pars : list of str
         Paths to parameter .yaml/.json files.
-    period: str
+    period : str
         Period to inspect.
-    run: str
+    run : str
         Run to inspect.
-    tier: str
+    tier : str
         Tier level for the analysis ('hit', 'phy', etc.).
-    key_result: str
+    key_result : str
         Key name used to extract the resolution results from the parsed file.
-    fit: str
+    fit : str
         Fitting method used for energy resolution, either 'linear' or 'quadratic'.
     """
     sto = lh5.LH5Store()
@@ -323,14 +323,16 @@ def get_calib_data_dict(
     return calib_data
 
 
-def add_calibration_runs(period: str | list, run_list: list) -> list:
+def add_calibration_runs(period: str | list, run_list: list | dict) -> list:
     """
     Add special calibration runs to the run list for a given period.
 
     Parameters
     ----------
-        period: Either a string or list of periods
-        run_list: Either a list of runs or a dictionary with period keys
+        period : str | list
+            Either a string or list of periods
+        run_list : list | dict
+            Either a list of runs or a dictionary with period keys
     """
     if isinstance(period, list) and isinstance(run_list, dict):
         # multiple periods
@@ -356,7 +358,7 @@ def get_tier_keyresult(tiers: list):
 
     Parameters
     ----------
-    tiers: list
+    tiers : list
         Base directory containing the tier and parameter folders.
     """
     tier = "hit"
@@ -377,11 +379,11 @@ def compute_diff(
 
     Parameters
     ----------
-    values: np.ndarray
+    values : np.ndarray
         Array of values to compute the differences for.
-    initial_value: float
+    initial_value : float
         Reference value for computing relative differences.
-    scale: float
+    scale : float
         Scaling factor.
     """
     if initial_value == 0:
@@ -407,19 +409,19 @@ def get_calib_pars(
 
     Parameters
     ----------
-    path: str
+    path : str
         Base directory containing the tier and parameter folders.
-    period: str or list
+    period : str or list
         Period to inspect. Can be a list if multiple periods are inspected.
-    run_list: list
+    run_list : list
         List of run to inspect, or a dictionary mapping periods to lists of runs.
-    channel_info: list
+    channel_info : list
         List containing [channel ID, channel name].
-    partition: bool
+    partition : bool
         True if you want to retrieve partition calibration results.
-    escale: float
+    escale : float
         Scaling factor used to compute relative differences in gain and calibration constant.
-    fit: str, optional
+    fit : str, optional
         Fit method used for energy resolution ("linear" or "quadratic"), by default "linear".
     """
     # add special calib runs at the end of a period
@@ -463,84 +465,115 @@ def get_calib_pars(
     return calib_data
 
 
-def get_dfs(phy_mtg_data: str, period: str, run_list: str | list, parameter: str):
+def find_hdf_file(directory: str, include: list[str], exclude: list[str] = None) -> str | None:
+    """
+    Find the original HDF monitoring file in a given directory, matching inclusion/exclusion filters.
+    
+    Parameters
+    ----------
+    directory : str
+        Path to the folder containing the HDF monitoring files.
+    include: list[str]
+        List of words that the HDF monitoring file to retrieve must contain.
+    exclude: list[str] = None
+        List of words that the HDF monitoring file to retrieve must NOT contain.
+    """
+    exclude = exclude or []
+    files = os.listdir(directory)
+    candidates = [
+        f for f in files
+        if f.endswith(".hdf")
+        and all(tag in f for tag in include)
+        and not any(tag in f for tag in exclude)
+    ]
+    
+    return os.path.join(directory, candidates[0]) if candidates else None
+
+
+def read_if_key_exists(hdf_path: str, key: str) -> pd.DataFrame | None:
+    """
+    Read an HDF dataset if the key exists, otherwise return None; handle the case where the parameter is saved under either '/key' or 'key'.
+    
+    Parameters
+    ----------
+    hdf_path : str
+        Path to the HDF file.
+    key : str
+        Key to inspect.
+    """
+    with pd.HDFStore(hdf_path, mode="r") as f:
+        try:
+            return f[key]  
+        except KeyError:
+            try:
+                return f["/" + key]  
+            except KeyError:
+                return None
+
+
+def get_dfs(phy_mtg_data: str, period: str, run_list: list, parameter: str):
     """
     Load and concatenate monitoring data from HDF files for a given period and list of runs.
 
     Parameters
     ----------
-    phy_mtg_data: str
+    phy_mtg_data : str
         Path to the base directory containing monitoring HDF5 files (typically ending in `/mtg/phy`).
-    period: str
+    period : str
         Period to inspect.
-    run_list: list of str
+    run_list : list 
         List of available runs.
-    parameter: str
+    parameter : str
         Parameter name used to construct the HDF key for loading specific datasets (e.g., 'TrapemaxCtcCal' looks for 'IsPulser_TrapemaxCtcCal').
     """
-    geds_df_cuspEmax_abs = pd.DataFrame()
-    geds_df_cuspEmax_abs_corr = pd.DataFrame()
-    puls_df_cuspEmax_abs = pd.DataFrame()
-    geds_df_cuspEmaxCtcCal_abs = pd.DataFrame()
+    # lists to accumulate dataframes, concatenated at the endo only
+    geds_df_cuspEmax_abs = []
+    geds_df_cuspEmax_abs_corr = []
+    puls_df_cuspEmax_abs = []
 
-    phy_mtg_data = os.path.join(phy_mtg_data, period)
-    runs = os.listdir(phy_mtg_data)
+    base_dir = os.path.join(phy_mtg_data, period)
+    runs = os.listdir(base_dir)
+
     for r in runs:
-        # keep only specified runs
         if r not in run_list:
             continue
-        files = os.listdir(os.path.join(phy_mtg_data, r))
-        hdf_geds = [
-            f
-            for f in files
-            if "hdf" in f and "geds" in f and "res" not in f and "min" not in f
-        ]
-        if len(hdf_geds) == 0:
+        run_dir = os.path.join(base_dir, r)
+
+        # geds file
+        hdf_geds = find_hdf_file(run_dir, include=["geds"], exclude=["res", "min"])
+        if not hdf_geds:
             utils.logger.debug("hdf_geds is empty")
-            return None, None, None, None
-        else:
-            hdf_geds = os.path.join(phy_mtg_data, r, hdf_geds[0])
-            geds_abs = pd.read_hdf(hdf_geds, key=f"IsPulser_{parameter}")
-            geds_df_cuspEmax_abs = pd.concat(
-                [geds_df_cuspEmax_abs, geds_abs], ignore_index=False, axis=0
-            )
-            # geds_ctc_cal_abs = pd.read_hdf(hdf_geds, key=f'IsPulser_TrapemaxCtcCal')
-            # geds_df_cuspEmaxCtcCal_abs = pd.concat([geds_df_cuspEmaxCtcCal_abs, geds_ctc_cal_abs], ignore_index=False, axis=0)
-            with pd.HDFStore(hdf_geds, mode="r") as store:
-                available_keys = store.keys()
-            if f"IsPulser_{parameter}_pulser01anaDiff" in available_keys:
-                geds_puls_abs = pd.read_hdf(
-                    hdf_geds, key=f"IsPulser_{parameter}_pulser01anaDiff"
-                )
-                geds_df_cuspEmax_abs_corr = pd.concat(
-                    [geds_df_cuspEmax_abs_corr, geds_puls_abs],
-                    ignore_index=False,
-                    axis=0,
-                )
+            return None, None, None
 
-        hdf_puls = [
-            f
-            for f in files
-            if "hdf" in f and "pulser01ana" in f and "res" not in f and "min" not in f
-        ]
-        if len(hdf_puls) == 0:
+        geds_abs = read_if_key_exists(hdf_geds, f"IsPulser_{parameter}")
+        if geds_abs is not None:
+            geds_df_cuspEmax_abs.append(geds_abs)
+
+        geds_puls_abs = read_if_key_exists(hdf_geds, f"IsPulser_{parameter}_pulser01anaDiff")
+        if geds_puls_abs is not None:
+            geds_df_cuspEmax_abs_corr.append(geds_puls_abs)
+
+        # pulser file
+        hdf_puls = find_hdf_file(run_dir, include=["pulser01ana"], exclude=["res", "min"])
+        if not hdf_puls:
             utils.logger.debug("hdf_puls is empty")
+            # there's no need to return None, as the code will automatically handle the case of missing pulser file later on
         else:
-            hdf_puls = os.path.join(phy_mtg_data, r, hdf_puls[0])
-            with pd.HDFStore(hdf_puls, mode="r") as store:
-                available_keys = store.keys()
-            if f"IsPulser_{parameter}" in available_keys:
-                puls_abs = pd.read_hdf(hdf_puls, key=f"IsPulser_{parameter}")
-                puls_df_cuspEmax_abs = pd.concat(
-                    [puls_df_cuspEmax_abs, puls_abs], ignore_index=False, axis=0
-                )
+            puls_abs = read_if_key_exists(hdf_puls, f"IsPulser_{parameter}")
+            if puls_abs is not None:
+                puls_df_cuspEmax_abs.append(puls_abs)
 
-    return (
-        geds_df_cuspEmax_abs,
-        geds_df_cuspEmax_abs_corr,
-        puls_df_cuspEmax_abs,
-        geds_df_cuspEmaxCtcCal_abs,
-    )
+    if not geds_df_cuspEmax_abs and not geds_df_cuspEmax_abs_corr and not puls_df_cuspEmax_abs:
+        return None, None, None
+    else:
+        return (
+            pd.concat(geds_df_cuspEmax_abs, ignore_index=False, axis=0) if geds_df_cuspEmax_abs else pd.DataFrame(),
+            pd.concat(geds_df_cuspEmax_abs_corr, ignore_index=False, axis=0) if geds_df_cuspEmax_abs_corr else pd.DataFrame(),
+            pd.concat(puls_df_cuspEmax_abs, ignore_index=False, axis=0) if puls_df_cuspEmax_abs else pd.DataFrame(),
+        )
+
+
+
 
 
 def get_traptmax_tp0est(phy_mtg_data: str, period: str, run_list: list):
@@ -549,11 +582,11 @@ def get_traptmax_tp0est(phy_mtg_data: str, period: str, run_list: list):
 
     Parameters
     ----------
-    phy_mtg_data: str
+    phy_mtg_data : str
         Path to the base directory containing monitoring HDF5 files (typically ending in `/mtg/phy`).
-    period: str
+    period : str
         Period to inspect.
-    run_list: list of str
+    run_list : list 
         List of available runs.
     """
     geds_df_trapTmax = pd.DataFrame()
@@ -618,17 +651,17 @@ def get_traptmax_tp0est(phy_mtg_data: str, period: str, run_list: list):
     return geds_df_trapTmax, geds_df_tp0est, puls_df_trapTmax, puls_df_tp0est
 
 
-def filter_series_by_ignore_keys(series_to_filter, ignore_keys: dict, period: str):
+def filter_series_by_ignore_keys(series_to_filter: pd.Series, ignore_keys: dict, period: str):
     """
     Remove data from a time-indexed pandas Series that falls within time ranges specified by start and stop timestamps for a given period.
 
     Parameters
     ----------
-    series_to_filter: pd.Series
+    series_to_filter : pd.Series
         The time-indexed pandas Series to be filtered.
-    ignore_keys: dict
+    ignore_keys : dict
         Dictionary mapping periods to sub-dictionaries containing 'start_keys' and 'stop_keys' lists with timestamp strings in the format '%Y%m%dT%H%M%S%z'.
-    period: str
+    period : str
         The period to check for keys to ignore. If not present, the series is returned unmodified.
     """
     if period not in ignore_keys:
@@ -661,17 +694,17 @@ def get_pulser_data(
 
     Parameters
     ----------
-    resampling_time: str
+    resampling_time : str
         Resampling time, eg '1HH' or '10T'.
-    period: str | list
+    period : str | list
         Period or list of periods to inspect.
-    dfs: list
+    dfs : list
         List of dataframes for geds and pulser events.
-    channel: str
+    channel : str
         Channel to inspect.
-    escale: float
+    escale : float
         Scaling factor used to compute relative differences in gain and calibration constant.
-    variations: bool
+    variations : bool
         True if you want to retrieve % variations (default: False).
     """
     # geds
@@ -870,6 +903,7 @@ def build_new_files(generated_path: str, period: str, run: str):
     Generate and store resampled HDF files for a given data run and extract summary info.
 
     This function:
+    
       - loads the original `.hdf` file for the specified `period` and `run`
       - extracts available keys from the HDF file
       - resamples all applicable time series data into multiple time intervals (1min, 5min, 10min, 30min, 60min)
@@ -878,11 +912,11 @@ def build_new_files(generated_path: str, period: str, run: str):
 
     Parameters
     ----------
-    generated_path: str
+    generated_path : str
         Root directory where the data is stored and where new files will be written.
-    period: str
+    period : str
         Period (e.g. 'p03') used to construct paths.
-    run: str
+    run : str
         Run (e.g. 'r001') used to construct paths.
     """
     data_file = os.path.join(
@@ -973,21 +1007,63 @@ def build_new_files(generated_path: str, period: str, run: str):
 
 
 def plot_time_series(
-    auto_dir_path,
-    phy_mtg_data,
-    output_folder,
-    start_key,
-    period,
-    runs,
-    current_run,
-    pswd_email,
-    save_pdf,
-    escale_val,
-    last_checked,
-    partition,
-    quadratic,
-    zoom,
+    auto_dir_path: str,
+    phy_mtg_data: str,
+    output_folder: str,
+    start_key: str,
+    period: str,
+    runs: list,
+    current_run: str,
+    pswd_email: str | None,
+    save_pdf: bool,
+    escale_val: float,
+    last_checked: float | None,
+    partition: bool,
+    quadratic: bool,
+    zoom: bool,
 ):
+    """
+    Generate and save time-series plots of calibration and monitoring data for germanium detectors across multiple runs.
+
+    This function collects physics and calibration data from HDF5 monitoring files and visualizes stability over time. 
+    Channels with no pulser entries are automatically skipped.
+    Corrections are applied to the gain if pulser data is available ('GED corrected'), otherwise uncorrected data is plotted.
+    The plots are saved as pickled objects for later retrieval (eg. in the online Dashboard) and optionally as PDFs:
+
+    - plots saved in shelve database files under ``<output_folder>/<period>/mtg/l200-<period>-phy-monitoring``;
+    - if `save_pdf=True`, PDF copies saved under ``<output_folder>/<period>/mtg/pdf/st<string>/``.
+
+    Parameters
+    ----------
+    auto_dir_path : str
+        Path to tmp-auto public data files (eg /data2/public/prodenv/prod-blind/tmp-auto).
+    phy_mtg_data : str
+        Path to generated monitoring hdf files.
+    output_folder : str
+        Path to output folder.
+    start_key : str
+        First timestamp of the inspected range.
+    period : str
+        Period to inspect.
+    runs : list
+        Available runs to inspect for a given period.
+    current_run : str
+        Run under inspection.
+    pswd_email : str | None
+        Password to access the legend.data.monitoring@gmail.com account for sending alert messages.
+    save_pdf : bool
+        True if you want to save pdf files too; default: False.
+    escale_val : float
+        Energy scale at which evaluating the gain differences; default: 2039 keV (76Ge Qbb).
+    last_checked : float | None
+        Timestamp of the last check.
+    partition : bool
+        False if not partition data; default: False.
+    quadratic : bool
+        True if you want to plot the quadratic resolution too; default: False.
+    zoom : bool
+        True to zoom over y axis; default: False.
+    """
     avail_runs = []
     for entry in runs:
         new_entry = entry.replace(",", "").replace("[", "").replace("]", "")
@@ -1042,7 +1118,6 @@ def plot_time_series(
             geds_df_cuspEmax_abs,
             geds_df_cuspEmax_abs_corr,
             puls_df_cuspEmax_abs,
-            geds_df_cuspEmaxCtcCal_abs,
         ) = get_dfs(phy_mtg_data, period, run_list, "TrapemaxCtcCal")
         geds_df_trapTmax, geds_df_tp0est, puls_df_trapTmax, puls_df_tp0est = (
             get_traptmax_tp0est(phy_mtg_data, period, run_list)
@@ -1072,7 +1147,6 @@ def plot_time_series(
             geds_df_tp0est,
             puls_df_trapTmax,
             puls_df_tp0est,
-            geds_df_cuspEmaxCtcCal_abs,
         ]
 
         string_list = list(str_chns.keys())
@@ -1373,7 +1447,6 @@ def plot_time_series(
                 geds_df_cuspEmax_abs,
                 geds_df_cuspEmax_abs_corr,
                 puls_df_cuspEmax_abs,
-                geds_df_cuspEmaxCtcCal_abs,
             ) = get_dfs(phy_mtg_data, period, [current_run], inspected_parameter)
             geds_df_trapTmax, geds_df_tp0est, puls_df_trapTmax, puls_df_tp0est = (
                 get_traptmax_tp0est(phy_mtg_data, period, [current_run])
@@ -1397,7 +1470,6 @@ def plot_time_series(
                 geds_df_tp0est,
                 puls_df_trapTmax,
                 puls_df_tp0est,
-                geds_df_cuspEmaxCtcCal_abs,
             ]
 
             string_list = list(str_chns.keys())
