@@ -632,7 +632,9 @@ def get_traptmax_tp0est(phy_mtg_data: str, period: str, run_list: list):
             utils.logger.debug("hdf_geds is empty")
 
         # pulser
-        hdf_puls = find_hdf_file(run_dir, include=["pulser01ana"], exclude=["res", "min"])
+        hdf_puls = find_hdf_file(
+            run_dir, include=["pulser01ana"], exclude=["res", "min"]
+        )
         if hdf_puls:
             trapTmax = read_if_key_exists(hdf_puls, "IsPulser_TrapTmax")
             if trapTmax is not None:
@@ -645,10 +647,26 @@ def get_traptmax_tp0est(phy_mtg_data: str, period: str, run_list: list):
             utils.logger.debug("hdf_puls is empty")
 
     return (
-        pd.concat(geds_df_trapTmax, ignore_index=False) if geds_df_trapTmax else pd.DataFrame(),
-        pd.concat(geds_df_tp0est, ignore_index=False) if geds_df_tp0est else pd.DataFrame(),
-        pd.concat(puls_df_trapTmax, ignore_index=False) if puls_df_trapTmax else pd.DataFrame(),
-        pd.concat(puls_df_tp0est, ignore_index=False) if puls_df_tp0est else pd.DataFrame(),
+        (
+            pd.concat(geds_df_trapTmax, ignore_index=False)
+            if geds_df_trapTmax
+            else pd.DataFrame()
+        ),
+        (
+            pd.concat(geds_df_tp0est, ignore_index=False)
+            if geds_df_tp0est
+            else pd.DataFrame()
+        ),
+        (
+            pd.concat(puls_df_trapTmax, ignore_index=False)
+            if puls_df_trapTmax
+            else pd.DataFrame()
+        ),
+        (
+            pd.concat(puls_df_tp0est, ignore_index=False)
+            if puls_df_tp0est
+            else pd.DataFrame()
+        ),
     )
 
 

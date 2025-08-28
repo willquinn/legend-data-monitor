@@ -1,5 +1,7 @@
 import pandas as pd
-from legend_data_monitor.monitoring import read_if_key_exists 
+
+from legend_data_monitor.monitoring import read_if_key_exists
+
 
 def test_read_if_key_exists_found(tmp_path):
     df = pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]})

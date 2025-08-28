@@ -1,5 +1,6 @@
 from legend_data_monitor.monitoring import find_hdf_file
 
+
 def test_find_hdf_file_includes(tmp_path):
     # fake files
     (tmp_path / "data_geds_run1.hdf").write_text("some_text")

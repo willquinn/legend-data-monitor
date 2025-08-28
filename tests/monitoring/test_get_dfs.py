@@ -1,5 +1,7 @@
 import pandas as pd
-from legend_data_monitor.monitoring import get_dfs  
+
+from legend_data_monitor.monitoring import get_dfs
+
 
 def make_hdf(path, key, df):
     # write a dataframe into a HDF file for a given key
