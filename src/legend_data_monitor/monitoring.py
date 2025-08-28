@@ -671,7 +671,7 @@ def get_traptmax_tp0est(phy_mtg_data: str, period: str, run_list: list):
 
 
 def filter_series_by_ignore_keys(
-    series_to_filter: pd.Series, ignore_keys: dict, period: str
+    series_to_filter: pd.Series, skip_keys: dict, period: str
 ):
     """
     Remove data from a time-indexed pandas Series that falls within time ranges specified by start and stop timestamps for a given period.
@@ -680,26 +680,62 @@ def filter_series_by_ignore_keys(
     ----------
     series_to_filter : pd.Series
         The time-indexed pandas Series to be filtered.
-    ignore_keys : dict
+    skip_keys : dict
         Dictionary mapping periods to sub-dictionaries containing 'start_keys' and 'stop_keys' lists with timestamp strings in the format '%Y%m%dT%H%M%S%z'.
     period : str
         The period to check for keys to ignore. If not present, the series is returned unmodified.
     """
-    if period not in ignore_keys:
+    if period not in skip_keys:
         return series_to_filter
 
-    start_keys = ignore_keys[period]["start_keys"]
-    stop_keys = ignore_keys[period]["stop_keys"]
+    start_keys = skip_keys[period]["start_keys"]
+    stop_keys = skip_keys[period]["stop_keys"]
 
     for ki, kf in zip(start_keys, stop_keys):
-        isolated_ki = pd.to_datetime(ki, format="%Y%m%dT%H%M%S%z")
-        isolated_kf = pd.to_datetime(kf, format="%Y%m%dT%H%M%S%z")
+        isolated_ki = pd.to_datetime(ki.replace("Z", "+0000"), format="%Y%m%dT%H%M%S%z")
+        isolated_kf = pd.to_datetime(kf.replace("Z", "+0000"), format="%Y%m%dT%H%M%S%z")
         series_to_filter = series_to_filter[
             (series_to_filter.index < isolated_ki)
             | (series_to_filter.index > isolated_kf)
         ]
 
     return series_to_filter
+
+
+def filter_by_period(series: pd.Series, period: str | list) -> pd.Series:
+    """Filter a series by ignore keys for the given period(s)."""
+    if isinstance(period, list):
+        for p in period:
+            series = filter_series_by_ignore_keys(series, IGNORE_KEYS, p)
+    else:
+        series = filter_series_by_ignore_keys(series, IGNORE_KEYS, period)
+        
+    return series.dropna()
+
+
+def compute_diff_and_rescaling(series: pd.Series, reference: float, escale: float, variations: bool):
+    """Compute relative differences (if 'variations' is True) and rescale values by 'escale'."""
+    if variations:
+        diff = (series - reference) / reference
+    else:
+        diff = series.copy()
+        
+    return diff, diff * escale
+
+
+def resample_series(series: pd.Series, resampling_time: str, mask: pd.Series):
+    """Calculates mean/std for resampled time ranges to which a mask is then applied. The function already adds UTC timezones to the series."""
+    mean = series.resample(resampling_time).mean().tz_localize("UTC")
+    std = series.resample(resampling_time).std().tz_localize("UTC")
+    
+    # ensure mask has the same timezone as the resampled series
+    if not mask.index.tz:
+        mask = mask.tz_localize("UTC")
+        
+    # set to nan when the mask is False
+    mean[~mask] = std[~mask] = np.nan
+    
+    return mean, std
 
 
 def get_pulser_data(
@@ -730,169 +766,53 @@ def get_pulser_data(
     """
     # geds
     ser_ged_cusp = dfs[0][channel].sort_index()
-    # if no pulser, set these to None
-    pul_cusp_hr_av_ = None
-    pul_cusp_hr_std = None
-    ser_pul_cusp = None
-    ser_pul_cuspdiff = None
-    ser_pul_cuspdiff_kev = None
-    ged_cusp_cor_hr_av_ = None
-    ged_cusp_cor_hr_std = None
-    ged_cusp_corr = None
-    ged_cusp_corr_kev = None
+    ser_ged_cusp = filter_by_period(ser_ged_cusp, period)
 
-    utils.logger.debug("...removing cycles to ignore")
-    if isinstance(period, list):
-        for p in period:
-            ser_ged_cusp = filter_series_by_ignore_keys(ser_ged_cusp, IGNORE_KEYS, p)
-    else:
-        ser_ged_cusp = filter_series_by_ignore_keys(ser_ged_cusp, IGNORE_KEYS, period)
-    ser_ged_cusp = ser_ged_cusp.dropna()
-
-    utils.logger.debug("...getting hour counts")
-    hour_counts = ser_ged_cusp.resample(
-        resampling_time
-    ).count()  # >= 100; before, we were using ser_pul_cusp
-    mask = hour_counts > 0
-
-    utils.logger.debug("...getting average")
-    # compute how many elements correspond to 10%
-    n_elements = int(len(ser_ged_cusp) * 0.10)
-    ged_cusp_av = np.average(ser_ged_cusp.values[:n_elements])
-
-    # if first entries of dataframe are NaN
-    if np.isnan(ged_cusp_av):
-        utils.logger.debug("the average is a nan")
+    if ser_ged_cusp.empty:
+        utils.logger.debug("...geds series is empty after filtering")
         return None
 
-    utils.logger.debug("...getting geds data")
-    # GED part (always computed)
-    if variations:
-        ser_ged_cuspdiff = pd.Series(
-            (ser_ged_cusp.values - ged_cusp_av) / ged_cusp_av,
-            index=ser_ged_cusp.index.values,
-        ).dropna()
-    else:
-        ser_ged_cuspdiff = pd.Series(
-            ser_ged_cusp.values,
-            index=ser_ged_cusp.index.values,
-        ).dropna()
-    # - same, but at escale
-    ser_ged_cuspdiff_kev = pd.Series(
-        ser_ged_cuspdiff * escale, index=ser_ged_cuspdiff.index.values
+    # compute average over the first 10% of elements
+    utils.logger.debug("...computing geds average")
+    n_elements = max(int(len(ser_ged_cusp) * 0.10), 1)
+    ged_cusp_av = np.nanmean(ser_ged_cusp.iloc[:n_elements])
+    if np.isnan(ged_cusp_av):
+        utils.logger.debug("...the geds average is NaN")
+        return None
+
+    ser_ged_cuspdiff, ser_ged_cuspdiff_kev = compute_diff_and_rescaling(
+        ser_ged_cusp, ged_cusp_av, escale, variations
     )
 
-    # check if we have any info on the pulser channel
+    # hour counts masking
+    mask = ser_ged_cusp.resample(resampling_time).count() > 0
+
+    # resample geds series
+    ged_cusp_hr_av_, ged_cusp_hr_std = resample_series(ser_ged_cuspdiff_kev, resampling_time, mask)
+
+    # pulser series
+    ser_pul_cusp = ser_pul_cuspdiff = ser_pul_cuspdiff_kev = pul_cusp_hr_av_ = pul_cusp_hr_std = None
+    ged_cusp_corr = ged_cusp_corr_kev = ged_cusp_cor_hr_av_ = ged_cusp_cor_hr_std = None
+    # ...if pulser iis available:
     if not dfs[2].empty:
         ser_pul_cusp = dfs[2][1027203].sort_index()
-        # check if these dfs are empty or not - if not, then remove spikes
-        if not ser_pul_cusp.all().all() and isinstance(dfs[6], pd.DataFrame):
-            ser_pul_tp0est = dfs[6][1027203]
+        ser_pul_cusp = filter_by_period(ser_pul_cusp, period)
 
-            # remove retriggered events
-            condition = (ser_pul_tp0est < 5e4) & (ser_pul_tp0est > 4.8e4)
-            len_before = len(ser_pul_tp0est)
-            utils.logger.debug(
-                "Removed retriggered events:\n",
-                ser_pul_tp0est[~condition],
-            )
-            ser_pul_tp0est_new = ser_pul_tp0est[condition]
-            len_after = len(ser_pul_tp0est_new)
-
-            # if not empty, then remove spikes
-            if len(ser_pul_tp0est_new) != 0:
-                utils.logger.debug(
-                    f"!!! Removining {len_before-len_after} global pulser events !!!"
-                )
-                ser_ged_cusp = ser_ged_cusp.loc[ser_pul_tp0est_new.index]
-                ser_pul_cusp = ser_pul_cusp.loc[ser_pul_tp0est_new.index]
-        else:
-            utils.logger.debug("...tp0est pulser dataframe is empty.")
-
-        utils.logger.debug("...removing cycles to ignore")
-        if ser_pul_cusp is not None:
-            if isinstance(period, list):
-                for p in period:
-                    ser_pul_cusp = filter_series_by_ignore_keys(
-                        ser_pul_cusp, IGNORE_KEYS, p
-                    )
-            else:
-                ser_pul_cusp = filter_series_by_ignore_keys(
-                    ser_pul_cusp, IGNORE_KEYS, period
-                )
-        pul_cusp_av = (
-            np.average(ser_pul_cusp.values[:n_elements])
-            if ser_pul_cusp is not None
-            else None
-        )
-
-        # Pulser part (only if available or we have an equal number of entries as for geds)
-        length_puls = len(ser_pul_cusp[ser_pul_cusp != 0])
-        length_geds = len(ser_ged_cusp[ser_ged_cusp != 0])
-        if (
-            ser_pul_cusp is not None
-            and pul_cusp_av is not None
-            and length_puls == length_geds
-        ):
-            utils.logger.debug("...getting pulser and geds-rescaled data")
-            if variations:
-                ser_pul_cuspdiff = pd.Series(
-                    (ser_pul_cusp.values - pul_cusp_av) / pul_cusp_av,
-                    index=ser_pul_cusp.index.values,
-                ).dropna()
-            else:
-                ser_pul_cuspdiff = pd.Series(
-                    ser_pul_cusp.values,
-                    index=ser_pul_cusp.index.values,
-                ).dropna()
-
-            ser_pul_cuspdiff_kev = pd.Series(
-                ser_pul_cuspdiff * escale, index=ser_pul_cuspdiff.index.values
+        # pulser average and diffs
+        if not ser_pul_cusp.empty:
+            n_elements_pul = max(int(len(ser_pul_cusp) * 0.10), 1)
+            pul_cusp_av = np.nanmean(ser_pul_cusp.iloc[:n_elements_pul])
+            ser_pul_cuspdiff, ser_pul_cuspdiff_kev = compute_diff_and_rescaling(
+                ser_pul_cusp, pul_cusp_av, escale, variations
             )
 
-            pul_cusp_hr_av_ = ser_pul_cuspdiff_kev.resample(resampling_time).mean()
-            pul_cusp_hr_av_ = pul_cusp_hr_av_.tz_localize("UTC")  # add UTC timezone
-            pul_cusp_hr_av_[~mask] = np.nan
+            pul_cusp_hr_av_, pul_cusp_hr_std = resample_series(ser_pul_cuspdiff_kev, resampling_time, mask)
 
-            pul_cusp_hr_std = ser_pul_cuspdiff_kev.resample(resampling_time).std()
-            pul_cusp_hr_std = pul_cusp_hr_std.tz_localize("UTC")  # add UTC timezone
-            pul_cusp_hr_std[~mask] = np.nan
-
-            # GED - Pulser correction
+            # corrected GED
             common_index = ser_ged_cuspdiff.index.intersection(ser_pul_cuspdiff.index)
-            ged_cusp_corr = (
-                ser_ged_cuspdiff[common_index] - ser_pul_cuspdiff[common_index]
-            )
-
+            ged_cusp_corr = ser_ged_cuspdiff[common_index] - ser_pul_cuspdiff[common_index]
             ged_cusp_corr_kev = ged_cusp_corr * escale
-
-            ged_cusp_cor_hr_av_ = ged_cusp_corr_kev.resample(resampling_time).mean()
-            ged_cusp_cor_hr_av_ = ged_cusp_cor_hr_av_.tz_localize(
-                "UTC"
-            )  # add UTC timezone
-            ged_cusp_cor_hr_av_[~mask] = np.nan
-
-            ged_cusp_cor_hr_std = ged_cusp_corr_kev.resample(resampling_time).std()
-            ged_cusp_cor_hr_std = ged_cusp_cor_hr_std.tz_localize(
-                "UTC"
-            )  # add UTC timezone
-            ged_cusp_cor_hr_std[~mask] = np.nan
-
-        else:
-            # If no pulser, set these to None or empty series
-            pul_cusp_hr_av_ = pul_cusp_hr_std = ser_pul_cuspdiff = (
-                ser_pul_cuspdiff_kev
-            ) = None
-            ged_cusp_cor_hr_av_ = ged_cusp_cor_hr_std = ged_cusp_corr = (
-                ged_cusp_corr_kev
-            ) = None
-
-    ged_cusp_hr_av_ = ser_ged_cuspdiff_kev.resample(resampling_time).mean()
-    ged_cusp_hr_av_ = ged_cusp_hr_av_.tz_localize("UTC")  # add UTC timezone
-    ged_cusp_hr_av_[~mask] = np.nan
-    ged_cusp_hr_std = ser_ged_cuspdiff_kev.resample(resampling_time).std()
-    ged_cusp_hr_std = ged_cusp_hr_std.tz_localize("UTC")  # add UTC timezone
-    ged_cusp_hr_std[~mask] = np.nan
+            ged_cusp_cor_hr_av_, ged_cusp_cor_hr_std = resample_series(ged_cusp_corr_kev, resampling_time, mask)
 
     return {
         "ged": {
