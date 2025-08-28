@@ -65,8 +65,8 @@ def test_get_dfs_skip_non_listed_runs(tmp_path):
     run_dir.mkdir(parents=True)
 
     # no HDF files, no list runs: expected None
-    geds_out_trapTmax, geds_out_tp0est, puls_out_trapTmax, puls_out_tp0est = get_traptmax_tp0est(
-        str(tmp_path), period, ["r1000"]
+    geds_out_trapTmax, geds_out_tp0est, puls_out_trapTmax, puls_out_tp0est = (
+        get_traptmax_tp0est(str(tmp_path), period, ["r1000"])
     )
 
     assert geds_out_trapTmax.empty
