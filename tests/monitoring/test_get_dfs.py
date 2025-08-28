@@ -62,7 +62,7 @@ def test_get_dfs_skip_non_listed_runs(tmp_path):
     period = "p01"
     (phy_mtg_data / period).mkdir(parents=True)
 
-    # no HDF files, no lsit runs: expected None
+    # no HDF files, no list runs: expected None
     result = get_dfs(str(phy_mtg_data), period, [], "TrapemaxCtcCal")
 
     assert result == (None, None, None)
