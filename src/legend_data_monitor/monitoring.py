@@ -709,32 +709,34 @@ def filter_by_period(series: pd.Series, period: str | list) -> pd.Series:
             series = filter_series_by_ignore_keys(series, IGNORE_KEYS, p)
     else:
         series = filter_series_by_ignore_keys(series, IGNORE_KEYS, period)
-        
+
     return series.dropna()
 
 
-def compute_diff_and_rescaling(series: pd.Series, reference: float, escale: float, variations: bool):
+def compute_diff_and_rescaling(
+    series: pd.Series, reference: float, escale: float, variations: bool
+):
     """Compute relative differences (if 'variations' is True) and rescale values by 'escale'."""
     if variations:
         diff = (series - reference) / reference
     else:
         diff = series.copy()
-        
+
     return diff, diff * escale
 
 
 def resample_series(series: pd.Series, resampling_time: str, mask: pd.Series):
-    """Calculates mean/std for resampled time ranges to which a mask is then applied. The function already adds UTC timezones to the series."""
+    """Calculate mean/std for resampled time ranges to which a mask is then applied. The function already adds UTC timezones to the series."""
     mean = series.resample(resampling_time).mean().tz_localize("UTC")
     std = series.resample(resampling_time).std().tz_localize("UTC")
-    
+
     # ensure mask has the same timezone as the resampled series
     if not mask.index.tz:
         mask = mask.tz_localize("UTC")
-        
+
     # set to nan when the mask is False
     mean[~mask] = std[~mask] = np.nan
-    
+
     return mean, std
 
 
@@ -788,10 +790,14 @@ def get_pulser_data(
     mask = ser_ged_cusp.resample(resampling_time).count() > 0
 
     # resample geds series
-    ged_cusp_hr_av_, ged_cusp_hr_std = resample_series(ser_ged_cuspdiff_kev, resampling_time, mask)
+    ged_cusp_hr_av_, ged_cusp_hr_std = resample_series(
+        ser_ged_cuspdiff_kev, resampling_time, mask
+    )
 
     # pulser series
-    ser_pul_cusp = ser_pul_cuspdiff = ser_pul_cuspdiff_kev = pul_cusp_hr_av_ = pul_cusp_hr_std = None
+    ser_pul_cusp = ser_pul_cuspdiff = ser_pul_cuspdiff_kev = pul_cusp_hr_av_ = (
+        pul_cusp_hr_std
+    ) = None
     ged_cusp_corr = ged_cusp_corr_kev = ged_cusp_cor_hr_av_ = ged_cusp_cor_hr_std = None
     # ...if pulser iis available:
     if not dfs[2].empty:
@@ -806,13 +812,19 @@ def get_pulser_data(
                 ser_pul_cusp, pul_cusp_av, escale, variations
             )
 
-            pul_cusp_hr_av_, pul_cusp_hr_std = resample_series(ser_pul_cuspdiff_kev, resampling_time, mask)
+            pul_cusp_hr_av_, pul_cusp_hr_std = resample_series(
+                ser_pul_cuspdiff_kev, resampling_time, mask
+            )
 
             # corrected GED
             common_index = ser_ged_cuspdiff.index.intersection(ser_pul_cuspdiff.index)
-            ged_cusp_corr = ser_ged_cuspdiff[common_index] - ser_pul_cuspdiff[common_index]
+            ged_cusp_corr = (
+                ser_ged_cuspdiff[common_index] - ser_pul_cuspdiff[common_index]
+            )
             ged_cusp_corr_kev = ged_cusp_corr * escale
-            ged_cusp_cor_hr_av_, ged_cusp_cor_hr_std = resample_series(ged_cusp_corr_kev, resampling_time, mask)
+            ged_cusp_cor_hr_av_, ged_cusp_cor_hr_std = resample_series(
+                ged_cusp_corr_kev, resampling_time, mask
+            )
 
     return {
         "ged": {
