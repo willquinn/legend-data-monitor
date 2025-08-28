@@ -125,12 +125,12 @@ def get_valid_path(base_path):
 def get_query_times(**kwargs):
     """
     Get time ranges for DataLoader query from user input, as well as first/last timestamp for channel map / status / SC query.
-    
+
     Parameters
     ----------
     dataset : dict, optional
         Dictionary with the following keys (note: can provide the same keys as in `dataset` but separately, i.e. `path=...`, `version=...`, `type=...`, and one of `start=...&end=...`, `window=...`, `timestamps=...`, or `runs=...`):
-        
+
             - 'path' : str
                 Base path to the dataset.
             - 'version' : str
@@ -138,7 +138,7 @@ def get_query_times(**kwargs):
             - 'type' : str
                 Type of dataset. Note: multiple types are not currently supported.
             - Time selection keys (choose one):
-            
+
                 1. 'start' : str, 'end' : str
                     Start and end datetime in the format `'YYYY-MM-DD hh:mm:ss'`.
                 2. 'window' : str
@@ -237,7 +237,7 @@ def get_query_timerange(**kwargs):
     """
     Get DataLoader compatible time range.
 
-    The function accepts either a `dataset` dictionary or keyword arguments. 
+    The function accepts either a `dataset` dictionary or keyword arguments.
     Only one type of time selection should be provided at a time.
     Designed in such a way to accommodate Subsystem init kwargs.
 
@@ -254,7 +254,7 @@ def get_query_timerange(**kwargs):
                 Specific timestamps in `'YYYYMMDDThhmmssZ'` format.
             4. 'runs' : int or list of ints
                 Run number(s), e.g., `10` corresponds to `'r010'`
-                
+
 
     Examples
     --------
@@ -355,7 +355,7 @@ def dataset_validity_check(data_info: dict):
     ----------
     data_info : dict
         Dictionary containing dataset metadata. Required keys:
-        
+
             - 'experiment' : str
                 Name of the experiment.
             - 'type' : str
@@ -366,7 +366,7 @@ def dataset_validity_check(data_info: dict):
                 Path to the base dataset directory.
             - 'version' : str
                 Processing version. Can be empty string if not needed.
-        
+
     Examples
     --------
     >>> dataset_info = {
@@ -427,7 +427,7 @@ def check_scdb_settings(conf: dict) -> bool:
     Parameters
     ----------
     conf : dict
-        SC configuration dictionary. 
+        SC configuration dictionary.
 
     Examples
     --------
@@ -626,21 +626,21 @@ def get_time_name(user_time_range: dict) -> str:
     user_time_range : dict
         Careful handling of folder name depending on the selected time range
 
-    
+
     Examples
     --------
     >>> get_time_name({'timestamp': {'start': '20220928T080000Z', 'end': '20220928T093000Z'}})
     20220928T080000Z_20220928T093000Z
-    
+
     >>> get_time_name({'timestamp': ['20230207T103123Z']})
     20230207T103123Z
-    
+
     >>> get_time_name({'timestamp': ['20230207T103123Z', '20230207T141123Z', '20230207T083323Z']})
     20230207T083323Z_20230207T141123Z
-    
+
     >>> get_time_name({'run': ['r010']})
     r010
-    
+
     >>> get_time_name({'run': ['r010', 'r014']})
     r010_r014
     """
@@ -1092,7 +1092,7 @@ def load_config(config_file: dict | str):
     Load a configuration from a dictionary, JSON string, or YAML file.
 
     This function supports three input types:
-    
+
     - A dictionary, which is returned as-is.
     - A JSON string, which is parsed into a dictionary.
     - A path to a YAML (.yaml/.yml) file, which is read and parsed.
@@ -1131,7 +1131,7 @@ def get_livetime(tot_livetime: float):
     Parameters
     ----------
     tot_livetime : float
-    
+
         - If tot_livetime is more than 0.1 yr, convert it to years.
         - If tot_livetime is less than 0.1 yr but more than 1 day, convert it to days.
         - If tot_livetime is less than 1 day but more than 1 hour, convert it to hours.
@@ -1661,7 +1661,7 @@ def build_runinfo(path: str, version: str, output: str):
 def read_json_or_yaml(file_path: str):
     """
     Open either a JSON/YAML file, if not raise an error and exit.
-    
+
     Parameters
     ----------
     file_path : str

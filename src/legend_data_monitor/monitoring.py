@@ -465,10 +465,12 @@ def get_calib_pars(
     return calib_data
 
 
-def find_hdf_file(directory: str, include: list[str], exclude: list[str] = None) -> str | None:
+def find_hdf_file(
+    directory: str, include: list[str], exclude: list[str] = None
+) -> str | None:
     """
     Find the original HDF monitoring file in a given directory, matching inclusion/exclusion filters.
-    
+
     Parameters
     ----------
     directory : str
@@ -481,19 +483,20 @@ def find_hdf_file(directory: str, include: list[str], exclude: list[str] = None)
     exclude = exclude or []
     files = os.listdir(directory)
     candidates = [
-        f for f in files
+        f
+        for f in files
         if f.endswith(".hdf")
         and all(tag in f for tag in include)
         and not any(tag in f for tag in exclude)
     ]
-    
+
     return os.path.join(directory, candidates[0]) if candidates else None
 
 
 def read_if_key_exists(hdf_path: str, key: str) -> pd.DataFrame | None:
     """
     Read an HDF dataset if the key exists, otherwise return None; handle the case where the parameter is saved under either '/key' or 'key'.
-    
+
     Parameters
     ----------
     hdf_path : str
@@ -503,10 +506,10 @@ def read_if_key_exists(hdf_path: str, key: str) -> pd.DataFrame | None:
     """
     with pd.HDFStore(hdf_path, mode="r") as f:
         try:
-            return f[key]  
+            return f[key]
         except KeyError:
             try:
-                return f["/" + key]  
+                return f["/" + key]
             except KeyError:
                 return None
 
@@ -521,7 +524,7 @@ def get_dfs(phy_mtg_data: str, period: str, run_list: list, parameter: str):
         Path to the base directory containing monitoring HDF5 files (typically ending in `/mtg/phy`).
     period : str
         Period to inspect.
-    run_list : list 
+    run_list : list
         List of available runs.
     parameter : str
         Parameter name used to construct the HDF key for loading specific datasets (e.g., 'TrapemaxCtcCal' looks for 'IsPulser_TrapemaxCtcCal').
@@ -549,12 +552,16 @@ def get_dfs(phy_mtg_data: str, period: str, run_list: list, parameter: str):
         if geds_abs is not None:
             geds_df_cuspEmax_abs.append(geds_abs)
 
-        geds_puls_abs = read_if_key_exists(hdf_geds, f"IsPulser_{parameter}_pulser01anaDiff")
+        geds_puls_abs = read_if_key_exists(
+            hdf_geds, f"IsPulser_{parameter}_pulser01anaDiff"
+        )
         if geds_puls_abs is not None:
             geds_df_cuspEmax_abs_corr.append(geds_puls_abs)
 
         # pulser file
-        hdf_puls = find_hdf_file(run_dir, include=["pulser01ana"], exclude=["res", "min"])
+        hdf_puls = find_hdf_file(
+            run_dir, include=["pulser01ana"], exclude=["res", "min"]
+        )
         if not hdf_puls:
             utils.logger.debug("hdf_puls is empty")
             # there's no need to return None, as the code will automatically handle the case of missing pulser file later on
@@ -563,17 +570,30 @@ def get_dfs(phy_mtg_data: str, period: str, run_list: list, parameter: str):
             if puls_abs is not None:
                 puls_df_cuspEmax_abs.append(puls_abs)
 
-    if not geds_df_cuspEmax_abs and not geds_df_cuspEmax_abs_corr and not puls_df_cuspEmax_abs:
+    if (
+        not geds_df_cuspEmax_abs
+        and not geds_df_cuspEmax_abs_corr
+        and not puls_df_cuspEmax_abs
+    ):
         return None, None, None
     else:
         return (
-            pd.concat(geds_df_cuspEmax_abs, ignore_index=False, axis=0) if geds_df_cuspEmax_abs else pd.DataFrame(),
-            pd.concat(geds_df_cuspEmax_abs_corr, ignore_index=False, axis=0) if geds_df_cuspEmax_abs_corr else pd.DataFrame(),
-            pd.concat(puls_df_cuspEmax_abs, ignore_index=False, axis=0) if puls_df_cuspEmax_abs else pd.DataFrame(),
+            (
+                pd.concat(geds_df_cuspEmax_abs, ignore_index=False, axis=0)
+                if geds_df_cuspEmax_abs
+                else pd.DataFrame()
+            ),
+            (
+                pd.concat(geds_df_cuspEmax_abs_corr, ignore_index=False, axis=0)
+                if geds_df_cuspEmax_abs_corr
+                else pd.DataFrame()
+            ),
+            (
+                pd.concat(puls_df_cuspEmax_abs, ignore_index=False, axis=0)
+                if puls_df_cuspEmax_abs
+                else pd.DataFrame()
+            ),
         )
-
-
-
 
 
 def get_traptmax_tp0est(phy_mtg_data: str, period: str, run_list: list):
@@ -586,7 +606,7 @@ def get_traptmax_tp0est(phy_mtg_data: str, period: str, run_list: list):
         Path to the base directory containing monitoring HDF5 files (typically ending in `/mtg/phy`).
     period : str
         Period to inspect.
-    run_list : list 
+    run_list : list
         List of available runs.
     """
     geds_df_trapTmax = pd.DataFrame()
@@ -651,7 +671,9 @@ def get_traptmax_tp0est(phy_mtg_data: str, period: str, run_list: list):
     return geds_df_trapTmax, geds_df_tp0est, puls_df_trapTmax, puls_df_tp0est
 
 
-def filter_series_by_ignore_keys(series_to_filter: pd.Series, ignore_keys: dict, period: str):
+def filter_series_by_ignore_keys(
+    series_to_filter: pd.Series, ignore_keys: dict, period: str
+):
     """
     Remove data from a time-indexed pandas Series that falls within time ranges specified by start and stop timestamps for a given period.
 
@@ -903,7 +925,7 @@ def build_new_files(generated_path: str, period: str, run: str):
     Generate and store resampled HDF files for a given data run and extract summary info.
 
     This function:
-    
+
       - loads the original `.hdf` file for the specified `period` and `run`
       - extracts available keys from the HDF file
       - resamples all applicable time series data into multiple time intervals (1min, 5min, 10min, 30min, 60min)
@@ -1025,7 +1047,7 @@ def plot_time_series(
     """
     Generate and save time-series plots of calibration and monitoring data for germanium detectors across multiple runs.
 
-    This function collects physics and calibration data from HDF5 monitoring files and visualizes stability over time. 
+    This function collects physics and calibration data from HDF5 monitoring files and visualizes stability over time.
     Channels with no pulser entries are automatically skipped.
     Corrections are applied to the gain if pulser data is available ('GED corrected'), otherwise uncorrected data is plotted.
     The plots are saved as pickled objects for later retrieval (eg. in the online Dashboard) and optionally as PDFs:
