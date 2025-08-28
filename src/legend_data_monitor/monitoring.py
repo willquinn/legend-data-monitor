@@ -927,7 +927,7 @@ def build_new_files(generated_path: str, period: str, run: str):
 
       - loads the original `.hdf` file for the specified `period` and `run`
       - extracts available keys from the HDF file
-      - resamples all applicable time series data into multiple time intervals (1min, 5min, 10min, 30min, 60min)
+      - resamples all applicable time series data into multiple time intervals (10min, 60min)
       - stores each resampled dataset into a separate HDF file
       - extracts metadata from the 'info' key and saves it as a .yaml file
 
@@ -957,7 +957,7 @@ def build_new_files(generated_path: str, period: str, run: str):
 
     info_dict = {"keys": my_keys}
 
-    resampling_times = ["1min", "5min", "10min", "30min", "60min"]
+    resampling_times = ["10min", "60min"]
 
     for idx, resample_unit in enumerate(resampling_times):
         new_file = os.path.join(
@@ -976,6 +976,7 @@ def build_new_files(generated_path: str, period: str, run: str):
                 # do it once
                 if idx == 0:
                     original_df = pd.read_hdf(data_file, key=k)
+                    original_df = original_df.astype(str)
                     info_dict.update(
                         {
                             k: {
