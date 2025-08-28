@@ -573,9 +573,6 @@ def get_dfs(phy_mtg_data: str, period: str, run_list: list, parameter: str):
         )
 
 
-
-
-
 def get_traptmax_tp0est(phy_mtg_data: str, period: str, run_list: list):
     """
     Load and concatenate trapTmax and tp0est data from HDF files for a given period and list of runs.
@@ -589,66 +586,47 @@ def get_traptmax_tp0est(phy_mtg_data: str, period: str, run_list: list):
     run_list : list 
         List of available runs.
     """
-    geds_df_trapTmax = pd.DataFrame()
-    geds_df_tp0est = pd.DataFrame()
-    puls_df_trapTmax = pd.DataFrame()
-    puls_df_tp0est = pd.DataFrame()
+    geds_df_trapTmax, geds_df_tp0est = [], []
+    puls_df_trapTmax, puls_df_tp0est = [], []
 
-    phy_mtg_data = os.path.join(phy_mtg_data, period)
-    runs = os.listdir(phy_mtg_data)
-    for r in runs:
-        # keep only specified runs
+    base_dir = os.path.join(phy_mtg_data, period)
+    for r in os.listdir(base_dir):
         if r not in run_list:
             continue
-        files = os.listdir(os.path.join(phy_mtg_data, r))
+        run_dir = os.path.join(base_dir, r)
 
-        # Geds data
-        hdf_geds = [
-            f
-            for f in files
-            if "hdf" in f and "geds" in f and "res" not in f and "min" not in f
-        ]
-        if len(hdf_geds) == 0:
+        # geds
+        hdf_geds = find_hdf_file(run_dir, include=["geds"], exclude=["res", "min"])
+        if hdf_geds:
+            trapTmax = read_if_key_exists(hdf_geds, "IsPulser_TrapTmax")
+            if trapTmax is not None:
+                geds_df_trapTmax.append(trapTmax)
+
+            tp0est = read_if_key_exists(hdf_geds, "IsPulser_Tp0Est")
+            if tp0est is not None:
+                geds_df_tp0est.append(tp0est)
+        else:
             utils.logger.debug("hdf_geds is empty")
-        else:
-            hdf_geds = os.path.join(phy_mtg_data, r, hdf_geds[0])
-            with pd.HDFStore(hdf_geds, mode="r") as store:
-                avail_keys = store.keys()
-            if "IsPulser_TrapTmax" in avail_keys:
-                geds_trapTmax_abs = pd.read_hdf(hdf_geds, key="IsPulser_TrapTmax")
-                geds_df_trapTmax = pd.concat(
-                    [geds_df_trapTmax, geds_trapTmax_abs], ignore_index=False, axis=0
-                )
-            if "IsPulser_Tp0Est" in avail_keys:
-                geds_tp0est_abs = pd.read_hdf(hdf_geds, key="IsPulser_Tp0Est")
-                geds_df_tp0est = pd.concat(
-                    [geds_df_tp0est, geds_tp0est_abs], ignore_index=False, axis=0
-                )
 
-        # Pulser data
-        hdf_puls = [
-            f
-            for f in files
-            if "hdf" in f and "pulser01ana" in f and "res" not in f and "min" not in f
-        ]
-        if len(hdf_puls) == 0:
+        # pulser
+        hdf_puls = find_hdf_file(run_dir, include=["pulser01ana"], exclude=["res", "min"])
+        if hdf_puls:
+            trapTmax = read_if_key_exists(hdf_puls, "IsPulser_TrapTmax")
+            if trapTmax is not None:
+                puls_df_trapTmax.append(trapTmax)
+
+            tp0est = read_if_key_exists(hdf_puls, "IsPulser_Tp0Est")
+            if tp0est is not None:
+                puls_df_tp0est.append(tp0est)
+        else:
             utils.logger.debug("hdf_puls is empty")
-        else:
-            hdf_puls = os.path.join(phy_mtg_data, r, hdf_puls[0])
-            with pd.HDFStore(hdf_puls, mode="r") as store:
-                avail_keys = store.keys()
-            if "IsPulser_TrapTmax" in avail_keys:
-                puls_trapTmax_abs = pd.read_hdf(hdf_puls, key="IsPulser_TrapTmax")
-                puls_df_trapTmax = pd.concat(
-                    [puls_df_trapTmax, puls_trapTmax_abs], ignore_index=False, axis=0
-                )
-            if "IsPulser_Tp0Est" in avail_keys:
-                puls_tp0est_abs = pd.read_hdf(hdf_puls, key="IsPulser_Tp0Est")
-                puls_df_tp0est = pd.concat(
-                    [puls_df_tp0est, puls_tp0est_abs], ignore_index=False, axis=0
-                )
 
-    return geds_df_trapTmax, geds_df_tp0est, puls_df_trapTmax, puls_df_tp0est
+    return (
+        pd.concat(geds_df_trapTmax, ignore_index=False) if geds_df_trapTmax else pd.DataFrame(),
+        pd.concat(geds_df_tp0est, ignore_index=False) if geds_df_tp0est else pd.DataFrame(),
+        pd.concat(puls_df_trapTmax, ignore_index=False) if puls_df_trapTmax else pd.DataFrame(),
+        pd.concat(puls_df_tp0est, ignore_index=False) if puls_df_tp0est else pd.DataFrame(),
+    )
 
 
 def filter_series_by_ignore_keys(series_to_filter: pd.Series, ignore_keys: dict, period: str):

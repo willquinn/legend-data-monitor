@@ -1,5 +1,3 @@
-import os
-import pytest
 from legend_data_monitor.monitoring import find_hdf_file   
 
 def test_find_hdf_file_includes(tmp_path):

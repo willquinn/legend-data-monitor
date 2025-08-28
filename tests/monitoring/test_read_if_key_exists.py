@@ -1,5 +1,4 @@
 import pandas as pd
-import pytest
 from legend_data_monitor.monitoring import read_if_key_exists 
 
 def test_read_if_key_exists_found(tmp_path):
