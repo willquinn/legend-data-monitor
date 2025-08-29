@@ -7,9 +7,9 @@ import sys
 import h5py
 import matplotlib
 import matplotlib.pyplot as plt
-import pytz
 import numpy as np
 import pandas as pd
+import pytz
 import yaml
 from legendmeta import LegendMetadata
 from lgdo import lh5
@@ -730,7 +730,7 @@ def resample_series(series: pd.Series, resampling_time: str, mask: pd.Series):
     """Calculate mean/std for resampled time ranges to which a mask is then applied. The function already adds UTC timezones to the series."""
     mean = series.resample(resampling_time).mean()
     std = series.resample(resampling_time).std()
-    
+
     # add UTC timezone
     if mean.index.tz is None:
         mean = mean.tz_localize("UTC")
@@ -795,7 +795,7 @@ def get_pulser_data(
     ser_ged_cuspdiff, ser_ged_cuspdiff_kev = compute_diff_and_rescaling(
         ser_ged_cusp, ged_cusp_av, escale, variations
     )
-    
+
     # hour counts masking
     mask = ser_ged_cusp.resample(resampling_time).count() > 0
 
@@ -1091,11 +1091,11 @@ def plot_time_series(
             geds_df_cuspEmax_abs is None
             or geds_df_cuspEmax_abs_corr is None
             # no need to exit if pulser01ana does not exits, handled it properly now
-            # or puls_df_cuspEmax_abs is None 
+            # or puls_df_cuspEmax_abs is None
         ):
             utils.logger.debug("Dataframes are None for %s!", period)
             continue
-            
+
         # check if geds df is empty; if pulser is, means we do not apply any correction
         # (and thus geds_corr is also empty - the code will handle the case)
         if (
@@ -1105,7 +1105,7 @@ def plot_time_series(
         ):
             utils.logger.debug("Dataframes are empty for %s!", period)
             continue
-            
+
         dfs = [
             geds_df_cuspEmax_abs,
             geds_df_cuspEmax_abs_corr,
@@ -1381,7 +1381,6 @@ def plot_time_series(
                 #  - p08_string2_pos2_C000RG1
                 #  - ...
 
-    
     # parameters (bsln, gain, ...) variations over run
     ylabels = {
         "TrapemaxCtcCal": "Energy diff / keV",
