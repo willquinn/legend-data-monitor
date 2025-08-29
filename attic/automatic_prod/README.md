@@ -36,6 +36,8 @@ where
 
 The generated plots are saved in the shelve format in order to directly upload the produced canvas on the Dashboard.
 HDF files will be stored under `<path2>/<ref>/generated/plt/hit/phy/<period>/<run>`.
+The code will automatically produce copies of the original HDF file but resampling the time content by 10 min or 1 hour; these resampled files will speed up the loading step when plots will be uploaded on the Dashboard.
+A YAML file for quick access on plotting info is also automatically produced in output.
 Monitoring shelve (and pdf) period-based files will be stored under `<path2>/<ref>/generated/plt/hit/phy/<period>/mtg/`.
 Additional monitoring files produced for each run will be stored under `<path2>/<ref>/generated/plt/hit/phy/<period>/<run>/mtg/`.
 
@@ -52,6 +54,9 @@ The structure will look like:
             │            └── <period>/
             │                ├── <run>/
             │                │   ├── l200-<period>-<run>-phy-geds.hdf
+            │                │   ├── l200-<period>-<run>-phy-geds-info.yaml
+            │                │   ├── l200-<period>-<run>-phy-geds-res_10min.hdf
+            │                │   ├── l200-<period>-<run>-phy-geds-res_60min.hdf
             │                │   ├── l200-<period>-<run>-phy-slow_control.hdf
             │                │   └── mtg/
             │                │       └── <parameter>/

@@ -7,8 +7,6 @@ import shlex
 import subprocess
 from pathlib import Path
 
-import yaml
-
 # -------------------------------------------------------------------------
 
 logger = logging.getLogger(__name__)
@@ -142,15 +140,10 @@ def main():
     source_dir = os.path.join(search_directory, period, run)
 
     # commands to run the container
-    cmd = (
-        "shifter --image=legendexp/legend-base:latest"
-        if cluster == "nersc"
-        else "apptainer run"
-    )
     if cluster == "nersc":
-        cmd = "shifter --image=legendexp/legend-base:latest"
+        cmd = "shifter --image=legendexp/legend-base:latest --env PATH=$HOME/.local/bin:$PATH"
     else:
-        cmd = "apptainer run --cleanenv /data2/public/prodenv/containers/legendexp_legend-base_latest.sif"
+        cmd = "apptainer run --env PATH=$HOME/.local/bin:$PATH --cleanenv /data2/public/prodenv/containers/legendexp_legend-base_latest.sif"
 
     # ===========================================================================================
     # BEGINNING OF THE ANALYSIS
@@ -391,29 +384,6 @@ def main():
         new_files = correct_files
     new_files = sorted(new_files)
 
-    # remove keys stored in ignore-keys.yaml (eg bad/heavy keys)
-    with open(
-        "../../src/legend_data_monitor/settings/ignore-keys.yaml"
-    ) as f:  # TODO: more general
-        ignore_keys = yaml.load(f, Loader=yaml.CLoader)
-
-    def remove_key(timestamp, ignore_keys, period):
-        if period not in ignore_keys.keys():
-            return False
-
-        for idx in range(0, len(ignore_keys[period]["start_keys"])):
-            start = ignore_keys[period]["start_keys"][idx]
-            end = ignore_keys[period]["stop_keys"][idx]
-            if start <= timestamp < end:
-                return True
-        return False
-
-    new_files = [
-        fname
-        for fname in new_files
-        if not remove_key(fname.split("-")[4], ignore_keys, period)
-    ]
-
     # If new files are found, run the shell command
     if new_files:
         # Replace this command with your desired shell command
@@ -455,15 +425,15 @@ def main():
                     f"[{idx}/{total_parts}] Created file: {output_file} with {len(chunk)} lines."
                 )
                 bash_command = (
-                    f"{cmd} ~/.local/bin/legend-data-monitor user_rsync_prod "
+                    f"{cmd} legend-data-monitor user_rsync_prod "
                     f"--config {safe_json_string} --keys {output_file}"
                 )
                 logger.debug("...running command for generating hdf monitoring files")
                 subprocess.run(bash_command, shell=True)
         else:
-            logger.debug(f"File has {num_lines} lines. No need to split.")
+            logger.debug(f"... file has {num_lines} lines. No need to split.")
             bash_command = (
-                f"{cmd} ~/.local/bin/legend-data-monitor user_rsync_prod "
+                f"{cmd} legend-data-monitor user_rsync_prod "
                 f"--config {safe_json_string} --keys {keys_file}"
             )
             logger.debug("...running command for generating hdf monitoring files")
@@ -473,23 +443,20 @@ def main():
         # compute resampling + info yaml
         logger.debug("Resampling outputs...")
         files_folder = os.path.join(output_folder, ref_version)
-        bash_command = (
-            f'{cmd} python -c "from monitoring import build_new_files; '
-            f"build_new_files('{files_folder}', '{period}', '{run}')\""
-        )
+        bash_command = f"{cmd} python monitoring.py summary_files --path {files_folder} --period {period} --run {run}"
         logger.debug(f"...running command {bash_command}")
         subprocess.run(bash_command, shell=True)
         logger.debug("...done!")
 
         # ===========================================================================================
-        # Analyze Slow Control data (for the full run - overwrite of previous info)
+        # Analyze Slow Control data
         # ===========================================================================================
         if cluster == "lngs" and get_sc is True:
             try:
                 logger.debug("Retrieving Slow Control data...")
                 safe_json_string = shlex.quote(json.dumps(scdb))
                 bash_command = (
-                    f"{cmd} ~/.local/bin/legend-data-monitor user_scdb "
+                    f"{cmd} legend-data-monitor user_scdb "
                     f"--config {safe_json_string} --port {port} --pswd {pswd}"
                 )
                 logger.debug(f"...running command {bash_command}")
@@ -503,7 +470,7 @@ def main():
                 )
 
         # ===========================================================================================
-        # Generate Gain Monitoring Summary Plots
+        # Generate Monitoring Summary Plots
         # ===========================================================================================
         mtg_folder = os.path.join(output_folder, ref_version, "generated/plt/hit/phy")
         os.makedirs(mtg_folder, exist_ok=True)
@@ -524,14 +491,13 @@ def main():
                 )[0]
             ).split("-")[4]
 
-            # get pulser monitoring plot for a full period
-            # Note: quad_res is set to False by default in these plots
-            mtg_bash_command = f"{cmd} python monitoring.py --public_data {auto_dir_path} --hdf_files {mtg_folder} --output {mtg_folder} --start {start_key} --p {period} --avail_runs {avail_runs} --pswd_email {pswd_email} --escale {escale_val} --current_run {run} --last_checked {last_checked}"
+            mtg_bash_command = f"{cmd} python monitoring.py plot --public_data {auto_dir_path} --hdf_files {mtg_folder} --output {mtg_folder} --start {start_key} --p {period} --avail_runs {avail_runs} --pswd_email {pswd_email} --escale {escale_val} --current_run {run} --last_checked {last_checked}"
             if partition is True:
                 mtg_bash_command += " --partition True"
             if save_pdf is True:
                 mtg_bash_command += " --pdf True"
 
+            logger.debug(f"...running command {mtg_bash_command}")
             subprocess.run(mtg_bash_command, shell=True)
             logger.info("...monitoring plots generated!")
     else:

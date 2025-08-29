@@ -70,6 +70,10 @@ for param in SPECIAL_PARAMETERS:
 with open(pkg / "settings" / "SC-params.yaml") as f:
     SC_PARAMETERS = yaml.load(f, Loader=yaml.CLoader)
 
+# load final calibration run for each period
+with open(pkg / "settings" / "final-calibrations.yaml") as f:
+    CALIB_RUNS = yaml.load(f, Loader=yaml.CLoader)
+
 # load list of columns to load for a dataframe
 COLUMNS_TO_LOAD = [
     "name",
@@ -124,24 +128,33 @@ def get_query_times(**kwargs):
 
     Parameters
     ----------
-    dataset
-        dict with the following keys:
-            - 'path' [str]: < move description here from get_data() >
-            - 'version' [str]: < move description here from get_data() >
-            - 'type' [str]: < move description here > ! not possible for multiple types now!
-            - the following keys depending in time selection mode (choose one)
-                1. 'start' : <start datetime>, 'end': <end datetime> where <datetime> input is of format 'YYYY-MM-DD hh:mm:ss'
-                2. 'window'[str]: time window in the past from current time point, format: 'Xd Xh Xm' for days, hours, minutes
-                2. 'timestamps': str or list of str in format 'YYYYMMDDThhmmssZ'
-                3. 'runs': int or list of ints for run number(s)  e.g. 10 for r010
+    dataset : dict, optional
+        Dictionary with the following keys (note: can provide the same keys as in `dataset` but separately, i.e. `path=...`, `version=...`, `type=...`, and one of `start=...&end=...`, `window=...`, `timestamps=...`, or `runs=...`):
 
-    Or input kwargs separately path=, ...; start=&end=, or window=, or timestamps=, or runs=
+            - 'path' : str
+                Base path to the dataset.
+            - 'version' : str
+                Dataset version.
+            - 'type' : str
+                Type of dataset. Note: multiple types are not currently supported.
+            - Time selection keys (choose one):
 
-    Designed in such a way to accommodate Subsystem init kwargs. A bit cumbersome and can probably be done better.
+                1. 'start' : str, 'end' : str
+                    Start and end datetime in the format `'YYYY-MM-DD hh:mm:ss'`.
+                2. 'window' : str
+                    Time window from the current time, e.g., `'1d 2h 30m'` for 1 day, 2 hours, 30 minutes.
+                3. 'timestamps' : str or list of str
+                    Timestamps in the format `'YYYYMMDDThhmmssZ'`.
+                4. 'runs' : int or list of ints
+                    Run number(s), e.g., `10` corresponds to run `'r010'`.
 
-    Path, version, and type only needed because channel map and status cannot be queried by run directly,
-        so we need these to look up first timestamp in data path to run.
+    Notes
+    -----
+    - `path`, `version`, and `type` are required because channel map and status cannot be retrieved by run directly. These are used to determine the first timestamp available in the data path.
+    - Designed in such a way to accommodate Subsystem init kwargs.
 
+    Examples
+    --------
     >>> get_query_times(..., start='2022-09-28 08:00:00', end='2022-09-28 09:30:00')
     {'timestamp': {'start': '20220928T080000Z', 'end': '20220928T093000Z'}}, '20220928T080000Z'
 
@@ -224,18 +237,27 @@ def get_query_timerange(**kwargs):
     """
     Get DataLoader compatible time range.
 
+    The function accepts either a `dataset` dictionary or keyword arguments.
+    Only one type of time selection should be provided at a time.
+    Designed in such a way to accommodate Subsystem init kwargs.
+
     Parameters
     ----------
-    dataset
-        dict with the following keys depending in time selection mode (choose one)
-            1. 'start' : <start datetime>, 'end': <end datetime> where <datetime> input is of format 'YYYY-MM-DD hh:mm:ss'
-            2. 'window'[str]: time window in the past from current time point, format: 'Xd Xh Xm' for days, hours, minutes
-            2. 'timestamps': str or list of str in format 'YYYYMMDDThhmmssZ'
-            3. 'runs': int or list of ints for run number(s)  e.g. 10 for r010
-    Or enter kwargs separately start=&end=, or window=, or timestamp=, or runs=
+    dataset : dict, optional
+        Dictionary specifying the time selection. Choose one of the following (or enter kwargs separately):
+            1. 'start' : str, 'end' : str
+                Start and end datetime in the format `'YYYY-MM-DD hh:mm:ss'`.
+            2. 'window' : str
+                Time window relative to the current time, formatted as `'Xd Xh Xm'`
+                for days, hours, and minutes.
+            3. 'timestamps' : str or list of str
+                Specific timestamps in `'YYYYMMDDThhmmssZ'` format.
+            4. 'runs' : int or list of ints
+                Run number(s), e.g., `10` corresponds to `'r010'`
 
-    Designed in such a way to accommodate Subsystem init kwargs. A bit cumbersome and can probably be done better.
 
+    Examples
+    --------
     >>> get_query_timerange(start='2022-09-28 08:00:00', end='2022-09-28 09:30:00')
     {'timestamp': {'start': '20220928T080000Z', 'end': '20220928T093000Z'}}
 
@@ -259,9 +281,7 @@ def get_query_timerange(**kwargs):
     # otherwise kwargs itself is already the dict we need with start= & end=; or timestamp= etc
     user_selection = kwargs["dataset"] if "dataset" in kwargs else kwargs
 
-    # -------------------------------------------------------------------------
     #  in these cases, DataLoader will be called with (timestamp >= ...) and (timestamp <= ...)
-    # -------------------------------------------------------------------------
     if "start" in user_selection:
         time_range = {"timestamp": {}}
         for point in ["start", "end"]:
@@ -289,9 +309,7 @@ def get_query_timerange(**kwargs):
             datetime.strptime(time_range["timestamp"]["end"], "%Y%m%dT%H%M%SZ") - dt
         ).strftime("%Y%m%dT%H%M%SZ")
 
-    # -------------------------------------------------------------------------
     #  in these cases, DataLoader will be called with (timestamp/run == ...) or (timestamp/run == ...)
-    # -------------------------------------------------------------------------
     elif "timestamps" in user_selection:
         time_range = {"timestamp": []}
         time_range["timestamp"] = (
@@ -326,7 +344,42 @@ def get_query_timerange(**kwargs):
 
 
 def dataset_validity_check(data_info: dict):
-    """Check the validity of the input dictionary to see if it contains all necessary info. Used in Subsystem and SlowControl classes."""
+    """
+    Check the validity of the input dictionary and if it contains all required fields and keys to existing paths.
+
+    This function is typically used in `Subsystem` and `SlowControl` classes to ensure that all necessary metadata
+    for accessing data is present and correct.
+    The function also checks that the provided `path` and the combined `path/version` exist on the filesystem.
+
+    Parameters
+    ----------
+    data_info : dict
+        Dictionary containing dataset metadata. Required keys:
+
+            - 'experiment' : str
+                Name of the experiment.
+            - 'type' : str
+                Type of dataset.
+            - 'period' : str
+                Period to inspect.
+            - 'path' : str
+                Path to the base dataset directory.
+            - 'version' : str
+                Processing version. Can be empty string if not needed.
+
+    Examples
+    --------
+    >>> dataset_info = {
+    ...     'experiment': 'L200',
+    ...     'period': 'p03',
+    ...     'type': 'phy',
+    ...     'path': '/global/cfs/cdirs/m2676/data/lngs/l200/public/prodenv/prod-blind/',
+    ...     'version': 'tmp-auto',
+    ...     // ... additional time selection keys
+    ... }
+    >>> dataset_validity_check(dataset_info)
+    # No output if all checks pass; errors otherwise
+    """
     if "experiment" not in data_info:
         logger.error("\033[91mProvide experiment name!\033[0m")
         return
@@ -368,7 +421,24 @@ def dataset_validity_check(data_info: dict):
 
 
 def check_scdb_settings(conf: dict) -> bool:
-    """Check if the 'slow_control' entry in config file is good or not."""
+    """
+    Validate the 'slow_control' entry in the config dictionary by checking if it contains a 'slow_control' section with a 'parameters' key. It ensures that the 'parameters' value is either a string or a list of strings. Always returns True if the configuration passes all checks. Exits the program otherwise.
+
+    Parameters
+    ----------
+    conf : dict
+        SC configuration dictionary.
+
+    Examples
+    --------
+    >>> conf = {
+    ...     'slow_control': {
+    ...         'parameters': ['RREiT', 'ZUL_T_RR']
+    ...     }
+    ... }
+    >>> check_scdb_settings(conf)
+    True
+    """
     # there is no "slow_control" key
     if "slow_control" not in conf.keys():
         logger.warning(
@@ -548,23 +618,31 @@ def get_multiple_run_id(user_time_range: dict) -> str:
 
 
 def get_time_name(user_time_range: dict) -> str:
-    """Get a name for each available time selection.
+    """
+    Get a name for each available time selection.
 
     Parameters
     ----------
-    user_time_range
-        careful handling of folder name depending on the selected time range. The possibilities are:
-          1. user_time_range = {'timestamp': {'start': '20220928T080000Z', 'end': '20220928T093000Z'}} => start + end
-                  -> folder: 20220928T080000Z_20220928T093000Z/
-          2. user_time_range = {'timestamp': ['20230207T103123Z']} => one key
-                  -> folder: 20230207T103123Z/
-          3. user_time_range = {'timestamp': ['20230207T103123Z', '20230207T141123Z', '20230207T083323Z']} => multiple keys
-                  -> get min/max and use in the folder name
-                  -> folder: 20230207T083323Z_20230207T141123Z/
-          4. user_time_range = {'run': ['r010']} => one run
-                  -> folder: r010/
-          5. user_time_range = {'run': ['r010', 'r014']} => multiple runs
-                  -> folder: r010_r014/
+    user_time_range : dict
+        Careful handling of folder name depending on the selected time range
+
+
+    Examples
+    --------
+    >>> get_time_name({'timestamp': {'start': '20220928T080000Z', 'end': '20220928T093000Z'}})
+    20220928T080000Z_20220928T093000Z
+
+    >>> get_time_name({'timestamp': ['20230207T103123Z']})
+    20230207T103123Z
+
+    >>> get_time_name({'timestamp': ['20230207T103123Z', '20230207T141123Z', '20230207T083323Z']})
+    20230207T083323Z_20230207T141123Z
+
+    >>> get_time_name({'run': ['r010']})
+    r010
+
+    >>> get_time_name({'run': ['r010', 'r014']})
+    r010_r014
     """
     name_time = ""
     if "timestamp" in user_time_range.keys():
@@ -593,13 +671,13 @@ def get_time_name(user_time_range: dict) -> str:
     return name_time
 
 
-def get_timestamp(filename):
+def get_timestamp(filename: str):
     """Get the timestamp from a filename. For instance, if file='l200-p04-r000-phy-20230421T055556Z-tier_dsp.lh5', then it returns '20230421T055556Z'."""
     # Assumes that the timestamp is in the format YYYYMMDDTHHMMSSZ
     return filename.split("-")[-2]
 
 
-def get_run_name(config, user_time_range: dict) -> str:
+def get_run_name(config: dict, user_time_range: dict) -> str:
     """Get the run ID given start/end timestamps. If the timestamps run over multiple run IDs, a list of runs is retrieved, out of which only the first element is returned."""
     # this is the root directory to search in the timestamps
     main_folder = os.path.join(
@@ -991,8 +1069,10 @@ def get_output_plot_path(plt_path: str, extension: str) -> str:
 
     Parameters
     ----------
-        plt_path (str): Original plot path (e.g. from 'plt/hit/phy/')
-        extension (str): Extension of the file to save (e.g. 'pdf' or 'log')
+        plt_path : str
+            Original plot path (e.g. from 'plt/hit/phy/').
+        extension : str
+            Extension of the file to save (e.g. 'pdf' or 'log').
     """
     filename = os.path.basename(plt_path)
     save_path = plt_path.replace("plt/hit/phy/", "tmp/mtg/").rsplit("/", 1)[0] + "/"
@@ -1007,11 +1087,12 @@ def get_output_plot_path(plt_path: str, extension: str) -> str:
 # -------------------------------------------------------------------------
 
 
-def load_config(config_file):
+def load_config(config_file: dict | str):
     """
     Load a configuration from a dictionary, JSON string, or YAML file.
 
     This function supports three input types:
+
     - A dictionary, which is returned as-is.
     - A JSON string, which is parsed into a dictionary.
     - A path to a YAML (.yaml/.yml) file, which is read and parsed.
@@ -1025,12 +1106,12 @@ def load_config(config_file):
         return config_file
 
     if isinstance(config_file, str):
-        # Case 1: Looks like a file path and exists
+        # Looks like a file path and exists
         if os.path.isfile(config_file) and config_file.endswith((".yaml", ".yml")):
             with open(config_file) as f:
                 return yaml.safe_load(f)
         else:
-            # Case 2: Try to parse as a JSON string
+            # Try to parse as a JSON string
             try:
                 return json.loads(config_file)
             except json.JSONDecodeError:
@@ -1044,15 +1125,17 @@ def load_config(config_file):
 
 
 def get_livetime(tot_livetime: float):
-    """Get the livetime in a human readable format, starting from livetime in seconds.
+    """
+    Get the livetime in a human readable format, starting from livetime in seconds.
 
     Parameters
     ----------
-    tot_livetime
-        If tot_livetime is more than 0.1 yr, convert it to years.
-        If tot_livetime is less than 0.1 yr but more than 1 day, convert it to days.
-        If tot_livetime is less than 1 day but more than 1 hour, convert it to hours.
-        If tot_livetime is less than 1 hour but more than 1 minute, convert it to minutes.
+    tot_livetime : float
+
+        - If tot_livetime is more than 0.1 yr, convert it to years.
+        - If tot_livetime is less than 0.1 yr but more than 1 day, convert it to days.
+        - If tot_livetime is less than 1 day but more than 1 hour, convert it to hours.
+        - If tot_livetime is less than 1 hour but more than 1 minute, convert it to minutes.
     """
     if tot_livetime > 60 * 60 * 24 * 365.25:
         tot_livetime = tot_livetime / 60 / 60 / 24 / 365.25
@@ -1309,7 +1392,7 @@ def get_tiers_pars_folders(path: str):
 
     Parameters
     ----------
-    path
+    path : str
         Absolute path to the processed data for a specific version, eg path='/global/cfs/cdirs/m2676/data/lngs/l200/public/prodenv/prod-blind/ref-v2.1.5/'.
     """
     # config file with info on all tier folder
@@ -1576,7 +1659,14 @@ def build_runinfo(path: str, version: str, output: str):
 
 
 def read_json_or_yaml(file_path: str):
-    """Open either a yaml or a json file, if not raise an error and exit."""
+    """
+    Open either a JSON/YAML file, if not raise an error and exit.
+
+    Parameters
+    ----------
+    file_path : str
+        Path to the JSON/YAML file to read.
+    """
     with open(file_path) as f:
         if file_path.endswith((".yaml", ".yml")):
             data_dict = yaml.safe_load(f)
