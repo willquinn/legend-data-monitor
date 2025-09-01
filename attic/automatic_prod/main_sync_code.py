@@ -386,7 +386,6 @@ def main():
 
     # If new files are found, run the shell command
     if new_files:
-        """
         # Replace this command with your desired shell command
         command = "echo New files found: \033[91m{}\033[0m".format(" ".join(new_files))
         subprocess.run(command, shell=True)
@@ -469,7 +468,6 @@ def main():
                 logger.error(
                     f"Unexpected error while retrieving Slow Control data: {e}"
                 )
-        """
 
         # ===========================================================================================
         # Generate Monitoring Summary Plots
@@ -479,7 +477,6 @@ def main():
         logger.info(f"Folder {mtg_folder} ensured")
 
         # define dataset depending on the (latest) monitored period/run
-        """
         
         avail_runs = sorted(os.listdir(os.path.join(mtg_folder, period)))
         avail_runs = [
@@ -504,7 +501,6 @@ def main():
             logger.debug(f"...running command {mtg_bash_command}")
             subprocess.run(mtg_bash_command, shell=True)
             logger.info("...monitoring plots generated!")
-        """
 
         # ===========================================================================================
         # Calibration checks

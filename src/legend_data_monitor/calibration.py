@@ -1,3 +1,4 @@
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import glob
@@ -9,14 +10,24 @@ from legendmeta import LegendMetadata
 
 from . import utils
 
-plt.rcParams.update({
-    'axes.titlesize': 16,  
-    'xtick.labelsize': 14, 
-    'ytick.labelsize': 14, 
-    'axes.labelsize': 14,  
-    'font.size': 10,       
-    'legend.fontsize': 14  
-})
+# -------------------------------------------------------------------------
+
+IPython_default = plt.rcParams.copy()
+SMALL_SIZE = 8
+
+plt.rc("font", size=SMALL_SIZE)
+plt.rc("axes", titlesize=SMALL_SIZE)
+plt.rc("axes", labelsize=SMALL_SIZE)
+plt.rc("xtick", labelsize=SMALL_SIZE)
+plt.rc("ytick", labelsize=SMALL_SIZE)
+plt.rc("legend", fontsize=SMALL_SIZE)
+plt.rc("figure", titlesize=SMALL_SIZE)
+
+matplotlib.rcParams["mathtext.fontset"] = "stix"
+
+plt.rc("axes", facecolor="white", edgecolor="black", axisbelow=True, grid=True)
+
+# -------------------------------------------------------------------------
 
 def deep_get(d, keys, default=None):
     for k in keys:
@@ -82,160 +93,133 @@ def load_fit_pars_from_yaml(pars_files_list: list, detectors_list: list, detecto
 def none_to_nan(seq):
     return [np.nan if v is None else v for v in seq]
     
+def evaluate_psd_performance(mean_vals, sigma_vals, run_labels, det_name):
+    """
+    Evaluate PSD performance metrics: slow shifts and sudden shifts.
+    Returns a dict with evaluation results.
+    """
+    results = {}
+
+    # check prerequisites
+    valid_idx = next((i for i, v in enumerate(mean_vals) if not np.isnan(v)), None)
+    sigma_avg = np.nanmean(sigma_vals)
+
+    if valid_idx is None or np.isnan(sigma_avg) or sigma_avg == 0:
+        results["status"] = f"{det_name} - insufficient data"
+        results["slow_shift_fail_runs"] = []
+        results["sudden_shift_fail_runs"] = []
+        results["slow_shifts"] = []
+        results["sudden_shifts"] = []
+        return results
+
+    # SLOW shifts 
+    slow_shifts = [(v - mean_vals[valid_idx]) / sigma_avg for v in mean_vals]
+    slow_shift_fail_runs = [run_labels[i] for i, z in enumerate(slow_shifts) if abs(z) > 0.5]
+    slow_shift_failed = bool(slow_shift_fail_runs)
+
+    # SUDDEN shifts 
+    sudden_shifts = []
+    for i in range(len(mean_vals) - 1):
+        v1, v2, s = mean_vals[i], mean_vals[i + 1], sigma_vals[i]
+        if np.isnan(v1) or np.isnan(v2) or np.isnan(s) or s == 0:
+            sudden_shifts.append(np.nan)
+        else:
+            sudden_shifts.append(abs(v2 - v1) / s)
+
+    sudden_shift_fail_runs = [
+        f"{run_labels[i]}TO{run_labels[i+1]}"
+        for i, z in enumerate(sudden_shifts) if not np.isnan(z) and z >= 0.25
+    ]
+    sudden_shift_failed = bool(sudden_shift_fail_runs)
+
+    if not slow_shift_failed and not sudden_shift_failed:
+        status = f"{det_name} - valid psd"
+    else:
+        status = f"{det_name} - unstable psd"
+        if slow_shift_failed:
+            status += f" (slow shift - {slow_shift_fail_runs})"
+        if sudden_shift_failed:
+            status += f" (sudden shift - {sudden_shift_fail_runs})"
+
+    results["status"] = status
+    results["slow_shift_fail_runs"] = slow_shift_fail_runs
+    results["sudden_shift_fail_runs"] = sudden_shift_fail_runs
+    results["slow_shifts"] = slow_shifts
+    results["sudden_shifts"] = sudden_shifts
+
+    return results
+
+def write_psd_evaluation(output_file, evaluation_result):
+    """Append evaluation status to output file."""
+    with open(output_file, "a") as f:
+        f.write(evaluation_result["status"] + "\n")
+
+
 def evaluate_psd_usability_and_plot(fit_results_cal: dict, det_name: str, output_dir: str, output_file: str):
     """
-    Plot fit results (mean and sigma + std devs) across runs, with optional LAC point added separately.
-    Also evaluates detector performance and writes summary to output file.
+    Plot PSD stability results across runs, evaluate performance,
+    and save both plot and evaluation summary.
     """
     run_labels = sorted(fit_results_cal.keys())
     run_positions = list(range(len(run_labels)))
 
-    # Extract values
-    mean_vals   = none_to_nan([fit_results_cal[r]["mean"]      for r in sorted(fit_results_cal)])
-    mean_errs   = none_to_nan([fit_results_cal[r]["mean_err"]  for r in sorted(fit_results_cal)])
-    sigma_vals  = none_to_nan([fit_results_cal[r]["sigma"]     for r in sorted(fit_results_cal)])
-    sigma_errs  = none_to_nan([fit_results_cal[r]["sigma_err"] for r in sorted(fit_results_cal)])
+    # extract values
+    mean_vals   = none_to_nan([fit_results_cal[r]["mean"]      for r in run_labels])
+    mean_errs   = none_to_nan([fit_results_cal[r]["mean_err"]  for r in run_labels])
+    sigma_vals  = none_to_nan([fit_results_cal[r]["sigma"]     for r in run_labels])
+    sigma_errs  = none_to_nan([fit_results_cal[r]["sigma_err"] for r in run_labels])
 
+    # if all nan entries, comment and exit
     if all(np.isnan(x) for x in mean_vals):
-        # Write to output file (append mode)
         with open(output_file, 'a') as f:
-            f.write(f"{det_name} - all nan entries" + '\n')
-        return 
+            f.write(f"{det_name} - all nan entries\n")
+        return
+
+    # Evaluate performance
+    eval_result = evaluate_psd_performance(mean_vals, sigma_vals, run_labels, det_name)
 
     fig, axs = plt.subplots(2, 2, figsize=(15, 9), sharex=True)
     (ax1, ax3), (ax2, ax4) = axs
 
-    # === Plot 1: Mean
-    # Average value of mu over the period
-    mean_avg = np.nanmean(mean_vals)
-    mean_std = np.nanstd(mean_vals)
+    # mean stability
+    mean_avg, mean_std = np.nanmean(mean_vals), np.nanstd(mean_vals)
+    ax1.errorbar(run_positions, mean_vals, yerr=mean_errs, fmt='s', color='blue', capsize=4, label=r"$\mu_i$")
+    ax1.axhline(mean_avg, linestyle='--', color='steelblue', label=rf"$\bar{{\mu}} = {mean_avg:.5f}$")
+    ax1.fill_between(run_positions, mean_avg - mean_std, mean_avg + mean_std, color='steelblue', alpha=0.2, label="±1 std dev")
+    ax1.set_ylabel("Mean stability"); ax1.grid(True, alpha=0.3); ax1.legend(fontsize=12)
 
-    h1 = ax1.errorbar(run_positions, mean_vals, yerr=mean_errs,
-                    fmt='s', color='blue', capsize=4, label=r"$\mu_{i}$ cal runs")
-    h2 = ax1.axhline(mean_avg, linestyle='--', color='steelblue', label = rf"$\bar{{\mu}} = {mean_avg:.5f}$")
-    h3 = ax1.fill_between(run_positions, mean_avg - mean_std, mean_avg + mean_std,
-                     color='steelblue', alpha=0.2, label=f"±1 std dev ({mean_std:.5f})")
-    
-    ax1.set_ylabel("Mean stability",fontsize=14)
-    ax1.grid(True, alpha=0.3)
-    ax1.legend(handles=[h1, h2, h3], fontsize=12)
-    
-            
-    # === Plot 2: Sigma
-    # Average value of sigma over the period
-    sigma_avg = np.nanmean(sigma_vals)
-    sigma_std = np.nanstd(sigma_vals)
+    # Sigma stability
+    sigma_avg, sigma_std = np.nanmean(sigma_vals), np.nanstd(sigma_vals)
+    ax2.errorbar(run_positions, sigma_vals, yerr=sigma_errs, fmt='s', color='darkorange', capsize=4, label=r"$\sigma_i$")
+    ax2.axhline(sigma_avg, linestyle='--', color='peru', label=rf"$\bar{{\sigma}} = {sigma_avg:.5f}$")
+    ax2.fill_between(run_positions, sigma_avg - sigma_std, sigma_avg + sigma_std, color='peru', alpha=0.2, label="±1 std dev")
+    ax2.set_ylabel("Sigma stability"); ax2.set_xlabel("Run"); ax2.grid(True, alpha=0.3); ax2.legend(fontsize=12)
 
-    h1 = ax2.errorbar(run_positions, sigma_vals, yerr=sigma_errs,
-                    fmt='s', color='darkorange', capsize=4, label=r"$\sigma_{i}$ cal runs")
-    h2 = ax2.axhline(sigma_avg, linestyle='--', color='peru', label = rf"$\bar{{\sigma}} = {sigma_avg:.5f}$")
-    h3 = ax2.fill_between(run_positions, sigma_avg - sigma_std, sigma_avg + sigma_std,
-                     color='peru', alpha=0.2, label=f"±1 std dev ({sigma_std:.5f})")
-    
+    # slow shifts
+    ax3.plot(run_positions, eval_result["slow_shifts"], marker='^', linestyle='-', color='darkorchid', label="Slow shifts")
+    ax3.axhline(0, color='black', linestyle='--'); ax3.axhline(0.5, color='crimson', linestyle='--')
+    ax3.axhline(-0.5, color='crimson', linestyle='--')
+    ax3.set_ylabel(r"$(\mu_i - \mu_0)/\bar{\sigma}$"); ax3.grid(True, alpha=0.3); ax3.legend(loc="upper left", bbox_to_anchor=(0, 0.95), fontsize=12)
 
-    ax2.set_ylabel("Sigma stability", fontsize=14)
-    ax2.set_xlabel("Run", fontsize=14)
-    ax2.grid(True, alpha=0.3)
-    ax2.legend(handles=[h1, h2, h3], fontsize=12)
-
-
-    # === Plot 3: (μ[i] - μ[0]) / σ_avg
-    # Calculate (μ[i] - μ[k]) / σ_avg for all points (where μ[k]!=nan)
-    valid_idx = np.where(~np.isnan(mean_vals))[0][0]
-    slow_shifts = [(v - mean_vals[valid_idx]) / sigma_avg for v in mean_vals]
-
-    ax3.plot(run_positions, slow_shifts, marker='^', linestyle='-', color='darkorchid', label="Slow shifts", markersize=8, linewidth=1)
-    ax3.axhline(0, color='black', linestyle='--', linewidth=1)
-    ax3.axhline(0.5, color='crimson', linestyle='--', linewidth=2)
-    ax3.axhline(-0.5, color='crimson', linestyle='--', linewidth=2)
-    ax3.set_ylabel(r"$(\mu_{i}-\mu_{0})/\bar{\sigma}$", fontsize=14)
-    ax3.grid(True, alpha=0.3)
-    ax3.legend(loc="upper left", bbox_to_anchor=(0, 0.95), fontsize=12)
-
-
-    # === Plot 4: (μ[i+1] - μ[i]) / σ[i] 
-    sudden_shifts = []
-    sequential_positions = []
-
-    # Add 0 for the first run
-    if run_positions:
-        # find first valid mean
-        valid_idx = next((i for i, v in enumerate(mean_vals) if not np.isnan(v)), None)
-    
-        if valid_idx is not None:
-            sudden_shifts.append(0)                        # baseline shift
-            sequential_positions.append(run_positions[valid_idx])  # align with valid run
-
-    # Calculate sequential differences for cal runs
-    for i in range(len(mean_vals) - 1):
-        sequential_positions.append(run_positions[i+1])  # second point in the difference
-        
-        v1, v2, s = mean_vals[i], mean_vals[i+1], sigma_vals[i]
-    
-        if np.isnan(v1) or np.isnan(v2) or np.isnan(s) or s == 0:
-            sudden_shifts.append(np.nan)  # invalid or div-by-zero
-        else:
-            diff = abs(v2 - v1) / s
-            sudden_shifts.append(diff)
-
-    # Convert to arrays for convenience
-    x = np.array(sequential_positions)
-    y = np.array(sudden_shifts)
-    # Keep only valid points (non-NaN)
+    # sudden shifts
+    x = np.arange(len(eval_result["sudden_shifts"]))
+    y = np.array(eval_result["sudden_shifts"])
     mask = ~np.isnan(y)
-    x_valid = x[mask]
-    y_valid = y[mask]
-    
-    ax4.plot(x_valid, y_valid, marker='^', linestyle='-', color='green', 
-         label="Sudden shifts", markersize=8, linewidth=1)
-    ax4.axhline(0, color='black', linestyle='--', linewidth=1)
-    ax4.axhline(0.25, color='crimson', linestyle='--', linewidth=2)
-    ax4.set_ylabel(r"$|(\mu_{i+1}-\mu_{i})/\sigma_{i}|$", fontsize=14)
-    ax4.set_xlabel("Run", fontsize=14)
-    ax4.grid(True, alpha=0.3)
-    ax4.legend(loc="upper left", bbox_to_anchor=(0, 0.95), fontsize=12)
+    ax4.plot(x[mask] + 1, y[mask], marker='^', linestyle='-', color='green', label="Sudden shifts")
+    ax4.axhline(0, color='black', linestyle='--'); ax4.axhline(0.25, color='crimson', linestyle='--')
+    ax4.set_ylabel(r"$|(\mu_{i+1}-\mu_i)/\sigma_i|$"); ax4.set_xlabel("Run"); ax4.grid(True, alpha=0.3); ax4.legend(loc="upper left", bbox_to_anchor=(0, 0.95), fontsize=12)
 
     for ax in axs.flatten():
         ax.set_xticks(run_positions)
         ax.set_xticklabels(run_labels, rotation=0)
 
-    fig.suptitle(f"{det_name}", fontsize=16)
+    fig.suptitle(det_name, fontsize=16)
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
-    
     plt.savefig(os.path.join(output_dir, f"{det_name}_PSD_USABILITY.pdf"), bbox_inches='tight')
     plt.close()
-    
-    # === Performance Evaluation
 
-    # Check slow shift: (μ[i] - μ[0]) / σ_avg outside ±0.5
-    slow_shift_failed = any(abs(z) > 0.5 for z in slow_shifts)
-    # Find which runs fail
-    slow_shift_fail_runs = [run_labels[i] for i, z in enumerate(slow_shifts) if abs(z) > 0.5]
-    
-    # Check sudden shift: |μ[i+1] - μ[i]| / σ[i] >= 0.25 (excluding first point which is 0 by default)
-    sudden_shift_failed = any(diff >= 0.25 for diff in sudden_shifts[1:]) 
-    # Find which runs fail
-    sudden_shift_fail_runs = [f"{run_labels[i-1]}TO{run_labels[i]}" for i, z in enumerate(sudden_shifts) if z >= 0.25]
-
-
-    
-    # Determine detector status
-    if not slow_shift_failed and not sudden_shift_failed:
-        status = f"{det_name} - valid psd"
-    else:
-        status = f"{det_name} - unstable psd"
-        if slow_shift_failed and sudden_shift_failed:
-            status += f" (slow shift - {slow_shift_fail_runs})(sudden shift - {sudden_shift_fail_runs})"
-        elif slow_shift_failed:
-            status += f" (slow shift - {slow_shift_fail_runs})"
-        elif sudden_shift_failed:
-            status += f" (sudden shift - {sudden_shift_fail_runs})"
-
-    # Write to output file (append mode)
-    with open(output_file, 'a') as f:
-        f.write(status + '\n')
-    
-
+    # save psd status
+    write_psd_evaluation(output_file, eval_result)
 
 
 def check_psd(auto_dir_path: str, output_dir: str, period: str):
@@ -267,8 +251,8 @@ def check_psd(auto_dir_path: str, output_dir: str, period: str):
         utils.logger.debug("...no data are available at the moment")
         return
 
-    # Create the folder and parents if missing
-    output_dir = os.path.join(output_dir, period)
+    # Create the folder and parents if missing - for the moment, we store it under the 'phy' folder
+    output_dir = os.path.join(output_dir, period, "mtg")
     os.makedirs(output_dir, exist_ok=True)
     
     # inspect one single det: plot+saving
