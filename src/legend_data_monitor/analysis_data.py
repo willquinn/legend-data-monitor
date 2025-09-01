@@ -267,7 +267,7 @@ class AnalysisData:
             if files:
                 filepath = files[0]
                 with open(filepath) as file:
-                    evt_config = yaml.safe_load(file)
+                    evt_config = yaml.load(file, Loader=yaml.CLoader)
                 break
 
         if evt_config is None:
@@ -290,7 +290,7 @@ class AnalysisData:
                 )
                 filepath = glob.glob(filepath_pattern)[0]
                 with open(filepath) as file:
-                    evt_config = yaml.safe_load(file)
+                    evt_config = yaml.load(file, Loader=yaml.CLoader)
                 expression = evt_config["operations"]["geds___quality___is_bb_like"][
                     "expression"
                 ]

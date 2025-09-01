@@ -1,7 +1,21 @@
 import argparse
+import os
 
 import legend_data_monitor
 
+
+def calib_psd():
+    parser = argparse.ArgumentParser(description="Plot and raise warning for PSD stability in calibration runs.")
+    parser.add_argument(
+        "--public_data",
+        help="Path to tmp-auto public data files (eg /data2/public/prodenv/prod-blind/tmp-auto).",
+        default="/data2/public/prodenv/prod-blind/ref-v1.0.1",
+    )
+    parser.add_argument(
+        "--output", default="removal_new_keys", help="Path to output folder."
+    )
+    parser.add_argument("--p", help="Period to inspect.")
+    return parser
 
 def summary_files():
     parser = argparse.ArgumentParser(description="Create summry HDF and YAML files.")
@@ -145,6 +159,20 @@ def main():
         help="Timestamp of the last check.",
     )
 
+
+    func3_parser = subparsers.add_parser(
+        "calib_psd", help="Plot and raise warning for PSD stability in calibration runs."
+    )
+    func3_parser.add_argument(
+        "--public_data",
+        help="Path to tmp-auto public data files (eg /data2/public/prodenv/prod-blind/tmp-auto).",
+        default="/data2/public/prodenv/prod-blind/ref-v1.0.1",
+    )
+    func3_parser.add_argument(
+        "--output", default="removal_new_keys", help="Path to output folder."
+    )
+    func3_parser.add_argument("--p", help="Period to inspect.")
+
     args = parser.parse_args()
 
     if args.command == "summary_files":
@@ -182,6 +210,13 @@ def main():
             quadratic,
             zoom,
         )
+        
+    elif args.command == "calib_psd":
+        auto_dir_path = args.public_data
+        output_folder = args.output
+        period = args.p
+            
+        legend_data_monitor.calibration.check_psd(auto_dir_path, output_folder, period)
 
 
 if __name__ == "__main__":
