@@ -25,6 +25,7 @@ logger.addHandler(stream_handler)
 
 # -------------------------------------------------------------------------
 
+
 def main():
     parser = argparse.ArgumentParser(
         description="Main code for automatically load and plot processed data on legend-login or NERSC cluster."
@@ -476,7 +477,7 @@ def main():
         logger.info(f"Folder {mtg_folder} ensured")
 
         # define dataset depending on the (latest) monitored period/run
-        
+
         avail_runs = sorted(os.listdir(os.path.join(mtg_folder, period)))
         avail_runs = [
             ar for ar in avail_runs if "mtg" not in ar and ar != ".ipynb_checkpoints"
@@ -511,7 +512,6 @@ def main():
         subprocess.run(cal_bash_command, shell=True)
         logger.info("...calibration data inspected!")
 
-        
     else:
         logger.debug("No new files were detected.")
 

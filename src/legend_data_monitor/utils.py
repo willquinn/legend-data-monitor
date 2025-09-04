@@ -6,12 +6,12 @@ import os
 import re
 import smtplib
 import sys
-import numpy as np
 from datetime import datetime, timedelta
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
 import h5py
+import numpy as np
 import pandas as pd
 import yaml
 from legendmeta import JsonDB
@@ -1658,9 +1658,11 @@ def build_runinfo(path: str, version: str, output: str):
     with open(os.path.join(output, "runinfo.yaml"), "w") as fp:
         yaml.dump(run_info, fp, default_flow_style=False, sort_keys=False)
 
+
 # -------------------------------------------------------------------------
 # Helper functions
 # -------------------------------------------------------------------------
+
 
 def read_json_or_yaml(file_path: str):
     """
@@ -1683,6 +1685,7 @@ def read_json_or_yaml(file_path: str):
             sys.exit()
 
     return data_dict
+
 
 def retrieve_json_or_yaml(base_path: str, filename: str):
     """Return either a yaml or a json file for the specified file looking at the existing available extension."""
@@ -1709,6 +1712,7 @@ def deep_get(d, keys, default=None):
         else:
             return default
     return d
+
 
 def none_to_nan(data: list):
     """Convert None elements into nan values for an input list."""
