@@ -152,7 +152,7 @@ def evaluate_psd_performance(
     return results
 
 
-def update_psd_evaluation_in_memory(data: dict, det_name: str, value: bool | np.nan):
+def update_psd_evaluation_in_memory(data: dict, det_name: str, value: bool | float):
     """Update the PSD entry in memory dict, where value can be bool or nan if not available."""
     data.setdefault(det_name, {}).setdefault("cal", {})["PSD"] = value
 

@@ -1,5 +1,4 @@
 import argparse
-import os
 
 import legend_data_monitor
 
