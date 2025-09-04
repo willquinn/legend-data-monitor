@@ -1,5 +1,4 @@
 import glob
-import json
 import os
 import pickle
 import shelve
@@ -45,7 +44,7 @@ def load_fit_pars_from_yaml(
     detectors_list : list
         List of detector raw IDs (eg. 'ch1104000') to extract data for.
     detectors_name : list
-        List of detector namess (eg. 'V11925A') to extract data for.
+        List of detector names (eg. 'V11925A') to extract data for.
     avail_runs : list or None
         Available runs to inspect (e.g. [4, 5, 6]); if None, keep all.
 
@@ -95,10 +94,7 @@ def load_fit_pars_from_yaml(
 def evaluate_psd_performance(
     mean_vals: list, sigma_vals: list, run_labels: list, current_run: str, det_name: str
 ):
-    """
-    Evaluate PSD performance metrics: slow shifts and sudden shifts.
-    Returns a dict with evaluation results.
-    """
+    """Evaluate PSD performance metrics: slow shifts and sudden shifts and return a dict with evaluation results."""
     results = {}
 
     # check prerequisites
@@ -156,11 +152,8 @@ def evaluate_psd_performance(
     return results
 
 
-def update_psd_evaluation_in_memory(data: dict, det_name: str, value):
-    """
-    Update the PSD entry in memory dict.
-    Value can be bool or nan if not available.
-    """
+def update_psd_evaluation_in_memory(data: dict, det_name: str, value: bool | np.nan):
+    """Update the PSD entry in memory dict, where value can be bool or nan if not available."""
     data.setdefault(det_name, {}).setdefault("cal", {})["PSD"] = value
 
 
@@ -174,10 +167,7 @@ def evaluate_psd_usability_and_plot(
     psd_data: dict,
     save_pdf: bool,
 ):
-    """
-    Plot PSD stability results across runs, evaluate performance,
-    and save both plot and evaluation summary.
-    """
+    """Plot PSD stability results across runs, evaluate performance, and save both plot and evaluation summary."""
     run_labels = sorted(fit_results_cal.keys())
     run_positions = list(range(len(run_labels)))
 
@@ -342,7 +332,7 @@ def check_psd(
             found = True
             break
     if found is False:
-        logger.debug(f"No valid folder {cal_path} found. Exiting.")
+        utils.logger.debug(f"No valid folder {cal_path} found. Exiting.")
         exit()
 
     pars_files_list = sorted(glob.glob(f"{cal_path}/*/*.yaml"))
@@ -364,7 +354,7 @@ def check_psd(
         if chmap[det]["name"] == det
     ]
 
-    # retireve all dets info
+    # retrieve all dets info
     cal_runs = sorted(os.listdir(cal_path))
     cal_psd_info = load_fit_pars_from_yaml(
         pars_files_list, detectors_list, detectors_name, cal_runs

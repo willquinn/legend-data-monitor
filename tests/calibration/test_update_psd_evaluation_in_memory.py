@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 
 from legend_data_monitor.calibration import update_psd_evaluation_in_memory
 

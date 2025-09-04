@@ -57,7 +57,6 @@ def test_load_fit_pars_from_yaml_basic(fake_read_json_or_yaml, fake_deep_get, tm
     result = load_fit_pars_from_yaml(
         pars_files_list, detectors_list, detectors_name, avail_runs
     )
-    print(result)
 
     assert "V11925A" in result
     assert "r004" in result["V11925A"]

@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 
 from legend_data_monitor.calibration import evaluate_psd_performance
 
@@ -21,7 +20,6 @@ def test_no_failures():
     run_labels = ["r001", "r002", "r003"]
 
     result = evaluate_psd_performance(mean_vals, sigma_vals, run_labels, "r003", "DET1")
-    print(result)
     assert result["status"] is True
     assert result["slow_shift_fail_runs"] == []
     assert result["sudden_shift_fail_runs"] == []
