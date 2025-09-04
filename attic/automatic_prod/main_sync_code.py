@@ -477,6 +477,7 @@ def main():
         logger.info(f"Folder {mtg_folder} ensured")
 
         # define dataset depending on the (latest) monitored period/run
+
         avail_runs = sorted(os.listdir(os.path.join(mtg_folder, period)))
         avail_runs = [
             ar for ar in avail_runs if "mtg" not in ar and ar != ".ipynb_checkpoints"
@@ -500,6 +501,17 @@ def main():
             logger.debug(f"...running command {mtg_bash_command}")
             subprocess.run(mtg_bash_command, shell=True)
             logger.info("...monitoring plots generated!")
+
+        # ===========================================================================================
+        # Calibration checks
+        # ===========================================================================================
+        cal_bash_command = f"{cmd} python monitoring.py calib_psd --public_data {auto_dir_path} --output {mtg_folder} --p {period} --current_run {run}"
+        if save_pdf is True:
+            cal_bash_command += " --pdf True"
+        logger.debug(f"...running command {cal_bash_command}")
+        subprocess.run(cal_bash_command, shell=True)
+        logger.info("...calibration data inspected!")
+
     else:
         logger.debug("No new files were detected.")
 

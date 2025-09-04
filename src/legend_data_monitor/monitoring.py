@@ -1361,7 +1361,6 @@ def plot_time_series(
                 # pickle and save calibration inputs retrieved ots in a shelve file
                 # serialize the plot
                 serialized_plot = pickle.dumps(plt.gcf())
-                plt.close(fig)
                 # store the serialized plot in a shelve object under key
                 with shelve.open(
                     os.path.join(end_folder, f"l200-{period}-phy-monitoring"),
@@ -1369,7 +1368,7 @@ def plot_time_series(
                     protocol=pickle.HIGHEST_PROTOCOL,
                 ) as shelf:
                     shelf[
-                        f'{period}_string{string}_pos{chmap.map("daq.rawid")[int(channel[2:])]["location"]["position"]}_{channel_name}'
+                        f'{period}_string{string}_pos{chmap.map("daq.rawid")[int(channel[2:])]["location"]["position"]}_{channel_name}_gain_shift'
                     ] = serialized_plot
                 plt.close(fig)
 
@@ -1674,7 +1673,6 @@ def plot_time_series(
                     # pickle and save calibration inputs retrieved ots in a shelve file
                     # serialize the plot
                     serialized_plot = pickle.dumps(plt.gcf())
-                    plt.close(fig)
                     # store the serialized plot in a shelve object under key
                     with shelve.open(
                         os.path.join(
@@ -1685,7 +1683,7 @@ def plot_time_series(
                         protocol=pickle.HIGHEST_PROTOCOL,
                     ) as shelf:
                         shelf[
-                            f'{period}_string{string}_pos{chmap.map("daq.rawid")[int(channel[2:])]["location"]["position"]}_{channel_name}'
+                            f'{period}_string{string}_pos{chmap.map("daq.rawid")[int(channel[2:])]["location"]["position"]}_{channel_name}_{inspected_parameter}'
                         ] = serialized_plot
                     plt.close(fig)
 

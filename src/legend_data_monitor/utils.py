@@ -11,6 +11,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
 import h5py
+import numpy as np
 import pandas as pd
 import yaml
 from legendmeta import JsonDB
@@ -755,7 +756,7 @@ def get_all_plot_parameters(subsystem: str, config: dict):
                 filepath = files[0]
                 with open(filepath) as file:
                     if filepath.endswith(".yaml"):
-                        hit_config = yaml.safe_load(file)
+                        hit_config = yaml.load(file, Loader=yaml.CLoader)
                     elif filepath.endswith(".json"):
                         hit_config = json.load(file)
                 break
@@ -1109,7 +1110,7 @@ def load_config(config_file: dict | str):
         # Looks like a file path and exists
         if os.path.isfile(config_file) and config_file.endswith((".yaml", ".yml")):
             with open(config_file) as f:
-                return yaml.safe_load(f)
+                return yaml.load(f, Loader=yaml.CLoader)
         else:
             # Try to parse as a JSON string
             try:
@@ -1401,7 +1402,7 @@ def get_tiers_pars_folders(path: str):
             config_proc = yaml.load(f, Loader=yaml.CLoader)
     except FileNotFoundError:
         with open(os.path.join(path, "dataflow-config.yaml")) as f:
-            config_proc = yaml.safe_load(f)
+            config_proc = yaml.load(f, Loader=yaml.CLoader)
 
     def clean_path(key, path, setup_paths):
         return os.path.join(path, setup_paths[key].replace("$_/", ""))
@@ -1522,7 +1523,7 @@ def build_runinfo(path: str, version: str, output: str):
                 filepath = files[0]
                 with open(filepath) as file:
                     if filepath.endswith(".yaml"):
-                        run_info = yaml.safe_load(file)
+                        run_info = yaml.load(file, Loader=yaml.CLoader)
                     elif filepath.endswith(".json"):
                         run_info = json.load(file)
                 break
@@ -1658,6 +1659,11 @@ def build_runinfo(path: str, version: str, output: str):
         yaml.dump(run_info, fp, default_flow_style=False, sort_keys=False)
 
 
+# -------------------------------------------------------------------------
+# Helper functions
+# -------------------------------------------------------------------------
+
+
 def read_json_or_yaml(file_path: str):
     """
     Open either a JSON/YAML file, if not raise an error and exit.
@@ -1669,7 +1675,7 @@ def read_json_or_yaml(file_path: str):
     """
     with open(file_path) as f:
         if file_path.endswith((".yaml", ".yml")):
-            data_dict = yaml.safe_load(f)
+            data_dict = yaml.load(f, Loader=yaml.CLoader)
         elif file_path.endswith(".json"):
             data_dict = json.load(f)
         else:
@@ -1697,3 +1703,17 @@ def retrieve_json_or_yaml(base_path: str, filename: str):
         sys.exit()
 
     return path
+
+
+def deep_get(d, keys, default=None):
+    for k in keys:
+        if isinstance(d, dict):
+            d = d.get(k, default)
+        else:
+            return default
+    return d
+
+
+def none_to_nan(data: list):
+    """Convert None elements into nan values for an input list."""
+    return [np.nan if v is None else v for v in data]
