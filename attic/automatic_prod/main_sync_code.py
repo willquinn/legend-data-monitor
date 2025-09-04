@@ -25,7 +25,6 @@ logger.addHandler(stream_handler)
 
 # -------------------------------------------------------------------------
 
-
 def main():
     parser = argparse.ArgumentParser(
         description="Main code for automatically load and plot processed data on legend-login or NERSC cluster."
@@ -505,7 +504,9 @@ def main():
         # ===========================================================================================
         # Calibration checks
         # ===========================================================================================
-        cal_bash_command = f"{cmd} python monitoring.py calib_psd --public_data {auto_dir_path} --output {mtg_folder} --p {period}"
+        cal_bash_command = f"{cmd} python monitoring.py calib_psd --public_data {auto_dir_path} --output {mtg_folder} --p {period} --current_run {run}"
+        if save_pdf is True:
+            cal_bash_command += " --pdf True"
         logger.debug(f"...running command {cal_bash_command}")
         subprocess.run(cal_bash_command, shell=True)
         logger.info("...calibration data inspected!")

@@ -4,87 +4,6 @@ import os
 import legend_data_monitor
 
 
-def calib_psd():
-    parser = argparse.ArgumentParser(description="Plot and raise warning for PSD stability in calibration runs.")
-    parser.add_argument(
-        "--public_data",
-        help="Path to tmp-auto public data files (eg /data2/public/prodenv/prod-blind/tmp-auto).",
-        default="/data2/public/prodenv/prod-blind/ref-v1.0.1",
-    )
-    parser.add_argument(
-        "--output", default="removal_new_keys", help="Path to output folder."
-    )
-    parser.add_argument("--p", help="Period to inspect.")
-    return parser
-
-def summary_files():
-    parser = argparse.ArgumentParser(description="Create summry HDF and YAML files.")
-    parser.add_argument(
-        "--path", help="Path to the folder containing the monitoring HDF files."
-    )
-    parser.add_argument("--period", help="Period to inspect.")
-    parser.add_argument("--run", help="Run to inspect.")
-    return parser
-
-
-def plot():
-    parser = argparse.ArgumentParser(description="Create summary plots.")
-    parser.add_argument(
-        "--public_data",
-        help="Path to tmp-auto public data files (eg /data2/public/prodenv/prod-blind/tmp-auto).",
-        default="/data2/public/prodenv/prod-blind/ref-v1.0.1",
-    )
-    parser.add_argument(
-        "--hdf_files",
-        help="Path to generated monitoring hdf files.",
-    )
-    parser.add_argument(
-        "--output", default="removal_new_keys", help="Path to output folder."
-    )
-    parser.add_argument("--start", help="First timestamp of the inspected range.")
-    parser.add_argument("--p", help="Period to inspect.")
-    parser.add_argument(
-        "--avail_runs",
-        nargs="+",
-        type=str,
-        help="Available runs to inspect for a given period.",
-    )
-    parser.add_argument("--current_run", type=str, help="Run under inspection.")
-    parser.add_argument(
-        "--partition",
-        default=False,
-        help="False if not partition data; default: False",
-    )
-    parser.add_argument(
-        "--zoom", default=False, help="True to zoom over y axis; default: False"
-    )
-    parser.add_argument(
-        "--quad_res",
-        default=False,
-        help="True if you want to plot the quadratic resolution too; default: False",
-    )
-    parser.add_argument(
-        "--pswd_email",
-        default=None,
-        help="Password to access the legend.data.monitoring@gmail.com account for sending alert messages.",
-    )
-    parser.add_argument(
-        "--escale",
-        default=2039,
-        type=float,
-        help="Energy sccale at which evaluating the gain differences; default: 2039 keV (76Ge Qbb).",
-    )
-    parser.add_argument(
-        "--pdf",
-        default=False,
-        help="True if you want to save pdf files too; default: False.",
-    )
-    parser.add_argument(
-        "--last_checked",
-        help="Timestamp of the last check. ",
-    )
-    return parser
-
 
 def main():
     parser = argparse.ArgumentParser()
@@ -172,6 +91,12 @@ def main():
         "--output", default="removal_new_keys", help="Path to output folder."
     )
     func3_parser.add_argument("--p", help="Period to inspect.")
+    func3_parser.add_argument("--current_run", type=str, help="Run under inspection.")
+    func3_parser.add_argument(
+        "--pdf",
+        default=False,
+        help="True if you want to save pdf files too; default: False.",
+    )
 
     args = parser.parse_args()
 
@@ -215,8 +140,10 @@ def main():
         auto_dir_path = args.public_data
         output_folder = args.output
         period = args.p
+        save_pdf = args.pdf
+        current_run = args.current_run
             
-        legend_data_monitor.calibration.check_psd(auto_dir_path, output_folder, period)
+        legend_data_monitor.calibration.check_psd(auto_dir_path, output_folder, period, current_run, save_pdf)
 
 
 if __name__ == "__main__":
