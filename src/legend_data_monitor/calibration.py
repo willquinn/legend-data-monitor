@@ -4,7 +4,9 @@ import numpy as np
 import glob
 import yaml
 import os
+import pickle
 import json
+import shelve
 
 from legendmeta import LegendMetadata
 
@@ -29,15 +31,7 @@ plt.rc("axes", facecolor="white", edgecolor="black", axisbelow=True, grid=True)
 
 # -------------------------------------------------------------------------
 
-def deep_get(d, keys, default=None):
-    for k in keys:
-        if isinstance(d, dict):
-            d = d.get(k, default)
-        else:
-            return default
-    return d
-
-def load_fit_pars_from_yaml(pars_files_list: list, detectors_list: list, detectors_name: list, runs_to_keep: list):
+def load_fit_pars_from_yaml(pars_files_list: list, detectors_list: list, detectors_name: list, avail_runs: list):
     """
     Load detector data from YAML files and return directly as a dict.
 
@@ -47,8 +41,10 @@ def load_fit_pars_from_yaml(pars_files_list: list, detectors_list: list, detecto
         List of file paths to YAML parameter files.
     detectors_list : list
         List of detector raw IDs (eg. 'ch1104000') to extract data for.
-    runs_to_keep : list or None
-        Runs to keep (e.g. [4, 5, 6]); if None, keep all.
+    detectors_name : list
+        List of detector namess (eg. 'V11925A') to extract data for.
+    avail_runs : list or None
+        Available runs to inspect (e.g. [4, 5, 6]); if None, keep all.
 
     Returns
     -------
@@ -68,9 +64,9 @@ def load_fit_pars_from_yaml(pars_files_list: list, detectors_list: list, detecto
     results = {}
 
     for file_path in pars_files_list:
-        run_idx = int(file_path.split('/')[-2].split('r')[-1])
+        run_idx = int(file_path.split('/')[-2].split('r')[-1]) 
         run_str = f"r{run_idx:03d}"
-        if run_str not in runs_to_keep:
+        if run_str not in avail_runs:
             continue
 
         run_data = utils.read_json_or_yaml(file_path)
@@ -79,7 +75,7 @@ def load_fit_pars_from_yaml(pars_files_list: list, detectors_list: list, detecto
         for idx, det in enumerate(detectors_list):
             det_key = det if det in run_data else detectors_name[idx] 
 
-            pars = deep_get(run_data or {}, [det_key, "results", "aoe", "1000-1300keV", time], {})
+            pars = utils.deep_get(run_data or {}, [det_key, "results", "aoe", "1000-1300keV", time], {})
 
             results.setdefault(detectors_name[idx], {})[run_str] = {
                 "mean": pars.get("mean"),
@@ -90,10 +86,10 @@ def load_fit_pars_from_yaml(pars_files_list: list, detectors_list: list, detecto
 
     return results or None
 
-def none_to_nan(seq):
-    return [np.nan if v is None else v for v in seq]
+
     
-def evaluate_psd_performance(mean_vals, sigma_vals, run_labels, det_name):
+    
+def evaluate_psd_performance(mean_vals: list, sigma_vals: list, run_labels: list, current_run: str, det_name: str):
     """
     Evaluate PSD performance metrics: slow shifts and sudden shifts.
     Returns a dict with evaluation results.
@@ -102,10 +98,15 @@ def evaluate_psd_performance(mean_vals, sigma_vals, run_labels, det_name):
 
     # check prerequisites
     valid_idx = next((i for i, v in enumerate(mean_vals) if not np.isnan(v)), None)
-    sigma_avg = np.nanmean(sigma_vals)
+
+    # handle case where all sigma_vals are NaN
+    if all(np.isnan(sigma_vals)):
+        sigma_avg = np.nan
+    else:
+        sigma_avg = np.nanmean(sigma_vals)
 
     if valid_idx is None or np.isnan(sigma_avg) or sigma_avg == 0:
-        results["status"] = f"{det_name} - insufficient data"
+        results["status"] = None
         results["slow_shift_fail_runs"] = []
         results["sudden_shift_fail_runs"] = []
         results["slow_shifts"] = []
@@ -114,7 +115,7 @@ def evaluate_psd_performance(mean_vals, sigma_vals, run_labels, det_name):
 
     # SLOW shifts 
     slow_shifts = [(v - mean_vals[valid_idx]) / sigma_avg for v in mean_vals]
-    slow_shift_fail_runs = [run_labels[i] for i, z in enumerate(slow_shifts) if abs(z) > 0.5]
+    slow_shift_fail_runs = [run_labels[i] for i, z in enumerate(slow_shifts) if abs(z) > 0.5 and run_labels[i] == current_run]
     slow_shift_failed = bool(slow_shift_fail_runs)
 
     # SUDDEN shifts 
@@ -128,18 +129,13 @@ def evaluate_psd_performance(mean_vals, sigma_vals, run_labels, det_name):
 
     sudden_shift_fail_runs = [
         f"{run_labels[i]}TO{run_labels[i+1]}"
-        for i, z in enumerate(sudden_shifts) if not np.isnan(z) and z >= 0.25
+        for i, z in enumerate(sudden_shifts) if not np.isnan(z) and z > 0.25  and run_labels[i+1] == current_run 
     ]
     sudden_shift_failed = bool(sudden_shift_fail_runs)
 
+    status = False
     if not slow_shift_failed and not sudden_shift_failed:
-        status = f"{det_name} - valid psd"
-    else:
-        status = f"{det_name} - unstable psd"
-        if slow_shift_failed:
-            status += f" (slow shift - {slow_shift_fail_runs})"
-        if sudden_shift_failed:
-            status += f" (sudden shift - {sudden_shift_fail_runs})"
+        status = True
 
     results["status"] = status
     results["slow_shift_fail_runs"] = slow_shift_fail_runs
@@ -149,13 +145,16 @@ def evaluate_psd_performance(mean_vals, sigma_vals, run_labels, det_name):
 
     return results
 
-def write_psd_evaluation(output_file, evaluation_result):
-    """Append evaluation status to output file."""
-    with open(output_file, "a") as f:
-        f.write(evaluation_result["status"] + "\n")
+
+def update_psd_evaluation_in_memory(data: dict, det_name: str, value):
+    """
+    Update the PSD entry in memory dict.
+    Value can be bool or nan if not available.
+    """
+    data.setdefault(det_name, {}).setdefault("cal", {})["PSD"] = value
 
 
-def evaluate_psd_usability_and_plot(fit_results_cal: dict, det_name: str, output_dir: str, output_file: str):
+def evaluate_psd_usability_and_plot(period: str, current_run: str, fit_results_cal: dict, det_name: str, location, output_dir: str, psd_data: dict, save_pdf: bool):
     """
     Plot PSD stability results across runs, evaluate performance,
     and save both plot and evaluation summary.
@@ -164,19 +163,16 @@ def evaluate_psd_usability_and_plot(fit_results_cal: dict, det_name: str, output
     run_positions = list(range(len(run_labels)))
 
     # extract values
-    mean_vals   = none_to_nan([fit_results_cal[r]["mean"]      for r in run_labels])
-    mean_errs   = none_to_nan([fit_results_cal[r]["mean_err"]  for r in run_labels])
-    sigma_vals  = none_to_nan([fit_results_cal[r]["sigma"]     for r in run_labels])
-    sigma_errs  = none_to_nan([fit_results_cal[r]["sigma_err"] for r in run_labels])
-
-    # if all nan entries, comment and exit
-    if all(np.isnan(x) for x in mean_vals):
-        with open(output_file, 'a') as f:
-            f.write(f"{det_name} - all nan entries\n")
-        return
+    mean_vals = utils.none_to_nan([fit_results_cal[r]["mean"]      for r in run_labels])
+    mean_errs = utils.none_to_nan([fit_results_cal[r]["mean_err"]  for r in run_labels])
+    sigma_vals = utils.none_to_nan([fit_results_cal[r]["sigma"]     for r in run_labels])
+    sigma_errs = utils.none_to_nan([fit_results_cal[r]["sigma_err"] for r in run_labels])
 
     # Evaluate performance
-    eval_result = evaluate_psd_performance(mean_vals, sigma_vals, run_labels, det_name)
+    eval_result = evaluate_psd_performance(mean_vals, sigma_vals, run_labels, current_run, det_name)
+    # if all nan entries, comment and exit
+    if eval_result["status"] is None:
+        return 
 
     fig, axs = plt.subplots(2, 2, figsize=(15, 9), sharex=True)
     (ax1, ax3), (ax2, ax4) = axs
@@ -215,14 +211,32 @@ def evaluate_psd_usability_and_plot(fit_results_cal: dict, det_name: str, output
 
     fig.suptitle(det_name, fontsize=16)
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
-    plt.savefig(os.path.join(output_dir, f"{det_name}_PSD_USABILITY.pdf"), bbox_inches='tight')
+    if save_pdf:
+        pdf_folder = os.path.join(output_dir, "pdf", f"st{location[0]}")
+        os.makedirs(pdf_folder, exist_ok=True)
+        plt.savefig(os.path.join(pdf_folder, f"{period}_string{location[0]}_pos{location[1]}_{det_name}_PSDusability.pdf"), bbox_inches='tight')
+
+    # store the serialized plot in a shelve object under key
+    serialized_plot = pickle.dumps(plt.gcf())
+    with shelve.open(
+        os.path.join(
+            output_dir,
+            f"l200-{period}-phy-monitoring",
+        ),
+        "c",
+        protocol=pickle.HIGHEST_PROTOCOL,
+    ) as shelf:
+        shelf[
+            f'{period}_string{location[0]}_pos{location[1]}_{det_name}_PSDusability'
+        ] = serialized_plot
+        
     plt.close()
 
-    # save psd status
-    write_psd_evaluation(output_file, eval_result)
+    # supdate psd status
+    update_psd_evaluation_in_memory(psd_data, det_name, eval_result["status"])
 
 
-def check_psd(auto_dir_path: str, output_dir: str, period: str):
+def check_psd(auto_dir_path: str, output_dir: str, period: str, current_run: str, save_pdf: bool):
     
     found = False
     for tier in ["hit", "pht"]:
@@ -243,6 +257,7 @@ def check_psd(auto_dir_path: str, output_dir: str, period: str):
     chmap = lmeta.channelmap()
     detectors_name = [det for det, info in chmap.items() if info['system'] == 'geds']
     detectors_list = [f"ch{chmap[det]['daq']['rawid']}" for det in detectors_name if chmap[det]['name']==det]
+    locations_list = [(chmap[det]['location']['position'], chmap[det]['location']['string']) for det in detectors_name if chmap[det]['name']==det]
 
     # retireve all dets info
     cal_runs = sorted(os.listdir(cal_path))
@@ -251,12 +266,25 @@ def check_psd(auto_dir_path: str, output_dir: str, period: str):
         utils.logger.debug("...no data are available at the moment")
         return
 
-    # Create the folder and parents if missing - for the moment, we store it under the 'phy' folder
-    output_dir = os.path.join(output_dir, period, "mtg")
+    # create the folder and parents if missing - for the moment, we store it under the 'phy' folder
+    output_dir = os.path.join(output_dir, period, current_run)
     os.makedirs(output_dir, exist_ok=True)
     
+    # Load existing data once (or start empty)
+    usability_map_file = os.path.join(output_dir, f"l200-{period}-{current_run}-summary.yaml")
+
+    if os.path.exists(usability_map_file):
+        with open(usability_map_file, "r") as f:
+            psd_data = yaml.safe_load(f) or {}
+    else:
+        psd_data = {}
+
     # inspect one single det: plot+saving
-    for det_name in detectors_name:
-        usability_map_file = os.path.join(output_dir, "psd_usability.yaml")
-        evaluate_psd_usability_and_plot(cal_psd_info[det_name], det_name, output_dir, usability_map_file) 
+    for idx, det_name in enumerate(detectors_name):
+        evaluate_psd_usability_and_plot(period, current_run, cal_psd_info[det_name], det_name, locations_list[idx], output_dir, psd_data, save_pdf) 
+
+    with open(usability_map_file, "w") as f:
+        yaml.dump(psd_data, f, sort_keys=False)
+
+
 

@@ -6,6 +6,7 @@ import os
 import re
 import smtplib
 import sys
+import numpy as np
 from datetime import datetime, timedelta
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -1657,6 +1658,9 @@ def build_runinfo(path: str, version: str, output: str):
     with open(os.path.join(output, "runinfo.yaml"), "w") as fp:
         yaml.dump(run_info, fp, default_flow_style=False, sort_keys=False)
 
+# -------------------------------------------------------------------------
+# Helper functions
+# -------------------------------------------------------------------------
 
 def read_json_or_yaml(file_path: str):
     """
@@ -1680,7 +1684,6 @@ def read_json_or_yaml(file_path: str):
 
     return data_dict
 
-
 def retrieve_json_or_yaml(base_path: str, filename: str):
     """Return either a yaml or a json file for the specified file looking at the existing available extension."""
     yaml_path = os.path.join(base_path, f"{filename}.yaml")
@@ -1697,3 +1700,16 @@ def retrieve_json_or_yaml(base_path: str, filename: str):
         sys.exit()
 
     return path
+
+
+def deep_get(d, keys, default=None):
+    for k in keys:
+        if isinstance(d, dict):
+            d = d.get(k, default)
+        else:
+            return default
+    return d
+
+def none_to_nan(data: list):
+    """Convert None elements into nan values for an input list."""
+    return [np.nan if v is None else v for v in data]
