@@ -485,6 +485,20 @@ QCP_PHY_CHECKS = [
     ("baseln_stab", "BL stab", "FFD0E8"),
     ("pulser_stab", "Pulser", "FFD0E8"),
 ]
+QCP_ESCALE_CHECKS = [
+    ("escale_fwhm_FEP", "FWHM FEP", "D9E1F2"),
+    ("escale_fwhm_583", "FWHM 583", "D9E1F2"),
+    ("escale_FEP_pos", "FEP pos", "D9E1F2"),
+    ("escale_SEP_residual", "SEP resid", "D9E1F2"),
+]
+
+# Registry of detail sheets: (sheet_name, run_type_filter, checks).
+# Add new sheets here — no need to touch make_qcp_sheets_detailed.
+_DETAIL_SHEETS: list[tuple[str, str, list]] = [
+    ("QCP Cal", "cal", QCP_CAL_CHECKS),
+    ("QCP Phy", "phy", QCP_PHY_CHECKS),
+    ("Escale partitioning", "cal", QCP_ESCALE_CHECKS),
+]
 
 
 def _qcp_result(det_qcp: dict, run_type: str) -> tuple[str | None, list[str]]:
@@ -885,17 +899,10 @@ def make_qcp_sheets_detailed(
     periods: dict,
     qcp_data: dict,
 ) -> None:
-    """
-    Add 'QCP Cal' and 'QCP Phy' sheets to an existing workbook.
-
-    Each sheet shows one row per check per detector with pass/fail/null
-    coloring.
-    """
+    """Add per-check detail sheets to an existing workbook, one sheet per entry in _DETAIL_SHEETS."""
     wb = load_workbook(wb_path)
-    _make_qcp_detail_sheet(
-        wb, "QCP Cal", "cal", QCP_CAL_CHECKS, strings, periods, qcp_data
-    )
-    _make_qcp_detail_sheet(
-        wb, "QCP Phy", "phy", QCP_PHY_CHECKS, strings, periods, qcp_data
-    )
+    for sheet_name, run_type_filter, checks in _DETAIL_SHEETS:
+        _make_qcp_detail_sheet(
+            wb, sheet_name, run_type_filter, checks, strings, periods, qcp_data
+        )
     wb.save(wb_path)
