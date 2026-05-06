@@ -189,7 +189,7 @@ def correct_runinfo(legend_datasets_path, run_info, period, run):
 def _build_reason_map(datasets: Path, validity: list) -> dict:
     """
     Internal function called _build_reason_map.
-    
+
     {(ged_name, valid_from_timestamp): reason} — only where a config file
     explicitly sets a non-empty reason field.
     """
