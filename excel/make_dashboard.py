@@ -1,80 +1,20 @@
-"""
-Excel dashboard generator.
---------------------------------------------------------------------------------
+"""Excel dashboard generator.
 
-Call `make_excel(strings, periods, data, output_path)`
+Call ``make_excel(strings, periods, data, output_path)``.
 
-================================================================================
-INPUTS
-================================================================================
+Inputs
+------
+strings : dict[int, list[tuple[str, float]]]
+    ``{string_number: [(ged_name, mass_g), ...]}`` — detectors in top-to-bottom order.
 
-1. strings
-----------
-Type:   dict[int, list[tuple[str, float]]]
-Format: { string_number: [(ged_name, mass_g), ...], ... }
-detectors are listed in the order of position
+periods : dict[str, list[tuple[str, str]]]
+    ``{period: [(run_type, run), ...]}`` — columns in display order.
+    The last run of each period should be cal-only (no trailing phy entry).
 
-Example:
-    strings = {
-        1: [("V14654A", 3383), ("V14673A", 3450)],
-        4: [("B00032C", 743),  ("V07302A", 1803)],
-    }
-
---------------------------------------------------------------------------------
-
-2. periods
-----------
-Which (run_type, run) columns exist for each period, in display order.
-Controls how many runs appear in the sheet — just include what you want.
-
-Type:   dict[str, list[tuple[str, str]]]
-Format: { period: [(run_type, run), ...], ... }
-
-Note:
-  - run_type  : "cal" or "phy"
-  - The last run of each period is (should be) cal-only (no trailing phy entry)
-  - Remember phy runs require a cal–phy–cal sandwich to be valid
-  - can/should be linked with run lists
-
-Example (two periods, p16 with 2 runs, p18 with 1 run):
-    periods = {
-        "p16": [
-            ("cal", "r000"), ("phy", "r000"),
-            ("cal", "r001"),                   # last run — cal only
-        ],
-        "p18": [
-            ("cal", "r000"),                   # last run — cal only
-        ],
-    }
-
---------------------------------------------------------------------------------
-
-3. data
--------
-The usability value for every (detector × column) cell.
-
-Type:   dict[tuple, any]
-Format: { (string_num, ged_name, period, run, run_type, usability_type): value }
-
-Note:
-  - usability_type  : str — "E" (energy scale) or "P" (PSD)
-  - value           : what you want to display (number, string, None)
-                      None leaves the cell blank
-  - Missing keys are treated as None (blank cell) — you do not need to
-    supply an entry for every possible combination
-
-Typical loop to populate:
-    data = {}
-    for period, cols in periods.items():
-        for run_type, run in cols:
-            for string_num, detectors in strings.items():
-                for ged_name, _ in detectors:
-                    for usability_type in ("E", "P"):
-                        value = blah
-                        data[(string_num, ged_name, period, run,
-                              run_type, usability_type)] = value
-
-================================================================================
+data : dict[tuple, any]
+    ``{(string_num, ged_name, period, run, run_type, usability_type): value}``
+    where usability_type is ``"E"`` (energy scale) or ``"P"`` (PSD).
+    Missing keys are treated as None (blank cell).
 """
 
 import openpyxl

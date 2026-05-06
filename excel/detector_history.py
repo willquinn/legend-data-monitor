@@ -38,12 +38,7 @@ class Transition:
 
 
 def _ordered_entries(periods: dict, runinfo: dict) -> list[tuple[str, str, str]]:
-    """
-    Internal function called _ordered_entries.
-
-    Return all (period, run, run_type) tuples in the order they appear in
-    the input `periods`, filtered to entries that exist in runinfo.
-    """
+    """Return all (period, run, run_type) tuples in the order they appear in `periods`, filtered to entries that exist in runinfo."""
     result = []
     for period, cols in periods.items():
         period_ri = runinfo.get(period, {})
@@ -54,11 +49,7 @@ def _ordered_entries(periods: dict, runinfo: dict) -> list[tuple[str, str, str]]
 
 
 def _all_runinfo_entries(runinfo: dict) -> list[tuple[str, str, str]]:
-    """
-    Internal function called _all_runinfo_entries.
-
-    Return all (period, run, run_type) tuples across every period in runinfo,
-    sorted chronologically by start_key timestamp.
+    """Return all (period, run, run_type) tuples across every period in runinfo, sorted chronologically by start_key.
 
     Used by build_from_disk so that prev_val tracking is always correct
     regardless of which periods the Excel sheet covers.
@@ -82,14 +73,10 @@ def _find_source_and_reason(
     timestamp: str,
     ged: str,
 ) -> tuple[str | None, str | None]:
-    """
-    Internal function called _find_source_and_reason.
+    """Scan validity entries at `timestamp` to find the config file that explicitly sets `ged`.
 
-    Scan validity entries at `timestamp` to find the config file that
-    explicitly sets `ged`, returning (source_file_basename, reason).
-
-    When multiple config files at the same timestamp contain `ged`, the last
-    one is returned (last-write-wins, mirroring how TextDB applies appends).
+    Returns (source_file_basename, reason).  When multiple config files at the
+    same timestamp contain `ged`, the last one wins (mirrors TextDB append order).
     """
     result_file = None
     result_reason = None
@@ -195,11 +182,7 @@ def build_from_excel(
     runinfo: dict,
     prev_usab_seed: dict[str, str | None] | None = None,
 ) -> History:
-    """
-    Function called build_from_excel.
-
-    If a user has changed anything in the excel sheet
-    build a per-detector transition list from the Excel usability matrix.
+    """Build a per-detector transition list from the Excel usability matrix.
 
     Walks events in period-column order, reading each cell value.  Records a
     Transition wherever the value changes relative to the previous event.

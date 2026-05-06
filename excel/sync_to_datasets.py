@@ -48,9 +48,7 @@ def _categories_for(period: str) -> list[str]:
 def _cal_config_removed_at_phy(
     period: str, run: str, validity: list, runinfo: dict
 ) -> bool:
-    """
-    Return True if validity already has a 'remove' entry that strips
-    l200-{period}-{run}-T%-cal-config.yaml at the phy start of this run.
+    """Return True if validity already strips the cal-config at the phy start of this run.
 
     When this is the case, a cal-only usability change should be written
     into the cal-config rather than the all-config: the remove entry will
@@ -379,7 +377,7 @@ def sync(
 
     added, v1 = _apply_adds(adds, statuses_dir, validity, runinfo)
     updated, v2 = _apply_updates(updates, statuses_dir, validity, runinfo)
-    removed = _apply_removes(removes, statuses_dir, validity)
+    _apply_removes(removes, statuses_dir, validity)
 
     validity_changed = v1 or v2
     if validity_changed:

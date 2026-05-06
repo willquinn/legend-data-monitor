@@ -69,13 +69,7 @@ def _build_psd_note_map(
     runinfo: dict,
     periods: dict,
 ) -> dict:
-    """
-    Internal function called _build_psd_note_map.
-
-    Build {(ged_name, cal_timestamp): note_str} for every cal run where a
-    detector's PSD cut statuses changed since the previous cal run (or the
-    first cal run of a period).
-    """
+    """Build {(ged_name, cal_timestamp): note_str} for every cal run where PSD cut statuses changed since the previous cal run."""
     psd_note_map: dict = {}
 
     for period, cols in periods.items():
@@ -187,12 +181,7 @@ def correct_runinfo(legend_datasets_path, run_info, period, run):
 
 
 def _build_reason_map(datasets: Path, validity: list) -> dict:
-    """
-    Internal function called _build_reason_map.
-
-    {(ged_name, valid_from_timestamp): reason} — only where a config file
-    explicitly sets a non-empty reason field.
-    """
+    """Build {(ged_name, valid_from_timestamp): reason} for entries where a config file explicitly sets a non-empty reason."""
     reason_map: dict = {}
     statuses_dir = datasets / "statuses"
 
